@@ -44,9 +44,7 @@ endif()
 #     add_subdirectory(examples)
 # endif()
 
-if(BUILD_TOOLS AND (Qt5_FOUND OR Qt6_FOUND))
-    add_subdirectory(tools)
-endif()
+add_subdirectory(tools)
 
 set(CPACK_PACKAGE_NAME "midi-ci-cpp")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

@@ -249,7 +249,7 @@ void ResponderWidget::onPropertySelectionChanged()
 void ResponderWidget::onAddProperty()
 {
     bool ok;
-    QString propertyId = QInputDialog::getText(this, "Add Property", "Property ID:", QLineEdit::Normal, QString("X-%1").arg(qrand() % 10000), &ok);
+    QString propertyId = QInputDialog::getText(this, "Add Property", "Property ID:", QLineEdit::Normal, QString("X-%1").arg(rand() % 10000), &ok);
     if (ok && !propertyId.isEmpty()) {
         m_propertyList->addItem(propertyId);
         m_repository->log(QString("Added property: %1").arg(propertyId).toStdString(), ci_tool::MessageDirection::Out);

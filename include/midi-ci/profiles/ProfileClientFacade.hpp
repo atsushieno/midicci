@@ -2,20 +2,12 @@
 
 #include <memory>
 #include <cstdint>
+#include "../messages/Message.hpp"
 
 namespace midi_ci {
 namespace core {
 class MidiCIDevice;
 class ClientConnection;
-}
-
-namespace messages {
-struct ProfileReply;
-struct ProfileAdded;
-struct ProfileRemoved;
-struct ProfileEnabled;
-struct ProfileDisabled;
-struct ProfileDetailsReply;
 }
 
 namespace profiles {

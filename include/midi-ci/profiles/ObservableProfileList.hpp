@@ -4,12 +4,10 @@
 #include <functional>
 #include <memory>
 #include <cstdint>
+#include "MidiCIProfile.hpp"
 
 namespace midi_ci {
 namespace profiles {
-
-struct MidiCIProfile;
-struct MidiCIProfileId;
 
 class ObservableProfileList {
 public:

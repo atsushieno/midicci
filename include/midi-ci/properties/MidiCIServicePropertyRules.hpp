@@ -5,17 +5,9 @@
 #include <map>
 #include <functional>
 #include <memory>
+#include "../messages/Message.hpp"
 
 namespace midi_ci {
-namespace messages {
-class Message;
-struct GetPropertyData;
-struct GetPropertyDataReply;
-struct SetPropertyData;
-struct SetPropertyDataReply;
-struct SubscribeProperty;
-struct SubscribePropertyReply;
-}
 
 namespace properties {
 

@@ -4,19 +4,11 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include "../messages/Message.hpp"
 
 namespace midi_ci {
 namespace core {
 class MidiCIDevice;
-}
-
-namespace messages {
-struct GetPropertyData;
-struct GetPropertyDataReply;
-struct SetPropertyData;
-struct SetPropertyDataReply;
-struct SubscribeProperty;
-struct SubscribePropertyReply;
 }
 
 namespace properties {

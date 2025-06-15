@@ -2,12 +2,17 @@ set(MIDI_CI_SOURCES
     midi-ci/core/MidiCIDevice.cpp
     midi-ci/core/ClientConnection.cpp
     midi-ci/core/MidiCIConstants.cpp
+    midi-ci/json/Json.cpp
     midi-ci/messages/Message.cpp
     midi-ci/messages/Messenger.cpp
+    midi-ci/profiles/ObservableProfileList.cpp
+    midi-ci/profiles/ProfileClientFacade.cpp
+    midi-ci/profiles/ProfileHostFacade.cpp
     midi-ci/profiles/ProfileManager.cpp
-    midi-ci/properties/PropertyManager.cpp
     midi-ci/properties/PropertyChunkManager.cpp
-    midi-ci/json/Json.cpp
+    midi-ci/properties/PropertyClientFacade.cpp
+    midi-ci/properties/PropertyHostFacade.cpp
+    midi-ci/properties/PropertyManager.cpp
 )
 
 set(MIDI_CI_HEADERS

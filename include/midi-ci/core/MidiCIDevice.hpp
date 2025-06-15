@@ -57,6 +57,8 @@ public:
     void set_sysex_sender(SysExSender sender);
     void set_sysex_transport(std::unique_ptr<transport::SysExTransport> transport);
     
+    void sendDiscovery();
+    
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

@@ -178,6 +178,7 @@ void InitiatorWidget::onSendDiscovery()
     if (m_repository && m_repository->get_ci_device_manager()) {
         auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
         if (deviceModel) {
+            deviceModel->send_discovery();
             m_repository->log("Sending discovery inquiry", ci_tool::MessageDirection::Out);
         }
     }

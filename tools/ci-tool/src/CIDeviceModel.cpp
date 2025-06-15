@@ -97,7 +97,10 @@ std::vector<std::shared_ptr<MidiCIProfileState>> CIDeviceModel::get_local_profil
 
 void CIDeviceModel::send_discovery() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    std::cout << "Sending discovery inquiry..." << std::endl;
+    if (pimpl_->device_) {
+        pimpl_->device_->sendDiscovery();
+        std::cout << "Sending discovery inquiry..." << std::endl;
+    }
 }
 
 void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid, 

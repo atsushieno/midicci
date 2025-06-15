@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <csignal>
+#include <iomanip>
 
 namespace {
     volatile bool running = true;

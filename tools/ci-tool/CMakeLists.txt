@@ -15,8 +15,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../include
 )
 
-set(CI_TOOL_SOURCES
-    src/main.cpp
+set(CI_TOOL_LIB_SOURCES
     src/CIDeviceManager.cpp
     src/MidiDeviceManager.cpp
     src/CIDeviceModel.cpp
@@ -25,11 +24,21 @@ set(CI_TOOL_SOURCES
     src/MidiCIProfileState.cpp
 )
 
+set(CI_TOOL_SOURCES
+    src/main.cpp
+)
+
+add_library(midi-ci-tool-lib STATIC ${CI_TOOL_LIB_SOURCES})
+target_link_libraries(midi-ci-tool-lib 
+    PUBLIC 
+        midi-ci
+)
+
 add_executable(midi-ci-tool ${CI_TOOL_SOURCES})
 
 target_link_libraries(midi-ci-tool 
     PRIVATE 
-        midi-ci
+        midi-ci-tool-lib
 )
 
 target_compile_features(midi-ci-tool PRIVATE cxx_std_20)

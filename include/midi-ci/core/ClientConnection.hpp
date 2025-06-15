@@ -6,13 +6,15 @@
 #include <functional>
 
 namespace midi_ci {
-namespace core {
-
+namespace messages {
 class Message;
+}
+
+namespace core {
 
 class ClientConnection {
 public:
-    using MessageCallback = std::function<void(const Message&)>;
+    using MessageCallback = std::function<void(const messages::Message&)>;
     using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     explicit ClientConnection(uint8_t destination_id);
@@ -29,7 +31,7 @@ public:
     void set_message_callback(MessageCallback callback);
     void set_sysex_sender(SysExSender sender);
     
-    void send_message(const Message& message);
+    void send_message(const messages::Message& message);
     void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
     
     bool is_connected() const noexcept;

@@ -6,7 +6,7 @@ set(MIDI_CI_SOURCES
     midi-ci/messages/Messenger.cpp
     midi-ci/profiles/ProfileManager.cpp
     midi-ci/properties/PropertyManager.cpp
-    midi-ci/transport/TransportLayer.cpp
+    midi-ci/properties/PropertyChunkManager.cpp
 )
 
 set(MIDI_CI_HEADERS
@@ -17,7 +17,7 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/messages/Messenger.hpp
     ../include/midi-ci/profiles/ProfileManager.hpp
     ../include/midi-ci/properties/PropertyManager.hpp
-    ../include/midi-ci/transport/TransportLayer.hpp
+    ../include/midi-ci/properties/PropertyChunkManager.hpp
 )
 
 add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})

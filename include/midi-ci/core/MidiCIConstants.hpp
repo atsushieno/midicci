@@ -1,0 +1,52 @@
+#pragma once
+
+#include <cstdint>
+
+namespace midi_ci {
+namespace core {
+
+namespace constants {
+
+constexpr uint8_t MIDI_CI_SYSEX_START = 0xF0;
+constexpr uint8_t MIDI_CI_SYSEX_END = 0xF7;
+constexpr uint8_t MIDI_CI_UNIVERSAL_SYSEX_ID = 0x7E;
+constexpr uint8_t MIDI_CI_SUB_ID_1 = 0x0D;
+
+constexpr uint8_t MIDI_CI_VERSION_1_1 = 0x01;
+constexpr uint8_t MIDI_CI_VERSION_1_2 = 0x02;
+
+constexpr uint8_t DISCOVERY_INQUIRY = 0x70;
+constexpr uint8_t DISCOVERY_REPLY = 0x71;
+constexpr uint8_t INVALIDATE_MUID = 0x7E;
+constexpr uint8_t ACK = 0x7D;
+constexpr uint8_t NAK = 0x7F;
+
+constexpr uint8_t PROFILE_INQUIRY = 0x20;
+constexpr uint8_t PROFILE_INQUIRY_REPLY = 0x21;
+constexpr uint8_t PROFILE_SET_ON = 0x22;
+constexpr uint8_t PROFILE_SET_OFF = 0x23;
+constexpr uint8_t PROFILE_ENABLED_REPORT = 0x24;
+constexpr uint8_t PROFILE_DISABLED_REPORT = 0x25;
+constexpr uint8_t PROFILE_ADDED_REPORT = 0x26;
+constexpr uint8_t PROFILE_REMOVED_REPORT = 0x27;
+constexpr uint8_t PROFILE_DETAILS_INQUIRY = 0x28;
+constexpr uint8_t PROFILE_DETAILS_REPLY = 0x29;
+constexpr uint8_t PROFILE_SPECIFIC_DATA = 0x2F;
+
+constexpr uint8_t PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY = 0x30;
+constexpr uint8_t PROPERTY_EXCHANGE_CAPABILITIES_REPLY = 0x31;
+constexpr uint8_t PROPERTY_EXCHANGE_GET = 0x34;
+constexpr uint8_t PROPERTY_EXCHANGE_GET_REPLY = 0x35;
+constexpr uint8_t PROPERTY_EXCHANGE_SET = 0x36;
+constexpr uint8_t PROPERTY_EXCHANGE_SET_REPLY = 0x37;
+constexpr uint8_t PROPERTY_EXCHANGE_SUBSCRIPTION = 0x38;
+constexpr uint8_t PROPERTY_EXCHANGE_SUBSCRIPTION_REPLY = 0x39;
+constexpr uint8_t PROPERTY_EXCHANGE_NOTIFY = 0x3F;
+
+constexpr uint32_t BROADCAST_MUID = 0x0FFFFFFF;
+constexpr uint32_t FUNCTION_BLOCK_MUID = 0x10000000;
+
+} // namespace constants
+
+} // namespace core
+} // namespace midi_ci

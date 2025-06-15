@@ -1,0 +1,57 @@
+set(MIDI_CI_SOURCES
+    midi-ci/core/MidiCIDevice.cpp
+    midi-ci/core/ClientConnection.cpp
+    midi-ci/core/MidiCIConstants.cpp
+    midi-ci/messages/Message.cpp
+    midi-ci/messages/Messenger.cpp
+    midi-ci/profiles/ProfileManager.cpp
+    midi-ci/properties/PropertyManager.cpp
+    midi-ci/transport/TransportLayer.cpp
+)
+
+set(MIDI_CI_HEADERS
+    ../include/midi-ci/core/MidiCIDevice.hpp
+    ../include/midi-ci/core/ClientConnection.hpp
+    ../include/midi-ci/core/MidiCIConstants.hpp
+    ../include/midi-ci/messages/Message.hpp
+    ../include/midi-ci/messages/Messenger.hpp
+    ../include/midi-ci/profiles/ProfileManager.hpp
+    ../include/midi-ci/properties/PropertyManager.hpp
+    ../include/midi-ci/transport/TransportLayer.hpp
+)
+
+add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})
+
+target_include_directories(midi-ci
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_features(midi-ci PUBLIC cxx_std_20)
+
+if(WIN32)
+    target_compile_definitions(midi-ci PRIVATE WIN32_LEAN_AND_MEAN)
+endif()
+
+set_target_properties(midi-ci PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    PUBLIC_HEADER "${MIDI_CI_HEADERS}"
+)
+
+install(TARGETS midi-ci
+    EXPORT midi-ci-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midi-ci
+)
+
+install(EXPORT midi-ci-targets
+    FILE midi-ci-targets.cmake
+    NAMESPACE midi-ci::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/midi-ci
+)

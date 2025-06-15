@@ -13,11 +13,8 @@
 #include <QSpinBox>
 #include <QFileDialog>
 #include <memory>
-
-namespace ci_tool {
-    class CIToolRepository;
-    class MidiDeviceManager;
-}
+#include "MidiDeviceManager.hpp"
+#include "CIToolRepository.hpp"
 
 class SettingsWidget : public QWidget
 {

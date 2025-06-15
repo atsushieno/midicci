@@ -5,6 +5,8 @@
 #include <functional>
 #include <cstdint>
 #include <string>
+#include "MidiCIProfileState.hpp"
+#include "ClientConnectionModel.hpp"
 
 namespace midi_ci {
 namespace core {
@@ -22,8 +24,6 @@ struct PropertyMetadata;
 namespace ci_tool {
 
 class CIDeviceManager;
-class ClientConnectionModel;
-class MidiCIProfileState;
 
 class CIDeviceModel {
 public:

@@ -67,7 +67,7 @@ void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<
 std::vector<std::string> MidiDeviceManager::get_available_input_devices() const {
     std::vector<std::string> devices;
     try {
-        libremidi::observer obs;
+        libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
         for(const libremidi::input_port& port : obs.get_input_ports()) {
             devices.push_back(port.port_name);
         }
@@ -80,7 +80,7 @@ std::vector<std::string> MidiDeviceManager::get_available_input_devices() const 
 std::vector<std::string> MidiDeviceManager::get_available_output_devices() const {
     std::vector<std::string> devices;
     try {
-        libremidi::observer obs;
+        libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
         for(const libremidi::output_port& port : obs.get_output_ports()) {
             devices.push_back(port.port_name);
         }

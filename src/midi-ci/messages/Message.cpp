@@ -1212,5 +1212,339 @@ std::vector<std::vector<uint8_t>> Message::serialize_multi() const {
     return {serialize()};
 }
 
+ProfileReply::ProfileReply(const Common& common, const std::vector<std::vector<uint8_t>>& enabled_profiles, 
+                          const std::vector<std::vector<uint8_t>>& disabled_profiles)
+    : SinglePacketMessage(MessageType::ProfileInquiryReply, common), enabled_profiles_(enabled_profiles), disabled_profiles_(disabled_profiles) {}
+
+std::vector<uint8_t> ProfileReply::serialize() const {
+    std::vector<uint8_t> result;
+    result.reserve(256);
+    
+    result.push_back(static_cast<uint8_t>(enabled_profiles_.size() & 0x7F));
+    for (const auto& profile : enabled_profiles_) {
+        result.insert(result.end(), profile.begin(), profile.end());
+    }
+    
+    result.push_back(static_cast<uint8_t>(disabled_profiles_.size() & 0x7F));
+    for (const auto& profile : disabled_profiles_) {
+        result.insert(result.end(), profile.begin(), profile.end());
+    }
+    
+    return result;
+}
+
+bool ProfileReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 2) return false;
+    
+    size_t pos = 0;
+    uint8_t enabled_count = data[pos++] & 0x7F;
+    
+    enabled_profiles_.clear();
+    for (int i = 0; i < enabled_count && pos + 5 <= data.size(); ++i) {
+        std::vector<uint8_t> profile(data.begin() + pos, data.begin() + pos + 5);
+        enabled_profiles_.push_back(profile);
+        pos += 5;
+    }
+    
+    if (pos >= data.size()) return false;
+    uint8_t disabled_count = data[pos++] & 0x7F;
+    
+    disabled_profiles_.clear();
+    for (int i = 0; i < disabled_count && pos + 5 <= data.size(); ++i) {
+        std::vector<uint8_t> profile(data.begin() + pos, data.begin() + pos + 5);
+        disabled_profiles_.push_back(profile);
+        pos += 5;
+    }
+    
+    return true;
+}
+
+std::string ProfileReply::get_label() const {
+    return "ProfileReply";
+}
+
+std::string ProfileReply::get_body_string() const {
+    return "enabled_profiles=" + std::to_string(enabled_profiles_.size()) + 
+           ", disabled_profiles=" + std::to_string(disabled_profiles_.size());
+}
+
+PropertyGetCapabilitiesReply::PropertyGetCapabilitiesReply(const Common& common, uint8_t max_simultaneous_requests)
+    : SinglePacketMessage(MessageType::PropertyGetCapabilitiesReply, common), max_simultaneous_requests_(max_simultaneous_requests) {}
+
+std::vector<uint8_t> PropertyGetCapabilitiesReply::serialize() const {
+    return {max_simultaneous_requests_};
+}
+
+bool PropertyGetCapabilitiesReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    max_simultaneous_requests_ = data[0];
+    return true;
+}
+
+std::string PropertyGetCapabilitiesReply::get_label() const {
+    return "PropertyGetCapabilitiesReply";
+}
+
+std::string PropertyGetCapabilitiesReply::get_body_string() const {
+    return "max_simultaneous_requests=" + std::to_string(max_simultaneous_requests_);
+}
+
+GetPropertyDataReply::GetPropertyDataReply(const Common& common, uint8_t request_id, 
+                                          const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
+    : MultiPacketMessage(MessageType::GetPropertyDataReply, common), request_id_(request_id), header_(header), body_(body) {}
+
+std::vector<uint8_t> GetPropertyDataReply::serialize() const {
+    std::vector<uint8_t> result;
+    result.push_back(request_id_);
+    result.insert(result.end(), header_.begin(), header_.end());
+    result.insert(result.end(), body_.begin(), body_.end());
+    return result;
+}
+
+std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize_multi() const {
+    return {serialize()};
+}
+
+bool GetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    
+    if (data.size() > 1) {
+        size_t header_end = data.size() / 2;
+        header_.assign(data.begin() + 1, data.begin() + header_end);
+        body_.assign(data.begin() + header_end, data.end());
+    }
+    
+    return true;
+}
+
+std::string GetPropertyDataReply::get_label() const {
+    return "GetPropertyDataReply";
+}
+
+std::string GetPropertyDataReply::get_body_string() const {
+    return "request_id=" + std::to_string(request_id_) + 
+           ", header_size=" + std::to_string(header_.size()) + 
+           ", body_size=" + std::to_string(body_.size());
+}
+
+SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header)
+    : MultiPacketMessage(MessageType::SetPropertyDataReply, common), request_id_(request_id), header_(header) {}
+
+std::vector<uint8_t> SetPropertyDataReply::serialize() const {
+    std::vector<uint8_t> result;
+    result.push_back(request_id_);
+    result.insert(result.end(), header_.begin(), header_.end());
+    return result;
+}
+
+std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize_multi() const {
+    return {serialize()};
+}
+
+bool SetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    
+    if (data.size() > 1) {
+        header_.assign(data.begin() + 1, data.end());
+    }
+    
+    return true;
+}
+
+std::string SetPropertyDataReply::get_label() const {
+    return "SetPropertyDataReply";
+}
+
+std::string SetPropertyDataReply::get_body_string() const {
+    return "request_id=" + std::to_string(request_id_) + 
+           ", header_size=" + std::to_string(header_.size());
+}
+
+SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t request_id, 
+                                              const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
+    : MultiPacketMessage(MessageType::SubscribePropertyReply, common), request_id_(request_id), header_(header), body_(body) {}
+
+std::vector<uint8_t> SubscribePropertyReply::serialize() const {
+    std::vector<uint8_t> result;
+    result.push_back(request_id_);
+    result.insert(result.end(), header_.begin(), header_.end());
+    result.insert(result.end(), body_.begin(), body_.end());
+    return result;
+}
+
+std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize_multi() const {
+    return {serialize()};
+}
+
+bool SubscribePropertyReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    
+    if (data.size() > 1) {
+        size_t header_end = data.size() / 2;
+        header_.assign(data.begin() + 1, data.begin() + header_end);
+        body_.assign(data.begin() + header_end, data.end());
+    }
+    
+    return true;
+}
+
+std::string SubscribePropertyReply::get_label() const {
+    return "SubscribePropertyReply";
+}
+
+std::string SubscribePropertyReply::get_body_string() const {
+    return "request_id=" + std::to_string(request_id_) + 
+           ", header_size=" + std::to_string(header_.size()) + 
+           ", body_size=" + std::to_string(body_.size());
+}
+
+ProfileAdded::ProfileAdded(const Common& common, const std::vector<uint8_t>& profile_id)
+    : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
+
+std::vector<uint8_t> ProfileAdded::serialize() const {
+    return profile_id_;
+}
+
+bool ProfileAdded::deserialize(const std::vector<uint8_t>& data) {
+    profile_id_ = data;
+    return true;
+}
+
+std::string ProfileAdded::get_label() const {
+    return "ProfileAdded";
+}
+
+std::string ProfileAdded::get_body_string() const {
+    return "profile_id_size=" + std::to_string(profile_id_.size());
+}
+
+ProfileRemoved::ProfileRemoved(const Common& common, const std::vector<uint8_t>& profile_id)
+    : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
+
+std::vector<uint8_t> ProfileRemoved::serialize() const {
+    return profile_id_;
+}
+
+bool ProfileRemoved::deserialize(const std::vector<uint8_t>& data) {
+    profile_id_ = data;
+    return true;
+}
+
+std::string ProfileRemoved::get_label() const {
+    return "ProfileRemoved";
+}
+
+std::string ProfileRemoved::get_body_string() const {
+    return "profile_id_size=" + std::to_string(profile_id_.size());
+}
+
+ProfileEnabled::ProfileEnabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+    : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
+
+std::vector<uint8_t> ProfileEnabled::serialize() const {
+    std::vector<uint8_t> result = profile_id_;
+    result.push_back(static_cast<uint8_t>(num_channels_ & 0xFF));
+    result.push_back(static_cast<uint8_t>((num_channels_ >> 8) & 0xFF));
+    return result;
+}
+
+bool ProfileEnabled::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 2) return false;
+    
+    profile_id_.assign(data.begin(), data.end() - 2);
+    num_channels_ = data[data.size() - 2] | (data[data.size() - 1] << 8);
+    return true;
+}
+
+std::string ProfileEnabled::get_label() const {
+    return "ProfileEnabled";
+}
+
+std::string ProfileEnabled::get_body_string() const {
+    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+           ", num_channels=" + std::to_string(num_channels_);
+}
+
+ProfileDisabled::ProfileDisabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+    : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
+
+std::vector<uint8_t> ProfileDisabled::serialize() const {
+    std::vector<uint8_t> result = profile_id_;
+    result.push_back(static_cast<uint8_t>(num_channels_ & 0xFF));
+    result.push_back(static_cast<uint8_t>((num_channels_ >> 8) & 0xFF));
+    return result;
+}
+
+bool ProfileDisabled::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 2) return false;
+    
+    profile_id_.assign(data.begin(), data.end() - 2);
+    num_channels_ = data[data.size() - 2] | (data[data.size() - 1] << 8);
+    return true;
+}
+
+std::string ProfileDisabled::get_label() const {
+    return "ProfileDisabled";
+}
+
+std::string ProfileDisabled::get_body_string() const {
+    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+           ", num_channels=" + std::to_string(num_channels_);
+}
+
+ProfileDetailsReply::ProfileDetailsReply(const Common& common, const std::vector<uint8_t>& profile_id, 
+                                        uint8_t target, const std::vector<uint8_t>& data)
+    : SinglePacketMessage(MessageType::ProfileInquiryReply, common), profile_id_(profile_id), target_(target), data_(data) {}
+
+std::vector<uint8_t> ProfileDetailsReply::serialize() const {
+    std::vector<uint8_t> result = profile_id_;
+    result.push_back(target_);
+    result.insert(result.end(), data_.begin(), data_.end());
+    return result;
+}
+
+bool ProfileDetailsReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 6) return false;
+    
+    profile_id_.assign(data.begin(), data.begin() + 5);
+    target_ = data[5];
+    data_.assign(data.begin() + 6, data.end());
+    return true;
+}
+
+std::string ProfileDetailsReply::get_label() const {
+    return "ProfileDetailsReply";
+}
+
+std::string ProfileDetailsReply::get_body_string() const {
+    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+           ", target=" + std::to_string(target_) + 
+           ", data_size=" + std::to_string(data_.size());
+}
+
+ProcessInquiryCapabilitiesReply::ProcessInquiryCapabilitiesReply(const Common& common, uint8_t supported_features)
+    : SinglePacketMessage(MessageType::ProcessInquiryCapabilitiesReply, common), supported_features_(supported_features) {}
+
+std::vector<uint8_t> ProcessInquiryCapabilitiesReply::serialize() const {
+    return {supported_features_};
+}
+
+bool ProcessInquiryCapabilitiesReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    supported_features_ = data[0];
+    return true;
+}
+
+std::string ProcessInquiryCapabilitiesReply::get_label() const {
+    return "ProcessInquiryCapabilitiesReply";
+}
+
+std::string ProcessInquiryCapabilitiesReply::get_body_string() const {
+    return "supported_features=" + std::to_string(supported_features_);
+}
+
 } // namespace messages
 } // namespace midi_ci

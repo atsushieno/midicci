@@ -128,7 +128,7 @@ void PropertyClientFacade::process_property_capabilities_reply(const messages::P
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        pimpl_->property_rules_->request_property_list(msg.common.group);
+        pimpl_->property_rules_->request_property_list(msg.get_common().group);
     }
 }
 
@@ -136,8 +136,8 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.header);
-        pimpl_->property_rules_->property_value_updated(property_id, msg.body);
+        auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+        pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
     }
 }
 
@@ -145,9 +145,9 @@ void PropertyClientFacade::process_set_data_reply(const messages::SetPropertyDat
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        auto status = pimpl_->property_rules_->get_header_field_integer(msg.header, "status");
+        auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
         if (status == 200) {
-            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.header);
+            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
             pimpl_->property_rules_->property_value_updated(property_id, {});
         }
     }
@@ -157,9 +157,9 @@ void PropertyClientFacade::process_subscribe_property(const messages::SubscribeP
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        auto command = pimpl_->property_rules_->get_header_field_string(msg.header, "command");
+        auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
         if (command == "notify") {
-            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.header);
+            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
             send_get_property_data(property_id);
         }
     }
@@ -169,9 +169,9 @@ void PropertyClientFacade::process_subscribe_property_reply(const messages::Subs
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        auto status = pimpl_->property_rules_->get_header_field_integer(msg.header, "status");
+        auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
         if (status == 200) {
-            auto subscription_id = pimpl_->property_rules_->get_header_field_string(msg.header, "subscribeId");
+            auto subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
         }
     }
 }

@@ -16,7 +16,6 @@ class CIToolRepository::Impl {
 public:
     Impl() : muid_(generate_muid()) {
         midi_device_manager_ = std::make_shared<MidiDeviceManager>();
-        ci_device_manager_ = std::make_shared<CIDeviceManager>(*this, midi_device_manager_);
     }
     
     uint32_t generate_muid() {
@@ -38,6 +37,7 @@ public:
 
 CIToolRepository::CIToolRepository() : pimpl_(std::make_unique<Impl>()) {
     pimpl_->parent_ = this;
+    pimpl_->ci_device_manager_ = std::make_shared<CIDeviceManager>(*this, pimpl_->midi_device_manager_);
 }
 
 CIToolRepository::~CIToolRepository() = default;
@@ -125,7 +125,7 @@ void CIToolRepository::save_config(const std::string& filename) {
             return;
         }
         
-        file << config.to_string();
+        file << config.serialize();
         file.close();
         
         log("Saved config to: " + filename, MessageDirection::Out);

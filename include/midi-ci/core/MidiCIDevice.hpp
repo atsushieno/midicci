@@ -6,14 +6,25 @@
 #include <functional>
 
 namespace midi_ci {
+
+namespace transport {
+class SysExTransport;
+}
+
+namespace messages {
+struct DeviceInfo;
+}
+
 namespace core {
 
 class ClientConnection;
 class Message;
+struct DeviceConfig;
 
 class MidiCIDevice {
 public:
     using MessageCallback = std::function<void(const Message&)>;
+    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     MidiCIDevice();
     ~MidiCIDevice();
@@ -37,7 +48,14 @@ public:
     std::shared_ptr<ClientConnection> create_connection(uint8_t destination_id);
     void remove_connection(uint8_t destination_id);
     
-    void process_incoming_message(const std::vector<uint8_t>& message_data);
+    void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
+    
+    uint32_t get_muid() const noexcept;
+    messages::DeviceInfo get_device_info() const;
+    DeviceConfig get_config() const;
+    
+    void set_sysex_sender(SysExSender sender);
+    void set_sysex_transport(std::unique_ptr<transport::SysExTransport> transport);
     
 private:
     class Impl;

@@ -13,12 +13,13 @@ class Message;
 class ClientConnection {
 public:
     using MessageCallback = std::function<void(const Message&)>;
+    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     explicit ClientConnection(uint8_t destination_id);
     ~ClientConnection();
     
     ClientConnection(const ClientConnection&) = delete;
-    ClientConnection& operator=(const ClientConnection&) = delete;
+    ClientConnection& operator=(ClientConnection&) = delete;
     
     ClientConnection(ClientConnection&&) = default;
     ClientConnection& operator=(ClientConnection&&) = default;
@@ -26,9 +27,10 @@ public:
     uint8_t get_destination_id() const noexcept;
     
     void set_message_callback(MessageCallback callback);
+    void set_sysex_sender(SysExSender sender);
     
     void send_message(const Message& message);
-    void process_incoming_message(const std::vector<uint8_t>& message_data);
+    void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
     
     bool is_connected() const noexcept;
     void disconnect();

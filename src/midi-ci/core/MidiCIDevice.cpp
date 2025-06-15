@@ -2,6 +2,7 @@
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/core/DeviceConfig.hpp"
 #include "midi-ci/messages/Message.hpp"
+#include "midi-ci/messages/Messenger.hpp"
 #include "midi-ci/transport/SysExTransport.hpp"
 #include <unordered_map>
 #include <mutex>
@@ -98,6 +99,14 @@ void MidiCIDevice::set_sysex_sender(SysExSender sender) {
 
 void MidiCIDevice::set_sysex_transport(std::unique_ptr<midi_ci::transport::SysExTransport> transport) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+}
+
+void MidiCIDevice::sendDiscovery() {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (pimpl_->initialized_) {
+        messages::Messenger messenger(*this);
+        messenger.send_discovery_inquiry(0, 0x0FFFFFFF);
+    }
 }
 
 } // namespace core

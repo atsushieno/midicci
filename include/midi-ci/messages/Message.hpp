@@ -69,6 +69,7 @@ public:
     MessageType get_type() const noexcept;
     uint32_t get_source_muid() const noexcept;
     uint32_t get_destination_muid() const noexcept;
+    const Common& get_common() const noexcept { return common_; }
     
     virtual std::vector<uint8_t> serialize() const = 0;
     virtual std::vector<std::vector<uint8_t>> serialize_multi() const;

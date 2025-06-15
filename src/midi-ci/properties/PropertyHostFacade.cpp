@@ -87,7 +87,7 @@ messages::GetPropertyDataReply PropertyHostFacade::process_get_property_data(con
         return pimpl_->property_rules_->get_property_data(msg);
     }
     
-    return messages::GetPropertyDataReply(msg.common, msg.request_id, {}, {});
+    return messages::GetPropertyDataReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
 messages::SetPropertyDataReply PropertyHostFacade::process_set_property_data(const messages::SetPropertyData& msg) {
@@ -97,7 +97,7 @@ messages::SetPropertyDataReply PropertyHostFacade::process_set_property_data(con
         return pimpl_->property_rules_->set_property_data(msg);
     }
     
-    return messages::SetPropertyDataReply(msg.common, msg.request_id, {});
+    return messages::SetPropertyDataReply(msg.get_common(), msg.get_request_id(), {});
 }
 
 messages::SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const messages::SubscribeProperty& msg) {
@@ -107,15 +107,12 @@ messages::SubscribePropertyReply PropertyHostFacade::process_subscribe_property(
         return pimpl_->property_rules_->subscribe_property(msg);
     }
     
-    return messages::SubscribePropertyReply(msg.common, msg.request_id, {}, {});
+    return messages::SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
 void PropertyHostFacade::notify_property_updated(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    for (auto& callback : pimpl_->property_rules_->property_catalog_updated_callbacks_) {
-        callback();
-    }
 }
 
 } // namespace properties

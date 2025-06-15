@@ -22,10 +22,16 @@ enum class MessageType : uint8_t {
     ProfileAddedReport = 0x26,
     ProfileRemovedReport = 0x27,
     PropertyGetCapabilities = 0x30,
+    PropertyGetCapabilitiesReply = 0x31,
     GetPropertyData = 0x34,
+    GetPropertyDataReply = 0x35,
     SetPropertyData = 0x35,
+    SetPropertyDataReply = 0x36,
     SubscribeProperty = 0x36,
+    SubscribePropertyReply = 0x37,
+    PropertyNotify = 0x38,
     ProcessInquiryCapabilities = 0x40,
+    ProcessInquiryCapabilitiesReply = 0x41,
     MidiMessageReportInquiry = 0x41
 };
 
@@ -353,6 +359,198 @@ public:
     bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
+};
+
+class ProfileReply : public SinglePacketMessage {
+public:
+    ProfileReply(const Common& common, const std::vector<std::vector<uint8_t>>& enabled_profiles, 
+                const std::vector<std::vector<uint8_t>>& disabled_profiles);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<std::vector<uint8_t>>& get_enabled_profiles() const { return enabled_profiles_; }
+    const std::vector<std::vector<uint8_t>>& get_disabled_profiles() const { return disabled_profiles_; }
+    
+private:
+    std::vector<std::vector<uint8_t>> enabled_profiles_;
+    std::vector<std::vector<uint8_t>> disabled_profiles_;
+};
+
+class PropertyGetCapabilitiesReply : public SinglePacketMessage {
+public:
+    PropertyGetCapabilitiesReply(const Common& common, uint8_t max_simultaneous_requests);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_max_simultaneous_requests() const { return max_simultaneous_requests_; }
+    
+private:
+    uint8_t max_simultaneous_requests_;
+};
+
+class GetPropertyDataReply : public MultiPacketMessage {
+public:
+    GetPropertyDataReply(const Common& common, uint8_t request_id, 
+                        const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    
+    std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    const std::vector<uint8_t>& get_body() const { return body_; }
+    
+private:
+    uint8_t request_id_;
+    std::vector<uint8_t> header_;
+    std::vector<uint8_t> body_;
+};
+
+class SetPropertyDataReply : public MultiPacketMessage {
+public:
+    SetPropertyDataReply(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header);
+    
+    std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    
+private:
+    uint8_t request_id_;
+    std::vector<uint8_t> header_;
+};
+
+class SubscribePropertyReply : public MultiPacketMessage {
+public:
+    SubscribePropertyReply(const Common& common, uint8_t request_id, 
+                          const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    
+    std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    const std::vector<uint8_t>& get_body() const { return body_; }
+    
+private:
+    uint8_t request_id_;
+    std::vector<uint8_t> header_;
+    std::vector<uint8_t> body_;
+};
+
+class ProfileAdded : public SinglePacketMessage {
+public:
+    ProfileAdded(const Common& common, const std::vector<uint8_t>& profile_id);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+};
+
+class ProfileRemoved : public SinglePacketMessage {
+public:
+    ProfileRemoved(const Common& common, const std::vector<uint8_t>& profile_id);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+};
+
+class ProfileEnabled : public SinglePacketMessage {
+public:
+    ProfileEnabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    uint16_t get_num_channels() const { return num_channels_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+    uint16_t num_channels_;
+};
+
+class ProfileDisabled : public SinglePacketMessage {
+public:
+    ProfileDisabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    uint16_t get_num_channels() const { return num_channels_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+    uint16_t num_channels_;
+};
+
+class ProfileDetailsReply : public SinglePacketMessage {
+public:
+    ProfileDetailsReply(const Common& common, const std::vector<uint8_t>& profile_id, 
+                       uint8_t target, const std::vector<uint8_t>& data);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    uint8_t get_target() const { return target_; }
+    const std::vector<uint8_t>& get_data() const { return data_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+    uint8_t target_;
+    std::vector<uint8_t> data_;
+};
+
+class ProcessInquiryCapabilitiesReply : public SinglePacketMessage {
+public:
+    ProcessInquiryCapabilitiesReply(const Common& common, uint8_t supported_features);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_supported_features() const { return supported_features_; }
+    
+private:
+    uint8_t supported_features_;
 };
 
 } // namespace messages

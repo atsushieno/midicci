@@ -6,6 +6,8 @@
 #include <string>
 #include <chrono>
 #include <mutex>
+#include "MidiDeviceManager.hpp"
+#include "CIDeviceManager.hpp"
 
 namespace midi_ci {
 namespace messages {
@@ -27,9 +29,6 @@ struct LogEntry {
     
     LogEntry(MessageDirection dir, const std::string& msg);
 };
-
-class MidiDeviceManager;
-class CIDeviceManager;
 
 class CIToolRepository {
 public:

@@ -32,16 +32,17 @@ public:
     uint8_t last_chunked_message_channel_;
     std::vector<uint8_t> chunked_messages_;
     
-    mutable std::mutex mutex_;
+    mutable std::mutex mutex_{};
 };
 
 CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
                            SysExSender ci_output_sender,
                            MidiMessageReportSender midi_message_report_sender)
-    : pimpl_(std::make_unique<Impl>(parent, muid, ci_output_sender, midi_message_report_sender)),
-      receiving_midi_message_reports(pimpl_->receiving_midi_message_reports_),
-      last_chunked_message_channel(pimpl_->last_chunked_message_channel_),
-      chunked_messages(pimpl_->chunked_messages_) {}
+    : pimpl_(std::make_unique<Impl>(parent, muid, ci_output_sender, midi_message_report_sender)) {
+    receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;
+    last_chunked_message_channel = pimpl_->last_chunked_message_channel_;
+    chunked_messages = pimpl_->chunked_messages_;
+}
 
 CIDeviceModel::~CIDeviceModel() = default;
 

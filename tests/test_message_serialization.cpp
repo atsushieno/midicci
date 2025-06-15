@@ -1,0 +1,104 @@
+#include <gtest/gtest.h>
+#include "midi-ci/messages/Message.hpp"
+#include "midi-ci/core/MidiCIConstants.hpp"
+
+using namespace midi_ci::messages;
+using namespace midi_ci::core::constants;
+
+class MessageSerializationTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        common = Common(0x12345678, 0x87654321, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 0);
+        device_info = DeviceInfo("TestMfg", "TestFamily", "TestModel", "1.0");
+    }
+    
+    Common common;
+    DeviceInfo device_info;
+};
+
+TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {
+    DiscoveryInquiry inquiry(common, device_info, 0x7F, 512, 0);
+    
+    auto data = inquiry.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[0], MIDI_CI_SYSEX_START);
+    EXPECT_EQ(data[1], MIDI_CI_UNIVERSAL_SYSEX_ID);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::DiscoveryInquiry));
+    EXPECT_EQ(data[data.size() - 1], MIDI_CI_SYSEX_END);
+}
+
+TEST_F(MessageSerializationTest, SetProfileOnSerialize) {
+    std::vector<uint8_t> profile_id = {0x7E, 0x00, 0x01, 0x02, 0x03};
+    SetProfileOn set_on(common, profile_id, 16);
+    
+    auto data = set_on.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::SetProfileOn));
+    
+    for (size_t i = 0; i < profile_id.size(); ++i) {
+        EXPECT_EQ(data[14 + i], profile_id[i]);
+    }
+}
+
+TEST_F(MessageSerializationTest, PropertyGetCapabilitiesSerialize) {
+    PropertyGetCapabilities capabilities(common, 4);
+    
+    auto data = capabilities.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::PropertyGetCapabilities));
+    EXPECT_EQ(data[14], 4);
+}
+
+TEST_F(MessageSerializationTest, GetPropertyDataSerialize) {
+    std::vector<uint8_t> header = {0x01, 0x02, 0x03, 0x04};
+    GetPropertyData get_data(common, 1, header);
+    
+    auto data = get_data.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::GetPropertyData));
+    EXPECT_EQ(data[14], 1);
+    
+    uint16_t header_size = data[15] | (data[16] << 7);
+    EXPECT_EQ(header_size, header.size());
+}
+
+TEST_F(MessageSerializationTest, EndpointInquirySerialize) {
+    EndpointInquiry inquiry(common, 0x01);
+    
+    auto data = inquiry.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::EndpointInquiry));
+    EXPECT_EQ(data[14], 0x01);
+}
+
+TEST_F(MessageSerializationTest, InvalidateMUIDSerialize) {
+    InvalidateMUID invalidate(common, 0xDEADBEEF);
+    
+    auto data = invalidate.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::InvalidateMUID));
+    
+    uint32_t target_muid = data[14] | (data[15] << 7) | (data[16] << 14) | (data[17] << 21);
+    EXPECT_EQ(target_muid, 0xDEADBEEF);
+}
+
+TEST_F(MessageSerializationTest, ProfileInquirySerialize) {
+    ProfileInquiry inquiry(common);
+    
+    auto data = inquiry.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::ProfileInquiry));
+    EXPECT_EQ(data[data.size() - 1], MIDI_CI_SYSEX_END);
+}
+
+TEST_F(MessageSerializationTest, MidiMessageReportInquirySerialize) {
+    MidiMessageReportInquiry inquiry(common, 0x01, 0x02, 0x03, 0x04);
+    
+    auto data = inquiry.serialize();
+    EXPECT_GT(data.size(), 0);
+    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::MidiMessageReportInquiry));
+    EXPECT_EQ(data[14], 0x01);
+    EXPECT_EQ(data[15], 0x02);
+    EXPECT_EQ(data[16], 0x03);
+    EXPECT_EQ(data[17], 0x04);
+}

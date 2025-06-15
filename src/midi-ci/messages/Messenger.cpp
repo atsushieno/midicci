@@ -19,11 +19,11 @@ public:
     
     core::MidiCIDevice& device_;
     std::vector<MessageCallback> callbacks_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
     
     void notify_callbacks(const Message& message) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& callback : callbacks_) {
             callback(message);
         }
@@ -246,12 +246,12 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
 }
 
 void Messenger::add_message_callback(MessageCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->callbacks_.push_back(callback);
 }
 
 void Messenger::remove_message_callback(MessageCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto it = std::find_if(pimpl_->callbacks_.begin(), pimpl_->callbacks_.end(),
         [&callback](const MessageCallback& cb) {
             return cb.target_type() == callback.target_type();

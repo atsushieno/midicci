@@ -10,7 +10,17 @@ namespace messages {
 class Message;
 }
 
+namespace profiles {
+class ProfileClientFacade;
+}
+
+namespace properties {
+class PropertyClientFacade;
+}
+
 namespace core {
+
+class MidiCIDevice;
 
 class ClientConnection {
 public:
@@ -36,6 +46,12 @@ public:
     
     bool is_connected() const noexcept;
     void disconnect();
+    
+    profiles::ProfileClientFacade& get_profile_client_facade();
+    const profiles::ProfileClientFacade& get_profile_client_facade() const;
+    
+    properties::PropertyClientFacade& get_property_client_facade();
+    const properties::PropertyClientFacade& get_property_client_facade() const;
     
 private:
     class Impl;

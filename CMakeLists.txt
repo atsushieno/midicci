@@ -51,7 +51,8 @@ endif()
 #     add_subdirectory(examples)
 # endif()
 
-add_subdirectory(tools)
+# Temporarily disable tools to avoid Qt dependency issues
+# add_subdirectory(tools)
 
 set(CPACK_PACKAGE_NAME "midi-ci-cpp")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

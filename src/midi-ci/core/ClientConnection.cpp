@@ -1,6 +1,9 @@
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/core/MidiCIDevice.hpp"
+#include "midi-ci/profiles/ProfileClientFacade.hpp"
+#include "midi-ci/properties/PropertyClientFacade.hpp"
 #include <mutex>
 
 namespace midi_ci {
@@ -8,38 +11,42 @@ namespace core {
 
 class ClientConnection::Impl {
 public:
-    explicit Impl(uint8_t destination_id) 
-        : destination_id_(destination_id), connected_(true) {}
+    explicit Impl(uint8_t destination_id, MidiCIDevice& device, ClientConnection& conn) 
+        : destination_id_(destination_id), connected_(true),
+          profile_client_facade_(std::make_unique<profiles::ProfileClientFacade>(device, conn)),
+          property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)) {}
     
     uint8_t destination_id_;
     bool connected_;
     MessageCallback message_callback_;
     SysExSender sysex_sender_;
-    mutable std::mutex mutex_;
+    std::unique_ptr<profiles::ProfileClientFacade> profile_client_facade_;
+    std::unique_ptr<properties::PropertyClientFacade> property_client_facade_;
+    mutable std::recursive_mutex mutex_;
 };
 
 ClientConnection::ClientConnection(uint8_t destination_id) 
-    : pimpl_(std::make_unique<Impl>(destination_id)) {}
+    : pimpl_(std::make_unique<Impl>(destination_id, *static_cast<MidiCIDevice*>(nullptr), *this)) {}
 
 ClientConnection::~ClientConnection() = default;
 
 uint8_t ClientConnection::get_destination_id() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->destination_id_;
 }
 
 void ClientConnection::set_message_callback(MessageCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->message_callback_ = std::move(callback);
 }
 
 void ClientConnection::set_sysex_sender(SysExSender sender) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->sysex_sender_ = std::move(sender);
 }
 
 void ClientConnection::send_message(const midi_ci::messages::Message& message) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->connected_ && pimpl_->sysex_sender_) {
         auto packets = message.serialize_multi();
         for (const auto& packet : packets) {
@@ -54,7 +61,7 @@ void ClientConnection::send_message(const midi_ci::messages::Message& message) {
 }
 
 void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->message_callback_ && sysex_data.size() >= 5) {
         if (sysex_data[0] == 0xF0 && 
             sysex_data[1] == 0x7E &&
@@ -90,13 +97,33 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
 }
 
 bool ClientConnection::is_connected() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->connected_;
 }
 
 void ClientConnection::disconnect() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->connected_ = false;
+}
+
+profiles::ProfileClientFacade& ClientConnection::get_profile_client_facade() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return *pimpl_->profile_client_facade_;
+}
+
+const profiles::ProfileClientFacade& ClientConnection::get_profile_client_facade() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return *pimpl_->profile_client_facade_;
+}
+
+properties::PropertyClientFacade& ClientConnection::get_property_client_facade() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return *pimpl_->property_client_facade_;
+}
+
+const properties::PropertyClientFacade& ClientConnection::get_property_client_facade() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return *pimpl_->property_client_facade_;
 }
 
 } // namespace core

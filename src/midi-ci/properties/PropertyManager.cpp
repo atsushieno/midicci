@@ -22,7 +22,7 @@ public:
     std::vector<PropertyUpdateCallback> update_callbacks_;
     std::vector<SubscriptionCallback> subscription_callbacks_;
     uint8_t max_simultaneous_requests_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
     
     Impl() : max_simultaneous_requests_(1) {}
 };
@@ -32,7 +32,7 @@ PropertyManager::PropertyManager() : pimpl_(std::make_unique<Impl>()) {}
 PropertyManager::~PropertyManager() = default;
 
 void PropertyManager::add_property(const PropertyMetadata& property) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -47,7 +47,7 @@ void PropertyManager::add_property(const PropertyMetadata& property) {
 }
 
 void PropertyManager::remove_property(const std::string& property_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -66,7 +66,7 @@ void PropertyManager::remove_property(const std::string& property_id) {
 }
 
 void PropertyManager::update_property_metadata(const std::string& old_property_id, const PropertyMetadata& property) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -80,7 +80,7 @@ void PropertyManager::update_property_metadata(const std::string& old_property_i
 
 void PropertyManager::set_property_value(const std::string& property_id, const std::string& resource_id,
                                         const std::vector<uint8_t>& data, bool is_partial) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -103,12 +103,12 @@ void PropertyManager::set_property_value(const std::string& property_id, const s
 }
 
 std::vector<PropertyMetadata> PropertyManager::get_metadata_list() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->properties_;
 }
 
 PropertyMetadata* PropertyManager::find_property(const std::string& property_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -119,7 +119,7 @@ PropertyMetadata* PropertyManager::find_property(const std::string& property_id)
 }
 
 const PropertyMetadata* PropertyManager::find_property(const std::string& property_id) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -130,7 +130,7 @@ const PropertyMetadata* PropertyManager::find_property(const std::string& proper
 }
 
 std::vector<uint8_t> PropertyManager::get_property_value(const std::string& property_id, const std::string& resource_id) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
         [&](const PropertyMetadata& p) {
@@ -141,7 +141,7 @@ std::vector<uint8_t> PropertyManager::get_property_value(const std::string& prop
 }
 
 void PropertyManager::add_subscription(const SubscriptionEntry& subscription) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
         [&](const SubscriptionEntry& s) {
@@ -158,7 +158,7 @@ void PropertyManager::add_subscription(const SubscriptionEntry& subscription) {
 }
 
 void PropertyManager::remove_subscription(uint32_t muid, const std::string& property_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
         [&](const SubscriptionEntry& s) {
@@ -171,7 +171,7 @@ void PropertyManager::remove_subscription(uint32_t muid, const std::string& prop
 }
 
 void PropertyManager::remove_all_subscriptions(uint32_t muid) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
         [&](const SubscriptionEntry& s) {
@@ -182,12 +182,12 @@ void PropertyManager::remove_all_subscriptions(uint32_t muid) {
 }
 
 std::vector<SubscriptionEntry> PropertyManager::get_subscriptions() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->subscriptions_;
 }
 
 std::vector<SubscriptionEntry> PropertyManager::get_subscriptions_for_property(const std::string& property_id) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::vector<SubscriptionEntry> property_subscriptions;
     std::copy_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
@@ -208,18 +208,18 @@ void PropertyManager::notify_property_update(const std::string& property_id, con
 }
 
 void PropertyManager::set_property_update_callback(PropertyUpdateCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->update_callbacks_.clear();
     pimpl_->update_callbacks_.push_back(callback);
 }
 
 void PropertyManager::add_subscription_callback(SubscriptionCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->subscription_callbacks_.push_back(callback);
 }
 
 void PropertyManager::remove_subscription_callback(SubscriptionCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto it = std::find_if(pimpl_->subscription_callbacks_.begin(), pimpl_->subscription_callbacks_.end(),
         [&callback](const SubscriptionCallback& cb) {
             return cb.target_type() == callback.target_type();
@@ -230,12 +230,12 @@ void PropertyManager::remove_subscription_callback(SubscriptionCallback callback
 }
 
 uint8_t PropertyManager::get_max_simultaneous_requests() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->max_simultaneous_requests_;
 }
 
 void PropertyManager::set_max_simultaneous_requests(uint8_t max_requests) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->max_simultaneous_requests_ = max_requests;
 }
 

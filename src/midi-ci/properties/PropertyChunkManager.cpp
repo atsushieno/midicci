@@ -20,7 +20,7 @@ struct Chunk {
 class PropertyChunkManager::Impl {
 public:
     std::vector<Chunk> chunks_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 };
 
 PropertyChunkManager::PropertyChunkManager() : pimpl_(std::make_unique<Impl>()) {}
@@ -29,7 +29,7 @@ PropertyChunkManager::~PropertyChunkManager() = default;
 
 void PropertyChunkManager::add_pending_chunk(uint64_t timestamp, uint32_t source_muid, uint8_t request_id,
                                             const std::vector<uint8_t>& header, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
         [&](const Chunk& chunk) {
@@ -45,7 +45,7 @@ void PropertyChunkManager::add_pending_chunk(uint64_t timestamp, uint32_t source
 
 std::pair<std::vector<uint8_t>, std::vector<uint8_t>> 
 PropertyChunkManager::finish_pending_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
         [&](const Chunk& chunk) {
@@ -64,7 +64,7 @@ PropertyChunkManager::finish_pending_chunk(uint32_t source_muid, uint8_t request
 }
 
 bool PropertyChunkManager::has_pending_chunk(uint32_t source_muid, uint8_t request_id) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
         [&](const Chunk& chunk) {
@@ -75,7 +75,7 @@ bool PropertyChunkManager::has_pending_chunk(uint32_t source_muid, uint8_t reque
 }
 
 void PropertyChunkManager::cleanup_expired_chunks(uint64_t current_timestamp, uint64_t timeout_seconds) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::remove_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
         [&](const Chunk& chunk) {
@@ -86,7 +86,7 @@ void PropertyChunkManager::cleanup_expired_chunks(uint64_t current_timestamp, ui
 }
 
 void PropertyChunkManager::clear_all_chunks() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->chunks_.clear();
 }
 

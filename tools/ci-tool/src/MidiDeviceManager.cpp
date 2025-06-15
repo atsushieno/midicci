@@ -1,4 +1,5 @@
 #include "MidiDeviceManager.hpp"
+#include <libremidi/libremidi.hpp>
 #include <mutex>
 #include <iostream>
 
@@ -64,11 +65,29 @@ void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<
 }
 
 std::vector<std::string> MidiDeviceManager::get_available_input_devices() const {
-    return {"Virtual Input 1", "Virtual Input 2"};
+    std::vector<std::string> devices;
+    try {
+        libremidi::observer obs;
+        for(const libremidi::input_port& port : obs.get_input_ports()) {
+            devices.push_back(port.port_name);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error enumerating input devices: " << e.what() << std::endl;
+    }
+    return devices;
 }
 
 std::vector<std::string> MidiDeviceManager::get_available_output_devices() const {
-    return {"Virtual Output 1", "Virtual Output 2"};
+    std::vector<std::string> devices;
+    try {
+        libremidi::observer obs;
+        for(const libremidi::output_port& port : obs.get_output_ports()) {
+            devices.push_back(port.port_name);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error enumerating output devices: " << e.what() << std::endl;
+    }
+    return devices;
 }
 
 bool MidiDeviceManager::set_input_device(const std::string& device_id) {

@@ -39,7 +39,7 @@ public:
     std::vector<ProfileDetails> profile_details_;
     std::vector<ProfileCallback> change_callbacks_;
     ProfileCallback set_callback_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 };
 
 ProfileManager::ProfileManager() : pimpl_(std::make_unique<Impl>()) {}
@@ -47,7 +47,7 @@ ProfileManager::ProfileManager() : pimpl_(std::make_unique<Impl>()) {}
 ProfileManager::~ProfileManager() = default;
 
 void ProfileManager::add_profile(const Profile& profile) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find(pimpl_->profiles_.begin(), pimpl_->profiles_.end(), profile);
     if (it == pimpl_->profiles_.end()) {
@@ -60,7 +60,7 @@ void ProfileManager::add_profile(const Profile& profile) {
 }
 
 void ProfileManager::remove_profile(uint8_t group, uint8_t address, const ProfileId& profile_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -78,7 +78,7 @@ void ProfileManager::remove_profile(uint8_t group, uint8_t address, const Profil
 }
 
 void ProfileManager::enable_profile(uint8_t group, uint8_t address, const ProfileId& profile_id, uint16_t num_channels) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -100,7 +100,7 @@ void ProfileManager::enable_profile(uint8_t group, uint8_t address, const Profil
 }
 
 void ProfileManager::disable_profile(uint8_t group, uint8_t address, const ProfileId& profile_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -118,7 +118,7 @@ void ProfileManager::disable_profile(uint8_t group, uint8_t address, const Profi
 
 void ProfileManager::update_profile_target(const ProfileId& profile_id, uint8_t old_address, uint8_t new_address,
                                           bool enabled, uint16_t num_channels_requested) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -137,12 +137,12 @@ void ProfileManager::update_profile_target(const ProfileId& profile_id, uint8_t 
 }
 
 std::vector<Profile> ProfileManager::get_profiles() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->profiles_;
 }
 
 std::vector<Profile> ProfileManager::get_enabled_profiles() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::vector<Profile> enabled_profiles;
     std::copy_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
@@ -153,7 +153,7 @@ std::vector<Profile> ProfileManager::get_enabled_profiles() const {
 }
 
 std::vector<Profile> ProfileManager::get_disabled_profiles() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::vector<Profile> disabled_profiles;
     std::copy_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
@@ -164,7 +164,7 @@ std::vector<Profile> ProfileManager::get_disabled_profiles() const {
 }
 
 Profile* ProfileManager::find_profile(uint8_t group, uint8_t address, const ProfileId& profile_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -175,7 +175,7 @@ Profile* ProfileManager::find_profile(uint8_t group, uint8_t address, const Prof
 }
 
 const Profile* ProfileManager::find_profile(uint8_t group, uint8_t address, const ProfileId& profile_id) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [&](const Profile& p) {
@@ -186,7 +186,7 @@ const Profile* ProfileManager::find_profile(uint8_t group, uint8_t address, cons
 }
 
 void ProfileManager::add_profile_details(const ProfileDetails& details) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profile_details_.begin(), pimpl_->profile_details_.end(),
         [&](const ProfileDetails& pd) {
@@ -201,7 +201,7 @@ void ProfileManager::add_profile_details(const ProfileDetails& details) {
 }
 
 void ProfileManager::remove_profile_details(const ProfileId& profile_id, uint8_t target) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profile_details_.begin(), pimpl_->profile_details_.end(),
         [&](const ProfileDetails& pd) {
@@ -214,7 +214,7 @@ void ProfileManager::remove_profile_details(const ProfileId& profile_id, uint8_t
 }
 
 std::vector<uint8_t> ProfileManager::get_profile_details(const ProfileId& profile_id, uint8_t target) const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profile_details_.begin(), pimpl_->profile_details_.end(),
         [&](const ProfileDetails& pd) {
@@ -225,17 +225,17 @@ std::vector<uint8_t> ProfileManager::get_profile_details(const ProfileId& profil
 }
 
 void ProfileManager::set_profile_set_callback(ProfileCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->set_callback_ = callback;
 }
 
 void ProfileManager::add_profile_change_callback(ProfileCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->change_callbacks_.push_back(callback);
 }
 
 void ProfileManager::remove_profile_change_callback(ProfileCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto it = std::find_if(pimpl_->change_callbacks_.begin(), pimpl_->change_callbacks_.end(),
         [&callback](const ProfileCallback& cb) {
             return cb.target_type() == callback.target_type();

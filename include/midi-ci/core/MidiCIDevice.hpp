@@ -15,6 +15,16 @@ namespace messages {
 struct DeviceInfo;
 }
 
+namespace profiles {
+class ProfileHostFacade;
+class ProfileClientFacade;
+}
+
+namespace properties {
+class PropertyHostFacade;
+class PropertyClientFacade;
+}
+
 namespace core {
 
 class ClientConnection;
@@ -58,6 +68,12 @@ public:
     void set_sysex_transport(std::unique_ptr<transport::SysExTransport> transport);
     
     void sendDiscovery();
+    
+    profiles::ProfileHostFacade& get_profile_host_facade();
+    const profiles::ProfileHostFacade& get_profile_host_facade() const;
+    
+    properties::PropertyHostFacade& get_property_host_facade();
+    const properties::PropertyHostFacade& get_property_host_facade() const;
     
 private:
     class Impl;

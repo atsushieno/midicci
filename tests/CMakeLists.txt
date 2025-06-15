@@ -3,6 +3,9 @@ find_package(Threads REQUIRED)
 set(TEST_SOURCES
     test_main.cpp
     test_midi_ci_device.cpp
+    test_sysex_transport_agnostic.cpp
+    test_property_json_serialization.cpp
+    test_json_serialization.cpp
 )
 
 add_executable(midi-ci-tests ${TEST_SOURCES})

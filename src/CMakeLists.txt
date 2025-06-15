@@ -7,17 +7,21 @@ set(MIDI_CI_SOURCES
     midi-ci/profiles/ProfileManager.cpp
     midi-ci/properties/PropertyManager.cpp
     midi-ci/properties/PropertyChunkManager.cpp
+    midi-ci/json/Json.cpp
 )
 
 set(MIDI_CI_HEADERS
     ../include/midi-ci/core/MidiCIDevice.hpp
     ../include/midi-ci/core/ClientConnection.hpp
     ../include/midi-ci/core/MidiCIConstants.hpp
+    ../include/midi-ci/core/DeviceConfig.hpp
     ../include/midi-ci/messages/Message.hpp
     ../include/midi-ci/messages/Messenger.hpp
     ../include/midi-ci/profiles/ProfileManager.hpp
     ../include/midi-ci/properties/PropertyManager.hpp
     ../include/midi-ci/properties/PropertyChunkManager.hpp
+    ../include/midi-ci/transport/SysExTransport.hpp
+    ../include/midi-ci/json/Json.hpp
 )
 
 add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})

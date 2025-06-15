@@ -2,6 +2,7 @@
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/core/DeviceConfig.hpp"
 #include <mutex>
 #include <vector>
 #include <functional>

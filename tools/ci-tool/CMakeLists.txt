@@ -32,6 +32,7 @@ add_library(midi-ci-tool-lib STATIC ${CI_TOOL_LIB_SOURCES})
 target_link_libraries(midi-ci-tool-lib 
     PUBLIC 
         midi-ci
+        libremidi
 )
 
 add_executable(midi-ci-tool ${CI_TOOL_SOURCES})

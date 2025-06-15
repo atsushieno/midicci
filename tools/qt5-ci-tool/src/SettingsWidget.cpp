@@ -153,17 +153,23 @@ void SettingsWidget::setupConnections()
 
 void SettingsWidget::onInputDeviceChanged(int index)
 {
-    if (index >= 0 && m_repository) {
+    if (index > 0 && m_repository) {
         QString deviceName = m_inputDeviceCombo->itemText(index);
-        m_repository->log(QString("Selected input device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+        auto midiManager = m_repository->get_midi_device_manager();
+        if (midiManager && midiManager->set_input_device(deviceName.toStdString())) {
+            m_repository->log(QString("Selected input device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+        }
     }
 }
 
 void SettingsWidget::onOutputDeviceChanged(int index)
 {
-    if (index >= 0 && m_repository) {
+    if (index > 0 && m_repository) {
         QString deviceName = m_outputDeviceCombo->itemText(index);
-        m_repository->log(QString("Selected output device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+        auto midiManager = m_repository->get_midi_device_manager();
+        if (midiManager && midiManager->set_output_device(deviceName.toStdString())) {
+            m_repository->log(QString("Selected output device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+        }
     }
 }
 
@@ -219,14 +225,22 @@ void SettingsWidget::updateDeviceLists()
     m_outputDeviceCombo->clear();
     
     m_inputDeviceCombo->addItem("-- Select MIDI Input --");
-    m_inputDeviceCombo->addItem("Virtual MIDI Input");
-    m_inputDeviceCombo->addItem("System MIDI Input 1");
-    m_inputDeviceCombo->addItem("System MIDI Input 2");
-    
     m_outputDeviceCombo->addItem("-- Select MIDI Output --");
-    m_outputDeviceCombo->addItem("Virtual MIDI Output");
-    m_outputDeviceCombo->addItem("System MIDI Output 1");
-    m_outputDeviceCombo->addItem("System MIDI Output 2");
+    
+    if (m_repository) {
+        auto midiManager = m_repository->get_midi_device_manager();
+        if (midiManager) {
+            auto inputDevices = midiManager->get_available_input_devices();
+            for (const auto& device : inputDevices) {
+                m_inputDeviceCombo->addItem(QString::fromStdString(device));
+            }
+            
+            auto outputDevices = midiManager->get_available_output_devices();
+            for (const auto& device : outputDevices) {
+                m_outputDeviceCombo->addItem(QString::fromStdString(device));
+            }
+        }
+    }
 }
 
 void SettingsWidget::updateDeviceConfiguration()

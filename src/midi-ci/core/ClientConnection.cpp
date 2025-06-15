@@ -38,7 +38,7 @@ void ClientConnection::set_sysex_sender(SysExSender sender) {
     pimpl_->sysex_sender_ = std::move(sender);
 }
 
-void ClientConnection::send_message(const Message& message) {
+void ClientConnection::send_message(const midi_ci::messages::Message& message) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (pimpl_->connected_ && pimpl_->sysex_sender_) {
         auto packets = message.serialize_multi();
@@ -64,18 +64,18 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
             std::vector<uint8_t> midi_ci_data(sysex_data.begin() + 1, sysex_data.end() - 1);
             
             if (midi_ci_data.size() >= 6) {
-                MessageType msg_type = static_cast<MessageType>(midi_ci_data[4]);
+                midi_ci::messages::MessageType msg_type = static_cast<midi_ci::messages::MessageType>(midi_ci_data[4]);
                 
                 switch (msg_type) {
-                    case MessageType::GetPropertyData: {
-                        GetPropertyData msg(Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{});
+                    case midi_ci::messages::MessageType::GetPropertyData: {
+                        midi_ci::messages::GetPropertyData msg(midi_ci::messages::Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{});
                         if (msg.deserialize(midi_ci_data)) {
                             pimpl_->message_callback_(msg);
                         }
                         break;
                     }
-                    case MessageType::SetPropertyData: {
-                        SetPropertyData msg(Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{}, std::vector<uint8_t>{});
+                    case midi_ci::messages::MessageType::SetPropertyData: {
+                        midi_ci::messages::SetPropertyData msg(midi_ci::messages::Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{}, std::vector<uint8_t>{});
                         if (msg.deserialize(midi_ci_data)) {
                             pimpl_->message_callback_(msg);
                         }

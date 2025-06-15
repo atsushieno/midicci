@@ -1,6 +1,8 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/core/DeviceConfig.hpp"
 #include "midi-ci/messages/Message.hpp"
+#include "midi-ci/transport/SysExTransport.hpp"
 #include <unordered_map>
 #include <mutex>
 
@@ -69,10 +71,33 @@ void MidiCIDevice::remove_connection(uint8_t destination_id) {
     pimpl_->connections_.erase(destination_id);
 }
 
-void MidiCIDevice::process_incoming_message(const std::vector<uint8_t>& message_data) {
+void MidiCIDevice::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    if (pimpl_->message_callback_ && !message_data.empty()) {
+    if (pimpl_->message_callback_ && !sysex_data.empty()) {
     }
+}
+
+uint32_t MidiCIDevice::get_muid() const noexcept {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return 0x12345678;
+}
+
+midi_ci::messages::DeviceInfo MidiCIDevice::get_device_info() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return midi_ci::messages::DeviceInfo("Generic MIDI-CI Device", "Default Family", "Default Model", "1.0.0");
+}
+
+midi_ci::core::DeviceConfig MidiCIDevice::get_config() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return {};
+}
+
+void MidiCIDevice::set_sysex_sender(SysExSender sender) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+}
+
+void MidiCIDevice::set_sysex_transport(std::unique_ptr<midi_ci::transport::SysExTransport> transport) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
 }
 
 } // namespace core

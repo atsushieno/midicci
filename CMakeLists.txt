@@ -30,9 +30,10 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+# Examples directory not yet implemented
+# if(BUILD_EXAMPLES)
+#     add_subdirectory(examples)
+# endif()
 
 add_subdirectory(tools)
 

@@ -1,5 +1,6 @@
 #include "SettingsWidget.hpp"
 #include "CIToolRepository.hpp"
+#include "AppModel.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>

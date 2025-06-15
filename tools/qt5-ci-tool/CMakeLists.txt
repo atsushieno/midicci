@@ -32,6 +32,7 @@ set(SOURCES
     src/ResponderWidget.cpp
     src/LogWidget.cpp
     src/SettingsWidget.cpp
+    src/AppModel.cpp
 )
 
 set(HEADERS
@@ -40,6 +41,7 @@ set(HEADERS
     include/ResponderWidget.hpp
     include/LogWidget.hpp
     include/SettingsWidget.hpp
+    include/AppModel.hpp
 )
 
 add_executable(qt5-midi-ci-gui ${SOURCES} ${HEADERS})

@@ -1,5 +1,6 @@
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/json/Json.hpp"
 #include <sstream>
 #include <iomanip>
 
@@ -268,12 +269,253 @@ std::string PropertyGetCapabilities::get_body_string() const {
 GetPropertyData::GetPropertyData(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header)
     : MultiPacketMessage(MessageType::GetPropertyData, common), request_id_(request_id), header_(header) {}
 
+GetPropertyData::GetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
+                                const std::string& res_id, uint32_t offset, uint32_t limit)
+    : MultiPacketMessage(MessageType::GetPropertyData, common), request_id_(request_id) {
+    header_ = create_json_header(resource_identifier, res_id, "", false, offset, limit);
+
+std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& resource_identifier, 
+                                                        const std::string& res_id, 
+                                                        const std::string& mutual_encoding,
+                                                        bool set_partial,
+                                                        int offset, 
+                                                        int limit) const {
+    using namespace midi_ci::json;
+    
+    JsonValue header_json = JsonValue::empty_object();
+    header_json["resource"] = JsonValue(resource_identifier);
+    
+    if (!res_id.empty()) {
+        header_json["resId"] = JsonValue(res_id);
+    }
+    if (!mutual_encoding.empty()) {
+        header_json["mutualEncoding"] = JsonValue(mutual_encoding);
+    }
+    if (set_partial) {
+        header_json["setPartial"] = JsonValue(set_partial);
+    }
+    if (offset > 0) {
+        header_json["offset"] = JsonValue(offset);
+    }
+    if (limit > 0) {
+        header_json["limit"] = JsonValue(limit);
+    }
+    
+    return header_json.get_serialized_bytes();
+}
+
+}
+
+
+
+std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
+    const uint32_t max_chunk_size = 256;
+    
+    if (header_.size() <= max_chunk_size) {
+        return {serialize()};
+    }
+    
+    std::vector<std::vector<uint8_t>> packets;
+    size_t total_chunks = (header_.size() + max_chunk_size - 1) / max_chunk_size;
+    
+    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
+        size_t start_pos = chunk_idx * max_chunk_size;
+        size_t chunk_size = std::min(max_chunk_size, header_.size() - start_pos);
+        
+        std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
+        
+        using namespace midi_ci::core::constants;
+        std::vector<uint8_t> packet;
+        packet.reserve(32 + chunk_data.size());
+        
+        packet.push_back(MIDI_CI_SYSEX_START);
+        packet.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+        packet.push_back(0x7F);
+        packet.push_back(MIDI_CI_SUB_ID_1);
+        packet.push_back(static_cast<uint8_t>(type_));
+        packet.push_back(MIDI_CI_VERSION_1_2);
+        
+        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        
+        packet.push_back(request_id_);
+        
+        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
+        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
+        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
+        
+        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
+        
+        packet.push_back(MIDI_CI_SYSEX_END);
+        
+        packets.push_back(std::move(packet));
+    }
+    
+    return packets;
+}
+
+std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& resource_identifier, const std::string& res_id, 
+                                                       const std::string& mutual_encoding, bool set_partial, 
+                                                       int offset, int limit) const {
+    using namespace midi_ci::json;
+    
+    JsonValue header_json = JsonValue::empty_object();
+    header_json["resource"] = JsonValue(resource_identifier);
+    
+    if (!res_id.empty()) {
+        header_json["resId"] = JsonValue(res_id);
+    }
+    if (!mutual_encoding.empty()) {
+        header_json["mutualEncoding"] = JsonValue(mutual_encoding);
+    }
+    if (set_partial) {
+        header_json["setPartial"] = JsonValue(true);
+    }
+    if (offset > 0) {
+        header_json["offset"] = JsonValue(offset);
+
+std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
+    const uint32_t max_chunk_size = 256;
+    
+    if (body_.size() <= max_chunk_size) {
+        return {serialize()};
+    }
+    
+    std::vector<std::vector<uint8_t>> packets;
+    size_t total_chunks = (body_.size() + max_chunk_size - 1) / max_chunk_size;
+    
+    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
+        size_t start_pos = chunk_idx * max_chunk_size;
+        size_t chunk_size = std::min(max_chunk_size, body_.size() - start_pos);
+        
+        std::vector<uint8_t> chunk_data(body_.begin() + start_pos, body_.begin() + start_pos + chunk_size);
+        
+        using namespace midi_ci::core::constants;
+        std::vector<uint8_t> packet;
+        packet.reserve(32 + header_.size() + chunk_data.size());
+        
+        packet.push_back(0x7E);
+        packet.push_back(0x7F);
+        packet.push_back(0x0D);
+        packet.push_back(static_cast<uint8_t>(type_));
+        packet.push_back(0x02);
+        
+        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        
+        packet.push_back(request_id_);
+        
+        packet.push_back(static_cast<uint8_t>(header_.size() & 0x7F));
+        packet.push_back(static_cast<uint8_t>((header_.size() >> 7) & 0x7F));
+        
+        packet.insert(packet.end(), header_.begin(), header_.end());
+        
+        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
+        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
+        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
+        
+        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
+        
+        packets.push_back(std::move(packet));
+    }
+    
+    return packets;
+}
+
+std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& resource_identifier, const std::string& res_id, 
+                                                        const std::string& mutual_encoding, bool set_partial, 
+                                                        int offset, int limit) const {
+    using namespace midi_ci::json;
+    
+    JsonValue header_json = JsonValue::empty_object();
+    header_json["resource"] = JsonValue(resource_identifier);
+    
+    if (!res_id.empty()) {
+        header_json["resId"] = JsonValue(res_id);
+    }
+    if (!mutual_encoding.empty()) {
+        header_json["mutualEncoding"] = JsonValue(mutual_encoding);
+    }
+    if (set_partial) {
+        header_json["setPartial"] = JsonValue(true);
+    }
+    if (offset > 0) {
+        header_json["offset"] = JsonValue(offset);
+    }
+    if (limit > 0) {
+        header_json["limit"] = JsonValue(limit);
+    }
+    
+    return header_json.get_serialized_bytes();
+}
+
+    }
+    if (limit > 0) {
+        header_json["limit"] = JsonValue(limit);
+    }
+    
+    return header_json.get_serialized_bytes();
+}
+
 std::vector<uint8_t> GetPropertyData::serialize() const {
     using namespace midi_ci::core::constants;
     
     std::vector<uint8_t> data;
     data.reserve(32 + header_.size());
     
+
+std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& resource_identifier, 
+                                                        const std::string& res_id, 
+                                                        const std::string& mutual_encoding,
+                                                        bool set_partial,
+                                                        int offset, 
+                                                        int limit) const {
+    using namespace midi_ci::json;
+    
+    JsonValue header_json = JsonValue::empty_object();
+    header_json["resource"] = JsonValue(resource_identifier);
+    
+    if (!res_id.empty()) {
+        header_json["resId"] = JsonValue(res_id);
+    }
+    if (!mutual_encoding.empty()) {
+        header_json["mutualEncoding"] = JsonValue(mutual_encoding);
+    }
+    if (set_partial) {
+        header_json["setPartial"] = JsonValue(set_partial);
+    }
+    if (offset > 0) {
+        header_json["offset"] = JsonValue(offset);
+    }
+    if (limit > 0) {
+        header_json["limit"] = JsonValue(limit);
+    }
+    
+    return header_json.get_serialized_bytes();
+}
+
     data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
@@ -322,6 +564,12 @@ std::string GetPropertyData::get_body_string() const {
 SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, 
                                 const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
     : MultiPacketMessage(MessageType::SetPropertyData, common), request_id_(request_id), header_(header), body_(body) {}
+
+SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
+                                const std::vector<uint8_t>& body, const std::string& res_id, bool set_partial)
+    : MultiPacketMessage(MessageType::SetPropertyData, common), request_id_(request_id), body_(body) {
+    header_ = create_json_header(resource_identifier, res_id, "", set_partial, 0, 0);
+}
 
 std::vector<uint8_t> SetPropertyData::serialize() const {
     using namespace midi_ci::core::constants;
@@ -384,6 +632,82 @@ std::string SetPropertyData::get_body_string() const {
 SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, 
                                    const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
     : MultiPacketMessage(MessageType::SubscribeProperty, common), request_id_(request_id), header_(header), body_(body) {}
+
+SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
+                                   const std::string& command, const std::string& mutual_encoding)
+    : MultiPacketMessage(MessageType::SubscribeProperty, common), request_id_(request_id) {
+    header_ = create_subscribe_json_header(resource_identifier, command, mutual_encoding);
+
+std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
+    const uint32_t max_chunk_size = 256;
+    
+    if (header_.size() <= max_chunk_size) {
+        return {serialize()};
+    }
+    
+    std::vector<std::vector<uint8_t>> packets;
+    size_t total_chunks = (header_.size() + max_chunk_size - 1) / max_chunk_size;
+    
+    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
+        size_t start_pos = chunk_idx * max_chunk_size;
+        size_t chunk_size = std::min(max_chunk_size, header_.size() - start_pos);
+        
+        std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
+        
+        std::vector<uint8_t> packet;
+        packet.reserve(32 + chunk_data.size());
+        
+        packet.push_back(0x7E);
+        packet.push_back(0x7F);
+        packet.push_back(0x0D);
+        packet.push_back(static_cast<uint8_t>(type_));
+        packet.push_back(0x02);
+        
+        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        
+        packet.push_back(request_id_);
+        
+        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
+        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
+        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
+        
+        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
+        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
+        
+        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
+        
+        packets.push_back(std::move(packet));
+    }
+    
+    return packets;
+}
+
+std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::string& resource_identifier, 
+                                                                   const std::string& command, 
+                                                                   const std::string& mutual_encoding) const {
+    using namespace midi_ci::json;
+    
+    JsonValue header_json = JsonValue::empty_object();
+    header_json["resource"] = JsonValue(resource_identifier);
+    header_json["command"] = JsonValue(command);
+    
+    if (!mutual_encoding.empty()) {
+        header_json["mutualEncoding"] = JsonValue(mutual_encoding);
+    }
+    
+    return header_json.get_serialized_bytes();
+}
+
+}
 
 std::vector<uint8_t> SubscribeProperty::serialize() const {
     using namespace midi_ci::core::constants;
@@ -953,6 +1277,10 @@ std::string ProcessInquiryCapabilities::get_label() const {
 
 std::string ProcessInquiryCapabilities::get_body_string() const {
     return "";
+}
+
+std::vector<std::vector<uint8_t>> Message::serialize_multi() const {
+    return {serialize()};
 }
 
 } // namespace messages

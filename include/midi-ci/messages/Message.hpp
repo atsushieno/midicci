@@ -65,6 +65,7 @@ public:
     uint32_t get_destination_muid() const noexcept;
     
     virtual std::vector<uint8_t> serialize() const = 0;
+    virtual std::vector<std::vector<uint8_t>> serialize_multi() const;
     virtual bool deserialize(const std::vector<uint8_t>& data) = 0;
     virtual std::string get_label() const = 0;
     virtual std::string get_body_string() const = 0;
@@ -149,47 +150,78 @@ private:
 class GetPropertyData : public MultiPacketMessage {
 public:
     GetPropertyData(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header);
+    GetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, const std::string& res_id = "");
     
     std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
     bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    
 private:
     uint8_t request_id_;
     std::vector<uint8_t> header_;
+    
+    std::vector<uint8_t> create_json_header(const std::string& resource_identifier, const std::string& res_id, 
+                                          const std::string& mutual_encoding, bool set_partial, 
+                                          int offset, int limit) const;
 };
 
 class SetPropertyData : public MultiPacketMessage {
 public:
     SetPropertyData(const Common& common, uint8_t request_id, 
                    const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    SetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
+                   const std::vector<uint8_t>& body, const std::string& res_id = "", bool set_partial = false);
     
     std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
     bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
+    
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    const std::vector<uint8_t>& get_body() const { return body_; }
     
 private:
     uint8_t request_id_;
     std::vector<uint8_t> header_;
     std::vector<uint8_t> body_;
+    
+    std::vector<uint8_t> create_json_header(const std::string& resource_identifier, const std::string& res_id, 
+                                          const std::string& mutual_encoding, bool set_partial, 
+                                          int offset, int limit) const;
 };
 
 class SubscribeProperty : public MultiPacketMessage {
 public:
     SubscribeProperty(const Common& common, uint8_t request_id, 
                      const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    SubscribeProperty(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
+                     const std::string& command, const std::string& mutual_encoding = "");
     
     std::vector<uint8_t> serialize() const override;
+    std::vector<std::vector<uint8_t>> serialize_multi() const override;
     bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
+    
+    uint8_t get_request_id() const { return request_id_; }
+    const std::vector<uint8_t>& get_header() const { return header_; }
+    const std::vector<uint8_t>& get_body() const { return body_; }
     
 private:
     uint8_t request_id_;
     std::vector<uint8_t> header_;
     std::vector<uint8_t> body_;
+    
+    std::vector<uint8_t> create_subscribe_json_header(const std::string& resource_identifier, 
+                                                    const std::string& command, 
+                                                    const std::string& mutual_encoding) const;
 };
 
 class EndpointInquiry : public SinglePacketMessage {

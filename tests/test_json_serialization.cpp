@@ -11,7 +11,7 @@ protected:
 TEST_F(JsonSerializationTest, EmptyObject) {
     JsonValue obj = JsonValue::empty_object();
     EXPECT_TRUE(obj.is_object());
-    EXPECT_EQ(obj.to_string(), "{}");
+    EXPECT_EQ(obj.serialize(), "{}");
 }
 
 TEST_F(JsonSerializationTest, SimpleObject) {
@@ -19,7 +19,7 @@ TEST_F(JsonSerializationTest, SimpleObject) {
     obj["resource"] = JsonValue("DeviceInfo");
     obj["resId"] = JsonValue("device1");
     
-    std::string json_str = obj.to_string();
+    std::string json_str = obj.serialize();
     EXPECT_TRUE(json_str.find("\"resource\":\"DeviceInfo\"") != std::string::npos);
     EXPECT_TRUE(json_str.find("\"resId\":\"device1\"") != std::string::npos);
 }
@@ -29,7 +29,7 @@ TEST_F(JsonSerializationTest, BooleanValues) {
     obj["setPartial"] = JsonValue(true);
     obj["enabled"] = JsonValue(false);
     
-    std::string json_str = obj.to_string();
+    std::string json_str = obj.serialize();
     EXPECT_TRUE(json_str.find("\"setPartial\":true") != std::string::npos);
     EXPECT_TRUE(json_str.find("\"enabled\":false") != std::string::npos);
 }
@@ -39,7 +39,7 @@ TEST_F(JsonSerializationTest, NumericValues) {
     obj["offset"] = JsonValue(42);
     obj["limit"] = JsonValue(100);
     
-    std::string json_str = obj.to_string();
+    std::string json_str = obj.serialize();
     EXPECT_TRUE(json_str.find("\"offset\":42") != std::string::npos);
     EXPECT_TRUE(json_str.find("\"limit\":100") != std::string::npos);
 }

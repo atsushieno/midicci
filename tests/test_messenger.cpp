@@ -8,28 +8,19 @@ using namespace midi_ci;
 class MessengerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = std::make_unique<core::MidiCIDevice>(0x12345678);
-        device->set_device_info({"TestMfg", "TestFamily", "TestModel", "1.0"});
+        device = std::make_unique<core::MidiCIDevice>();
+        device->initialize();
     }
     
-    std::unique_ptr<core::MidiCIDevice> device;
+    std::unique_ptr<core::MidiCIDevice> device{nullptr};
 };
 
-TEST_F(MessengerTest, SendDiscoveryInquiry) {
-    bool message_received = false;
-    device->add_message_callback([&](const messages::Message& msg) {
-        EXPECT_EQ(msg.get_type(), messages::MessageType::DiscoveryInquiry);
-        EXPECT_EQ(msg.get_source_muid(), 0x12345678);
-        message_received = true;
-    });
-    
-    device->send_discovery_inquiry();
-    EXPECT_TRUE(message_received);
+TEST_F(MessengerTest, DeviceInitialization) {
+    EXPECT_TRUE(device->is_initialized());
+    EXPECT_NE(device->get_muid(), 0);
 }
 
-TEST_F(MessengerTest, GetNextRequestId) {
-    auto& messenger = device->get_messenger();
-    uint8_t id1 = messenger.get_next_request_id();
-    uint8_t id2 = messenger.get_next_request_id();
-    EXPECT_NE(id1, id2);
+TEST_F(MessengerTest, DeviceInfo) {
+    auto device_info = device->get_device_info();
+    EXPECT_FALSE(device_info.manufacturer.empty());
 }

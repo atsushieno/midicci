@@ -3,7 +3,7 @@
 #include "ResponderWidget.hpp"
 #include "LogWidget.hpp"
 #include "SettingsWidget.hpp"
-#include "CIToolRepository.hpp"
+#include "AppModel.hpp"
 
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -19,7 +19,6 @@ MainWindow::MainWindow(QWidget *parent)
     , m_responderWidget(nullptr)
     , m_logWidget(nullptr)
     , m_settingsWidget(nullptr)
-    , m_repository(std::make_unique<ci_tool::CIToolRepository>())
 {
     setupUI();
     setupConnections();
@@ -36,10 +35,12 @@ void MainWindow::setupUI()
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
     
-    m_initiatorWidget = new InitiatorWidget(m_repository.get(), this);
-    m_responderWidget = new ResponderWidget(m_repository.get(), this);
-    m_logWidget = new LogWidget(m_repository.get(), this);
-    m_settingsWidget = new SettingsWidget(m_repository.get(), this);
+    auto& repository = qt5_ci_tool::getAppModel();
+    
+    m_initiatorWidget = new InitiatorWidget(&repository, this);
+    m_responderWidget = new ResponderWidget(&repository, this);
+    m_logWidget = new LogWidget(&repository, this);
+    m_settingsWidget = new SettingsWidget(&repository, this);
     
     m_tabWidget->addTab(m_initiatorWidget, "Initiator");
     m_tabWidget->addTab(m_responderWidget, "Responder");

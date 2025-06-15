@@ -34,5 +34,5 @@ private:
     LogWidget *m_logWidget;
     SettingsWidget *m_settingsWidget;
     
-    std::unique_ptr<ci_tool::CIToolRepository> m_repository;
+
 };

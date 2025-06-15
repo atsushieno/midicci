@@ -1,6 +1,7 @@
 #include "ResponderWidget.hpp"
 #include "CIToolRepository.hpp"
 #include "CIDeviceModel.hpp"
+#include "AppModel.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>

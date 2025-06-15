@@ -2,6 +2,7 @@
 #include "CIToolRepository.hpp"
 #include "CIDeviceManager.hpp"
 #include "CIDeviceModel.hpp"
+#include "AppModel.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>

@@ -32,7 +32,7 @@ public:
     uint8_t last_chunked_message_channel_;
     std::vector<uint8_t> chunked_messages_;
     
-    mutable std::mutex mutex_{};
+    mutable std::recursive_mutex mutex_{};
 };
 
 CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
@@ -47,7 +47,7 @@ CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
 CIDeviceModel::~CIDeviceModel() = default;
 
 void CIDeviceModel::initialize() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     pimpl_->device_ = std::make_shared<midi_ci::core::MidiCIDevice>();
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
@@ -59,7 +59,7 @@ void CIDeviceModel::initialize() {
 }
 
 void CIDeviceModel::shutdown() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->device_) {
         pimpl_->device_->shutdown();
         pimpl_->device_.reset();
@@ -70,12 +70,12 @@ void CIDeviceModel::shutdown() {
 }
 
 std::shared_ptr<midi_ci::core::MidiCIDevice> CIDeviceModel::get_device() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->device_;
 }
 
 void CIDeviceModel::process_ci_message(uint8_t group, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->device_) {
         std::vector<uint8_t> sysex_data;
         sysex_data.push_back(0xF0);
@@ -86,29 +86,29 @@ void CIDeviceModel::process_ci_message(uint8_t group, const std::vector<uint8_t>
 }
 
 std::vector<std::shared_ptr<ClientConnectionModel>> CIDeviceModel::get_connections() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->connections_;
 }
 
 std::vector<std::shared_ptr<MidiCIProfileState>> CIDeviceModel::get_local_profile_states() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->local_profile_states_;
 }
 
 void CIDeviceModel::send_discovery() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Sending discovery inquiry..." << std::endl;
 }
 
 void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid, 
                                                 const midi_ci::profiles::ProfileId& profile, uint8_t target) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Sending profile details inquiry to MUID: 0x" << std::hex << muid << std::dec << std::endl;
 }
 
 void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProfileState>& profile_state,
                                                uint8_t new_address, bool enabled, uint16_t num_channels_requested) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (profile_state) {
         profile_state->set_address(new_address);
         profile_state->set_enabled(enabled);
@@ -117,7 +117,7 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
 }
 
 void CIDeviceModel::add_local_profile(const midi_ci::profiles::Profile& profile) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto profile_state = std::make_shared<MidiCIProfileState>(
         profile.group, profile.address, profile.profile_id, 
         profile.enabled, profile.num_channels_requested);
@@ -125,7 +125,7 @@ void CIDeviceModel::add_local_profile(const midi_ci::profiles::Profile& profile)
 }
 
 void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::ProfileId& profile_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto it = std::remove_if(pimpl_->local_profile_states_.begin(), pimpl_->local_profile_states_.end(),
         [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
             return state->get_group() == group && 
@@ -136,18 +136,18 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const m
 }
 
 void CIDeviceModel::add_local_property(const midi_ci::properties::PropertyMetadata& property) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.property_id << std::endl;
 }
 
 void CIDeviceModel::remove_local_property(const std::string& property_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
 }
 
 void CIDeviceModel::update_property_value(const std::string& property_id, const std::string& res_id, 
                                          const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
 }
 

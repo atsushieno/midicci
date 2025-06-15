@@ -11,9 +11,9 @@ protected:
         profile = Profile(profile_id, 0, 0x7F, false, 16);
     }
     
-    std::unique_ptr<ProfileManager> manager;
-    ProfileId profile_id;
-    Profile profile;
+    std::unique_ptr<ProfileManager> manager{nullptr};
+    ProfileId profile_id{{0x7E, 0x00, 0x01, 0x02, 0x03}};
+    Profile profile{ProfileId{{0x7E, 0x00, 0x01, 0x02, 0x03}}, 0, 0x7F, false, 16};
 };
 
 TEST_F(ProfileManagerTest, AddProfile) {

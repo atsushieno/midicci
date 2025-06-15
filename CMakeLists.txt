@@ -23,6 +23,15 @@ option(BUILD_EXAMPLES "Build examples" ON)
 
 include(GNUInstallDirs)
 
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG release-1.12.1
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
 add_subdirectory(src)
 
 if(BUILD_TESTS)
@@ -35,7 +44,9 @@ endif()
 #     add_subdirectory(examples)
 # endif()
 
-add_subdirectory(tools)
+if(BUILD_TOOLS AND (Qt5_FOUND OR Qt6_FOUND))
+    add_subdirectory(tools)
+endif()
 
 set(CPACK_PACKAGE_NAME "midi-ci-cpp")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

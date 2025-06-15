@@ -8,12 +8,10 @@ using namespace midi_ci::core::constants;
 class MessageSerializationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        common = Common(0x12345678, 0x87654321, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 0);
-        device_info = DeviceInfo("TestMfg", "TestFamily", "TestModel", "1.0");
     }
     
-    Common common;
-    DeviceInfo device_info;
+    Common common{0x12345678, 0x87654321, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 0};
+    DeviceInfo device_info{"TestMfg", "TestFamily", "TestModel", "1.0"};
 };
 
 TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {

@@ -8,10 +8,9 @@ using namespace midi_ci::json;
 class PropertyJsonSerializationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        common_ = Common{0x12345678, 0x87654321, 0, 0};
     }
     
-    Common common_;
+    Common common_{0x12345678, 0x87654321, 0, 0};
 };
 
 TEST_F(PropertyJsonSerializationTest, GetPropertyDataJsonHeader) {

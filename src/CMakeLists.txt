@@ -13,6 +13,8 @@ set(MIDI_CI_SOURCES
     midi-ci/properties/PropertyClientFacade.cpp
     midi-ci/properties/PropertyHostFacade.cpp
     midi-ci/properties/PropertyManager.cpp
+    midi-ci/properties/CommonRulesPropertyHelper.cpp
+    midi-ci/properties/CommonRulesPropertyClient.cpp
     midi-ci/ump/Ump.cpp
     midi-ci/ump/UmpRetriever.cpp
 )
@@ -27,6 +29,9 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/profiles/ProfileManager.hpp
     ../include/midi-ci/properties/PropertyManager.hpp
     ../include/midi-ci/properties/PropertyChunkManager.hpp
+    ../include/midi-ci/properties/PropertyCommonRules.hpp
+    ../include/midi-ci/properties/CommonRulesPropertyHelper.hpp
+    ../include/midi-ci/properties/CommonRulesPropertyClient.hpp
     ../include/midi-ci/transport/SysExTransport.hpp
     ../include/midi-ci/json/Json.hpp
     ../include/midi-ci/ump/Ump.hpp

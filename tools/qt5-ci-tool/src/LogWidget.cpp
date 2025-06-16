@@ -6,6 +6,8 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QDateTime>
+#include <QMetaObject>
+#include <ctime>
 
 LogWidget::LogWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
@@ -39,14 +41,20 @@ void LogWidget::setupUI()
 void LogWidget::setupConnections()
 {
     connect(m_clearButton, &QPushButton::clicked, this, &LogWidget::onClearLogs);
+    
+    if (m_repository) {
+        m_repository->add_log_callback([this](const ci_tool::LogEntry& entry) {
+            QMetaObject::invokeMethod(this, "onNewLogEntry", Qt::QueuedConnection);
+        });
+    }
 }
 
 void LogWidget::onClearLogs()
 {
-    m_logTable->setRowCount(0);
     if (m_repository) {
-        m_repository->log("Log cleared", ci_tool::MessageDirection::Out);
+        m_repository->clear_logs();
     }
+    m_logTable->setRowCount(0);
 }
 
 void LogWidget::onNewLogEntry()
@@ -56,14 +64,25 @@ void LogWidget::onNewLogEntry()
 
 void LogWidget::updateLogDisplay()
 {
-    int row = m_logTable->rowCount();
-    m_logTable->insertRow(row);
+    if (!m_repository) return;
     
-    QDateTime currentTime = QDateTime::currentDateTime();
-    m_logTable->setItem(row, 0, new QTableWidgetItem(currentTime.toString("hh:mm:ss.zzz")));
-    m_logTable->setItem(row, 1, new QTableWidgetItem("Out"));
-    m_logTable->setItem(row, 2, new QTableWidgetItem("Local -> Remote"));
-    m_logTable->setItem(row, 3, new QTableWidgetItem("Sample log message"));
+    auto logs = m_repository->get_logs();
+    m_logTable->setRowCount(logs.size());
+    
+    for (size_t i = 0; i < logs.size(); ++i) {
+        const auto& entry = logs[i];
+        
+        auto time_t = std::chrono::system_clock::to_time_t(entry.timestamp);
+        auto tm = *std::localtime(&time_t);
+        char time_str[32];
+        std::strftime(time_str, sizeof(time_str), "%H:%M:%S", &tm);
+        
+        m_logTable->setItem(i, 0, new QTableWidgetItem(QString::fromStdString(time_str)));
+        m_logTable->setItem(i, 1, new QTableWidgetItem(
+            entry.direction == ci_tool::MessageDirection::In ? "In" : "Out"));
+        m_logTable->setItem(i, 2, new QTableWidgetItem("MIDI"));
+        m_logTable->setItem(i, 3, new QTableWidgetItem(QString::fromStdString(entry.message)));
+    }
     
     m_logTable->scrollToBottom();
 }

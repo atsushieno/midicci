@@ -284,11 +284,14 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
-            std::vector<std::vector<uint8_t>> enabled_profiles;
-            std::vector<std::vector<uint8_t>> disabled_profiles;
-            ProfileReply reply(common, enabled_profiles, disabled_profiles);
-            pimpl_->log_message(reply, false);
-            processProfileReply(reply);
+            if (data.size() >= 15) {
+                std::vector<uint8_t> profile_data(data.begin() + 13, data.end());
+                ProfileReply reply(common, {}, {});
+                if (reply.deserialize(profile_data)) {
+                    pimpl_->log_message(reply, false);
+                    processProfileReply(reply);
+                }
+            }
             break;
         }
         case CISubId2::PROFILE_ADDED_REPORT: {
@@ -366,7 +369,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body;
+                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SubscribePropertyReply reply(common, request_id, header, body);
                 pimpl_->log_message(reply, false);
                 processSubscribePropertyReply(reply);

@@ -12,6 +12,7 @@ enum class MessageType : uint8_t {
     DiscoveryInquiry = 0x70,
     DiscoveryReply = 0x71,
     EndpointInquiry = 0x72,
+    EndpointReply = 0x73,
     InvalidateMUID = 0x7E,
     ProfileInquiry = 0x20,
     ProfileInquiryReply = 0x21,
@@ -150,6 +151,8 @@ public:
     std::string get_label() const override;
     std::string get_body_string() const override;
     
+    uint8_t get_max_simultaneous_requests() const { return max_simultaneous_requests_; }
+    
 private:
     uint8_t max_simultaneous_requests_;
 };
@@ -240,8 +243,27 @@ public:
     std::string get_label() const override;
     std::string get_body_string() const override;
     
+    uint8_t get_status() const { return status_; }
+    
 private:
     uint8_t status_;
+};
+
+class EndpointReply : public SinglePacketMessage {
+public:
+    EndpointReply(const Common& common, uint8_t status, const std::vector<uint8_t>& data);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_status() const { return status_; }
+    const std::vector<uint8_t>& get_data() const { return data_; }
+    
+private:
+    uint8_t status_;
+    std::vector<uint8_t> data_;
 };
 
 class InvalidateMUID : public SinglePacketMessage {

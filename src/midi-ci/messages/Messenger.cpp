@@ -490,6 +490,51 @@ void Messenger::onClient(const MessageType& msg, Func func) {
     }
 }
 
+EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) {
+    const auto& config = pimpl_->device_.get_config();
+    std::vector<uint8_t> data;
+    
+    if (msg.get_status() == 0 && !config.product_instance_id.empty()) {
+        const auto& prod_id = config.product_instance_id;
+        data.assign(prod_id.begin(), prod_id.end());
+    }
+    
+    return EndpointReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        msg.get_status(),
+        data
+    );
+}
+
+std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileInquiry& msg) {
+    std::vector<ProfileReply> replies;
+    
+    std::vector<std::vector<uint8_t>> enabled_profiles;
+    std::vector<std::vector<uint8_t>> disabled_profiles;
+    
+    replies.emplace_back(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        enabled_profiles,
+        disabled_profiles
+    );
+    return replies;
+}
+
+ProcessInquiryCapabilitiesReply Messenger::getProcessInquiryReplyFor(const ProcessInquiryCapabilities& msg) {
+    return ProcessInquiryCapabilitiesReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        0x01
+    );
+}
+
+PropertyGetCapabilitiesReply Messenger::getPropertyCapabilitiesReplyFor(const PropertyGetCapabilities& msg) {
+    uint8_t max_requests = std::min(msg.get_max_simultaneous_requests(), static_cast<uint8_t>(8));
+    return PropertyGetCapabilitiesReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        max_requests
+    );
+}
+
 void Messenger::processDiscoveryReply(const DiscoveryReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
@@ -604,9 +649,6 @@ void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
-        conn->get_property_client_facade().process_subscribe_property(msg);
-    });
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
@@ -626,11 +668,16 @@ void Messenger::processEndpointMessage(const EndpointInquiry& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    send(getEndpointReplyForInquiry(msg));
 }
 
 void Messenger::processProfileInquiry(const ProfileInquiry& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
+    }
+    auto replies = getProfileRepliesForInquiry(msg);
+    for (const auto& reply : replies) {
+        send(reply);
     }
 }
 
@@ -656,6 +703,7 @@ void Messenger::processPropertyCapabilitiesInquiry(const PropertyGetCapabilities
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    send(getPropertyCapabilitiesReplyFor(msg));
 }
 
 void Messenger::processGetPropertyData(const GetPropertyData& msg) {
@@ -686,9 +734,28 @@ void Messenger::processProcessInquiry(const ProcessInquiryCapabilities& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    send(getProcessInquiryReplyFor(msg));
 }
 
 void Messenger::processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data) {
+}
+
+void Messenger::processMidiMessageReport(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
+
+void Messenger::processMidiMessageReportReply(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
+
+void Messenger::processEndOfMidiMessageReport(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 } // namespace messages

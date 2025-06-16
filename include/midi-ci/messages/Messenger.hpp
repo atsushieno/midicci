@@ -104,12 +104,20 @@ private:
     void processSubscribeProperty(const SubscribeProperty& msg);
     void processProcessInquiry(const ProcessInquiryCapabilities& msg);
     void processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data);
+    void processMidiMessageReport(const MidiMessageReportInquiry& msg);
+    void processMidiMessageReportReply(const MidiMessageReportInquiry& msg);
+    void processEndOfMidiMessageReport(const MidiMessageReportInquiry& msg);
     
 private:
     void handleNewEndpoint(const DiscoveryReply& msg);
     
     template<typename MessageType, typename Func>
     void onClient(const MessageType& msg, Func func);
+    
+    EndpointReply getEndpointReplyForInquiry(const EndpointInquiry& msg);
+    std::vector<ProfileReply> getProfileRepliesForInquiry(const ProfileInquiry& msg);
+    ProcessInquiryCapabilitiesReply getProcessInquiryReplyFor(const ProcessInquiryCapabilities& msg);
+    PropertyGetCapabilitiesReply getPropertyCapabilitiesReplyFor(const PropertyGetCapabilities& msg);
     
     class Impl;
     std::unique_ptr<Impl> pimpl_;

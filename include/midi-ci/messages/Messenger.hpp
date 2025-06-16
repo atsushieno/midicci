@@ -105,6 +105,12 @@ private:
     void processProcessInquiry(const ProcessInquiryCapabilities& msg);
     void processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data);
     
+private:
+    void handleNewEndpoint(const DiscoveryReply& msg);
+    
+    template<typename MessageType, typename Func>
+    void onClient(const MessageType& msg, Func func);
+    
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };

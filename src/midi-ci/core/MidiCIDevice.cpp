@@ -28,6 +28,7 @@ public:
     std::unique_ptr<profiles::ProfileHostFacade> profile_host_facade_;
     std::unique_ptr<properties::PropertyHostFacade> property_host_facade_;
     mutable std::recursive_mutex mutex_;
+    LoggerFunction logger_;
     messages::Messenger messenger_;
 };
 
@@ -155,6 +156,16 @@ properties::PropertyHostFacade& MidiCIDevice::get_property_host_facade() {
 const properties::PropertyHostFacade& MidiCIDevice::get_property_host_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_host_facade_;
+}
+
+void MidiCIDevice::set_logger(LoggerFunction logger) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->logger_ = std::move(logger);
+}
+
+MidiCIDevice::LoggerFunction MidiCIDevice::get_logger() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->logger_;
 }
 
 } // namespace core

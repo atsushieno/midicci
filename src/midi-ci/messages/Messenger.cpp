@@ -225,7 +225,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     
     if (data.size() < 4 || 
         data[0] != MIDI_CI_UNIVERSAL_SYSEX_ID || 
-        data[1] != MIDI_CI_SUB_ID_1) {
+        data[2] != MIDI_CI_SUB_ID_1) {
         return;
     }
     

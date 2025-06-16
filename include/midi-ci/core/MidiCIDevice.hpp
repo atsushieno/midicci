@@ -36,6 +36,7 @@ class MidiCIDevice {
 public:
     using MessageCallback = std::function<void(const Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using LoggerFunction = std::function<void(const std::string&, bool)>;
     
     MidiCIDevice(uint32_t muid = 0x12345678);
     ~MidiCIDevice();
@@ -78,6 +79,9 @@ public:
     
     properties::PropertyHostFacade& get_property_host_facade();
     const properties::PropertyHostFacade& get_property_host_facade() const;
+    
+    void set_logger(LoggerFunction logger);
+    LoggerFunction get_logger() const;
     
 private:
     class Impl;

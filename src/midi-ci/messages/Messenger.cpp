@@ -26,7 +26,6 @@ public:
     std::vector<MessageCallback> callbacks_;
     mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
-    std::function<void(const std::string&, bool)> logger_;
     
     void notify_callbacks(const Message& message) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -36,8 +35,9 @@ public:
     }
     
     void log_message(const Message& message, bool is_outgoing) {
-        if (logger_) {
-            logger_(message.get_log_message(), is_outgoing);
+        auto logger = device_.get_logger();
+        if (logger) {
+            logger(message.get_log_message(), is_outgoing);
         }
     }
 };
@@ -789,9 +789,7 @@ void Messenger::processEndOfMidiMessageReport(const MidiMessageReportInquiry& ms
     }
 }
 
-void Messenger::set_logger(std::function<void(const std::string&, bool)> logger) {
-    pimpl_->logger_ = std::move(logger);
-}
+
 
 } // namespace messages
 } // namespace midi_ci

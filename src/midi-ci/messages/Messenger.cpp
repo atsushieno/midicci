@@ -3,6 +3,11 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
 #include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/profiles/ProfileClientFacade.hpp"
+#include "midi-ci/profiles/ProfileHostFacade.hpp"
+#include "midi-ci/properties/PropertyClientFacade.hpp"
+#include "midi-ci/properties/PropertyHostFacade.hpp"
 #include <mutex>
 #include <vector>
 #include <functional>
@@ -464,6 +469,11 @@ uint8_t Messenger::get_next_request_id() noexcept {
 }
 
 void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
+    auto existing = pimpl_->device_.get_connection(msg.get_source_muid());
+    if (existing) {
+        pimpl_->device_.remove_connection(msg.get_source_muid());
+    }
+    
     auto connection = pimpl_->device_.create_connection(msg.get_source_muid());
     
     send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);
@@ -474,7 +484,7 @@ void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
 
 template<typename MessageType, typename Func>
 void Messenger::onClient(const MessageType& msg, Func func) {
-    auto connection = pimpl_->device_.create_connection(msg.get_source_muid());
+    auto connection = pimpl_->device_.get_connection(msg.get_source_muid());
     if (connection) {
         func(connection);
     }
@@ -491,8 +501,6 @@ void Messenger::processEndpointReply(const EndpointInquiry& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
-    });
 }
 
 void Messenger::processInvalidateMUID(const InvalidateMUID& msg) {
@@ -507,6 +515,7 @@ void Messenger::processProfileReply(const ProfileReply& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_reply(msg);
     });
 }
 
@@ -515,6 +524,7 @@ void Messenger::processProfileAddedReport(const ProfileAdded& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_added_report(msg);
     });
 }
 
@@ -523,6 +533,7 @@ void Messenger::processProfileRemovedReport(const ProfileRemoved& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_removed_report(msg);
     });
 }
 
@@ -531,6 +542,7 @@ void Messenger::processProfileEnabledReport(const ProfileEnabled& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_enabled_report(msg);
     });
 }
 
@@ -539,6 +551,7 @@ void Messenger::processProfileDisabledReport(const ProfileDisabled& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_disabled_report(msg);
     });
 }
 
@@ -547,6 +560,7 @@ void Messenger::processProfileDetailsReply(const ProfileDetailsReply& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_details_reply(msg);
     });
 }
 
@@ -555,6 +569,7 @@ void Messenger::processPropertyCapabilitiesReply(const PropertyGetCapabilitiesRe
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_property_capabilities_reply(msg);
     });
 }
 
@@ -563,6 +578,7 @@ void Messenger::processGetDataReply(const GetPropertyDataReply& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_get_data_reply(msg);
     });
 }
 
@@ -571,6 +587,7 @@ void Messenger::processSetDataReply(const SetPropertyDataReply& msg) {
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_set_data_reply(msg);
     });
 }
 
@@ -579,6 +596,7 @@ void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg)
         callback(msg);
     }
     onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_subscribe_property_reply(msg);
     });
 }
 
@@ -586,6 +604,9 @@ void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_subscribe_property(msg);
+    });
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
@@ -641,18 +662,24 @@ void Messenger::processGetPropertyData(const GetPropertyData& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    auto reply = pimpl_->device_.get_property_host_facade().process_get_property_data(msg);
+    send(reply);
 }
 
 void Messenger::processSetPropertyData(const SetPropertyData& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    auto reply = pimpl_->device_.get_property_host_facade().process_set_property_data(msg);
+    send(reply);
 }
 
 void Messenger::processSubscribeProperty(const SubscribeProperty& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    auto reply = pimpl_->device_.get_property_host_facade().process_subscribe_property(msg);
+    send(reply);
 }
 
 void Messenger::processProcessInquiry(const ProcessInquiryCapabilities& msg) {

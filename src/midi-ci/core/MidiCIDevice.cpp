@@ -79,6 +79,17 @@ void MidiCIDevice::remove_connection(uint8_t destination_id) {
     pimpl_->connections_.erase(destination_id);
 }
 
+std::shared_ptr<ClientConnection> MidiCIDevice::get_connection(uint8_t destination_id) const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    auto it = pimpl_->connections_.find(destination_id);
+    return (it != pimpl_->connections_.end()) ? it->second : nullptr;
+}
+
+const std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>>& MidiCIDevice::get_connections() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->connections_;
+}
+
 void MidiCIDevice::processInput(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->initialized_ && !sysex_data.empty()) {

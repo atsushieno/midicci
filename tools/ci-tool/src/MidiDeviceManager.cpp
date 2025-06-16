@@ -21,7 +21,7 @@ public:
     std::vector<std::function<void()>> midi_input_opened_;
     std::vector<std::function<void()>> midi_output_opened_;
     
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 };
 
 MidiDeviceManager::MidiDeviceManager() : pimpl_(std::make_unique<Impl>()) {}
@@ -31,7 +31,7 @@ MidiDeviceManager::~MidiDeviceManager() {
 }
 
 void MidiDeviceManager::initialize() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (!pimpl_->initialized_) {
         pimpl_->initialized_ = true;
         std::cout << "MidiDeviceManager initialized (transport-agnostic)" << std::endl;
@@ -39,7 +39,7 @@ void MidiDeviceManager::initialize() {
 }
 
 void MidiDeviceManager::shutdown() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->initialized_) {
         if (pimpl_->midi_input_) {
             pimpl_->midi_input_->close_port();
@@ -56,17 +56,17 @@ void MidiDeviceManager::shutdown() {
 }
 
 void MidiDeviceManager::set_sysex_callback(SysExCallback callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->sysex_callback_ = std::move(callback);
 }
 
 void MidiDeviceManager::set_ci_output_sender(CIOutputSender sender) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->ci_output_sender_ = std::move(sender);
 }
 
 bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->ci_output_sender_) {
         return pimpl_->ci_output_sender_(group, data);
     }
@@ -88,7 +88,7 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& da
 }
 
 void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->sysex_callback_) {
         pimpl_->sysex_callback_(group, data);
     }
@@ -121,7 +121,7 @@ std::vector<std::string> MidiDeviceManager::get_available_output_devices() const
 }
 
 bool MidiDeviceManager::set_input_device(const std::string& device_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->midi_input_) {
         pimpl_->midi_input_->close_port();
@@ -173,7 +173,7 @@ bool MidiDeviceManager::set_input_device(const std::string& device_id) {
 }
 
 bool MidiDeviceManager::set_output_device(const std::string& device_id) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->midi_output_) {
         pimpl_->midi_output_->close_port();
@@ -217,27 +217,27 @@ bool MidiDeviceManager::set_output_device(const std::string& device_id) {
 }
 
 std::string MidiDeviceManager::get_current_input_device() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->current_input_device_;
 }
 
 std::string MidiDeviceManager::get_current_output_device() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->current_output_device_;
 }
 
 bool MidiDeviceManager::is_initialized() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->initialized_;
 }
 
 void MidiDeviceManager::add_input_opened_callback(std::function<void()> callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->midi_input_opened_.push_back(std::move(callback));
 }
 
 void MidiDeviceManager::add_output_opened_callback(std::function<void()> callback) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->midi_output_opened_.push_back(std::move(callback));
 }
 

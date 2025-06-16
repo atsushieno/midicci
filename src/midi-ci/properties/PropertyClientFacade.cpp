@@ -1,4 +1,5 @@
 #include "midi-ci/properties/PropertyClientFacade.hpp"
+#include "midi-ci/properties/CommonRulesPropertyClient.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/messages/Message.hpp"
@@ -10,7 +11,8 @@ namespace properties {
 
 class PropertyClientFacade::Impl {
 public:
-    Impl(core::MidiCIDevice& device, core::ClientConnection& conn) : device_(device), conn_(conn) {}
+    Impl(core::MidiCIDevice& device, core::ClientConnection& conn) : device_(device), conn_(conn), 
+          property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {}
     
     core::MidiCIDevice& device_;
     core::ClientConnection& conn_;

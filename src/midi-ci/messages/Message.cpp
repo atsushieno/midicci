@@ -261,7 +261,8 @@ std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& reso
         header_json["limit"] = JsonValue(limit);
     }
     
-    return header_json.get_serialized_bytes();
+    auto json_str = header_json.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
 std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
@@ -387,7 +388,8 @@ std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& reso
         header_json["limit"] = JsonValue(limit);
     }
     
-    return header_json.get_serialized_bytes();
+    auto json_str = header_json.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
 std::vector<uint8_t> GetPropertyData::serialize() const {
@@ -554,7 +556,8 @@ std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::
         header_json["mutualEncoding"] = JsonValue(mutual_encoding);
     }
     
-    return header_json.get_serialized_bytes();
+    auto json_str = header_json.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
 std::vector<uint8_t> SubscribeProperty::serialize() const {

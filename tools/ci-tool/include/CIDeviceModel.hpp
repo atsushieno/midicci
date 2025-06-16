@@ -26,6 +26,7 @@ namespace ci_tool {
 class CIDeviceManager;
 
 class CIDeviceModel {
+    
 public:
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using MidiMessageReportSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
@@ -68,6 +69,8 @@ public:
     bool receiving_midi_message_reports;
     uint8_t last_chunked_message_channel;
     std::vector<uint8_t> chunked_messages;
+
+
     
 private:
     class Impl;

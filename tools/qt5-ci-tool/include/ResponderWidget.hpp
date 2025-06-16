@@ -28,6 +28,11 @@ class ResponderWidget : public QWidget
 public:
     explicit ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
 
+signals:
+    void localProfilesChanged();
+    void localPropertiesChanged();
+    void subscriptionsUpdated();
+
 private slots:
     void onProfileSelectionChanged();
     void onAddProfile();
@@ -39,6 +44,7 @@ private slots:
     void onDeleteProperty();
     void onUpdatePropertyValue();
     void onUpdatePropertyMetadata();
+    void checkForLocalUpdates();
 
 private:
     void setupUI();
@@ -88,4 +94,8 @@ private:
     
     QString m_selectedProfile;
     QString m_selectedProperty;
+    
+    QTimer* m_updateTimer;
+    size_t m_lastProfileCount;
+    size_t m_lastPropertyCount;
 };

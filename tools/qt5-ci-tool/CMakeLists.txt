@@ -5,21 +5,8 @@ project(qt5-midi-ci-gui VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Handle Homebrew Qt5 installation paths on macOS
-if(APPLE)
-    # Check for Homebrew Qt5 installation paths
-    if(EXISTS "/opt/homebrew/opt/qt@5")
-        list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@5")
-    elseif(EXISTS "/usr/local/opt/qt@5")
-        list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt@5")
-    endif()
-endif()
-
-# Try Qt6 first, fallback to Qt5 if not found
-find_package(Qt6 COMPONENTS Core Widgets)
-if(NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Widgets)
-endif()
+# Qt detection is now handled at top-level CMakeLists.txt
+# This subdirectory is only included when Qt is available
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)

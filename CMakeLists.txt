@@ -51,6 +51,23 @@ endif()
 #     add_subdirectory(examples)
 # endif()
 
+# Qt5/Qt6 detection for optional tools
+# Handle Homebrew Qt5 installation paths on macOS
+if(APPLE)
+    # Check for Homebrew Qt5 installation paths
+    if(EXISTS "/opt/homebrew/opt/qt@5")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@5")
+    elseif(EXISTS "/usr/local/opt/qt@5")
+        list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt@5")
+    endif()
+endif()
+
+# Try Qt6 first, fallback to Qt5 if not found
+find_package(Qt6 COMPONENTS Core Widgets QUIET)
+if(NOT Qt6_FOUND)
+    find_package(Qt5 5.15 QUIET COMPONENTS Core Widgets)
+endif()
+
 add_subdirectory(tools)
 
 set(CPACK_PACKAGE_NAME "midi-ci-cpp")

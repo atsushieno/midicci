@@ -58,7 +58,7 @@ public:
     std::shared_ptr<ClientConnection> create_connection(uint8_t destination_id);
     void remove_connection(uint8_t destination_id);
     
-    void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
+    void processInput(uint8_t group, const std::vector<uint8_t>& sysex_data);
     
     uint32_t get_muid() const noexcept;
     messages::DeviceInfo get_device_info() const;

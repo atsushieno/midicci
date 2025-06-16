@@ -79,9 +79,11 @@ void MidiCIDevice::remove_connection(uint8_t destination_id) {
     pimpl_->connections_.erase(destination_id);
 }
 
-void MidiCIDevice::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data) {
+void MidiCIDevice::processInput(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->message_callback_ && !sysex_data.empty()) {
+    if (pimpl_->initialized_ && !sysex_data.empty()) {
+        messages::Messenger messenger(*this);
+        messenger.process_input(group, sysex_data);
     }
 }
 

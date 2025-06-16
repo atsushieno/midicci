@@ -76,6 +76,8 @@ public:
     
     uint8_t get_next_request_id() noexcept;
     
+    void set_logger(std::function<void(const std::string&, bool)> logger);
+    
 private:
     void processDiscoveryReply(const DiscoveryReply& msg);
     void processEndpointReply(const EndpointInquiry& msg);

@@ -16,7 +16,8 @@ class MidiCIDevice::Impl {
 public:
     Impl(MidiCIDevice& device, uint32_t muid) : device_id_(0x7F), muid_(muid), initialized_(false), 
         profile_host_facade_(std::make_unique<profiles::ProfileHostFacade>(device)),
-        property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)) {}
+        property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)),
+        messenger_(device) {}
     
     uint8_t device_id_;
     uint32_t muid_;
@@ -27,6 +28,7 @@ public:
     std::unique_ptr<profiles::ProfileHostFacade> profile_host_facade_;
     std::unique_ptr<properties::PropertyHostFacade> property_host_facade_;
     mutable std::recursive_mutex mutex_;
+    messages::Messenger messenger_;
 };
 
 MidiCIDevice::MidiCIDevice(uint32_t muid) : pimpl_(std::make_unique<Impl>(*this, muid)) {}
@@ -94,8 +96,7 @@ const std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>>& MidiCIDevi
 void MidiCIDevice::processInput(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->initialized_ && !sysex_data.empty()) {
-        messages::Messenger messenger(*this);
-        messenger.process_input(group, sysex_data);
+        pimpl_->messenger_.process_input(group, sysex_data);
     }
 }
 

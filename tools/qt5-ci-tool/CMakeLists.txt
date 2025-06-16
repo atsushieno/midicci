@@ -5,8 +5,8 @@ project(qt5-midi-ci-gui VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Qt detection is now handled at top-level CMakeLists.txt
-# This subdirectory is only included when Qt is available
+# Find Qt5 components
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)

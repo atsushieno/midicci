@@ -6,10 +6,6 @@
 #include <functional>
 #include "Message.hpp"
 
-namespace ci_tool {
-class CIToolRepository;
-}
-
 namespace midi_ci {
 namespace messages {
 
@@ -80,7 +76,7 @@ public:
     
     uint8_t get_next_request_id() noexcept;
     
-    void set_repository(void* repository);
+    void set_logger(std::function<void(const std::string&, bool)> logger);
     
 private:
     void processDiscoveryReply(const DiscoveryReply& msg);

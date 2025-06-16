@@ -77,6 +77,7 @@ public:
     virtual bool deserialize(const std::vector<uint8_t>& data) = 0;
     virtual std::string get_label() const = 0;
     virtual std::string get_body_string() const = 0;
+    virtual std::string get_log_message() const;
     
 protected:
     MessageType type_;

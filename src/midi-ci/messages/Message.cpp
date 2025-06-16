@@ -1056,6 +1056,12 @@ std::vector<std::vector<uint8_t>> Message::serialize_multi() const {
     return {serialize()};
 }
 
+std::string Message::get_log_message() const {
+    std::ostringstream oss;
+    oss << get_label() << ": " << get_body_string();
+    return oss.str();
+}
+
 ProfileReply::ProfileReply(const Common& common, const std::vector<std::vector<uint8_t>>& enabled_profiles, 
                           const std::vector<std::vector<uint8_t>>& disabled_profiles)
     : SinglePacketMessage(MessageType::ProfileInquiryReply, common), enabled_profiles_(enabled_profiles), disabled_profiles_(disabled_profiles) {}

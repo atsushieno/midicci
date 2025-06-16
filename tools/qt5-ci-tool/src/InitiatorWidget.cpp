@@ -3,6 +3,10 @@
 #include "CIDeviceManager.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/properties/PropertyManager.hpp"
+#include "midi-ci/profiles/ProfileManager.hpp"
+#include "midi-ci/messages/Message.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -11,11 +15,14 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QTimer>
 
 InitiatorWidget::InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
     , m_selectedDeviceMUID(0)
+    , m_updateTimer(nullptr)
+    , m_lastConnectionCount(0)
 {
     setupUI();
     setupConnections();
@@ -171,6 +178,39 @@ void InitiatorWidget::setupConnections()
     connect(m_refreshPropertyButton, &QPushButton::clicked, this, &InitiatorWidget::onRefreshProperty);
     connect(m_subscribePropertyButton, &QPushButton::clicked, this, &InitiatorWidget::onSubscribeProperty);
     connect(m_requestMidiReportButton, &QPushButton::clicked, this, &InitiatorWidget::onRequestMidiMessageReport);
+    
+    m_updateTimer = new QTimer(this);
+    connect(m_updateTimer, &QTimer::timeout, this, &InitiatorWidget::checkForDeviceUpdates);
+    m_updateTimer->start(1000);
+    
+    connect(this, &InitiatorWidget::deviceConnected, this, [this](int muid) {
+        updateDeviceList();
+        updateConnectionInfo();
+    });
+    
+    connect(this, &InitiatorWidget::deviceDisconnected, this, [this](int muid) {
+        updateDeviceList();
+    });
+    
+    connect(this, &InitiatorWidget::deviceInfoUpdated, this, [this](int muid) {
+        if (muid == m_selectedDeviceMUID) {
+            updateConnectionInfo();
+        }
+    });
+    
+    connect(this, &InitiatorWidget::profilesUpdated, this, [this](int muid) {
+        if (muid == m_selectedDeviceMUID) {
+            updateProfileList();
+        }
+    });
+    
+    connect(this, &InitiatorWidget::propertiesUpdated, this, [this](int muid) {
+        if (muid == m_selectedDeviceMUID) {
+            updatePropertyList();
+        }
+    });
+    
+
 }
 
 void InitiatorWidget::onSendDiscovery()
@@ -258,36 +298,218 @@ void InitiatorWidget::updateDeviceList()
 {
     m_deviceSelector->clear();
     m_deviceSelector->addItem("-- Select CI Device --", 0);
+    
+    if (m_repository && m_repository->get_ci_device_manager()) {
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (deviceModel) {
+            auto connections = deviceModel->get_connections();
+            for (const auto& connection : connections) {
+                if (connection && connection->get_connection()) {
+                    uint32_t muid = connection->get_connection()->get_target_muid();
+                    QString deviceName = QString("Device 0x%1").arg(muid, 8, 16, QChar('0'));
+                    m_deviceSelector->addItem(deviceName, static_cast<int>(muid));
+                }
+            }
+        }
+    }
 }
 
 void InitiatorWidget::updateConnectionInfo()
 {
-    if (m_selectedDeviceMUID != 0) {
-        m_muidLabel->setText(QString("0x%1").arg(m_selectedDeviceMUID, 8, 16, QChar('0')));
-        m_manufacturerLabel->setText("Sample Manufacturer");
-        m_familyLabel->setText("Sample Family");
-        m_modelLabel->setText("Sample Model");
-        m_versionLabel->setText("1.0.0");
-        m_serialLabel->setText("12345");
-        m_maxConnectionsLabel->setText("8");
+    if (m_selectedDeviceMUID == 0) {
+        m_muidLabel->setText("No device selected");
+        m_manufacturerLabel->setText("--");
+        m_familyLabel->setText("--");
+        m_modelLabel->setText("--");
+        m_versionLabel->setText("--");
+        m_serialLabel->setText("--");
+        m_maxConnectionsLabel->setText("--");
+        return;
+    }
+    
+    m_muidLabel->setText(QString("0x%1").arg(m_selectedDeviceMUID, 8, 16, QChar('0')));
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        m_manufacturerLabel->setText("--");
+        m_familyLabel->setText("--");
+        m_modelLabel->setText("--");
+        m_versionLabel->setText("--");
+        m_serialLabel->setText("--");
+        m_maxConnectionsLabel->setText("--");
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        m_manufacturerLabel->setText("--");
+        m_familyLabel->setText("--");
+        m_modelLabel->setText("--");
+        m_versionLabel->setText("--");
+        m_serialLabel->setText("--");
+        m_maxConnectionsLabel->setText("--");
+        return;
+    }
+    
+    auto connections = deviceModel->get_connections();
+    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                targetConnection = connection;
+                break;
+            }
+        }
+    }
+    
+    if (targetConnection && targetConnection->get_connection()) {
+        auto deviceInfo = targetConnection->get_connection()->get_device_info();
+        if (deviceInfo) {
+            m_manufacturerLabel->setText(QString::fromStdString(deviceInfo->manufacturer));
+            m_familyLabel->setText(QString::fromStdString(deviceInfo->family));
+            m_modelLabel->setText(QString::fromStdString(deviceInfo->model));
+            m_versionLabel->setText(QString::fromStdString(deviceInfo->version));
+            m_serialLabel->setText("--");
+            m_maxConnectionsLabel->setText("--");
+        } else {
+            m_manufacturerLabel->setText("Unknown");
+            m_familyLabel->setText("Unknown");
+            m_modelLabel->setText("Unknown");
+            m_versionLabel->setText("Unknown");
+            m_serialLabel->setText("--");
+            m_maxConnectionsLabel->setText("--");
+        }
+    } else {
+        m_manufacturerLabel->setText("Device not found");
+        m_familyLabel->setText("--");
+        m_modelLabel->setText("--");
+        m_versionLabel->setText("--");
+        m_serialLabel->setText("--");
+        m_maxConnectionsLabel->setText("--");
     }
 }
 
 void InitiatorWidget::updateProfileList()
 {
     m_profileList->clear();
-    if (m_selectedDeviceMUID != 0) {
-        m_profileList->addItem("00:01:02:03:04");
-        m_profileList->addItem("7E:00:00:00:01");
+    if (m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto connections = deviceModel->get_connections();
+    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                targetConnection = connection;
+                break;
+            }
+        }
+    }
+    
+    if (targetConnection) {
+        auto profiles = targetConnection->get_profiles();
+        for (const auto& profile : profiles) {
+            if (profile) {
+                auto profileId = profile->get_profile();
+                QString profileText = QString("%1 (G%2 A%3) %4")
+                    .arg(QString::fromStdString(profileId.to_string()))
+                    .arg(profile->get_group())
+                    .arg(profile->get_address())
+                    .arg(profile->is_enabled() ? "ON" : "OFF");
+                m_profileList->addItem(profileText);
+            }
+        }
     }
 }
 
 void InitiatorWidget::updatePropertyList()
 {
     m_propertyList->clear();
-    if (m_selectedDeviceMUID != 0) {
-        m_propertyList->addItem("DeviceInfo");
-        m_propertyList->addItem("ChannelList");
-        m_propertyList->addItem("JSONSchema");
+    if (m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto connections = deviceModel->get_connections();
+    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                targetConnection = connection;
+                break;
+            }
+        }
+    }
+    
+    if (targetConnection) {
+        auto metadata = targetConnection->get_metadata_list();
+        for (const auto& meta : metadata) {
+            m_propertyList->addItem(QString::fromStdString(meta.resource_id));
+        }
+        
+        if (metadata.empty()) {
+            m_propertyList->addItem("DeviceInfo");
+            m_propertyList->addItem("ChannelList");
+            m_propertyList->addItem("JSONSchema");
+        }
+    }
+}
+
+void InitiatorWidget::checkForDeviceUpdates()
+{
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto connections = deviceModel->get_connections();
+    
+    if (connections.size() != m_lastConnectionCount) {
+        if (connections.size() > m_lastConnectionCount) {
+            for (size_t i = m_lastConnectionCount; i < connections.size(); ++i) {
+                if (connections[i] && connections[i]->get_connection()) {
+                    emit deviceConnected(static_cast<int>(connections[i]->get_connection()->get_target_muid()));
+                }
+            }
+        } else {
+            emit deviceDisconnected(0);
+        }
+        m_lastConnectionCount = connections.size();
+    }
+    
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t muid = connection->get_connection()->get_target_muid();
+            emit deviceInfoUpdated(static_cast<int>(muid));
+            emit profilesUpdated(static_cast<int>(muid));
+            emit propertiesUpdated(static_cast<int>(muid));
+        }
     }
 }

@@ -14,6 +14,7 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QTimer>
 #include <memory>
 
 namespace ci_tool {
@@ -29,6 +30,13 @@ class InitiatorWidget : public QWidget
 public:
     explicit InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
 
+signals:
+    void deviceConnected(int muid);
+    void deviceDisconnected(int muid);
+    void deviceInfoUpdated(int muid);
+    void profilesUpdated(int muid);
+    void propertiesUpdated(int muid);
+
 private slots:
     void onSendDiscovery();
     void onDeviceSelectionChanged(int index);
@@ -37,6 +45,7 @@ private slots:
     void onRefreshProperty();
     void onSubscribeProperty();
     void onRequestMidiMessageReport();
+    void checkForDeviceUpdates();
 
 private:
     void setupUI();
@@ -83,4 +92,7 @@ private:
     int m_selectedDeviceMUID;
     QString m_selectedProfile;
     QString m_selectedProperty;
+    
+    QTimer* m_updateTimer;
+    size_t m_lastConnectionCount;
 };

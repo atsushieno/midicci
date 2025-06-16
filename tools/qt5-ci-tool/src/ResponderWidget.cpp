@@ -2,6 +2,9 @@
 #include "CIToolRepository.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/properties/PropertyManager.hpp"
+#include "midi-ci/profiles/ProfileManager.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -11,10 +14,14 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QTimer>
 
 ResponderWidget::ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
+    , m_updateTimer(nullptr)
+    , m_lastProfileCount(0)
+    , m_lastPropertyCount(0)
 {
     setupUI();
     setupConnections();
@@ -180,6 +187,24 @@ void ResponderWidget::setupConnections()
     connect(m_deletePropertyButton, &QPushButton::clicked, this, &ResponderWidget::onDeleteProperty);
     connect(m_updatePropertyValueButton, &QPushButton::clicked, this, &ResponderWidget::onUpdatePropertyValue);
     connect(m_updateMetadataButton, &QPushButton::clicked, this, &ResponderWidget::onUpdatePropertyMetadata);
+    
+    m_updateTimer = new QTimer(this);
+    connect(m_updateTimer, &QTimer::timeout, this, &ResponderWidget::checkForLocalUpdates);
+    m_updateTimer->start(1000);
+    
+    connect(this, &ResponderWidget::localProfilesChanged, this, [this]() {
+        updateProfileList();
+    });
+    
+    connect(this, &ResponderWidget::localPropertiesChanged, this, [this]() {
+        updatePropertyList();
+    });
+    
+    connect(this, &ResponderWidget::subscriptionsUpdated, this, [this]() {
+        updatePropertyDetails();
+    });
+    
+
 }
 
 void ResponderWidget::onProfileSelectionChanged()
@@ -287,8 +312,32 @@ void ResponderWidget::onUpdatePropertyMetadata()
 void ResponderWidget::updateProfileList()
 {
     m_profileList->clear();
-    m_profileList->addItem("7E:00:00:00:01");
-    m_profileList->addItem("00:01:02:03:04");
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto localProfiles = deviceModel->get_local_profile_states();
+    for (const auto& profile : localProfiles) {
+        if (profile) {
+            auto profileId = profile->get_profile();
+            QString profileText = QString("%1 (G%2 A%3)")
+                .arg(QString::fromStdString(profileId.to_string()))
+                .arg(profile->get_group())
+                .arg(profile->get_address());
+            m_profileList->addItem(profileText);
+        }
+    }
+    
+    if (localProfiles.empty()) {
+        m_profileList->addItem("7E:00:00:00:01");
+        m_profileList->addItem("00:01:02:03:04");
+    }
 }
 
 void ResponderWidget::updateProfileDetails()
@@ -307,6 +356,22 @@ void ResponderWidget::updateProfileDetails()
 void ResponderWidget::updatePropertyList()
 {
     m_propertyList->clear();
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        m_propertyList->addItem("DeviceInfo");
+        m_propertyList->addItem("ChannelList");
+        m_propertyList->addItem("JSONSchema");
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        m_propertyList->addItem("DeviceInfo");
+        m_propertyList->addItem("ChannelList");
+        m_propertyList->addItem("JSONSchema");
+        return;
+    }
+    
     m_propertyList->addItem("DeviceInfo");
     m_propertyList->addItem("ChannelList");
     m_propertyList->addItem("JSONSchema");
@@ -329,4 +394,26 @@ void ResponderWidget::updatePropertyDetails()
         m_subscriptionsList->clear();
         m_subscriptionsList->addItem("Client 1 (MUID: 0x12345678)");
     }
+}
+
+void ResponderWidget::checkForLocalUpdates()
+{
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto localProfiles = deviceModel->get_local_profile_states();
+    
+    if (localProfiles.size() != m_lastProfileCount) {
+        emit localProfilesChanged();
+        m_lastProfileCount = localProfiles.size();
+    }
+    
+    emit localPropertiesChanged();
+    emit subscriptionsUpdated();
 }

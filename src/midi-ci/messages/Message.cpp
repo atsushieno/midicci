@@ -1087,7 +1087,7 @@ bool ProfileReply::deserialize(const std::vector<uint8_t>& data) {
     if (data.size() < 2) return false;
     
     size_t pos = 0;
-    uint8_t enabled_count = data[pos++] & 0x7F;
+    uint8_t enabled_count = (data[pos++]) + (data[pos++] & 0x7F);
     
     enabled_profiles_.clear();
     for (int i = 0; i < enabled_count && pos + 5 <= data.size(); ++i) {
@@ -1097,8 +1097,8 @@ bool ProfileReply::deserialize(const std::vector<uint8_t>& data) {
     }
     
     if (pos >= data.size()) return false;
-    uint8_t disabled_count = data[pos++] & 0x7F;
-    
+    uint8_t disabled_count = (data[pos++]) + (data[pos++] & 0x7F);
+
     disabled_profiles_.clear();
     for (int i = 0; i < disabled_count && pos + 5 <= data.size(); ++i) {
         std::vector<uint8_t> profile(data.begin() + pos, data.begin() + pos + 5);

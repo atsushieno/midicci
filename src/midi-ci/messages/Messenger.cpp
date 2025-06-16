@@ -3,6 +3,11 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
 #include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/profiles/ProfileClientFacade.hpp"
+#include "midi-ci/profiles/ProfileHostFacade.hpp"
+#include "midi-ci/properties/PropertyClientFacade.hpp"
+#include "midi-ci/properties/PropertyHostFacade.hpp"
 #include <mutex>
 #include <vector>
 #include <functional>
@@ -463,85 +468,294 @@ uint8_t Messenger::get_next_request_id() noexcept {
     return ++pimpl_->request_id_counter_;
 }
 
+void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
+    auto existing = pimpl_->device_.get_connection(msg.get_source_muid());
+    if (existing) {
+        pimpl_->device_.remove_connection(msg.get_source_muid());
+    }
+    
+    auto connection = pimpl_->device_.create_connection(msg.get_source_muid());
+    
+    send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);
+    send_profile_inquiry(msg.get_common().group, msg.get_source_muid());
+    send_property_get_capabilities(msg.get_common().group, msg.get_source_muid(), 8);
+    send_process_inquiry_capabilities(msg.get_common().group, msg.get_source_muid());
+}
+
+template<typename MessageType, typename Func>
+void Messenger::onClient(const MessageType& msg, Func func) {
+    auto connection = pimpl_->device_.get_connection(msg.get_source_muid());
+    if (connection) {
+        func(connection);
+    }
+}
+
+EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) {
+    const auto& config = pimpl_->device_.get_config();
+    std::vector<uint8_t> data;
+    
+    if (msg.get_status() == 0 && !config.product_instance_id.empty()) {
+        const auto& prod_id = config.product_instance_id;
+        data.assign(prod_id.begin(), prod_id.end());
+    }
+    
+    return EndpointReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        msg.get_status(),
+        data
+    );
+}
+
+std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileInquiry& msg) {
+    std::vector<ProfileReply> replies;
+    
+    std::vector<std::vector<uint8_t>> enabled_profiles;
+    std::vector<std::vector<uint8_t>> disabled_profiles;
+    
+    replies.emplace_back(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        enabled_profiles,
+        disabled_profiles
+    );
+    return replies;
+}
+
+ProcessInquiryCapabilitiesReply Messenger::getProcessInquiryReplyFor(const ProcessInquiryCapabilities& msg) {
+    return ProcessInquiryCapabilitiesReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        0x01
+    );
+}
+
+PropertyGetCapabilitiesReply Messenger::getPropertyCapabilitiesReplyFor(const PropertyGetCapabilities& msg) {
+    uint8_t max_requests = std::min(msg.get_max_simultaneous_requests(), static_cast<uint8_t>(8));
+    return PropertyGetCapabilitiesReply(
+        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
+        max_requests
+    );
+}
+
 void Messenger::processDiscoveryReply(const DiscoveryReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    handleNewEndpoint(msg);
 }
 
 void Messenger::processEndpointReply(const EndpointInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processInvalidateMUID(const InvalidateMUID& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    pimpl_->device_.remove_connection(msg.get_source_muid());
 }
 
 void Messenger::processProfileReply(const ProfileReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_reply(msg);
+    });
 }
 
 void Messenger::processProfileAddedReport(const ProfileAdded& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_added_report(msg);
+    });
 }
 
 void Messenger::processProfileRemovedReport(const ProfileRemoved& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_removed_report(msg);
+    });
 }
 
 void Messenger::processProfileEnabledReport(const ProfileEnabled& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_enabled_report(msg);
+    });
 }
 
 void Messenger::processProfileDisabledReport(const ProfileDisabled& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_disabled_report(msg);
+    });
 }
 
 void Messenger::processProfileDetailsReply(const ProfileDetailsReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_profile_client_facade().process_profile_details_reply(msg);
+    });
 }
 
 void Messenger::processPropertyCapabilitiesReply(const PropertyGetCapabilitiesReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_property_capabilities_reply(msg);
+    });
 }
 
 void Messenger::processGetDataReply(const GetPropertyDataReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_get_data_reply(msg);
+    });
 }
 
 void Messenger::processSetDataReply(const SetPropertyDataReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_set_data_reply(msg);
+    });
 }
 
 void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+        conn->get_property_client_facade().process_subscribe_property_reply(msg);
+    });
 }
 
 void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processDiscovery(const DiscoveryInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    send_discovery_reply(msg.get_common().group, msg.get_source_muid());
 }
 
 void Messenger::processEndpointMessage(const EndpointInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    send(getEndpointReplyForInquiry(msg));
 }
 
 void Messenger::processProfileInquiry(const ProfileInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    auto replies = getProfileRepliesForInquiry(msg);
+    for (const auto& reply : replies) {
+        send(reply);
+    }
 }
 
 void Messenger::processSetProfileOn(const SetProfileOn& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processSetProfileOff(const SetProfileOff& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processProfileDetailsInquiry(const ProfileDetailsReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 void Messenger::processPropertyCapabilitiesInquiry(const PropertyGetCapabilities& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    send(getPropertyCapabilitiesReplyFor(msg));
 }
 
 void Messenger::processGetPropertyData(const GetPropertyData& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    auto reply = pimpl_->device_.get_property_host_facade().process_get_property_data(msg);
+    send(reply);
 }
 
 void Messenger::processSetPropertyData(const SetPropertyData& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    auto reply = pimpl_->device_.get_property_host_facade().process_set_property_data(msg);
+    send(reply);
 }
 
 void Messenger::processSubscribeProperty(const SubscribeProperty& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    auto reply = pimpl_->device_.get_property_host_facade().process_subscribe_property(msg);
+    send(reply);
 }
 
 void Messenger::processProcessInquiry(const ProcessInquiryCapabilities& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+    send(getProcessInquiryReplyFor(msg));
 }
 
 void Messenger::processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data) {
+}
+
+void Messenger::processMidiMessageReport(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
+
+void Messenger::processMidiMessageReportReply(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
+
+void Messenger::processEndOfMidiMessageReport(const MidiMessageReportInquiry& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
 }
 
 } // namespace messages

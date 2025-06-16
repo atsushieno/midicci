@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 namespace midi_ci {
 
@@ -57,6 +58,8 @@ public:
     
     std::shared_ptr<ClientConnection> create_connection(uint8_t destination_id);
     void remove_connection(uint8_t destination_id);
+    std::shared_ptr<ClientConnection> get_connection(uint8_t destination_id) const;
+    const std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>>& get_connections() const;
     
     void processInput(uint8_t group, const std::vector<uint8_t>& sysex_data);
     

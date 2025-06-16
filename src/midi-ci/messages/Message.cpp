@@ -742,6 +742,65 @@ std::string EndpointInquiry::get_body_string() const {
     return oss.str();
 }
 
+EndpointReply::EndpointReply(const Common& common, uint8_t status, const std::vector<uint8_t>& data)
+    : SinglePacketMessage(MessageType::EndpointReply, common), status_(status), data_(data) {
+}
+
+std::vector<uint8_t> EndpointReply::serialize() const {
+    using namespace midi_ci::core::constants;
+    
+    std::vector<uint8_t> result;
+    result.reserve(32);
+    
+    result.push_back(MIDI_CI_SYSEX_START);
+    result.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+    result.push_back(0x7F);
+    result.push_back(MIDI_CI_SUB_ID_1);
+    result.push_back(static_cast<uint8_t>(type_));
+    result.push_back(MIDI_CI_VERSION_1_2);
+    
+    result.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    
+    result.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
+    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    
+    result.push_back(status_);
+    result.insert(result.end(), data_.begin(), data_.end());
+    
+    result.push_back(MIDI_CI_SYSEX_END);
+    return result;
+}
+
+bool EndpointReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 15) return false;
+    
+    status_ = data[14];
+    if (data.size() > 16) {
+        data_.assign(data.begin() + 15, data.end() - 1);
+    } else {
+        data_.clear();
+    }
+    return true;
+}
+
+std::string EndpointReply::get_label() const {
+    return "EndpointReply";
+}
+
+std::string EndpointReply::get_body_string() const {
+    std::ostringstream oss;
+    oss << "status=" << static_cast<int>(status_);
+    if (!data_.empty()) {
+        oss << ", data_size=" << data_.size();
+    }
+    return oss.str();
+}
+
 InvalidateMUID::InvalidateMUID(const Common& common, uint32_t target_muid)
     : SinglePacketMessage(MessageType::InvalidateMUID, common), target_muid_(target_muid) {}
 

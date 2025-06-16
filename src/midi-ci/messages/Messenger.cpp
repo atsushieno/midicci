@@ -223,18 +223,24 @@ void Messenger::send_midi_message_report_inquiry(uint8_t group, uint8_t address,
 void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     using namespace midi_ci::core::constants;
     
-    if (data.size() < 4 || data[0] != MIDI_CI_SYSEX_START || 
-        data[1] != MIDI_CI_UNIVERSAL_SYSEX_ID || data[2] != MIDI_CI_SUB_ID_1) {
+    size_t offset = 0;
+    if (data.size() > 0 && data[0] == MIDI_CI_SYSEX_START) {
+        offset = 1;
+    }
+    
+    if (data.size() < (4 + offset) || 
+        data[offset] != MIDI_CI_UNIVERSAL_SYSEX_ID || 
+        data[offset + 1] != MIDI_CI_SUB_ID_1) {
         return;
     }
     
-    if (data.size() < MIDI_CI_COMMON_HEADER_SIZE) {
+    if (data.size() < (MIDI_CI_COMMON_HEADER_SIZE + offset)) {
         return;
     }
     
-    uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
-    uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
-    uint8_t address = data[4];
+    uint32_t source_muid = data[5 + offset] | (data[6 + offset] << 7) | (data[7 + offset] << 14) | (data[8 + offset] << 21);
+    uint32_t dest_muid = data[9 + offset] | (data[10 + offset] << 7) | (data[11 + offset] << 14) | (data[12 + offset] << 21);
+    uint8_t address = data[4 + offset];
     
     Common common(source_muid, dest_muid, address, group);
     
@@ -242,21 +248,21 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         return;
     }
     
-    CISubId2 message_type = static_cast<CISubId2>(data[3]);
+    CISubId2 message_type = static_cast<CISubId2>(data[3 + offset]);
     
     switch (message_type) {
         case CISubId2::DISCOVERY_REPLY: {
-            if (data.size() >= 30) {
-                std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);  
-                std::string model(reinterpret_cast<const char*>(&data[18]), 2);
-                std::string version(reinterpret_cast<const char*>(&data[20]), 4);
+            if (data.size() >= (30 + offset)) {
+                std::string manufacturer(reinterpret_cast<const char*>(&data[13 + offset]), 3);
+                std::string family(reinterpret_cast<const char*>(&data[16 + offset]), 2);  
+                std::string model(reinterpret_cast<const char*>(&data[18 + offset]), 2);
+                std::string version(reinterpret_cast<const char*>(&data[20 + offset]), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
                 
-                uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 7) | (data[27] << 14) | (data[28] << 21);
-                uint8_t output_path = data.size() > 29 ? data[29] : 0;
-                uint8_t function_block = data.size() > 30 ? data[30] : 0;
+                uint8_t ci_supported = data[24 + offset];
+                uint32_t max_sysex = data[25 + offset] | (data[26 + offset] << 7) | (data[27 + offset] << 14) | (data[28 + offset] << 21);
+                uint8_t output_path = data.size() > (29 + offset) ? data[29 + offset] : 0;
+                uint8_t function_block = data.size() > (30 + offset) ? data[30 + offset] : 0;
                 
                 DiscoveryReply reply(common, device_info, ci_supported, max_sysex, output_path, function_block);
                 processDiscoveryReply(reply);
@@ -264,8 +270,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::INVALIDATE_MUID: {
-            if (data.size() >= 18) {
-                uint32_t target_muid = data[14] | (data[15] << 7) | (data[16] << 14) | (data[17] << 21);
+            if (data.size() >= (18 + offset)) {
+                uint32_t target_muid = data[14 + offset] | (data[15 + offset] << 7) | (data[16 + offset] << 14) | (data[17 + offset] << 21);
                 InvalidateMUID invalidate(common, target_muid);
                 processInvalidateMUID(invalidate);
             }
@@ -279,73 +285,73 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::PROFILE_ADDED_REPORT: {
-            if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+            if (data.size() >= (18 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
                 ProfileAdded added(common, profile_id);
                 processProfileAddedReport(added);
             }
             break;
         }
         case CISubId2::PROFILE_REMOVED_REPORT: {
-            if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+            if (data.size() >= (18 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
                 ProfileRemoved removed(common, profile_id);
                 processProfileRemovedReport(removed);
             }
             break;
         }
         case CISubId2::PROFILE_ENABLED_REPORT: {
-            if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+            if (data.size() >= (20 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
+                uint16_t channels = data[18 + offset] | (data[19 + offset] << 7);
                 ProfileEnabled enabled(common, profile_id, channels);
                 processProfileEnabledReport(enabled);
             }
             break;
         }
         case CISubId2::PROFILE_DISABLED_REPORT: {
-            if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+            if (data.size() >= (20 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
+                uint16_t channels = data[18 + offset] | (data[19 + offset] << 7);
                 ProfileDisabled disabled(common, profile_id, channels);
                 processProfileDisabledReport(disabled);
             }
             break;
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY: {
-            if (data.size() >= 14) {
-                uint8_t max_requests = data[13];
+            if (data.size() >= (14 + offset)) {
+                uint8_t max_requests = data[13 + offset];
                 PropertyGetCapabilitiesReply reply(common, max_requests);
                 processPropertyCapabilitiesReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_GET_DATA_REPLY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
+                std::vector<uint8_t> body(data.begin() + 16 + offset + header_size, data.end() - (offset > 0 ? 1 : 0));
                 GetPropertyDataReply reply(common, request_id, header, body);
                 processGetDataReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_SET_DATA_REPLY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
                 SetPropertyDataReply reply(common, request_id, header);
                 processSetDataReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_SUBSCRIPTION_REPLY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
                 std::vector<uint8_t> body;
                 SubscribePropertyReply reply(common, request_id, header, body);
                 processSubscribePropertyReply(reply);
@@ -353,27 +359,27 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::PROPERTY_NOTIFY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
+                std::vector<uint8_t> body(data.begin() + 16 + offset + header_size, data.end() - (offset > 0 ? 1 : 0));
                 SubscribeProperty notify(common, request_id, header, body);
                 processPropertyNotify(notify);
             }
             break;
         }
         case CISubId2::DISCOVERY_INQUIRY: {
-            if (data.size() >= 30) {
-                std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);  
-                std::string model(reinterpret_cast<const char*>(&data[18]), 2);
-                std::string version(reinterpret_cast<const char*>(&data[20]), 4);
+            if (data.size() >= (30 + offset)) {
+                std::string manufacturer(reinterpret_cast<const char*>(&data[13 + offset]), 3);
+                std::string family(reinterpret_cast<const char*>(&data[16 + offset]), 2);  
+                std::string model(reinterpret_cast<const char*>(&data[18 + offset]), 2);
+                std::string version(reinterpret_cast<const char*>(&data[20 + offset]), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
                 
-                uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 7) | (data[27] << 14) | (data[28] << 21);
-                uint8_t output_path = data.size() > 29 ? data[29] : 0;
+                uint8_t ci_supported = data[24 + offset];
+                uint32_t max_sysex = data[25 + offset] | (data[26 + offset] << 7) | (data[27 + offset] << 14) | (data[28 + offset] << 21);
+                uint8_t output_path = data.size() > (29 + offset) ? data[29 + offset] : 0;
                 
                 DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);
                 processDiscovery(inquiry);
@@ -386,65 +392,67 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::PROFILE_SET_ON: {
-            if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+            if (data.size() >= (20 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
+                uint16_t channels = data[18 + offset] | (data[19 + offset] << 7);
                 SetProfileOn set_on(common, profile_id, channels);
                 processSetProfileOn(set_on);
             }
             break;
         }
         case CISubId2::PROFILE_SET_OFF: {
-            if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+            if (data.size() >= (18 + offset)) {
+                std::vector<uint8_t> profile_id(data.begin() + 13 + offset, data.begin() + 18 + offset);
                 SetProfileOff set_off(common, profile_id);
                 processSetProfileOff(set_off);
             }
             break;
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY: {
-            if (data.size() >= 14) {
-                uint8_t max_requests = data[13];
+            if (data.size() >= (14 + offset)) {
+                uint8_t max_requests = data[13 + offset];
                 PropertyGetCapabilities inquiry(common, max_requests);
                 processPropertyCapabilitiesInquiry(inquiry);
             }
             break;
         }
         case CISubId2::PROPERTY_GET_DATA_INQUIRY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
                 GetPropertyData inquiry(common, request_id, header);
                 processGetPropertyData(inquiry);
             }
             break;
         }
         case CISubId2::PROPERTY_SET_DATA_INQUIRY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
+                std::vector<uint8_t> body(data.begin() + 16 + offset + header_size, data.end() - (offset > 0 ? 1 : 0));
                 SetPropertyData inquiry(common, request_id, header, body);
                 processSetPropertyData(inquiry);
             }
             break;
         }
         case CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY: {
-            if (data.size() >= 16) {
-                uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+            if (data.size() >= (16 + offset)) {
+                uint8_t request_id = data[13 + offset];
+                uint16_t header_size = data[14 + offset] | (data[15 + offset] << 7);
+                std::vector<uint8_t> header(data.begin() + 16 + offset, data.begin() + 16 + offset + header_size);
+                std::vector<uint8_t> body(data.begin() + 16 + offset + header_size, data.end() - (offset > 0 ? 1 : 0));
                 SubscribeProperty inquiry(common, request_id, header, body);
                 processSubscribeProperty(inquiry);
             }
             break;
         }
-        default:
-            processUnknownCIMessage(common, data);
+        default: {
+            std::vector<uint8_t> adjusted_data(data.begin() + offset, data.end());
+            processUnknownCIMessage(common, adjusted_data);
             break;
+        }
     }
 }
 

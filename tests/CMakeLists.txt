@@ -6,6 +6,11 @@ set(GTEST_SOURCES
     test_messenger.cpp
     test_profile_manager.cpp
     test_json_serialization.cpp
+    test_ci_factory.cpp
+    test_midi_ci_device_extended.cpp
+    test_midi_ci_converter.cpp
+    test_property_facades.cpp
+    test_profile_facades.cpp
 )
 
 set(CUSTOM_TEST_SOURCES

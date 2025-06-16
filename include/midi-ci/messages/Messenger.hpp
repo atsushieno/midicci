@@ -6,6 +6,10 @@
 #include <functional>
 #include "Message.hpp"
 
+namespace ci_tool {
+class CIToolRepository;
+}
+
 namespace midi_ci {
 namespace messages {
 
@@ -75,6 +79,8 @@ public:
     void remove_message_callback(MessageCallback callback);
     
     uint8_t get_next_request_id() noexcept;
+    
+    void set_repository(void* repository);
     
 private:
     void processDiscoveryReply(const DiscoveryReply& msg);

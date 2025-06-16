@@ -8,6 +8,7 @@
 #include "midi-ci/profiles/ProfileHostFacade.hpp"
 #include "midi-ci/properties/PropertyClientFacade.hpp"
 #include "midi-ci/properties/PropertyHostFacade.hpp"
+// #include "../../../tools/ci-tool/include/CIToolRepository.hpp"
 #include <mutex>
 #include <vector>
 #include <functional>
@@ -20,17 +21,24 @@ namespace messages {
 class Messenger::Impl {
 public:
     explicit Impl(core::MidiCIDevice& device) 
-        : device_(device), request_id_counter_(0) {}
+        : device_(device), request_id_counter_(0), repository_(nullptr) {}
     
     core::MidiCIDevice& device_;
     std::vector<MessageCallback> callbacks_;
     mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
+    void* repository_;
     
     void notify_callbacks(const Message& message) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& callback : callbacks_) {
             callback(message);
+        }
+    }
+    
+    void log_message(const Message& message, int direction) {
+        if (repository_) {
+            std::string log_entry = message.get_label() + ": " + message.get_body_string();
         }
     }
 };
@@ -41,6 +49,8 @@ Messenger::Messenger(core::MidiCIDevice& device)
 Messenger::~Messenger() = default;
 
 void Messenger::send(const Message& message) {
+    pimpl_->log_message(message, 1);
+    
     auto serialized = message.serialize();
     if (!serialized.empty()) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
@@ -260,6 +270,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
                 
                 DiscoveryReply reply(common, device_info, ci_supported, max_sysex, output_path, function_block);
+                pimpl_->log_message(reply, 0);
                 processDiscoveryReply(reply);
             }
             break;
@@ -268,6 +279,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 18) {
                 uint32_t target_muid = data[14] | (data[15] << 8) | (data[16] << 16) | (data[17] << 24);
                 InvalidateMUID invalidate(common, target_muid);
+                pimpl_->log_message(invalidate, 0);
                 processInvalidateMUID(invalidate);
             }
             break;
@@ -276,6 +288,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             std::vector<std::vector<uint8_t>> enabled_profiles;
             std::vector<std::vector<uint8_t>> disabled_profiles;
             ProfileReply reply(common, enabled_profiles, disabled_profiles);
+            pimpl_->log_message(reply, 0);
             processProfileReply(reply);
             break;
         }
@@ -283,6 +296,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 18) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 ProfileAdded added(common, profile_id);
+                pimpl_->log_message(added, 0);
                 processProfileAddedReport(added);
             }
             break;
@@ -291,6 +305,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 18) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 ProfileRemoved removed(common, profile_id);
+                pimpl_->log_message(removed, 0);
                 processProfileRemovedReport(removed);
             }
             break;
@@ -300,6 +315,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 uint16_t channels = data[18] | (data[19] << 7);
                 ProfileEnabled enabled(common, profile_id, channels);
+                pimpl_->log_message(enabled, 0);
                 processProfileEnabledReport(enabled);
             }
             break;
@@ -309,6 +325,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 uint16_t channels = data[18] | (data[19] << 7);
                 ProfileDisabled disabled(common, profile_id, channels);
+                pimpl_->log_message(disabled, 0);
                 processProfileDisabledReport(disabled);
             }
             break;
@@ -317,6 +334,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 14) {
                 uint8_t max_requests = data[13];
                 PropertyGetCapabilitiesReply reply(common, max_requests);
+                pimpl_->log_message(reply, 0);
                 processPropertyCapabilitiesReply(reply);
             }
             break;
@@ -328,6 +346,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 GetPropertyDataReply reply(common, request_id, header, body);
+                pimpl_->log_message(reply, 0);
                 processGetDataReply(reply);
             }
             break;
@@ -338,6 +357,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 SetPropertyDataReply reply(common, request_id, header);
+                pimpl_->log_message(reply, 0);
                 processSetDataReply(reply);
             }
             break;
@@ -349,6 +369,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 std::vector<uint8_t> body;
                 SubscribePropertyReply reply(common, request_id, header, body);
+                pimpl_->log_message(reply, 0);
                 processSubscribePropertyReply(reply);
             }
             break;
@@ -360,6 +381,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SubscribeProperty notify(common, request_id, header, body);
+                pimpl_->log_message(notify, 0);
                 processPropertyNotify(notify);
             }
             break;
@@ -377,12 +399,14 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 
                 DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);
+                pimpl_->log_message(inquiry, 0);
                 processDiscovery(inquiry);
             }
             break;
         }
         case CISubId2::PROFILE_INQUIRY: {
             ProfileInquiry inquiry(common);
+            pimpl_->log_message(inquiry, 0);
             processProfileInquiry(inquiry);
             break;
         }
@@ -391,6 +415,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 uint16_t channels = data[18] | (data[19] << 7);
                 SetProfileOn set_on(common, profile_id, channels);
+                pimpl_->log_message(set_on, 0);
                 processSetProfileOn(set_on);
             }
             break;
@@ -399,6 +424,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 18) {
                 std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
                 SetProfileOff set_off(common, profile_id);
+                pimpl_->log_message(set_off, 0);
                 processSetProfileOff(set_off);
             }
             break;
@@ -407,6 +433,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             if (data.size() >= 14) {
                 uint8_t max_requests = data[13];
                 PropertyGetCapabilities inquiry(common, max_requests);
+                pimpl_->log_message(inquiry, 0);
                 processPropertyCapabilitiesInquiry(inquiry);
             }
             break;
@@ -417,6 +444,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 GetPropertyData inquiry(common, request_id, header);
+                pimpl_->log_message(inquiry, 0);
                 processGetPropertyData(inquiry);
             }
             break;
@@ -428,6 +456,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SetPropertyData inquiry(common, request_id, header, body);
+                pimpl_->log_message(inquiry, 0);
                 processSetPropertyData(inquiry);
             }
             break;
@@ -439,6 +468,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
                 std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SubscribeProperty inquiry(common, request_id, header, body);
+                pimpl_->log_message(inquiry, 0);
                 processSubscribeProperty(inquiry);
             }
             break;
@@ -758,6 +788,10 @@ void Messenger::processEndOfMidiMessageReport(const MidiMessageReportInquiry& ms
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+}
+
+void Messenger::set_repository(void* repository) {
+    pimpl_->repository_ = static_cast<ci_tool::CIToolRepository*>(repository);
 }
 
 } // namespace messages

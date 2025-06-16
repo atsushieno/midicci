@@ -40,6 +40,9 @@ public:
     
     bool is_initialized() const noexcept;
     
+    void add_input_opened_callback(std::function<void()> callback);
+    void add_output_opened_callback(std::function<void()> callback);
+    
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

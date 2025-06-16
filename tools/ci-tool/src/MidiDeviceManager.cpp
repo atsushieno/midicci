@@ -14,6 +14,13 @@ public:
     SysExSender sysex_sender_;
     std::string current_input_device_;
     std::string current_output_device_;
+    
+    std::unique_ptr<libremidi::midi_in> midi_input_;
+    std::unique_ptr<libremidi::midi_out> midi_output_;
+    
+    std::vector<std::function<void()>> midi_input_opened_;
+    std::vector<std::function<void()>> midi_output_opened_;
+    
     mutable std::mutex mutex_;
 };
 
@@ -34,6 +41,15 @@ void MidiDeviceManager::initialize() {
 void MidiDeviceManager::shutdown() {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (pimpl_->initialized_) {
+        if (pimpl_->midi_input_) {
+            pimpl_->midi_input_->close_port();
+            pimpl_->midi_input_.reset();
+        }
+        if (pimpl_->midi_output_) {
+            pimpl_->midi_output_->close_port();
+            pimpl_->midi_output_.reset();
+        }
+        
         pimpl_->initialized_ = false;
         std::cout << "MidiDeviceManager shutdown" << std::endl;
     }
@@ -53,6 +69,15 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& da
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (pimpl_->sysex_sender_) {
         return pimpl_->sysex_sender_(group, data);
+    }
+    
+    if (pimpl_->midi_output_) {
+        try {
+            pimpl_->midi_output_->send_message(data);
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Error sending MIDI message: " << e.what() << std::endl;
+        }
     }
     return false;
 }
@@ -92,15 +117,97 @@ std::vector<std::string> MidiDeviceManager::get_available_output_devices() const
 
 bool MidiDeviceManager::set_input_device(const std::string& device_id) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    
+    if (pimpl_->midi_input_) {
+        pimpl_->midi_input_->close_port();
+        pimpl_->midi_input_.reset();
+    }
+    
+    if (!device_id.empty()) {
+        try {
+            libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+            auto input_ports = obs.get_input_ports();
+            
+            for (const auto& port : input_ports) {
+                if (port.port_name == device_id) {
+                    libremidi::input_configuration config{
+                        .on_message = [this](const libremidi::message& message) {
+                            std::vector<uint8_t> data(message.bytes.begin(), message.bytes.end());
+                            process_incoming_sysex(0, data);
+                        },
+                        .ignore_sysex = false
+                    };
+                    
+                    pimpl_->midi_input_ = std::make_unique<libremidi::midi_in>(config);
+                    
+                    if (auto err = pimpl_->midi_input_->open_port(port); err != stdx::error{}) {
+                        auto msg = err.message();
+                        std::cerr << "Error opening input port: " << std::string(msg.data(), msg.size()) << std::endl;
+                        pimpl_->midi_input_.reset();
+                        return false;
+                    }
+                    
+                    pimpl_->current_input_device_ = device_id;
+                    
+                    for (const auto& callback : pimpl_->midi_input_opened_) {
+                        callback();
+                    }
+                    
+                    std::cout << "Opened input device: " << device_id << std::endl;
+                    return true;
+                }
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error opening input device: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
     pimpl_->current_input_device_ = device_id;
-    std::cout << "Set input device: " << device_id << std::endl;
     return true;
 }
 
 bool MidiDeviceManager::set_output_device(const std::string& device_id) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    
+    if (pimpl_->midi_output_) {
+        pimpl_->midi_output_->close_port();
+        pimpl_->midi_output_.reset();
+    }
+    
+    if (!device_id.empty()) {
+        try {
+            libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+            auto output_ports = obs.get_output_ports();
+            
+            for (const auto& port : output_ports) {
+                if (port.port_name == device_id) {
+                    pimpl_->midi_output_ = std::make_unique<libremidi::midi_out>();
+                    
+                    if (auto err = pimpl_->midi_output_->open_port(port); err != stdx::error{}) {
+                        auto msg = err.message();
+                        std::cerr << "Error opening output port: " << std::string(msg.data(), msg.size()) << std::endl;
+                        pimpl_->midi_output_.reset();
+                        return false;
+                    }
+                    
+                    pimpl_->current_output_device_ = device_id;
+                    
+                    for (const auto& callback : pimpl_->midi_output_opened_) {
+                        callback();
+                    }
+                    
+                    std::cout << "Opened output device: " << device_id << std::endl;
+                    return true;
+                }
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error opening output device: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
     pimpl_->current_output_device_ = device_id;
-    std::cout << "Set output device: " << device_id << std::endl;
     return true;
 }
 
@@ -117,6 +224,16 @@ std::string MidiDeviceManager::get_current_output_device() const {
 bool MidiDeviceManager::is_initialized() const noexcept {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->initialized_;
+}
+
+void MidiDeviceManager::add_input_opened_callback(std::function<void()> callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->midi_input_opened_.push_back(std::move(callback));
+}
+
+void MidiDeviceManager::add_output_opened_callback(std::function<void()> callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->midi_output_opened_.push_back(std::move(callback));
 }
 
 } // namespace ci_tool

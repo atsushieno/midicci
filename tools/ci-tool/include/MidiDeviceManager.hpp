@@ -11,7 +11,7 @@ namespace ci_tool {
 class MidiDeviceManager {
 public:
     using SysExCallback = std::function<void(uint8_t group, const std::vector<uint8_t>& data)>;
-    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     MidiDeviceManager();
     ~MidiDeviceManager();
@@ -23,7 +23,7 @@ public:
     void shutdown();
     
     void set_sysex_callback(SysExCallback callback);
-    void set_sysex_sender(SysExSender sender);
+    void set_ci_output_sender(CIOutputSender sender);
     
     bool send_sysex(uint8_t group, const std::vector<uint8_t>& data);
     

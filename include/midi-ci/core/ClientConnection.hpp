@@ -25,7 +25,7 @@ class MidiCIDevice;
 class ClientConnection {
 public:
     using MessageCallback = std::function<void(const messages::Message&)>;
-    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     explicit ClientConnection(uint8_t destination_id);
     ~ClientConnection();
@@ -39,7 +39,7 @@ public:
     uint8_t get_destination_id() const noexcept;
     
     void set_message_callback(MessageCallback callback);
-    void set_sysex_sender(SysExSender sender);
+    void set_ci_output_sender(CIOutputSender sender);
     
     void send_message(const messages::Message& message);
     void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);

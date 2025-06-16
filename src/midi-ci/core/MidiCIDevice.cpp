@@ -21,6 +21,7 @@ public:
     uint8_t device_id_;
     bool initialized_;
     MessageCallback message_callback_;
+    MidiCIDevice::CIOutputSender ci_output_sender_;
     std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>> connections_;
     std::unique_ptr<profiles::ProfileHostFacade> profile_host_facade_;
     std::unique_ptr<properties::PropertyHostFacade> property_host_facade_;
@@ -100,8 +101,14 @@ midi_ci::core::DeviceConfig MidiCIDevice::get_config() const {
     return {};
 }
 
-void MidiCIDevice::set_sysex_sender(SysExSender sender) {
+void MidiCIDevice::set_sysex_sender(MidiCIDevice::CIOutputSender sender) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->ci_output_sender_ = std::move(sender);
+}
+
+MidiCIDevice::CIOutputSender MidiCIDevice::get_ci_output_sender() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->ci_output_sender_;
 }
 
 void MidiCIDevice::set_sysex_transport(std::unique_ptr<midi_ci::transport::SysExTransport> transport) {

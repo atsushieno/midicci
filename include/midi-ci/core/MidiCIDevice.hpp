@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include "midi-ci/messages/Messenger.hpp"
 
 namespace midi_ci {
 

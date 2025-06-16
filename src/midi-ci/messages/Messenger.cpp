@@ -223,8 +223,9 @@ void Messenger::send_midi_message_report_inquiry(uint8_t group, uint8_t address,
 void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     using namespace midi_ci::core::constants;
     
-    if (data.size() < 4 || data[0] != MIDI_CI_SYSEX_START || 
-        data[1] != MIDI_CI_UNIVERSAL_SYSEX_ID || data[2] != MIDI_CI_SUB_ID_1) {
+    if (data.size() < 4 || 
+        data[0] != MIDI_CI_UNIVERSAL_SYSEX_ID || 
+        data[1] != MIDI_CI_SUB_ID_1) {
         return;
     }
     
@@ -325,7 +326,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 GetPropertyDataReply reply(common, request_id, header, body);
                 processGetDataReply(reply);
             }
@@ -357,7 +358,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SubscribeProperty notify(common, request_id, header, body);
                 processPropertyNotify(notify);
             }
@@ -425,7 +426,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SetPropertyData inquiry(common, request_id, header, body);
                 processSetPropertyData(inquiry);
             }
@@ -436,15 +437,16 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
                 std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end() - 1);
+                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
                 SubscribeProperty inquiry(common, request_id, header, body);
                 processSubscribeProperty(inquiry);
             }
             break;
         }
-        default:
+        default: {
             processUnknownCIMessage(common, data);
             break;
+        }
     }
 }
 

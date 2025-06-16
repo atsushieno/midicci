@@ -77,11 +77,7 @@ std::shared_ptr<midi_ci::core::MidiCIDevice> CIDeviceModel::get_device() const {
 void CIDeviceModel::process_ci_message(uint8_t group, const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->device_) {
-        std::vector<uint8_t> sysex_data;
-        sysex_data.push_back(0xF0);
-        sysex_data.insert(sysex_data.end(), data.begin(), data.end());
-        sysex_data.push_back(0xF7);
-        pimpl_->device_->processInput(group, sysex_data);
+        pimpl_->device_->processInput(group, data);
     }
 }
 

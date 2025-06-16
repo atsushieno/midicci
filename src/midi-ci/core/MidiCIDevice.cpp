@@ -170,5 +170,10 @@ MidiCIDevice::LoggerFunction MidiCIDevice::get_logger() const {
     return pimpl_->logger_;
 }
 
+messages::Messenger& MidiCIDevice::get_messenger() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->messenger_;
+}
+
 } // namespace core
 } // namespace midi_ci

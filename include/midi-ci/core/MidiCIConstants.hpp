@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 
 namespace midi_ci {
 namespace core {
@@ -44,12 +45,30 @@ constexpr uint8_t PROPERTY_EXCHANGE_SUBSCRIPTION = 0x38;
 constexpr uint8_t PROPERTY_EXCHANGE_SUBSCRIPTION_REPLY = 0x39;
 constexpr uint8_t PROPERTY_EXCHANGE_NOTIFY = 0x3F;
 
-constexpr uint32_t BROADCAST_MUID = 0x0FFFFFFF;
+constexpr uint32_t BROADCAST_MUID = 0x7F7F7F7F;
 constexpr uint32_t FUNCTION_BLOCK_MUID = 0x10000000;
-constexpr uint32_t MIDI_CI_BROADCAST_MUID_32 = 0x0FFFFFFF;
+constexpr uint32_t MIDI_CI_BROADCAST_MUID_32 = 0x7F7F7F7F;
 
 constexpr uint8_t MIDI_CI_ADDRESS_FUNCTION_BLOCK = 0x7F;
 constexpr size_t MIDI_CI_COMMON_HEADER_SIZE = 13;
+
+inline void serialize_muid_32(std::vector<uint8_t>& data, uint32_t muid) {
+    data.push_back(static_cast<uint8_t>(muid & 0xFF));
+    data.push_back(static_cast<uint8_t>((muid >> 8) & 0xFF));
+    data.push_back(static_cast<uint8_t>((muid >> 16) & 0xFF));
+    data.push_back(static_cast<uint8_t>((muid >> 24) & 0xFF));
+}
+
+inline void serialize_common_header(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2, 
+                                   uint8_t version, uint32_t source_muid, uint32_t dest_muid) {
+    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+    data.push_back(address);
+    data.push_back(MIDI_CI_SUB_ID_1);
+    data.push_back(sub_id_2);
+    data.push_back(version);
+    serialize_muid_32(data, source_muid);
+    serialize_muid_32(data, dest_muid);
+}
 
 constexpr size_t MIDI_CI_PROFILE_ID_SIZE = 5;
 

@@ -14,11 +14,12 @@ namespace core {
 
 class MidiCIDevice::Impl {
 public:
-    Impl(MidiCIDevice& device) : device_id_(0x7F), initialized_(false), 
+    Impl(MidiCIDevice& device, uint32_t muid) : device_id_(0x7F), muid_(muid), initialized_(false), 
         profile_host_facade_(std::make_unique<profiles::ProfileHostFacade>(device)),
         property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)) {}
     
     uint8_t device_id_;
+    uint32_t muid_;
     bool initialized_;
     MessageCallback message_callback_;
     MidiCIDevice::CIOutputSender ci_output_sender_;
@@ -28,7 +29,7 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-MidiCIDevice::MidiCIDevice() : pimpl_(std::make_unique<Impl>(*this)) {}
+MidiCIDevice::MidiCIDevice(uint32_t muid) : pimpl_(std::make_unique<Impl>(*this, muid)) {}
 
 MidiCIDevice::~MidiCIDevice() = default;
 
@@ -100,8 +101,7 @@ void MidiCIDevice::processInput(uint8_t group, const std::vector<uint8_t>& sysex
 
 uint32_t MidiCIDevice::get_muid() const noexcept {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    static uint32_t muid = 0x12345678;
-    return muid;
+    return pimpl_->muid_;
 }
 
 midi_ci::messages::DeviceInfo MidiCIDevice::get_device_info() const {
@@ -132,7 +132,7 @@ void MidiCIDevice::sendDiscovery() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->initialized_) {
         messages::Messenger messenger(*this);
-        messenger.send_discovery_inquiry(0, 0x0FFFFFFF);
+        messenger.send_discovery_inquiry(0, 0x7F7F7F7F);
     }
 }
 

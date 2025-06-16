@@ -8,6 +8,11 @@
 namespace midi_ci {
 namespace messages {
 class Message;
+struct DeviceInfo;
+}
+
+namespace json {
+class JsonValue;
 }
 
 namespace profiles {
@@ -52,6 +57,15 @@ public:
     
     properties::PropertyClientFacade& get_property_client_facade();
     const properties::PropertyClientFacade& get_property_client_facade() const;
+    
+    void set_device_info(const messages::DeviceInfo& device_info);
+    const messages::DeviceInfo* get_device_info() const;
+    
+    void set_channel_list(const json::JsonValue& channel_list);
+    const json::JsonValue* get_channel_list() const;
+    
+    void set_json_schema(const json::JsonValue& json_schema);
+    const json::JsonValue* get_json_schema() const;
     
 private:
     class Impl;

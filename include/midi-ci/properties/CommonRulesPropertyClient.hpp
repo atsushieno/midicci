@@ -2,11 +2,15 @@
 
 #include "midi-ci/properties/PropertyClientFacade.hpp"
 #include "midi-ci/properties/CommonRulesPropertyHelper.hpp"
+#include "midi-ci/properties/PropertyManager.hpp"
 #include <memory>
 #include <vector>
 #include <functional>
 
 namespace midi_ci {
+namespace json {
+class JsonValue;
+}
 namespace core {
 class MidiCIDevice;
 class ClientConnection;
@@ -41,12 +45,19 @@ public:
     void request_property_list(uint8_t group) override;
     
     void add_property_catalog_updated_callback(std::function<void()> callback);
+    
+    std::vector<PropertyMetadata> get_metadata_list() const;
 
 private:
     core::MidiCIDevice& device_;
     core::ClientConnection& conn_;
     std::unique_ptr<CommonRulesPropertyHelper> helper_;
     std::vector<std::function<void()>> property_catalog_updated_callbacks_;
+    std::vector<PropertyMetadata> resource_list_;
+    std::vector<SubscriptionEntry> subscriptions_;
+    
+    std::vector<PropertyMetadata> get_metadata_list_for_body(const std::vector<uint8_t>& body);
+    void convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, json::JsonValue& result);
 };
 
 } // namespace properties

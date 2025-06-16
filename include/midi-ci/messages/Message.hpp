@@ -577,5 +577,51 @@ private:
     uint8_t supported_features_;
 };
 
+class MidiMessageReportReply : public SinglePacketMessage {
+public:
+    MidiMessageReportReply(const Common& common, uint8_t system_messages, uint8_t channel_controller_messages, uint8_t note_data_messages);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    uint8_t get_system_messages() const { return system_messages_; }
+    uint8_t get_channel_controller_messages() const { return channel_controller_messages_; }
+    uint8_t get_note_data_messages() const { return note_data_messages_; }
+    
+private:
+    uint8_t system_messages_;
+    uint8_t channel_controller_messages_;
+    uint8_t note_data_messages_;
+};
+
+class MidiMessageReportNotifyEnd : public SinglePacketMessage {
+public:
+    MidiMessageReportNotifyEnd(const Common& common);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+};
+
+class ProfileSpecificData : public SinglePacketMessage {
+public:
+    ProfileSpecificData(const Common& common, const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data);
+    
+    std::vector<uint8_t> serialize() const override;
+    bool deserialize(const std::vector<uint8_t>& data) override;
+    std::string get_label() const override;
+    std::string get_body_string() const override;
+    
+    const std::vector<uint8_t>& get_profile_id() const { return profile_id_; }
+    const std::vector<uint8_t>& get_data() const { return data_; }
+    
+private:
+    std::vector<uint8_t> profile_id_;
+    std::vector<uint8_t> data_;
+};
+
 } // namespace messages
 } // namespace midi_ci

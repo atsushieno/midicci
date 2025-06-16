@@ -1396,5 +1396,144 @@ std::string ProcessInquiryCapabilitiesReply::get_body_string() const {
     return "supported_features=" + std::to_string(supported_features_);
 }
 
+// MidiMessageReportReply implementation
+MidiMessageReportReply::MidiMessageReportReply(const Common& common, uint8_t system_messages, uint8_t channel_controller_messages, uint8_t note_data_messages)
+    : SinglePacketMessage(MessageType::MidiMessageReportInquiry, common), system_messages_(system_messages), channel_controller_messages_(channel_controller_messages), note_data_messages_(note_data_messages) {}
+
+std::vector<uint8_t> MidiMessageReportReply::serialize() const {
+    std::vector<uint8_t> data;
+    data.reserve(32);
+    
+    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+    data.push_back(0x7F);
+    data.push_back(MIDI_CI_SUB_ID_1);
+    data.push_back(static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT_REPLY));
+    data.push_back(MIDI_CI_VERSION_1_2);
+    
+    serialize_muid_32(data, common_.source_muid);
+    serialize_muid_32(data, common_.destination_muid);
+    
+    data.push_back(system_messages_);
+    data.push_back(0); // reserved
+    data.push_back(channel_controller_messages_);
+    data.push_back(note_data_messages_);
+    
+    data.push_back(MIDI_CI_SYSEX_END);
+    return data;
+}
+
+bool MidiMessageReportReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 17) return false;
+    system_messages_ = data[13];
+    channel_controller_messages_ = data[15];
+    note_data_messages_ = data[16];
+    return true;
+}
+
+std::string MidiMessageReportReply::get_label() const {
+    return "MidiMessageReportReply";
+}
+
+std::string MidiMessageReportReply::get_body_string() const {
+    std::ostringstream oss;
+    oss << "systemMessages=" << static_cast<int>(system_messages_) 
+        << ", channelControllerMessages=" << static_cast<int>(channel_controller_messages_)
+        << ", noteDataMessages=" << static_cast<int>(note_data_messages_);
+    return oss.str();
+}
+
+// MidiMessageReportNotifyEnd implementation
+MidiMessageReportNotifyEnd::MidiMessageReportNotifyEnd(const Common& common)
+    : SinglePacketMessage(MessageType::MidiMessageReportInquiry, common) {}
+
+std::vector<uint8_t> MidiMessageReportNotifyEnd::serialize() const {
+    std::vector<uint8_t> data;
+    data.reserve(32);
+    
+    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+    data.push_back(0x7F);
+    data.push_back(MIDI_CI_SUB_ID_1);
+    data.push_back(static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_END_OF_MIDI_MESSAGE));
+    data.push_back(MIDI_CI_VERSION_1_2);
+    
+    serialize_muid_32(data, common_.source_muid);
+    serialize_muid_32(data, common_.destination_muid);
+    
+    data.push_back(MIDI_CI_SYSEX_END);
+    return data;
+}
+
+bool MidiMessageReportNotifyEnd::deserialize(const std::vector<uint8_t>& data) {
+    return data.size() >= 13;
+}
+
+std::string MidiMessageReportNotifyEnd::get_label() const {
+    return "MidiMessageReportNotifyEnd";
+}
+
+std::string MidiMessageReportNotifyEnd::get_body_string() const {
+    return "";
+}
+
+ProfileSpecificData::ProfileSpecificData(const Common& common, const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data)
+    : SinglePacketMessage(MessageType::ProfileInquiry, common), profile_id_(profile_id), data_(data) {}
+
+std::vector<uint8_t> ProfileSpecificData::serialize() const {
+    std::vector<uint8_t> data;
+    data.reserve(32 + data_.size());
+    
+    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
+    data.push_back(0x7F);
+    data.push_back(MIDI_CI_SUB_ID_1);
+    data.push_back(static_cast<uint8_t>(CISubId2::PROFILE_SPECIFIC_DATA));
+    data.push_back(MIDI_CI_VERSION_1_2);
+    
+    serialize_muid_32(data, common_.source_muid);
+    serialize_muid_32(data, common_.destination_muid);
+    
+    for (size_t i = 0; i < 5 && i < profile_id_.size(); ++i) {
+        data.push_back(profile_id_[i]);
+    }
+    for (size_t i = profile_id_.size(); i < 5; ++i) {
+        data.push_back(0);
+    }
+    
+    uint16_t data_length = static_cast<uint16_t>(data_.size());
+    data.push_back(data_length & 0x7F);
+    data.push_back((data_length >> 7) & 0x7F);
+    
+    data.insert(data.end(), data_.begin(), data_.end());
+    
+    data.push_back(MIDI_CI_SYSEX_END);
+    return data;
+}
+
+bool ProfileSpecificData::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 22) return false;
+    
+    profile_id_.assign(data.begin() + 13, data.begin() + 18);
+    uint16_t data_length = data[19] | (data[20] << 7);
+    
+    if (data.size() < 22 + data_length) return false;
+    data_.assign(data.begin() + 22, data.begin() + 22 + data_length);
+    
+    return true;
+}
+
+std::string ProfileSpecificData::get_label() const {
+    return "ProfileSpecificData";
+}
+
+std::string ProfileSpecificData::get_body_string() const {
+    std::ostringstream oss;
+    oss << "profileId=[";
+    for (size_t i = 0; i < profile_id_.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << "0x" << std::hex << static_cast<int>(profile_id_[i]);
+    }
+    oss << "], dataSize=" << std::dec << data_.size();
+    return oss.str();
+}
+
 } // namespace messages
 } // namespace midi_ci

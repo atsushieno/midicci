@@ -83,6 +83,8 @@ public:
     void set_logger(LoggerFunction logger);
     LoggerFunction get_logger() const;
     
+    messages::Messenger& get_messenger();
+    
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

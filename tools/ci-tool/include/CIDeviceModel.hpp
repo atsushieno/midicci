@@ -32,7 +32,8 @@ public:
     
     explicit CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
                           CIOutputSender ci_output_sender,
-                          MidiMessageReportSender midi_message_report_sender);
+                          MidiMessageReportSender midi_message_report_sender,
+                          std::function<void(const std::string&, bool)> logger = {});
     ~CIDeviceModel();
     
     CIDeviceModel(const CIDeviceModel&) = delete;

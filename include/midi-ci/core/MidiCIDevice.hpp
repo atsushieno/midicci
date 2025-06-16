@@ -38,7 +38,7 @@ public:
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using LoggerFunction = std::function<void(const std::string&, bool)>;
     
-    MidiCIDevice(uint32_t muid = 0x12345678);
+    MidiCIDevice(uint32_t muid = 0x12345678, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();
     
     MidiCIDevice(const MidiCIDevice&) = delete;

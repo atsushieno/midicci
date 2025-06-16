@@ -63,9 +63,14 @@ void CIDeviceManager::initialize() {
         return pimpl_->midi_device_manager_->send_sysex(group, data);
     };
     
+    auto logger_wrapper = [this](const std::string& message, bool is_outgoing) {
+        MessageDirection direction = is_outgoing ? MessageDirection::Out : MessageDirection::In;
+        pimpl_->repository_.log(message, direction);
+    };
+    
     pimpl_->device_model_ = std::make_shared<CIDeviceModel>(
         *this, pimpl_->repository_.get_muid(),
-        ci_output_sender, midi_message_report_sender);
+        ci_output_sender, midi_message_report_sender, logger_wrapper);
     
     pimpl_->device_model_->initialize();
     

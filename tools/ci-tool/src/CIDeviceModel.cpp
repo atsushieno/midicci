@@ -81,7 +81,7 @@ void CIDeviceModel::process_ci_message(uint8_t group, const std::vector<uint8_t>
         sysex_data.push_back(0xF0);
         sysex_data.insert(sysex_data.end(), data.begin(), data.end());
         sysex_data.push_back(0xF7);
-        pimpl_->device_->process_incoming_sysex(group, sysex_data);
+        pimpl_->device_->processInput(group, sysex_data);
     }
 }
 

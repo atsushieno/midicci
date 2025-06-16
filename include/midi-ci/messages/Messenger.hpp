@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include "Message.hpp"
 
 namespace midi_ci {
 namespace messages {
@@ -76,6 +77,34 @@ public:
     uint8_t get_next_request_id() noexcept;
     
 private:
+    void processDiscoveryReply(const DiscoveryReply& msg);
+    void processEndpointReply(const EndpointInquiry& msg);
+    void processInvalidateMUID(const InvalidateMUID& msg);
+    void processProfileReply(const ProfileReply& msg);
+    void processProfileAddedReport(const ProfileAdded& msg);
+    void processProfileRemovedReport(const ProfileRemoved& msg);
+    void processProfileEnabledReport(const ProfileEnabled& msg);
+    void processProfileDisabledReport(const ProfileDisabled& msg);
+    void processProfileDetailsReply(const ProfileDetailsReply& msg);
+    void processPropertyCapabilitiesReply(const PropertyGetCapabilitiesReply& msg);
+    void processGetDataReply(const GetPropertyDataReply& msg);
+    void processSetDataReply(const SetPropertyDataReply& msg);
+    void processSubscribePropertyReply(const SubscribePropertyReply& msg);
+    void processPropertyNotify(const SubscribeProperty& msg);
+    void processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg);
+    void processDiscovery(const DiscoveryInquiry& msg);
+    void processEndpointMessage(const EndpointInquiry& msg);
+    void processProfileInquiry(const ProfileInquiry& msg);
+    void processSetProfileOn(const SetProfileOn& msg);
+    void processSetProfileOff(const SetProfileOff& msg);
+    void processProfileDetailsInquiry(const ProfileDetailsReply& msg);
+    void processPropertyCapabilitiesInquiry(const PropertyGetCapabilities& msg);
+    void processGetPropertyData(const GetPropertyData& msg);
+    void processSetPropertyData(const SetPropertyData& msg);
+    void processSubscribeProperty(const SubscribeProperty& msg);
+    void processProcessInquiry(const ProcessInquiryCapabilities& msg);
+    void processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data);
+    
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };

@@ -13,6 +13,8 @@ set(MIDI_CI_SOURCES
     midi-ci/properties/PropertyClientFacade.cpp
     midi-ci/properties/PropertyHostFacade.cpp
     midi-ci/properties/PropertyManager.cpp
+    midi-ci/ump/Ump.cpp
+    midi-ci/ump/UmpRetriever.cpp
 )
 
 set(MIDI_CI_HEADERS
@@ -27,6 +29,8 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/properties/PropertyChunkManager.hpp
     ../include/midi-ci/transport/SysExTransport.hpp
     ../include/midi-ci/json/Json.hpp
+    ../include/midi-ci/ump/Ump.hpp
+    ../include/midi-ci/ump/UmpRetriever.hpp
 )
 
 add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})

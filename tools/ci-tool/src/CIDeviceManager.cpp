@@ -4,6 +4,8 @@
 #include "CIDeviceModel.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/ump/Ump.hpp"
+#include "midi-ci/ump/UmpRetriever.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -18,6 +20,9 @@ public:
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
     mutable std::mutex mutex_;
+    
+    std::vector<uint8_t> buffered_sysex7_;
+    std::vector<uint8_t> buffered_sysex8_;
 };
 
 CIDeviceManager::CIDeviceManager(CIToolRepository& repository, 
@@ -51,6 +56,10 @@ void CIDeviceManager::initialize() {
         [this](uint8_t group, const std::vector<uint8_t>& data) {
             process_midi1_input(data, 0, data.size());
         });
+    
+    pimpl_->midi_device_manager_->add_input_opened_callback([this]() {
+        setup_input_event_listener();
+    });
     
     std::cout << "CIDeviceManager initialized" << std::endl;
 }
@@ -96,7 +105,71 @@ void CIDeviceManager::process_midi1_input(const std::vector<uint8_t>& data, size
 
 void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    std::cout << "UMP input processing not yet implemented" << std::endl;
+    
+    auto umps = midi_ci::ump::parse_umps_from_bytes(data, start, length);
+    
+    for (const auto& ump : umps) {
+        switch (ump.get_message_type()) {
+            case midi_ci::ump::MessageType::SYSEX7: {
+                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::START)) {
+                    pimpl_->buffered_sysex7_.clear();
+                }
+                
+                std::vector<midi_ci::ump::Ump> single_ump = {ump};
+                auto sysex_data = midi_ci::ump::UmpRetriever::get_sysex7_data(single_ump);
+                pimpl_->buffered_sysex7_.insert(pimpl_->buffered_sysex7_.end(), 
+                                               sysex_data.begin(), sysex_data.end());
+                
+                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::END) ||
+                    ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                    
+                    if (pimpl_->buffered_sysex7_.size() > 2 &&
+                        pimpl_->buffered_sysex7_[0] == 0x7E &&
+                        pimpl_->buffered_sysex7_[2] == 0x0D) {
+                        
+                        if (pimpl_->device_model_) {
+                            pimpl_->device_model_->process_ci_message(ump.get_group(), pimpl_->buffered_sysex7_);
+                        }
+                        pimpl_->buffered_sysex7_.clear();
+                    }
+                }
+                break;
+            }
+            
+            case midi_ci::ump::MessageType::SYSEX8_MDS: {
+                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::START)) {
+                    pimpl_->buffered_sysex8_.clear();
+                }
+                
+                std::vector<midi_ci::ump::Ump> single_ump = {ump};
+                auto sysex_data = midi_ci::ump::UmpRetriever::get_sysex8_data(single_ump);
+                pimpl_->buffered_sysex8_.insert(pimpl_->buffered_sysex8_.end(), 
+                                               sysex_data.begin(), sysex_data.end());
+                
+                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::END) ||
+                    ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                    
+                    if (pimpl_->buffered_sysex8_.size() > 2 &&
+                        pimpl_->buffered_sysex8_[0] == 0x7E &&
+                        pimpl_->buffered_sysex8_[2] == 0x0D) {
+                        
+                        if (pimpl_->device_model_) {
+                            pimpl_->device_model_->process_ci_message(ump.get_group(), pimpl_->buffered_sysex8_);
+                        }
+                        pimpl_->buffered_sysex8_.clear();
+                    }
+                }
+                break;
+            }
+            
+            default:
+                break;
+        }
+    }
+}
+
+void CIDeviceManager::setup_input_event_listener() {
+    std::cout << "Input event listener set up for MIDI 1.0 and UMP protocols" << std::endl;
 }
 
 void CIDeviceManager::log_midi_message_report_chunk(const std::vector<uint8_t>& data) {

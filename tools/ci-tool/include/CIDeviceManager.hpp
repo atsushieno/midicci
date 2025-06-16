@@ -34,6 +34,8 @@ public:
     void process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length);
     void process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length);
     
+    void setup_input_event_listener();
+    
     void log_midi_message_report_chunk(const std::vector<uint8_t>& data);
     
 private:

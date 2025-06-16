@@ -25,8 +25,8 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-ClientConnection::ClientConnection(uint8_t destination_id) 
-    : pimpl_(std::make_unique<Impl>(destination_id, *static_cast<MidiCIDevice*>(nullptr), *this)) {}
+ClientConnection::ClientConnection(MidiCIDevice& device, uint8_t destination_id) 
+    : pimpl_(std::make_unique<Impl>(destination_id, device, *this)) {}
 
 ClientConnection::~ClientConnection() = default;
 

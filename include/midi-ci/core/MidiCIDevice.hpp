@@ -57,7 +57,7 @@ public:
     
     void set_message_callback(MessageCallback callback);
     
-    std::shared_ptr<ClientConnection> create_connection(uint8_t destination_id);
+    void store_connection(uint8_t destination_id, std::shared_ptr<ClientConnection> connection);
     void remove_connection(uint8_t destination_id);
     std::shared_ptr<ClientConnection> get_connection(uint8_t destination_id) const;
     const std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>>& get_connections() const;

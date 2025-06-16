@@ -12,13 +12,13 @@ namespace core {
 
 class ClientConnection::Impl {
 public:
-    explicit Impl(uint8_t destination_id, MidiCIDevice& device, ClientConnection& conn) 
-        : destination_id_(destination_id), connected_(true),
+    explicit Impl(uint32_t target_muid, MidiCIDevice& device, ClientConnection& conn)
+        : target_muid_(target_muid), connected_(true),
           profile_client_facade_(std::make_unique<profiles::ProfileClientFacade>(device, conn)),
           property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)),
           device_info_(nullptr), channel_list_(nullptr), json_schema_(nullptr) {}
     
-    uint8_t destination_id_;
+    uint32_t target_muid_;
     bool connected_;
     MessageCallback message_callback_;
     CIOutputSender ci_output_sender_;
@@ -30,14 +30,14 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-ClientConnection::ClientConnection(MidiCIDevice& device, uint8_t destination_id) 
-    : pimpl_(std::make_unique<Impl>(destination_id, device, *this)) {}
+ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid)
+    : pimpl_(std::make_unique<Impl>(target_muid, device, *this)) {}
 
 ClientConnection::~ClientConnection() = default;
 
-uint8_t ClientConnection::get_destination_id() const noexcept {
+uint32_t ClientConnection::get_target_muid() const noexcept {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return pimpl_->destination_id_;
+    return pimpl_->target_muid_;
 }
 
 void ClientConnection::set_message_callback(MessageCallback callback) {

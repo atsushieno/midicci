@@ -52,7 +52,7 @@ void PropertyClientFacade::send_get_property_data(const std::string& resource, c
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     
     messages::GetPropertyData msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_destination_id(), 0x7F, 0),
+        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header
     );
     
@@ -80,7 +80,7 @@ void PropertyClientFacade::send_set_property_data(const std::string& resource, c
     auto encoded_body = pimpl_->property_rules_->encode_body(data, encoding);
     
     messages::SetPropertyData msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_destination_id(), 0x7F, 0),
+        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, encoded_body
     );
     
@@ -106,7 +106,7 @@ void PropertyClientFacade::send_subscribe_property(const std::string& resource, 
     auto header = pimpl_->property_rules_->create_subscription_header(resource, fields);
     
     messages::SubscribeProperty msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_destination_id(), 0x7F, 0),
+        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, {}
     );
     
@@ -124,7 +124,7 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
     auto header = pimpl_->property_rules_->create_subscription_header(property_id, fields);
     
     messages::SubscribeProperty msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_destination_id(), 0x7F, 0),
+        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, {}
     );
     

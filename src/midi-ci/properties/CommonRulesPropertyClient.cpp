@@ -80,7 +80,7 @@ void CommonRulesPropertyClient::process_property_subscription_result(void* sub, 
         subscriptions_.erase(it);
     }
     
-    subscriptions_.emplace_back(conn_.get_destination_id(), property_id, subscribe_id, "");
+    subscriptions_.emplace_back(conn_.get_target_muid(), property_id, subscribe_id, "");
 }
 
 void CommonRulesPropertyClient::property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) {
@@ -136,7 +136,7 @@ void CommonRulesPropertyClient::request_property_list(uint8_t group) {
     auto request_bytes = helper_->get_resource_list_request_bytes();
     
     messages::GetPropertyData msg(
-        messages::Common(device_.get_muid(), conn_.get_destination_id(), 0x7F, group),
+        messages::Common(device_.get_muid(), conn_.get_target_muid(), 0x7F, group),
         0,
         request_bytes
     );

@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace midi_ci::core::constants;
+
 namespace midi_ci {
 namespace messages {
 
@@ -34,27 +36,18 @@ DiscoveryInquiry::DiscoveryInquiry(const Common& common, const DeviceInfo& devic
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), output_path_id_(output_path_id) {}
 
 std::vector<uint8_t> DiscoveryInquiry::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(64);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (int i = 0; i < 3; ++i) data.push_back(0x00);
     for (int i = 0; i < 2; ++i) data.push_back(0x00);
@@ -68,8 +61,6 @@ std::vector<uint8_t> DiscoveryInquiry::serialize() const {
     data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 21) & 0x7F));
     
     data.push_back(output_path_id_);
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -101,27 +92,18 @@ DiscoveryReply::DiscoveryReply(const Common& common, const DeviceInfo& device_in
       output_path_id_(output_path_id), function_block_(function_block) {}
 
 std::vector<uint8_t> DiscoveryReply::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(64);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (int i = 0; i < 3; ++i) data.push_back(0x00);
     for (int i = 0; i < 2; ++i) data.push_back(0x00);
@@ -136,8 +118,6 @@ std::vector<uint8_t> DiscoveryReply::serialize() const {
     
     data.push_back(output_path_id_);
     data.push_back(function_block_);
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -167,27 +147,18 @@ SetProfileOn::SetProfileOn(const Common& common, const std::vector<uint8_t>& pro
     : SinglePacketMessage(MessageType::SetProfileOn, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> SetProfileOn::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
@@ -195,8 +166,6 @@ std::vector<uint8_t> SetProfileOn::serialize() const {
     
     data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
     data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -224,30 +193,20 @@ PropertyGetCapabilities::PropertyGetCapabilities(const Common& common, uint8_t m
     : SinglePacketMessage(MessageType::PropertyGetCapabilities, common), max_simultaneous_requests_(max_simultaneous_requests) {}
 
 std::vector<uint8_t> PropertyGetCapabilities::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(16);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(max_simultaneous_requests_);
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -321,26 +280,18 @@ std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
         
         std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
         
-        using namespace midi_ci::core::constants;
         std::vector<uint8_t> packet;
         packet.reserve(32 + chunk_data.size());
         
-        packet.push_back(MIDI_CI_SYSEX_START);
         packet.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
         packet.push_back(0x7F);
         packet.push_back(MIDI_CI_SUB_ID_1);
         packet.push_back(static_cast<uint8_t>(type_));
         packet.push_back(MIDI_CI_VERSION_1_2);
         
-        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.source_muid);
         
-        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.destination_muid);
         
         packet.push_back(request_id_);
         
@@ -353,8 +304,6 @@ std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
         packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
         
         packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
-        
-        packet.push_back(MIDI_CI_SYSEX_END);
         
         packets.push_back(std::move(packet));
     }
@@ -378,7 +327,6 @@ std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
         
         std::vector<uint8_t> chunk_data(body_.begin() + start_pos, body_.begin() + start_pos + chunk_size);
         
-        using namespace midi_ci::core::constants;
         std::vector<uint8_t> packet;
         packet.reserve(32 + header_.size() + chunk_data.size());
         
@@ -388,15 +336,9 @@ std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
         packet.push_back(static_cast<uint8_t>(type_));
         packet.push_back(0x02);
         
-        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.source_muid);
         
-        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.destination_muid);
         
         packet.push_back(request_id_);
         
@@ -449,8 +391,6 @@ std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& reso
 }
 
 std::vector<uint8_t> GetPropertyData::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32 + header_.size());
     
@@ -459,17 +399,14 @@ std::vector<uint8_t> GetPropertyData::serialize() const {
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(request_id_);
+    
+    data.push_back(static_cast<uint8_t>(header_.size() & 0xFF));
+    data.push_back(static_cast<uint8_t>((header_.size() >> 8) & 0xFF));
     
     data.insert(data.end(), header_.begin(), header_.end());
     
@@ -502,27 +439,18 @@ SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, const
 }
 
 std::vector<uint8_t> SetPropertyData::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32 + header_.size() + body_.size());
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(request_id_);
     
@@ -537,8 +465,6 @@ std::vector<uint8_t> SetPropertyData::serialize() const {
     data.push_back(static_cast<uint8_t>((body_size >> 7) & 0x7F));
     
     data.insert(data.end(), body_.begin(), body_.end());
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -584,7 +510,6 @@ std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
         size_t chunk_size = std::min(static_cast<size_t>(max_chunk_size), header_.size() - start_pos);
         
         std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
-        
         std::vector<uint8_t> packet;
         packet.reserve(32 + chunk_data.size());
         
@@ -594,15 +519,9 @@ std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
         packet.push_back(static_cast<uint8_t>(type_));
         packet.push_back(0x02);
         
-        packet.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.source_muid);
         
-        packet.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+        serialize_muid_32(packet, common_.destination_muid);
         
         packet.push_back(request_id_);
         
@@ -639,27 +558,18 @@ std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::
 }
 
 std::vector<uint8_t> SubscribeProperty::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32 + header_.size() + body_.size());
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(request_id_);
     
@@ -674,8 +584,6 @@ std::vector<uint8_t> SubscribeProperty::serialize() const {
     data.push_back(static_cast<uint8_t>((body_size >> 7) & 0x7F));
     
     data.insert(data.end(), body_.begin(), body_.end());
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -700,30 +608,20 @@ EndpointInquiry::EndpointInquiry(const Common& common, uint8_t status)
     : SinglePacketMessage(MessageType::EndpointInquiry, common), status_(status) {}
 
 std::vector<uint8_t> EndpointInquiry::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(16);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(status_);
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -747,32 +645,21 @@ EndpointReply::EndpointReply(const Common& common, uint8_t status, const std::ve
 }
 
 std::vector<uint8_t> EndpointReply::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> result;
     result.reserve(32);
     
-    result.push_back(MIDI_CI_SYSEX_START);
     result.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     result.push_back(0x7F);
     result.push_back(MIDI_CI_SUB_ID_1);
     result.push_back(static_cast<uint8_t>(type_));
     result.push_back(MIDI_CI_VERSION_1_2);
     
-    result.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
-    
-    result.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    result.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(result, common_.source_muid);
+    serialize_muid_32(result, common_.destination_muid);
     
     result.push_back(status_);
     result.insert(result.end(), data_.begin(), data_.end());
     
-    result.push_back(MIDI_CI_SYSEX_END);
     return result;
 }
 
@@ -805,34 +692,20 @@ InvalidateMUID::InvalidateMUID(const Common& common, uint32_t target_muid)
     : SinglePacketMessage(MessageType::InvalidateMUID, common), target_muid_(target_muid) {}
 
 std::vector<uint8_t> InvalidateMUID::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(20);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
-    data.push_back(static_cast<uint8_t>(target_muid_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((target_muid_ >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((target_muid_ >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((target_muid_ >> 21) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
+    serialize_muid_32(data, target_muid_);
     
     return data;
 }
@@ -855,29 +728,18 @@ ProfileInquiry::ProfileInquiry(const Common& common)
     : SinglePacketMessage(MessageType::ProfileInquiry, common) {}
 
 std::vector<uint8_t> ProfileInquiry::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(16);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
+    serialize_muid_32(data, common_.destination_muid);
     
     return data;
 }
@@ -898,33 +760,22 @@ SetProfileOff::SetProfileOff(const Common& common, const std::vector<uint8_t>& p
     : SinglePacketMessage(MessageType::SetProfileOff, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> SetProfileOff::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
     }
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -951,27 +802,18 @@ ProfileEnabledReport::ProfileEnabledReport(const Common& common, const std::vect
     : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileEnabledReport::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
@@ -979,8 +821,6 @@ std::vector<uint8_t> ProfileEnabledReport::serialize() const {
     
     data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
     data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -1008,27 +848,18 @@ ProfileDisabledReport::ProfileDisabledReport(const Common& common, const std::ve
     : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileDisabledReport::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
@@ -1036,8 +867,6 @@ std::vector<uint8_t> ProfileDisabledReport::serialize() const {
     
     data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
     data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -1065,33 +894,22 @@ ProfileAddedReport::ProfileAddedReport(const Common& common, const std::vector<u
     : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileAddedReport::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
     }
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -1118,33 +936,22 @@ ProfileRemovedReport::ProfileRemovedReport(const Common& common, const std::vect
     : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileRemovedReport::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(32);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
         data.push_back(profile_id_[i]);
     }
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -1175,34 +982,23 @@ MidiMessageReportInquiry::MidiMessageReportInquiry(const Common& common, uint8_t
       channel_controller_messages_(channel_controller_messages), note_data_messages_(note_data_messages) {}
 
 std::vector<uint8_t> MidiMessageReportInquiry::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(20);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.destination_muid);
     
     data.push_back(message_data_control_);
     data.push_back(system_messages_);
     data.push_back(channel_controller_messages_);
     data.push_back(note_data_messages_);
-    
-    data.push_back(MIDI_CI_SYSEX_END);
     
     return data;
 }
@@ -1228,29 +1024,18 @@ ProcessInquiryCapabilities::ProcessInquiryCapabilities(const Common& common)
     : SinglePacketMessage(MessageType::ProcessInquiryCapabilities, common) {}
 
 std::vector<uint8_t> ProcessInquiryCapabilities::serialize() const {
-    using namespace midi_ci::core::constants;
-    
     std::vector<uint8_t> data;
     data.reserve(16);
     
-    data.push_back(MIDI_CI_SYSEX_START);
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(0x7F);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(static_cast<uint8_t>(type_));
     data.push_back(MIDI_CI_VERSION_1_2);
     
-    data.push_back(static_cast<uint8_t>(common_.source_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.source_muid >> 21) & 0x7F));
+    serialize_muid_32(data, common_.source_muid);
     
-    data.push_back(static_cast<uint8_t>(common_.destination_muid & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((common_.destination_muid >> 21) & 0x7F));
-    
-    data.push_back(MIDI_CI_SYSEX_END);
+    serialize_muid_32(data, common_.destination_muid);
     
     return data;
 }

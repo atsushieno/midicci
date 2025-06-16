@@ -19,10 +19,8 @@ TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {
     
     auto data = inquiry.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[0], MIDI_CI_SYSEX_START);
-    EXPECT_EQ(data[1], MIDI_CI_UNIVERSAL_SYSEX_ID);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::DiscoveryInquiry));
-    EXPECT_EQ(data[data.size() - 1], MIDI_CI_SYSEX_END);
+    EXPECT_EQ(data[0], MIDI_CI_UNIVERSAL_SYSEX_ID);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::DiscoveryInquiry));
 }
 
 TEST_F(MessageSerializationTest, SetProfileOnSerialize) {
@@ -31,10 +29,10 @@ TEST_F(MessageSerializationTest, SetProfileOnSerialize) {
     
     auto data = set_on.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::SetProfileOn));
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::SetProfileOn));
     
     for (size_t i = 0; i < profile_id.size(); ++i) {
-        EXPECT_EQ(data[14 + i], profile_id[i]);
+        EXPECT_EQ(data[13 + i], profile_id[i]);
     }
 }
 
@@ -43,8 +41,8 @@ TEST_F(MessageSerializationTest, PropertyGetCapabilitiesSerialize) {
     
     auto data = capabilities.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::PropertyGetCapabilities));
-    EXPECT_EQ(data[14], 4);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::PropertyGetCapabilities));
+    EXPECT_EQ(data[13], 4);
 }
 
 TEST_F(MessageSerializationTest, GetPropertyDataSerialize) {
@@ -53,10 +51,10 @@ TEST_F(MessageSerializationTest, GetPropertyDataSerialize) {
     
     auto data = get_data.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::GetPropertyData));
-    EXPECT_EQ(data[14], 1);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::GetPropertyData));
+    EXPECT_EQ(data[12], 1);
     
-    uint16_t header_size = data[15] | (data[16] << 7);
+    uint16_t header_size = data[13] | (data[14] << 8);
     EXPECT_EQ(header_size, header.size());
 }
 
@@ -65,8 +63,8 @@ TEST_F(MessageSerializationTest, EndpointInquirySerialize) {
     
     auto data = inquiry.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::EndpointInquiry));
-    EXPECT_EQ(data[14], 0x01);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::EndpointInquiry));
+    EXPECT_EQ(data[13], 0x01);
 }
 
 TEST_F(MessageSerializationTest, InvalidateMUIDSerialize) {
@@ -74,9 +72,9 @@ TEST_F(MessageSerializationTest, InvalidateMUIDSerialize) {
     
     auto data = invalidate.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::InvalidateMUID));
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::InvalidateMUID));
     
-    uint32_t target_muid = data[14] | (data[15] << 7) | (data[16] << 14) | (data[17] << 21);
+    uint32_t target_muid = data[13] | (data[14] << 8) | (data[15] << 16) | (data[16] << 24);
     EXPECT_EQ(target_muid, 0xDEADBEEF);
 }
 
@@ -85,8 +83,7 @@ TEST_F(MessageSerializationTest, ProfileInquirySerialize) {
     
     auto data = inquiry.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::ProfileInquiry));
-    EXPECT_EQ(data[data.size() - 1], MIDI_CI_SYSEX_END);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::ProfileInquiry));
 }
 
 TEST_F(MessageSerializationTest, MidiMessageReportInquirySerialize) {
@@ -94,9 +91,9 @@ TEST_F(MessageSerializationTest, MidiMessageReportInquirySerialize) {
     
     auto data = inquiry.serialize();
     EXPECT_GT(data.size(), 0);
-    EXPECT_EQ(data[4], static_cast<uint8_t>(MessageType::MidiMessageReportInquiry));
-    EXPECT_EQ(data[14], 0x01);
-    EXPECT_EQ(data[15], 0x02);
-    EXPECT_EQ(data[16], 0x03);
-    EXPECT_EQ(data[17], 0x04);
+    EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::MidiMessageReportInquiry));
+    EXPECT_EQ(data[13], 0x01);
+    EXPECT_EQ(data[14], 0x02);
+    EXPECT_EQ(data[15], 0x03);
+    EXPECT_EQ(data[16], 0x04);
 }

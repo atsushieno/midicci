@@ -37,7 +37,7 @@ public:
     using MessageCallback = std::function<void(const Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
-    MidiCIDevice();
+    MidiCIDevice(uint32_t muid = 0x12345678);
     ~MidiCIDevice();
     
     MidiCIDevice(const MidiCIDevice&) = delete;

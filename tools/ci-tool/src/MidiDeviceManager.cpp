@@ -73,7 +73,12 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& da
     
     if (pimpl_->midi_output_) {
         try {
-            pimpl_->midi_output_->send_message(data);
+            std::vector<uint8_t> midi1_data;
+            midi1_data.reserve(data.size() + 2);
+            midi1_data.push_back(0xF0);
+            midi1_data.insert(midi1_data.end(), data.begin(), data.end());
+            midi1_data.push_back(0xF7);
+            pimpl_->midi_output_->send_message(midi1_data);
             return true;
         } catch (const std::exception& e) {
             std::cerr << "Error sending MIDI message: " << e.what() << std::endl;

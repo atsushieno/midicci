@@ -472,6 +472,117 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             }
             break;
         }
+        case CISubId2::ENDPOINT_MESSAGE_REPLY: {
+            if (data.size() >= 16) {
+                uint8_t status = data[13];
+                uint16_t data_length = data[14] | (data[15] << 7);
+                std::vector<uint8_t> endpoint_data(data.begin() + 16, data.begin() + 16 + data_length);
+                EndpointReply reply(common, status, endpoint_data);
+                pimpl_->log_message(reply, false);
+                processEndpointReply(reply);
+            }
+            break;
+        }
+        case CISubId2::ACK: {
+            if (data.size() >= 23) {
+                uint8_t original_sub_id = data[13];
+                uint8_t status_code = data[14];
+                uint8_t status_data = data[15];
+                std::vector<uint8_t> details(data.begin() + 16, data.begin() + 21);
+                uint16_t message_length = data[21] | (data[22] << 7);
+                std::vector<uint8_t> message_text(data.begin() + 23, data.end());
+                processAck(common.source_muid, common.destination_muid, original_sub_id, status_code, status_data, details, message_length, message_text);
+            }
+            break;
+        }
+        case CISubId2::NAK: {
+            if (data.size() >= 23) {
+                uint8_t original_sub_id = data[13];
+                uint8_t status_code = data[14];
+                uint8_t status_data = data[15];
+                std::vector<uint8_t> details(data.begin() + 16, data.begin() + 21);
+                uint16_t message_length = data[21] | (data[22] << 7);
+                std::vector<uint8_t> message_text(data.begin() + 23, data.end());
+                processNak(common.source_muid, common.destination_muid, original_sub_id, status_code, status_data, details, message_length, message_text);
+            }
+            break;
+        }
+        case CISubId2::PROFILE_DETAILS_REPLY: {
+            if (data.size() >= 22) {
+                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                uint8_t target = data[18];
+                uint16_t data_size = data[19] | (data[20] << 7);
+                std::vector<uint8_t> profile_data(data.begin() + 21, data.begin() + 21 + data_size);
+                ProfileDetailsReply reply(common, profile_id, target, profile_data);
+                pimpl_->log_message(reply, false);
+                processProfileDetailsReply(reply);
+            }
+            break;
+        }
+        case CISubId2::PROFILE_SPECIFIC_DATA: {
+            if (data.size() >= 22) {
+                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                uint16_t data_length = data[19] | (data[20] << 7);
+                std::vector<uint8_t> profile_data(data.begin() + 22, data.begin() + 22 + data_length);
+                ProfileSpecificData specific_data(common, profile_id, profile_data);
+                pimpl_->log_message(specific_data, false);
+                processProfileSpecificData(specific_data);
+            }
+            break;
+        }
+        case CISubId2::PROCESS_INQUIRY_CAPABILITIES_REPLY: {
+            if (data.size() >= 14) {
+                uint8_t supported_features = data[13];
+                ProcessInquiryCapabilitiesReply reply(common, supported_features);
+                pimpl_->log_message(reply, false);
+                processProcessInquiryReply(reply);
+            }
+            break;
+        }
+        case CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT_REPLY: {
+            if (data.size() >= 17) {
+                uint8_t system_messages = data[13];
+                uint8_t channel_controller_messages = data[15];
+                uint8_t note_data_messages = data[16];
+                MidiMessageReportReply reply(common, system_messages, channel_controller_messages, note_data_messages);
+                pimpl_->log_message(reply, false);
+                processMidiMessageReportReply(reply);
+            }
+            break;
+        }
+        case CISubId2::PROCESS_INQUIRY_END_OF_MIDI_MESSAGE: {
+            MidiMessageReportNotifyEnd end_notify(common);
+            pimpl_->log_message(end_notify, false);
+            processEndOfMidiMessageReport(end_notify);
+            break;
+        }
+        case CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT: {
+            if (data.size() >= 18) {
+                uint8_t message_data_control = data[13];
+                uint8_t system_messages = data[14];
+                uint8_t channel_controller_messages = data[16];
+                uint8_t note_data_messages = data[17];
+                MidiMessageReportInquiry inquiry(common, message_data_control, system_messages, channel_controller_messages, note_data_messages);
+                pimpl_->log_message(inquiry, false);
+                processMidiMessageReport(inquiry);
+            }
+            break;
+        }
+        case CISubId2::ENDPOINT_MESSAGE_INQUIRY: {
+            if (data.size() >= 14) {
+                uint8_t status = data[13];
+                EndpointInquiry inquiry(common, status);
+                pimpl_->log_message(inquiry, false);
+                processEndpointMessage(inquiry);
+            }
+            break;
+        }
+        case CISubId2::PROCESS_INQUIRY_CAPABILITIES: {
+            ProcessInquiryCapabilities inquiry(common);
+            pimpl_->log_message(inquiry, false);
+            processProcessInquiry(inquiry);
+            break;
+        }
         default: {
             processUnknownCIMessage(common, data);
             break;
@@ -777,19 +888,35 @@ void Messenger::processMidiMessageReport(const MidiMessageReportInquiry& msg) {
     }
 }
 
-void Messenger::processMidiMessageReportReply(const MidiMessageReportInquiry& msg) {
+void Messenger::processMidiMessageReportReply(const MidiMessageReportReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
 }
 
-void Messenger::processEndOfMidiMessageReport(const MidiMessageReportInquiry& msg) {
+void Messenger::processEndOfMidiMessageReport(const MidiMessageReportNotifyEnd& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
 }
 
+void Messenger::processEndpointReply(const EndpointReply& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
 
+void Messenger::processAck(uint32_t source_muid, uint32_t dest_muid, uint8_t original_sub_id, uint8_t status_code, uint8_t status_data, const std::vector<uint8_t>& details, uint16_t message_length, const std::vector<uint8_t>& message_text) {
+}
+
+void Messenger::processNak(uint32_t source_muid, uint32_t dest_muid, uint8_t original_sub_id, uint8_t status_code, uint8_t status_data, const std::vector<uint8_t>& details, uint16_t message_length, const std::vector<uint8_t>& message_text) {
+}
+
+void Messenger::processProfileSpecificData(const ProfileSpecificData& msg) {
+    for (const auto& callback : pimpl_->callbacks_) {
+        callback(msg);
+    }
+}
 
 } // namespace messages
 } // namespace midi_ci

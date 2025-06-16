@@ -105,8 +105,12 @@ private:
     void processProcessInquiry(const ProcessInquiryCapabilities& msg);
     void processUnknownCIMessage(const Common& common, const std::vector<uint8_t>& data);
     void processMidiMessageReport(const MidiMessageReportInquiry& msg);
-    void processMidiMessageReportReply(const MidiMessageReportInquiry& msg);
-    void processEndOfMidiMessageReport(const MidiMessageReportInquiry& msg);
+    void processMidiMessageReportReply(const MidiMessageReportReply& msg);
+    void processEndOfMidiMessageReport(const MidiMessageReportNotifyEnd& msg);
+    void processEndpointReply(const EndpointReply& msg);
+    void processAck(uint32_t source_muid, uint32_t dest_muid, uint8_t original_sub_id, uint8_t status_code, uint8_t status_data, const std::vector<uint8_t>& details, uint16_t message_length, const std::vector<uint8_t>& message_text);
+    void processNak(uint32_t source_muid, uint32_t dest_muid, uint8_t original_sub_id, uint8_t status_code, uint8_t status_data, const std::vector<uint8_t>& details, uint16_t message_length, const std::vector<uint8_t>& message_text);
+    void processProfileSpecificData(const ProfileSpecificData& msg);
     
 private:
     void handleNewEndpoint(const DiscoveryReply& msg);

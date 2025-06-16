@@ -4,6 +4,7 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
 #include "midi-ci/properties/PropertyClientFacade.hpp"
+#include "midi-ci/json/Json.hpp"
 #include <mutex>
 
 namespace midi_ci {
@@ -14,7 +15,8 @@ public:
     explicit Impl(uint8_t destination_id, MidiCIDevice& device, ClientConnection& conn) 
         : destination_id_(destination_id), connected_(true),
           profile_client_facade_(std::make_unique<profiles::ProfileClientFacade>(device, conn)),
-          property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)) {}
+          property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)),
+          device_info_(nullptr), channel_list_(nullptr), json_schema_(nullptr) {}
     
     uint8_t destination_id_;
     bool connected_;
@@ -22,6 +24,9 @@ public:
     CIOutputSender ci_output_sender_;
     std::unique_ptr<profiles::ProfileClientFacade> profile_client_facade_;
     std::unique_ptr<properties::PropertyClientFacade> property_client_facade_;
+    std::unique_ptr<messages::DeviceInfo> device_info_;
+    std::unique_ptr<json::JsonValue> channel_list_;
+    std::unique_ptr<json::JsonValue> json_schema_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -124,6 +129,36 @@ properties::PropertyClientFacade& ClientConnection::get_property_client_facade()
 const properties::PropertyClientFacade& ClientConnection::get_property_client_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_client_facade_;
+}
+
+void ClientConnection::set_device_info(const messages::DeviceInfo& device_info) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->device_info_ = std::make_unique<messages::DeviceInfo>(device_info);
+}
+
+const messages::DeviceInfo* ClientConnection::get_device_info() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->device_info_.get();
+}
+
+void ClientConnection::set_channel_list(const json::JsonValue& channel_list) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->channel_list_ = std::make_unique<json::JsonValue>(channel_list);
+}
+
+const json::JsonValue* ClientConnection::get_channel_list() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->channel_list_.get();
+}
+
+void ClientConnection::set_json_schema(const json::JsonValue& json_schema) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->json_schema_ = std::make_unique<json::JsonValue>(json_schema);
+}
+
+const json::JsonValue* ClientConnection::get_json_schema() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->json_schema_.get();
 }
 
 } // namespace core

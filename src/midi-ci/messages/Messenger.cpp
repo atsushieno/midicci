@@ -38,6 +38,11 @@ Messenger::~Messenger() = default;
 void Messenger::send(const Message& message) {
     auto serialized = message.serialize();
     if (!serialized.empty()) {
+        auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
+        if (ci_output_sender) {
+            uint8_t group = message.get_common().group;
+            ci_output_sender(group, serialized);
+        }
         pimpl_->notify_callbacks(message);
     }
 }

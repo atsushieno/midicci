@@ -27,11 +27,11 @@ class CIDeviceManager;
 
 class CIDeviceModel {
 public:
-    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using MidiMessageReportSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     explicit CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
-                          SysExSender ci_output_sender,
+                          CIOutputSender ci_output_sender,
                           MidiMessageReportSender midi_message_report_sender);
     ~CIDeviceModel();
     

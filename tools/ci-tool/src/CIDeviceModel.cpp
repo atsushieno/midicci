@@ -14,14 +14,14 @@ namespace ci_tool {
 class CIDeviceModel::Impl {
 public:
     explicit Impl(CIDeviceManager& parent, uint32_t muid,
-                  SysExSender ci_sender, MidiMessageReportSender mmr_sender)
+                  CIOutputSender ci_sender, MidiMessageReportSender mmr_sender)
         : parent_(parent), muid_(muid),
           ci_output_sender_(ci_sender), midi_message_report_sender_(mmr_sender),
           receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
     
     CIDeviceManager& parent_;
     uint32_t muid_;
-    SysExSender ci_output_sender_;
+    CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
     
     std::shared_ptr<midi_ci::core::MidiCIDevice> device_;
@@ -36,7 +36,7 @@ public:
 };
 
 CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
-                           SysExSender ci_output_sender,
+                           CIOutputSender ci_output_sender,
                            MidiMessageReportSender midi_message_report_sender)
     : pimpl_(std::make_unique<Impl>(parent, muid, ci_output_sender, midi_message_report_sender)) {
     receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;

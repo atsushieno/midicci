@@ -34,7 +34,7 @@ struct DeviceConfig;
 class MidiCIDevice {
 public:
     using MessageCallback = std::function<void(const Message&)>;
-    using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     MidiCIDevice();
     ~MidiCIDevice();
@@ -64,7 +64,8 @@ public:
     messages::DeviceInfo get_device_info() const;
     DeviceConfig get_config() const;
     
-    void set_sysex_sender(SysExSender sender);
+    void set_sysex_sender(CIOutputSender sender);
+    CIOutputSender get_ci_output_sender() const;
     void set_sysex_transport(std::unique_ptr<transport::SysExTransport> transport);
     
     void sendDiscovery();

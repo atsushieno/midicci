@@ -11,7 +11,7 @@ public:
     
     bool initialized_;
     SysExCallback sysex_callback_;
-    SysExSender sysex_sender_;
+    CIOutputSender ci_output_sender_;
     std::string current_input_device_;
     std::string current_output_device_;
     
@@ -60,15 +60,15 @@ void MidiDeviceManager::set_sysex_callback(SysExCallback callback) {
     pimpl_->sysex_callback_ = std::move(callback);
 }
 
-void MidiDeviceManager::set_sysex_sender(SysExSender sender) {
+void MidiDeviceManager::set_ci_output_sender(CIOutputSender sender) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    pimpl_->sysex_sender_ = std::move(sender);
+    pimpl_->ci_output_sender_ = std::move(sender);
 }
 
 bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    if (pimpl_->sysex_sender_) {
-        return pimpl_->sysex_sender_(group, data);
+    if (pimpl_->ci_output_sender_) {
+        return pimpl_->ci_output_sender_(group, data);
     }
     
     if (pimpl_->midi_output_) {

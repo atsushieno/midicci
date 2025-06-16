@@ -19,7 +19,7 @@ public:
     uint8_t destination_id_;
     bool connected_;
     MessageCallback message_callback_;
-    SysExSender sysex_sender_;
+    CIOutputSender ci_output_sender_;
     std::unique_ptr<profiles::ProfileClientFacade> profile_client_facade_;
     std::unique_ptr<properties::PropertyClientFacade> property_client_facade_;
     mutable std::recursive_mutex mutex_;
@@ -40,14 +40,14 @@ void ClientConnection::set_message_callback(MessageCallback callback) {
     pimpl_->message_callback_ = std::move(callback);
 }
 
-void ClientConnection::set_sysex_sender(SysExSender sender) {
+void ClientConnection::set_ci_output_sender(CIOutputSender sender) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->sysex_sender_ = std::move(sender);
+    pimpl_->ci_output_sender_ = std::move(sender);
 }
 
 void ClientConnection::send_message(const midi_ci::messages::Message& message) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->connected_ && pimpl_->sysex_sender_) {
+    if (pimpl_->connected_ && pimpl_->ci_output_sender_) {
         auto packets = message.serialize_multi();
         for (const auto& packet : packets) {
             std::vector<uint8_t> sysex_data;
@@ -55,7 +55,7 @@ void ClientConnection::send_message(const midi_ci::messages::Message& message) {
             sysex_data.insert(sysex_data.end(), packet.begin(), packet.end());
             sysex_data.push_back(0xF7);
             
-            pimpl_->sysex_sender_(0, sysex_data);
+            pimpl_->ci_output_sender_(0, sysex_data);
         }
     }
 }

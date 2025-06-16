@@ -32,7 +32,11 @@ public:
     messages::Messenger messenger_;
 };
 
-MidiCIDevice::MidiCIDevice(uint32_t muid) : pimpl_(std::make_unique<Impl>(*this, muid)) {}
+MidiCIDevice::MidiCIDevice(uint32_t muid, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, muid)) {
+    if (logger) {
+        set_logger(std::move(logger));
+    }
+}
 
 MidiCIDevice::~MidiCIDevice() = default;
 

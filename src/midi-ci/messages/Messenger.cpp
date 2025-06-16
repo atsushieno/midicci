@@ -233,8 +233,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         return;
     }
     
-    uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
-    uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
+    uint32_t source_muid = data[5] | (data[6] << 8) | (data[7] << 16) | (data[8] << 24);
+    uint32_t dest_muid = data[9] | (data[10] << 8) | (data[11] << 16) | (data[12] << 24);
     uint8_t address = data[4];
     
     Common common(source_muid, dest_muid, address, group);
@@ -255,7 +255,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 DeviceInfo device_info(manufacturer, family, model, version);
                 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 7) | (data[27] << 14) | (data[28] << 21);
+                uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
                 
@@ -266,7 +266,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::INVALIDATE_MUID: {
             if (data.size() >= 18) {
-                uint32_t target_muid = data[14] | (data[15] << 7) | (data[16] << 14) | (data[17] << 21);
+                uint32_t target_muid = data[14] | (data[15] << 8) | (data[16] << 16) | (data[17] << 24);
                 InvalidateMUID invalidate(common, target_muid);
                 processInvalidateMUID(invalidate);
             }
@@ -373,7 +373,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 DeviceInfo device_info(manufacturer, family, model, version);
                 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 7) | (data[27] << 14) | (data[28] << 21);
+                uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 
                 DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);

@@ -266,102 +266,17 @@ std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& reso
 }
 
 std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
-    const uint32_t max_chunk_size = 256;
-    
-    if (header_.size() <= max_chunk_size) {
-        return {serialize()};
-    }
-    
-    std::vector<std::vector<uint8_t>> packets;
-    size_t total_chunks = (header_.size() + max_chunk_size - 1) / max_chunk_size;
-    
-    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
-        size_t start_pos = chunk_idx * max_chunk_size;
-        size_t chunk_size = std::min(static_cast<size_t>(max_chunk_size), header_.size() - start_pos);
-        
-        std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
-        
-        std::vector<uint8_t> packet;
-        packet.reserve(32 + chunk_data.size());
-        
-        packet.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-        packet.push_back(0x7F);
-        packet.push_back(MIDI_CI_SUB_ID_1);
-        packet.push_back(static_cast<uint8_t>(type_));
-        packet.push_back(MIDI_CI_VERSION_1_2);
-        
-        serialize_muid_32(packet, common_.source_muid);
-        
-        serialize_muid_32(packet, common_.destination_muid);
-        
-        packet.push_back(request_id_);
-        
-        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
-        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
-        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
-        
-        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
-        
-        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
-        
-        packets.push_back(std::move(packet));
-    }
-    
-    return packets;
+    return midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, {});
 }
 
 std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
-    const uint32_t max_chunk_size = 256;
-    
-    if (body_.size() <= max_chunk_size) {
-        return {serialize()};
-    }
-    
-    std::vector<std::vector<uint8_t>> packets;
-    size_t total_chunks = (body_.size() + max_chunk_size - 1) / max_chunk_size;
-    
-    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
-        size_t start_pos = chunk_idx * max_chunk_size;
-        size_t chunk_size = std::min(static_cast<size_t>(max_chunk_size), body_.size() - start_pos);
-        
-        std::vector<uint8_t> chunk_data(body_.begin() + start_pos, body_.begin() + start_pos + chunk_size);
-        
-        std::vector<uint8_t> packet;
-        packet.reserve(32 + header_.size() + chunk_data.size());
-        
-        packet.push_back(0x7E);
-        packet.push_back(0x7F);
-        packet.push_back(0x0D);
-        packet.push_back(static_cast<uint8_t>(type_));
-        packet.push_back(0x02);
-        
-        serialize_muid_32(packet, common_.source_muid);
-        
-        serialize_muid_32(packet, common_.destination_muid);
-        
-        packet.push_back(request_id_);
-        
-        packet.push_back(static_cast<uint8_t>(header_.size() & 0x7F));
-        packet.push_back(static_cast<uint8_t>((header_.size() >> 7) & 0x7F));
-        
-        packet.insert(packet.end(), header_.begin(), header_.end());
-        
-        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
-        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
-        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
-        
-        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
-        
-        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
-        
-        packets.push_back(std::move(packet));
-    }
-    
-    return packets;
+    return midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
 
 std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& resource_identifier, const std::string& res_id, 
@@ -393,26 +308,11 @@ std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& reso
 }
 
 std::vector<uint8_t> GetPropertyData::serialize() const {
-    std::vector<uint8_t> data;
-    data.reserve(32 + header_.size());
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x00);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(request_id_);
-    
-    data.push_back(static_cast<uint8_t>(header_.size() & 0xFF));
-    data.push_back(static_cast<uint8_t>((header_.size() >> 8) & 0xFF));
-    
-    data.insert(data.end(), header_.begin(), header_.end());
-    
-    return data;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, {});
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 bool GetPropertyData::deserialize(const std::vector<uint8_t>& data) {
@@ -441,34 +341,11 @@ SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, const
 }
 
 std::vector<uint8_t> SetPropertyData::serialize() const {
-    std::vector<uint8_t> data;
-    data.reserve(32 + header_.size() + body_.size());
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(request_id_);
-    
-    uint16_t header_size = static_cast<uint16_t>(header_.size());
-    data.push_back(static_cast<uint8_t>(header_size & 0x7F));
-    data.push_back(static_cast<uint8_t>((header_size >> 7) & 0x7F));
-    
-    data.insert(data.end(), header_.begin(), header_.end());
-    
-    uint16_t body_size = static_cast<uint16_t>(body_.size());
-    data.push_back(static_cast<uint8_t>(body_size & 0x7F));
-    data.push_back(static_cast<uint8_t>((body_size >> 7) & 0x7F));
-    
-    data.insert(data.end(), body_.begin(), body_.end());
-    
-    return data;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 bool SetPropertyData::deserialize(const std::vector<uint8_t>& data) {
@@ -498,49 +375,10 @@ SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, c
 }
 
 std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
-    const uint32_t max_chunk_size = 256;
-    
-    if (header_.size() <= max_chunk_size) {
-        return {serialize()};
-    }
-    
-    std::vector<std::vector<uint8_t>> packets;
-    size_t total_chunks = (header_.size() + max_chunk_size - 1) / max_chunk_size;
-    
-    for (size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx) {
-        size_t start_pos = chunk_idx * max_chunk_size;
-        size_t chunk_size = std::min(static_cast<size_t>(max_chunk_size), header_.size() - start_pos);
-        
-        std::vector<uint8_t> chunk_data(header_.begin() + start_pos, header_.begin() + start_pos + chunk_size);
-        std::vector<uint8_t> packet;
-        packet.reserve(32 + chunk_data.size());
-        
-        packet.push_back(0x7E);
-        packet.push_back(0x7F);
-        packet.push_back(0x0D);
-        packet.push_back(static_cast<uint8_t>(type_));
-        packet.push_back(0x02);
-        
-        serialize_muid_32(packet, common_.source_muid);
-        
-        serialize_muid_32(packet, common_.destination_muid);
-        
-        packet.push_back(request_id_);
-        
-        packet.push_back(static_cast<uint8_t>(total_chunks & 0x7F));
-        packet.push_back(static_cast<uint8_t>((total_chunks >> 7) & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_idx + 1) & 0x7F));
-        packet.push_back(static_cast<uint8_t>(((chunk_idx + 1) >> 7) & 0x7F));
-        
-        packet.push_back(static_cast<uint8_t>(chunk_data.size() & 0x7F));
-        packet.push_back(static_cast<uint8_t>((chunk_data.size() >> 7) & 0x7F));
-        
-        packet.insert(packet.end(), chunk_data.begin(), chunk_data.end());
-        
-        packets.push_back(std::move(packet));
-    }
-    
-    return packets;
+    return midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
 
 std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::string& resource_identifier, 
@@ -561,34 +399,11 @@ std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::
 }
 
 std::vector<uint8_t> SubscribeProperty::serialize() const {
-    std::vector<uint8_t> data;
-    data.reserve(32 + header_.size() + body_.size());
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(request_id_);
-    
-    uint16_t header_size = static_cast<uint16_t>(header_.size());
-    data.push_back(static_cast<uint8_t>(header_size & 0x7F));
-    data.push_back(static_cast<uint8_t>((header_size >> 7) & 0x7F));
-    
-    data.insert(data.end(), header_.begin(), header_.end());
-    
-    uint16_t body_size = static_cast<uint16_t>(body_.size());
-    data.push_back(static_cast<uint8_t>(body_size & 0x7F));
-    data.push_back(static_cast<uint8_t>((body_size >> 7) & 0x7F));
-    
-    data.insert(data.end(), body_.begin(), body_.end());
-    
-    return data;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 bool SubscribeProperty::deserialize(const std::vector<uint8_t>& data) {
@@ -1147,11 +962,11 @@ GetPropertyDataReply::GetPropertyDataReply(const Common& common, uint8_t request
     : MultiPacketMessage(MessageType::GetPropertyDataReply, common), request_id_(request_id), header_(header), body_(body) {}
 
 std::vector<uint8_t> GetPropertyDataReply::serialize() const {
-    std::vector<uint8_t> result;
-    result.push_back(request_id_);
-    result.insert(result.end(), header_.begin(), header_.end());
-    result.insert(result.end(), body_.begin(), body_.end());
-    return result;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_REPLY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize_multi() const {
@@ -1185,10 +1000,11 @@ SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request
     : MultiPacketMessage(MessageType::SetPropertyDataReply, common), request_id_(request_id), header_(header) {}
 
 std::vector<uint8_t> SetPropertyDataReply::serialize() const {
-    std::vector<uint8_t> result;
-    result.push_back(request_id_);
-    result.insert(result.end(), header_.begin(), header_.end());
-    return result;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_REPLY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, {});
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize_multi() const {
@@ -1220,11 +1036,11 @@ SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t req
     : MultiPacketMessage(MessageType::SubscribePropertyReply, common), request_id_(request_id), header_(header), body_(body) {}
 
 std::vector<uint8_t> SubscribePropertyReply::serialize() const {
-    std::vector<uint8_t> result;
-    result.push_back(request_id_);
-    result.insert(result.end(), header_.begin(), header_.end());
-    result.insert(result.end(), body_.begin(), body_.end());
-    return result;
+    auto chunks = midi_ci::core::constants::serialize_property_chunks(
+        4096 - 256, // max chunk size
+        static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_REPLY),
+        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
+    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
 std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize_multi() const {

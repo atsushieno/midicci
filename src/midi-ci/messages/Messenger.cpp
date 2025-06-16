@@ -619,7 +619,8 @@ void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
         pimpl_->device_.remove_connection(msg.get_source_muid());
     }
     
-    auto connection = pimpl_->device_.create_connection(msg.get_source_muid());
+    auto connection = std::make_shared<core::ClientConnection>(pimpl_->device_, msg.get_source_muid());
+    pimpl_->device_.store_connection(msg.get_source_muid(), connection);
     
     send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);
     send_profile_inquiry(msg.get_common().group, msg.get_source_muid());

@@ -75,11 +75,9 @@ void MidiCIDevice::set_message_callback(MessageCallback callback) {
     pimpl_->message_callback_ = std::move(callback);
 }
 
-std::shared_ptr<ClientConnection> MidiCIDevice::create_connection(uint8_t destination_id) {
+void MidiCIDevice::store_connection(uint8_t destination_id, std::shared_ptr<ClientConnection> connection) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto connection = std::make_shared<ClientConnection>(destination_id);
     pimpl_->connections_[destination_id] = connection;
-    return connection;
 }
 
 void MidiCIDevice::remove_connection(uint8_t destination_id) {

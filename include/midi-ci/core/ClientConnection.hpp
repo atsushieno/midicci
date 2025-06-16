@@ -27,7 +27,7 @@ public:
     using MessageCallback = std::function<void(const messages::Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
-    explicit ClientConnection(uint8_t destination_id);
+    explicit ClientConnection(MidiCIDevice& device, uint8_t destination_id);
     ~ClientConnection();
     
     ClientConnection(const ClientConnection&) = delete;

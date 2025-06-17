@@ -58,3 +58,40 @@ TEST_F(CIFactoryTest, midiCI32to28Test) {
     EXPECT_EQ(0xFC285E9, midiCI32to28(0x7E0A0B69));
     EXPECT_EQ(0xCBD8657, midiCI32to28(0x65760C57));
 }
+
+TEST_F(CIFactoryTest, testPropertyExchangeMessages) {
+    Common common(0x10101010, 0x20202020, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 5);
+    
+    PropertyGetCapabilities inquiry(common, 16);
+    auto data1 = inquiry.serialize();
+    
+    EXPECT_EQ(data1[0], MIDI_CI_UNIVERSAL_SYSEX_ID);
+    EXPECT_EQ(data1[3], static_cast<uint8_t>(MessageType::PropertyGetCapabilities));
+    
+    std::vector<uint8_t> header = {11, 22, 33, 44};
+    std::vector<uint8_t> data = {55, 66, 77, 88, 99};
+    
+    GetPropertyData getInquiry(common, 2, header);
+    auto data3 = getInquiry.serialize();
+    EXPECT_EQ(data3[3], static_cast<uint8_t>(MessageType::GetPropertyData));
+    
+    GetPropertyDataReply getReply(common, 2, header, data);
+    auto data4 = getReply.serialize();
+    EXPECT_EQ(data4[3], static_cast<uint8_t>(MessageType::GetPropertyDataReply));
+    
+    SetPropertyData setInquiry(common, 2, header, data);
+    auto data5 = setInquiry.serialize();
+    EXPECT_EQ(data5[3], static_cast<uint8_t>(MessageType::SetPropertyData));
+    
+    SetPropertyDataReply setReply(common, 2, header);
+    auto data6 = setReply.serialize();
+    EXPECT_EQ(data6[3], static_cast<uint8_t>(MessageType::SetPropertyDataReply));
+    
+    SubscribeProperty subscribe(common, 2, header, data);
+    auto data7 = subscribe.serialize();
+    EXPECT_EQ(data7[3], static_cast<uint8_t>(MessageType::SubscribeProperty));
+    
+    SubscribePropertyReply subscribeReply(common, 2, header, data);
+    auto data8 = subscribeReply.serialize();
+    EXPECT_EQ(data8[3], static_cast<uint8_t>(MessageType::SubscribePropertyReply));
+}

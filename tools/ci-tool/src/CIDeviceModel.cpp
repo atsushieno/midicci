@@ -133,8 +133,8 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const m
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->local_profile_states_.remove_if(
         [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->get_group() == group && 
-                   state->get_address() == address && 
+            return state->group().get() == group && 
+                   state->address().get() == address && 
                    state->get_profile() == profile_id;
         });
     

@@ -62,8 +62,8 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const mi
     auto profiles_vec = pimpl_->profiles_.to_vector();
     auto it = std::find_if(profiles_vec.begin(), profiles_vec.end(),
         [group, address, &profile](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->get_group() == group && 
-                   state->get_address() == address && 
+            return state->group().get() == group && 
+                   state->address().get() == address && 
                    state->get_profile() == profile;
         });
     

@@ -23,11 +23,6 @@ public:
     MidiCIProfileState(MidiCIProfileState&&) = default;
     MidiCIProfileState& operator=(MidiCIProfileState&&) = default;
     
-    uint8_t get_group() const;
-    uint8_t get_address() const;
-    bool is_enabled() const;
-    uint16_t get_num_channels_requested() const;
-    
     MutableState<uint8_t>& group();
     const MutableState<uint8_t>& group() const;
     

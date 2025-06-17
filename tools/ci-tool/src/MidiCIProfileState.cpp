@@ -52,22 +52,6 @@ MidiCIProfileState::MidiCIProfileState(uint8_t grp, uint8_t addr,
 
 MidiCIProfileState::~MidiCIProfileState() = default;
 
-uint8_t MidiCIProfileState::get_group() const {
-    return pimpl_->group_.get();
-}
-
-uint8_t MidiCIProfileState::get_address() const {
-    return pimpl_->address_.get();
-}
-
-bool MidiCIProfileState::is_enabled() const {
-    return pimpl_->enabled_.get();
-}
-
-uint16_t MidiCIProfileState::get_num_channels_requested() const {
-    return pimpl_->num_channels_requested_.get();
-}
-
 MutableState<uint8_t>& MidiCIProfileState::group() {
     return pimpl_->group_;
 }

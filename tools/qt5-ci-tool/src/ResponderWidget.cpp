@@ -323,8 +323,8 @@ void ResponderWidget::updateProfileList()
             auto profileId = profile->get_profile();
             QString profileText = QString("%1 (G%2 A%3)")
                 .arg(QString::fromStdString(profileId.to_string()))
-                .arg(profile->get_group())
-                .arg(profile->get_address());
+                .arg(profile->group().get())
+                .arg(profile->address().get());
             m_profileList->addItem(profileText);
         }
     }

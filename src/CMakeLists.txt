@@ -11,7 +11,7 @@ set(MIDI_CI_SOURCES
     midi-ci/properties/PropertyChunkManager.cpp
     midi-ci/properties/PropertyClientFacade.cpp
     midi-ci/properties/PropertyHostFacade.cpp
-    midi-ci/properties/ObsevablePropertyList.cpp
+    midi-ci/properties/ObservablePropertyList.cpp
     midi-ci/properties/CommonRulesPropertyHelper.cpp
     midi-ci/properties/CommonRulesPropertyClient.cpp
     midi-ci/ump/Ump.cpp

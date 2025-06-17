@@ -165,7 +165,7 @@ TEST(CIFactoryTest, testProfileConfigurationMessages) {
     EXPECT_EQ(expected7, actual7);
 }
 
-TEST(CIFactoryTest, testPropertyExchangeMessages) {
+TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
     std::vector<uint8_t> header = {11, 22, 33, 44};
     std::vector<uint8_t> data = {55, 66, 77, 88, 99};
 

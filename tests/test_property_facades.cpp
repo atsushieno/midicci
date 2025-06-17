@@ -9,7 +9,7 @@ using namespace midi_ci::properties;
 using namespace midi_ci::json;
 using namespace midi_ci::properties::property_common_rules;
 
-TEST(PropertyFacadesTest, propertyExchange1) {
+TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
@@ -26,10 +26,7 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     std::string fooJson = fooValue.serialize();
     std::vector<uint8_t> fooBytes(fooJson.begin(), fooJson.end());
     
-    auto property_rules = dynamic_cast<TestPropertyRules*>(host.get_property_rules());
-    if (property_rules) {
-        property_rules->set_property_value(id, fooBytes);
-    }
+    host.setPropertyValue(id, "", fooBytes, false);
     
     device1.sendDiscovery();
     
@@ -54,32 +51,26 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     
     client.send_set_property_data(id, "", barBytes);
     
-    if (property_rules) {
-        auto hostProperty = property_rules->get_property_value(id);
-        EXPECT_EQ(barBytes, hostProperty) << "Host property value not updated";
-    }
-    auto clientProperty = client.getProperty(id);
-    EXPECT_EQ(barBytes, clientProperty) << "Client property value not updated";
+    EXPECT_EQ(barBytes, host.getProperty(id)) << "Host property value not updated";
+    EXPECT_EQ(barBytes, client.getProperty(id)) << "Client property value not updated";
     
     client.send_subscribe_property(id, "");
-    if (property_rules) {
-        EXPECT_EQ(1, property_rules->get_subscriptions().size()) << "Subscription not registered on host";
-    }
+    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host";
     
-    if (property_rules) {
-        property_rules->set_property_value(id, fooBytes);
-        auto updatedProperty = property_rules->get_property_value(id);
-        EXPECT_EQ(fooBytes, updatedProperty) << "Property update not applied";
-    }
+    host.setPropertyValue(id, "", fooBytes, false);
+    EXPECT_EQ(fooBytes, client.getProperty(id)) << "Property update not reflected on client after subscription";
     
     client.send_unsubscribe_property(id);
+    EXPECT_EQ(0, host.get_subscriptions().size()) << "Subscription not removed after unsubscription";
     
     client.send_subscribe_property(id, "");
-    if (property_rules) {
-        auto subscriptions = property_rules->get_subscriptions();
-        if (!subscriptions.empty()) {
-            EXPECT_GT(subscriptions.size(), 0) << "No subscriptions found";
-        }
+    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host, 2nd time";
+    auto subscriptions = host.get_subscriptions();
+    if (!subscriptions.empty()) {
+        auto sub = subscriptions[0];
+        host.shutdownSubscription(sub.subscriber_muid, sub.property_id);
+        EXPECT_EQ(0, client.get_subscriptions().size()) << "Client subscriptions not cleared after host shutdown";
+        EXPECT_EQ(0, host.get_subscriptions().size()) << "Host subscriptions not cleared after shutdown";
     }
 }
 

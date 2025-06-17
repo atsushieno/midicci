@@ -2,6 +2,7 @@
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/core/CIFactory.hpp"
 #include "midi-ci/core/DeviceConfig.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
@@ -372,37 +373,68 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
             break;
         }
         case CISubId2::PROPERTY_GET_DATA_REPLY: {
-            if (data.size() >= 16) {
+            if (data.size() >= 21) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
-                GetPropertyDataReply reply(common, request_id, header, body);
-                pimpl_->log_message(reply, false);
-                processGetDataReply(reply);
+                if (16 + header_size + 6 <= data.size()) {
+                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+                    size_t chunk_info_offset = 16 + header_size;
+                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
+                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
+                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
+                    
+                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
+                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
+                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
+                        GetPropertyDataReply reply(common, request_id, header, body);
+                        pimpl_->log_message(reply, false);
+                        processGetDataReply(reply);
+                    }
+                }
             }
             break;
         }
         case CISubId2::PROPERTY_SET_DATA_REPLY: {
-            if (data.size() >= 16) {
+            if (data.size() >= 21) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                SetPropertyDataReply reply(common, request_id, header);
-                pimpl_->log_message(reply, false);
-                processSetDataReply(reply);
+                if (16 + header_size + 6 <= data.size()) {
+                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+                    size_t chunk_info_offset = 16 + header_size;
+                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
+                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
+                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
+                    
+                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
+                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
+                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
+                        SetPropertyDataReply reply(common, request_id, header);
+                        pimpl_->log_message(reply, false);
+                        processSetDataReply(reply);
+                    }
+                }
             }
             break;
         }
         case CISubId2::PROPERTY_SUBSCRIPTION_REPLY: {
-            if (data.size() >= 16) {
+            if (data.size() >= 21) {
                 uint8_t request_id = data[13];
                 uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
-                SubscribePropertyReply reply(common, request_id, header, body);
-                pimpl_->log_message(reply, false);
-                processSubscribePropertyReply(reply);
+                if (16 + header_size + 6 <= data.size()) {
+                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+                    size_t chunk_info_offset = 16 + header_size;
+                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
+                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
+                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
+                    
+                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
+                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
+                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
+                        SubscribePropertyReply reply(common, request_id, header, body);
+                        pimpl_->log_message(reply, false);
+                        processSubscribePropertyReply(reply);
+                    }
+                }
             }
             break;
         }

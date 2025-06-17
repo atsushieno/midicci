@@ -2,6 +2,7 @@ set(MIDI_CI_SOURCES
     midi-ci/core/MidiCIDevice.cpp
     midi-ci/core/ClientConnection.cpp
     midi-ci/core/MidiCIConstants.cpp
+    midi-ci/core/CIFactory.cpp
     midi-ci/json/Json.cpp
     midi-ci/messages/Message.cpp
     midi-ci/messages/Messenger.cpp
@@ -23,6 +24,7 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/core/MidiCIDevice.hpp
     ../include/midi-ci/core/ClientConnection.hpp
     ../include/midi-ci/core/MidiCIConstants.hpp
+    ../include/midi-ci/core/CIFactory.hpp
     ../include/midi-ci/core/DeviceConfig.hpp
     ../include/midi-ci/messages/Message.hpp
     ../include/midi-ci/messages/Messenger.hpp

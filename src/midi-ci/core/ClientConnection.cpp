@@ -1,6 +1,7 @@
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/core/CIFactory.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
 #include "midi-ci/properties/PropertyClientFacade.hpp"
@@ -80,32 +81,49 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
                 
                 switch (msg_type) {
                     case midi_ci::messages::MessageType::GetPropertyData: {
-                        if (midi_ci_data.size() >= 16) {
-                            uint32_t source_muid = midi_ci_data[5] | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
-                            uint32_t dest_muid = midi_ci_data[9] | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
+                        if (midi_ci_data.size() >= 21) {
+                            uint32_t source_muid = (midi_ci_data[5]) | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
+                            uint32_t dest_muid = (midi_ci_data[9]) | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
                             uint8_t request_id = midi_ci_data[13];
                             uint16_t header_size = midi_ci_data[14] | (midi_ci_data[15] << 7);
-                            std::vector<uint8_t> header(midi_ci_data.begin() + 16, midi_ci_data.begin() + 16 + header_size);
                             
-                            midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
-                            midi_ci::messages::GetPropertyData msg(common, request_id, header);
-                            pimpl_->message_callback_(msg);
+                            if (16 + header_size + 6 <= midi_ci_data.size()) {
+                                std::vector<uint8_t> header(midi_ci_data.begin() + 16, midi_ci_data.begin() + 16 + header_size);
+                                size_t chunk_info_offset = 16 + header_size;
+                                uint16_t num_chunks = midi_ci_data[chunk_info_offset] | (midi_ci_data[chunk_info_offset + 1] << 7);
+                                uint16_t chunk_index = midi_ci_data[chunk_info_offset + 2] | (midi_ci_data[chunk_info_offset + 3] << 7);
+                                uint16_t chunk_data_size = midi_ci_data[chunk_info_offset + 4] | (midi_ci_data[chunk_info_offset + 5] << 7);
+                                
+                                midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
+                                midi_ci::messages::GetPropertyData msg(common, request_id, header);
+                                pimpl_->message_callback_(msg);
+                            }
                         }
                         break;
                     }
                     case midi_ci::messages::MessageType::SetPropertyData: {
-                        if (midi_ci_data.size() >= 18) {
-                            uint32_t source_muid = midi_ci_data[5] | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
-                            uint32_t dest_muid = midi_ci_data[9] | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
+                        if (midi_ci_data.size() >= 21) {
+                            uint32_t source_muid = (midi_ci_data[5]) | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
+                            uint32_t dest_muid = (midi_ci_data[9]) | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
                             uint8_t request_id = midi_ci_data[13];
                             uint16_t header_size = midi_ci_data[14] | (midi_ci_data[15] << 7);
-                            uint16_t body_size = midi_ci_data[16] | (midi_ci_data[17] << 7);
-                            std::vector<uint8_t> header(midi_ci_data.begin() + 18, midi_ci_data.begin() + 18 + header_size);
-                            std::vector<uint8_t> body(midi_ci_data.begin() + 18 + header_size, midi_ci_data.begin() + 18 + header_size + body_size);
                             
-                            midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
-                            midi_ci::messages::SetPropertyData msg(common, request_id, header, body);
-                            pimpl_->message_callback_(msg);
+                            if (16 + header_size + 6 <= midi_ci_data.size()) {
+                                std::vector<uint8_t> header(midi_ci_data.begin() + 16, midi_ci_data.begin() + 16 + header_size);
+                                size_t chunk_info_offset = 16 + header_size;
+                                uint16_t num_chunks = midi_ci_data[chunk_info_offset] | (midi_ci_data[chunk_info_offset + 1] << 7);
+                                uint16_t chunk_index = midi_ci_data[chunk_info_offset + 2] | (midi_ci_data[chunk_info_offset + 3] << 7);
+                                uint16_t chunk_data_size = midi_ci_data[chunk_info_offset + 4] | (midi_ci_data[chunk_info_offset + 5] << 7);
+                                
+                                if (chunk_info_offset + 6 + chunk_data_size <= midi_ci_data.size()) {
+                                    std::vector<uint8_t> body(midi_ci_data.begin() + chunk_info_offset + 6, 
+                                                            midi_ci_data.begin() + chunk_info_offset + 6 + chunk_data_size);
+                                    
+                                    midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
+                                    midi_ci::messages::SetPropertyData msg(common, request_id, header, body);
+                                    pimpl_->message_callback_(msg);
+                                }
+                            }
                         }
                         break;
                     }

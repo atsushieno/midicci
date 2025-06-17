@@ -45,6 +45,8 @@ public:
     std::shared_ptr<midi_ci::core::ClientConnection> get_connection() const;
     const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
     const MutableStateList<SubscriptionState>& get_subscriptions() const;
+    
+    std::string get_device_info_value() const;
     const MutableState<std::string>& get_device_info() const;
     
     void set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,

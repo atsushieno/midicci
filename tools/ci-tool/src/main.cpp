@@ -53,9 +53,9 @@ int main(int argc, char* argv[]) {
             
             auto profiles_vec = profiles.to_vector();
             for (const auto& profile : profiles_vec) {
-                std::cout << "  Profile - Group: " << static_cast<int>(profile->group().get())
-                          << ", Address: " << static_cast<int>(profile->address().get())
-                          << ", Enabled: " << profile->enabled().get() << std::endl;
+                std::cout << "  Profile - Group: " << static_cast<int>(profile->get_group())
+                          << ", Address: " << static_cast<int>(profile->get_address())
+                          << ", Enabled: " << profile->is_enabled() << std::endl;
             }
         }
         

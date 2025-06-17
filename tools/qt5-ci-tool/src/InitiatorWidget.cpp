@@ -420,9 +420,9 @@ void InitiatorWidget::updateProfileList()
                 auto profileId = profile->get_profile();
                 QString profileText = QString("%1 (G%2 A%3) %4")
                     .arg(QString::fromStdString(profileId.to_string()))
-                    .arg(profile->group().get())
-                    .arg(profile->address().get())
-                    .arg(profile->enabled().get() ? "ON" : "OFF");
+                    .arg(profile->get_group())
+                    .arg(profile->get_address())
+                    .arg(profile->is_enabled() ? "ON" : "OFF");
                 m_profileList->addItem(profileText);
             }
         }

@@ -47,6 +47,10 @@ const MutableStateList<SubscriptionState>& ClientConnectionModel::get_subscripti
     return pimpl_->subscriptions_;
 }
 
+std::string ClientConnectionModel::get_device_info_value() const {
+    return pimpl_->device_info_.get();
+}
+
 const MutableState<std::string>& ClientConnectionModel::get_device_info() const {
     return pimpl_->device_info_;
 }
@@ -58,8 +62,8 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const mi
     auto profiles_vec = pimpl_->profiles_.to_vector();
     auto it = std::find_if(profiles_vec.begin(), profiles_vec.end(),
         [group, address, &profile](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->group().get() == group && 
-                   state->address().get() == address && 
+            return state->get_group() == group && 
+                   state->get_address() == address && 
                    state->get_profile() == profile;
         });
     

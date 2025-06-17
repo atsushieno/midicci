@@ -4,6 +4,30 @@
 #include <sstream>
 #include <iomanip>
 
+namespace {
+    std::string format_json_bytes(const std::vector<uint8_t>& bytes, size_t max_length = 1024) {
+        if (bytes.empty()) {
+            return "";
+        }
+        
+        try {
+            std::string json_str(bytes.begin(), bytes.end());
+            if (json_str.length() > max_length) {
+                json_str = json_str.substr(0, max_length);
+            }
+            
+            auto json_value = midi_ci::json::JsonValue::parse(json_str);
+            return json_value.serialize();
+        } catch (...) {
+            std::string fallback(bytes.begin(), bytes.end());
+            if (fallback.length() > max_length) {
+                fallback = fallback.substr(0, max_length);
+            }
+            return fallback;
+        }
+    }
+}
+
 using namespace midi_ci::core::constants;
 
 namespace midi_ci {
@@ -326,7 +350,8 @@ std::string GetPropertyData::get_label() const {
 std::string GetPropertyData::get_body_string() const {
     std::ostringstream oss;
     oss << "requestId=" << static_cast<int>(request_id_) 
-        << ", headerSize=" << header_.size();
+        << ", header=" << format_json_bytes(header_)
+        << ", body=";
     return oss.str();
 }
 
@@ -359,8 +384,8 @@ std::string SetPropertyData::get_label() const {
 std::string SetPropertyData::get_body_string() const {
     std::ostringstream oss;
     oss << "requestId=" << static_cast<int>(request_id_) 
-        << ", headerSize=" << header_.size() 
-        << ", bodySize=" << body_.size();
+        << ", header=" << format_json_bytes(header_)
+        << ", body=" << format_json_bytes(body_);
     return oss.str();
 }
 
@@ -417,8 +442,8 @@ std::string SubscribeProperty::get_label() const {
 std::string SubscribeProperty::get_body_string() const {
     std::ostringstream oss;
     oss << "requestId=" << static_cast<int>(request_id_) 
-        << ", headerSize=" << header_.size() 
-        << ", bodySize=" << body_.size();
+        << ", header=" << format_json_bytes(header_)
+        << ", body=" << format_json_bytes(body_);
     return oss.str();
 }
 
@@ -991,9 +1016,11 @@ std::string GetPropertyDataReply::get_label() const {
 }
 
 std::string GetPropertyDataReply::get_body_string() const {
-    return "request_id=" + std::to_string(request_id_) + 
-           ", header_size=" + std::to_string(header_.size()) + 
-           ", body_size=" + std::to_string(body_.size());
+    std::ostringstream oss;
+    oss << "requestId=" << static_cast<int>(request_id_) 
+        << ", header=" << format_json_bytes(header_)
+        << ", body=" << format_json_bytes(body_);
+    return oss.str();
 }
 
 SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header)
@@ -1027,8 +1054,11 @@ std::string SetPropertyDataReply::get_label() const {
 }
 
 std::string SetPropertyDataReply::get_body_string() const {
-    return "request_id=" + std::to_string(request_id_) + 
-           ", header_size=" + std::to_string(header_.size());
+    std::ostringstream oss;
+    oss << "requestId=" << static_cast<int>(request_id_) 
+        << ", header=" << format_json_bytes(header_)
+        << ", body=";
+    return oss.str();
 }
 
 SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t request_id, 
@@ -1065,9 +1095,11 @@ std::string SubscribePropertyReply::get_label() const {
 }
 
 std::string SubscribePropertyReply::get_body_string() const {
-    return "request_id=" + std::to_string(request_id_) + 
-           ", header_size=" + std::to_string(header_.size()) + 
-           ", body_size=" + std::to_string(body_.size());
+    std::ostringstream oss;
+    oss << "requestId=" << static_cast<int>(request_id_) 
+        << ", header=" << format_json_bytes(header_)
+        << ", body=" << format_json_bytes(body_);
+    return oss.str();
 }
 
 ProfileAdded::ProfileAdded(const Common& common, const std::vector<uint8_t>& profile_id)

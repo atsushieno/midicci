@@ -43,6 +43,12 @@ public:
     void initialize();
     void shutdown();
     
+private:
+    void setup_event_listeners();
+    void on_connections_changed();
+
+public:
+    
     std::shared_ptr<midi_ci::core::MidiCIDevice> get_device() const;
     
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);

@@ -15,6 +15,7 @@ public:
     core::MidiCIDevice& device_;
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;
     std::vector<PropertyMetadata> properties_;
+    PropertyHostFacade::PropertyUpdatedCallback property_updated_callback_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -113,6 +114,14 @@ messages::SubscribePropertyReply PropertyHostFacade::process_subscribe_property(
 void PropertyHostFacade::notify_property_updated(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
+    if (pimpl_->property_updated_callback_) {
+        pimpl_->property_updated_callback_(property_id);
+    }
+}
+
+void PropertyHostFacade::set_property_updated_callback(PropertyUpdatedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->property_updated_callback_ = std::move(callback);
 }
 
 } // namespace properties

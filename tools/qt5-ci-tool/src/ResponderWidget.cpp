@@ -14,7 +14,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QInputDialog>
-#include <QTimer>
+
 
 ResponderWidget::ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
@@ -188,9 +188,7 @@ void ResponderWidget::setupConnections()
     connect(m_updatePropertyValueButton, &QPushButton::clicked, this, &ResponderWidget::onUpdatePropertyValue);
     connect(m_updateMetadataButton, &QPushButton::clicked, this, &ResponderWidget::onUpdatePropertyMetadata);
     
-    m_updateTimer = new QTimer(this);
-    connect(m_updateTimer, &QTimer::timeout, this, &ResponderWidget::checkForLocalUpdates);
-    m_updateTimer->start(1000);
+
     
     connect(this, &ResponderWidget::localProfilesChanged, this, [this]() {
         updateProfileList();
@@ -204,7 +202,7 @@ void ResponderWidget::setupConnections()
         updatePropertyDetails();
     });
     
-
+    setupEventBridge();
 }
 
 void ResponderWidget::onProfileSelectionChanged()
@@ -396,24 +394,19 @@ void ResponderWidget::updatePropertyDetails()
     }
 }
 
-void ResponderWidget::checkForLocalUpdates()
+void ResponderWidget::setupEventBridge()
 {
     if (!m_repository || !m_repository->get_ci_device_manager()) {
         return;
     }
     
     auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-    if (!deviceModel) {
+    if (!deviceModel || !deviceModel->get_device()) {
         return;
     }
     
-    auto localProfiles = deviceModel->get_local_profile_states();
-    
-    if (localProfiles.size() != m_lastProfileCount) {
-        emit localProfilesChanged();
-        m_lastProfileCount = localProfiles.size();
-    }
-    
-    emit localPropertiesChanged();
-    emit subscriptionsUpdated();
+    QMetaObject::invokeMethod(this, [this]() {
+        updateProfileList();
+        updatePropertyList();
+    }, Qt::QueuedConnection);
 }

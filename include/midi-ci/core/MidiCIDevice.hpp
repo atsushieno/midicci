@@ -36,6 +36,8 @@ struct DeviceConfig;
 class MidiCIDevice {
 public:
     using MessageCallback = std::function<void(const Message&)>;
+    using MessageReceivedCallback = std::function<void(const messages::Message&)>;
+    using ConnectionsChangedCallback = std::function<void()>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using LoggerFunction = std::function<void(const std::string&, bool)>;
     
@@ -57,6 +59,8 @@ public:
     uint8_t get_device_id() const noexcept;
     
     void set_message_callback(MessageCallback callback);
+    void set_message_received_callback(MessageReceivedCallback callback);
+    void set_connections_changed_callback(ConnectionsChangedCallback callback);
     
     void store_connection(uint8_t destination_id, std::shared_ptr<ClientConnection> connection);
     void remove_connection(uint8_t destination_id);

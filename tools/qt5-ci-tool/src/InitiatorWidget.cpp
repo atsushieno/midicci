@@ -15,7 +15,7 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QTimer>
+
 
 InitiatorWidget::InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
@@ -179,9 +179,7 @@ void InitiatorWidget::setupConnections()
     connect(m_subscribePropertyButton, &QPushButton::clicked, this, &InitiatorWidget::onSubscribeProperty);
     connect(m_requestMidiReportButton, &QPushButton::clicked, this, &InitiatorWidget::onRequestMidiMessageReport);
     
-    m_updateTimer = new QTimer(this);
-    connect(m_updateTimer, &QTimer::timeout, this, &InitiatorWidget::checkForDeviceUpdates);
-    m_updateTimer->start(1000);
+
     
     connect(this, &InitiatorWidget::deviceConnected, this, [this](int muid) {
         updateDeviceList();
@@ -210,7 +208,7 @@ void InitiatorWidget::setupConnections()
         }
     });
     
-
+    setupEventBridge();
 }
 
 void InitiatorWidget::onSendDiscovery()
@@ -478,38 +476,26 @@ void InitiatorWidget::updatePropertyList()
     }
 }
 
-void InitiatorWidget::checkForDeviceUpdates()
+void InitiatorWidget::setupEventBridge()
 {
     if (!m_repository || !m_repository->get_ci_device_manager()) {
         return;
     }
     
     auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-    if (!deviceModel) {
+    if (!deviceModel || !deviceModel->get_device()) {
         return;
     }
     
-    auto connections = deviceModel->get_connections();
-    
-    if (connections.size() != m_lastConnectionCount) {
-        if (connections.size() > m_lastConnectionCount) {
-            for (size_t i = m_lastConnectionCount; i < connections.size(); ++i) {
-                if (connections[i] && connections[i]->get_connection()) {
-                    emit deviceConnected(static_cast<int>(connections[i]->get_connection()->get_target_muid()));
-                }
+    auto device = deviceModel->get_device();
+    device->set_connections_changed_callback([this]() {
+        QMetaObject::invokeMethod(this, [this]() {
+            updateDeviceList();
+            if (m_selectedDeviceMUID != 0) {
+                updateConnectionInfo();
+                updateProfileList();
+                updatePropertyList();
             }
-        } else {
-            emit deviceDisconnected(0);
-        }
-        m_lastConnectionCount = connections.size();
-    }
-    
-    for (const auto& connection : connections) {
-        if (connection && connection->get_connection()) {
-            uint32_t muid = connection->get_connection()->get_target_muid();
-            emit deviceInfoUpdated(static_cast<int>(muid));
-            emit profilesUpdated(static_cast<int>(muid));
-            emit propertiesUpdated(static_cast<int>(muid));
-        }
-    }
+        }, Qt::QueuedConnection);
+    });
 }

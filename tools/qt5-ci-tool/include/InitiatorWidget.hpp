@@ -14,7 +14,7 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QSpinBox>
-#include <QTimer>
+
 #include <memory>
 
 namespace ci_tool {
@@ -45,11 +45,12 @@ private slots:
     void onRefreshProperty();
     void onSubscribeProperty();
     void onRequestMidiMessageReport();
-    void checkForDeviceUpdates();
+
 
 private:
     void setupUI();
     void setupConnections();
+    void setupEventBridge();
     void updateDeviceList();
     void updateConnectionInfo();
     void updateProfileList();
@@ -93,6 +94,5 @@ private:
     QString m_selectedProfile;
     QString m_selectedProperty;
     
-    QTimer* m_updateTimer;
     size_t m_lastConnectionCount;
 };

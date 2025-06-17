@@ -341,6 +341,15 @@ std::vector<uint8_t> GetPropertyData::serialize() const {
 
 
 
+bool GetPropertyData::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    if (data.size() > 1) {
+        header_.assign(data.begin() + 1, data.end());
+    }
+    return true;
+}
+
 std::string GetPropertyData::get_label() const {
     return "GetPropertyData";
 }
@@ -375,6 +384,18 @@ std::vector<uint8_t> SetPropertyData::serialize() const {
 
 std::string SetPropertyData::get_label() const {
     return "SetPropertyData";
+}
+
+bool SetPropertyData::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    
+    if (data.size() > 1) {
+        size_t mid = data.size() / 2;
+        header_.assign(data.begin() + 1, data.begin() + mid);
+        body_.assign(data.begin() + mid, data.end());
+    }
+    return true;
 }
 
 std::string SetPropertyData::get_body_string() const {
@@ -928,6 +949,35 @@ std::string ProfileReply::get_label() const {
     return "ProfileReply";
 }
 
+bool ProfileReply::deserialize(const std::vector<uint8_t>& data) {
+    enabled_profiles_.clear();
+    disabled_profiles_.clear();
+    
+    if (data.size() < 2) {
+        return false;
+    }
+    
+    size_t pos = 0;
+    
+    uint8_t num_enabled = data[pos++];
+    for (uint8_t i = 0; i < num_enabled && pos + 5 <= data.size(); ++i) {
+        std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+        enabled_profiles_.push_back(profile_id);
+        pos += 5;
+    }
+    
+    if (pos < data.size()) {
+        uint8_t num_disabled = data[pos++];
+        for (uint8_t i = 0; i < num_disabled && pos + 5 <= data.size(); ++i) {
+            std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+            disabled_profiles_.push_back(profile_id);
+            pos += 5;
+        }
+    }
+    
+    return true;
+}
+
 std::string ProfileReply::get_body_string() const {
     return "enabled_profiles=" + std::to_string(enabled_profiles_.size()) + 
            ", disabled_profiles=" + std::to_string(disabled_profiles_.size());
@@ -976,6 +1026,18 @@ std::string GetPropertyDataReply::get_label() const {
     return "GetPropertyDataReply";
 }
 
+bool GetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    
+    if (data.size() > 1) {
+        size_t mid = data.size() / 2;
+        header_.assign(data.begin() + 1, data.begin() + mid);
+        body_.assign(data.begin() + mid, data.end());
+    }
+    return true;
+}
+
 std::string GetPropertyDataReply::get_body_string() const {
     std::ostringstream oss;
     oss << "requestId=" << static_cast<int>(request_id_) 
@@ -1003,6 +1065,15 @@ std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize_multi() const 
 
 std::string SetPropertyDataReply::get_label() const {
     return "SetPropertyDataReply";
+}
+
+bool SetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
+    if (data.size() < 1) return false;
+    request_id_ = data[0];
+    if (data.size() > 1) {
+        header_.assign(data.begin() + 1, data.end());
+    }
+    return true;
 }
 
 std::string SetPropertyDataReply::get_body_string() const {

@@ -5,6 +5,40 @@
 #include "midi-ci/core/DeviceConfig.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
+
+namespace {
+    std::pair<std::vector<std::vector<uint8_t>>, std::vector<std::vector<uint8_t>>> 
+    parse_profile_set(const std::vector<uint8_t>& data) {
+        std::vector<std::vector<uint8_t>> enabled_profiles;
+        std::vector<std::vector<uint8_t>> disabled_profiles;
+        
+        if (data.size() < 15) {
+            return {enabled_profiles, disabled_profiles};
+        }
+        
+        uint16_t num_enabled = data[13] + (data[14] << 7);
+        size_t pos = 15;
+        
+        for (uint16_t i = 0; i < num_enabled && pos + 5 <= data.size(); ++i) {
+            std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+            enabled_profiles.push_back(profile_id);
+            pos += 5;
+        }
+        
+        if (pos + 2 <= data.size()) {
+            uint16_t num_disabled = data[pos] + (data[pos + 1] << 7);
+            pos += 2;
+            
+            for (uint16_t i = 0; i < num_disabled && pos + 5 <= data.size(); ++i) {
+                std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+                disabled_profiles.push_back(profile_id);
+                pos += 5;
+            }
+        }
+        
+        return {enabled_profiles, disabled_profiles};
+    }
+}
 #include "midi-ci/profiles/ProfileHostFacade.hpp"
 #include "midi-ci/properties/PropertyClientFacade.hpp"
 #include "midi-ci/properties/PropertyHostFacade.hpp"
@@ -285,14 +319,10 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
-                std::vector<uint8_t> profile_data(data.begin() + 13, data.end());
-                if (profile_data.size() >= 5) {
-                    std::vector<uint8_t> profile_id(profile_data.begin(), profile_data.begin() + 5);
-                    std::vector<uint8_t> data(profile_data.begin() + 5, profile_data.end());
-                    ProfileReply reply(common, profile_id, data);
-                    pimpl_->log_message(reply, false);
-                    processProfileReply(reply);
-                }
+                auto [enabled_profiles, disabled_profiles] = parse_profile_set(data);
+                ProfileReply reply(common, enabled_profiles, disabled_profiles);
+                pimpl_->log_message(reply, false);
+                processProfileReply(reply);
             }
             break;
         }

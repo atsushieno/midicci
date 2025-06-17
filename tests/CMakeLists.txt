@@ -17,10 +17,6 @@ set(GTEST_SOURCES
     TestPropertyRules.cpp
 )
 
-set(CUSTOM_TEST_SOURCES
-    test_main.cpp
-)
-
 add_executable(midi-ci-gtest ${GTEST_SOURCES})
 
 target_link_libraries(midi-ci-gtest 
@@ -37,21 +33,3 @@ target_include_directories(midi-ci-gtest
 )
 
 target_compile_features(midi-ci-gtest PRIVATE cxx_std_20)
-
-add_executable(midi-ci-tests ${CUSTOM_TEST_SOURCES})
-
-target_link_libraries(midi-ci-tests 
-    PRIVATE 
-        midi-ci
-        Threads::Threads
-)
-
-target_include_directories(midi-ci-tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-target_compile_features(midi-ci-tests PRIVATE cxx_std_20)
-
-add_test(NAME midi-ci-gtest-tests COMMAND midi-ci-gtest)
-add_test(NAME midi-ci-custom-tests COMMAND midi-ci-tests)

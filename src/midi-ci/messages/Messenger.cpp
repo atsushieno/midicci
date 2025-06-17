@@ -5,6 +5,7 @@
 #include "midi-ci/core/CIFactory.hpp"
 #include "midi-ci/core/DeviceConfig.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/core/CIRetrieval.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
 #include "midi-ci/profiles/ProfileHostFacade.hpp"
 #include "midi-ci/properties/PropertyClientFacade.hpp"
@@ -18,37 +19,7 @@
 namespace midi_ci {
 namespace messages {
 
-std::pair<std::vector<std::vector<uint8_t>>, std::vector<std::vector<uint8_t>>>
-parse_profile_set(const std::vector<uint8_t>& data) {
-    std::vector<std::vector<uint8_t>> enabled_profiles;
-    std::vector<std::vector<uint8_t>> disabled_profiles;
 
-    if (data.size() < 15) {
-        return {enabled_profiles, disabled_profiles};
-    }
-
-    uint16_t num_enabled = data[13] + (data[14] << 7);
-    size_t pos = 15;
-
-    for (uint16_t i = 0; i < num_enabled && pos + 5 <= data.size(); ++i) {
-        std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
-        enabled_profiles.push_back(profile_id);
-        pos += 5;
-    }
-
-    if (pos + 2 <= data.size()) {
-        uint16_t num_disabled = data[pos] + (data[pos + 1] << 7);
-        pos += 2;
-
-        for (uint16_t i = 0; i < num_disabled && pos + 5 <= data.size(); ++i) {
-            std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
-            disabled_profiles.push_back(profile_id);
-            pos += 5;
-        }
-    }
-
-    return {enabled_profiles, disabled_profiles};
-}
 
 class Messenger::Impl {
 public:
@@ -275,9 +246,9 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         return;
     }
 
-    uint32_t source_muid = data[5] | (data[6] << 8) | (data[7] << 16) | (data[8] << 24);
-    uint32_t dest_muid = data[9] | (data[10] << 8) | (data[11] << 16) | (data[12] << 24);
-    uint8_t address = data[4];
+    uint32_t source_muid = core::CIRetrieval::get_source_muid(data);
+    uint32_t dest_muid = core::CIRetrieval::get_destination_muid(data);
+    uint8_t address = core::CIRetrieval::get_addressing(data);
 
     Common common(source_muid, dest_muid, address, group);
 
@@ -290,14 +261,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     switch (message_type) {
         case CISubId2::DISCOVERY_REPLY: {
             if (data.size() >= 30) {
-                std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);
-                std::string model(reinterpret_cast<const char*>(&data[18]), 2);
-                std::string version(reinterpret_cast<const char*>(&data[20]), 4);
+                auto device_details = core::CIRetrieval::get_device_details(data);
+                std::string manufacturer(reinterpret_cast<const char*>(&device_details.manufacturer), 3);
+                std::string family(reinterpret_cast<const char*>(&device_details.family), 2);
+                std::string model(reinterpret_cast<const char*>(&device_details.model), 2);
+                std::string version(reinterpret_cast<const char*>(&device_details.version), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
+                uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
 
@@ -309,7 +281,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::INVALIDATE_MUID: {
             if (data.size() >= 18) {
-                uint32_t target_muid = data[14] | (data[15] << 8) | (data[16] << 16) | (data[17] << 24);
+                uint32_t target_muid = core::CIRetrieval::get_muid_to_invalidate(data);
                 InvalidateMUID invalidate(common, target_muid);
                 pimpl_->log_message(invalidate, false);
                 processInvalidateMUID(invalidate);
@@ -318,7 +290,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
-                auto [enabled_profiles, disabled_profiles] = parse_profile_set(data);
+                auto [enabled_profiles, disabled_profiles] = core::CIRetrieval::get_profile_set(data);
                 ProfileReply reply(common, enabled_profiles, disabled_profiles);
                 pimpl_->log_message(reply, false);
                 processProfileReply(reply);
@@ -327,7 +299,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ADDED_REPORT: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
                 ProfileAdded added(common, profile_id);
                 pimpl_->log_message(added, false);
                 processProfileAddedReport(added);
@@ -336,7 +308,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_REMOVED_REPORT: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
                 ProfileRemoved removed(common, profile_id);
                 pimpl_->log_message(removed, false);
                 processProfileRemovedReport(removed);
@@ -345,8 +317,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ENABLED_REPORT: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 ProfileEnabled enabled(common, profile_id, channels);
                 pimpl_->log_message(enabled, false);
                 processProfileEnabledReport(enabled);
@@ -355,8 +327,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DISABLED_REPORT: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 ProfileDisabled disabled(common, profile_id, channels);
                 pimpl_->log_message(disabled, false);
                 processProfileDisabledReport(disabled);
@@ -365,7 +337,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY: {
             if (data.size() >= 14) {
-                uint8_t max_requests = data[13];
+                uint8_t max_requests = core::CIRetrieval::get_max_property_requests(data);
                 PropertyGetCapabilitiesReply reply(common, max_requests);
                 pimpl_->log_message(reply, false);
                 processPropertyCapabilitiesReply(reply);
@@ -375,75 +347,40 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_GET_DATA_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                if (16 + header_size + 6 <= data.size()) {
-                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                    size_t chunk_info_offset = 16 + header_size;
-                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
-                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
-                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
-                    
-                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
-                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
-                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
-                        GetPropertyDataReply reply(common, request_id, header, body);
-                        pimpl_->log_message(reply, false);
-                        processGetDataReply(reply);
-                    }
-                }
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                GetPropertyDataReply reply(common, request_id, header, body);
+                pimpl_->log_message(reply, false);
+                processGetDataReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_SET_DATA_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                if (16 + header_size + 6 <= data.size()) {
-                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                    size_t chunk_info_offset = 16 + header_size;
-                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
-                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
-                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
-                    
-                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
-                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
-                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
-                        SetPropertyDataReply reply(common, request_id, header);
-                        pimpl_->log_message(reply, false);
-                        processSetDataReply(reply);
-                    }
-                }
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                SetPropertyDataReply reply(common, request_id, header);
+                pimpl_->log_message(reply, false);
+                processSetDataReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_SUBSCRIPTION_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                if (16 + header_size + 6 <= data.size()) {
-                    std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                    size_t chunk_info_offset = 16 + header_size;
-                    uint16_t num_chunks = data[chunk_info_offset] | (data[chunk_info_offset + 1] << 7);
-                    uint16_t chunk_index = data[chunk_info_offset + 2] | (data[chunk_info_offset + 3] << 7);
-                    uint16_t chunk_data_size = data[chunk_info_offset + 4] | (data[chunk_info_offset + 5] << 7);
-                    
-                    if (chunk_info_offset + 6 + chunk_data_size <= data.size()) {
-                        std::vector<uint8_t> body(data.begin() + chunk_info_offset + 6, 
-                                                data.begin() + chunk_info_offset + 6 + chunk_data_size);
-                        SubscribePropertyReply reply(common, request_id, header, body);
-                        pimpl_->log_message(reply, false);
-                        processSubscribePropertyReply(reply);
-                    }
-                }
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                SubscribePropertyReply reply(common, request_id, header, body);
+                pimpl_->log_message(reply, false);
+                processSubscribePropertyReply(reply);
             }
             break;
         }
         case CISubId2::PROPERTY_NOTIFY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
                 SubscribeProperty notify(common, request_id, header, body);
                 pimpl_->log_message(notify, false);
                 processPropertyNotify(notify);
@@ -452,14 +389,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::DISCOVERY_INQUIRY: {
             if (data.size() >= 30) {
-                std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);
-                std::string model(reinterpret_cast<const char*>(&data[18]), 2);
-                std::string version(reinterpret_cast<const char*>(&data[20]), 4);
+                auto device_details = core::CIRetrieval::get_device_details(data);
+                std::string manufacturer(reinterpret_cast<const char*>(&device_details.manufacturer), 3);
+                std::string family(reinterpret_cast<const char*>(&device_details.family), 2);
+                std::string model(reinterpret_cast<const char*>(&device_details.model), 2);
+                std::string version(reinterpret_cast<const char*>(&device_details.version), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
+                uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
 
                 DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);
@@ -476,8 +414,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_ON: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t channels = data[18] | (data[19] << 7);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 SetProfileOn set_on(common, profile_id, channels);
                 pimpl_->log_message(set_on, false);
                 processSetProfileOn(set_on);
@@ -486,7 +424,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_OFF: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
                 SetProfileOff set_off(common, profile_id);
                 pimpl_->log_message(set_off, false);
                 processSetProfileOff(set_off);
@@ -495,7 +433,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY: {
             if (data.size() >= 14) {
-                uint8_t max_requests = data[13];
+                uint8_t max_requests = core::CIRetrieval::get_max_property_requests(data);
                 PropertyGetCapabilities inquiry(common, max_requests);
                 pimpl_->log_message(inquiry, false);
                 processPropertyCapabilitiesInquiry(inquiry);
@@ -505,8 +443,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_GET_DATA_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
                 GetPropertyData inquiry(common, request_id, header);
                 pimpl_->log_message(inquiry, false);
                 processGetPropertyData(inquiry);
@@ -516,9 +453,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SET_DATA_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
                 SetPropertyData inquiry(common, request_id, header, body);
                 pimpl_->log_message(inquiry, false);
                 processSetPropertyData(inquiry);
@@ -528,9 +464,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                uint16_t header_size = data[14] | (data[15] << 7);
-                std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
-                std::vector<uint8_t> body(data.begin() + 16 + header_size, data.end());
+                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
                 SubscribeProperty inquiry(common, request_id, header, body);
                 pimpl_->log_message(inquiry, false);
                 processSubscribeProperty(inquiry);
@@ -574,7 +509,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DETAILS_REPLY: {
             if (data.size() >= 22) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
                 uint8_t target = data[18];
                 uint16_t data_size = data[19] | (data[20] << 7);
                 std::vector<uint8_t> profile_data(data.begin() + 21, data.begin() + 21 + data_size);
@@ -586,8 +521,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SPECIFIC_DATA: {
             if (data.size() >= 22) {
-                std::vector<uint8_t> profile_id(data.begin() + 13, data.begin() + 18);
-                uint16_t data_length = data[19] | (data[20] << 7);
+                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                uint16_t data_length = core::CIRetrieval::get_profile_specific_data_size(data);
                 std::vector<uint8_t> profile_data(data.begin() + 22, data.begin() + 22 + data_length);
                 ProfileSpecificData specific_data(common, profile_id, profile_data);
                 pimpl_->log_message(specific_data, false);

@@ -1,27 +1,19 @@
 #include "InitiatorWidget.hpp"
 #include "CIToolRepository.hpp"
-#include "CIDeviceManager.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
-#include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/properties/PropertyManager.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
-#include "midi-ci/messages/Message.hpp"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QGridLayout>
 #include <QSplitter>
 #include <QGroupBox>
 #include <QHeaderView>
-#include <QMessageBox>
 
 
 InitiatorWidget::InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
     , m_selectedDeviceMUID(0)
-    , m_updateTimer(nullptr)
     , m_lastConnectionCount(0)
 {
     setupUI();

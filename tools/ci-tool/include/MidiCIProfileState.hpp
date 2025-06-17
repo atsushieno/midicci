@@ -2,19 +2,14 @@
 
 #include <memory>
 #include <cstdint>
-
-namespace midi_ci {
-namespace profiles {
-struct ProfileId;
-}
-}
+#include <midi-ci/profiles/MidiCIProfile.hpp>
 
 namespace ci_tool {
 
 class MidiCIProfileState {
 public:
     explicit MidiCIProfileState(uint8_t grp, uint8_t addr, 
-                               const midi_ci::profiles::ProfileId& prof,
+                               const midi_ci::profiles::MidiCIProfileId& prof,
                                bool en, uint16_t channels);
     ~MidiCIProfileState();
     
@@ -30,7 +25,7 @@ public:
     uint8_t get_address() const noexcept;
     void set_address(uint8_t address) noexcept;
     
-    const midi_ci::profiles::ProfileId& get_profile() const noexcept;
+    const midi_ci::profiles::MidiCIProfileId& get_profile() const noexcept;
     
     bool is_enabled() const noexcept;
     void set_enabled(bool enabled) noexcept;

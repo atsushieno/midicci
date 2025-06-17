@@ -1,10 +1,5 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
-#include "ClientConnectionModel.hpp"
-#include "MidiCIProfileState.hpp"
-#include "midi-ci/core/MidiCIDevice.hpp"
-#include "midi-ci/messages/Messenger.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
 #include "midi-ci/properties/PropertyManager.hpp"
 #include <mutex>
 #include <iostream>
@@ -105,7 +100,7 @@ void CIDeviceModel::send_discovery() {
 }
 
 void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid, 
-                                                const midi_ci::profiles::ProfileId& profile, uint8_t target) {
+                                                const midi_ci::profiles::MidiCIProfileId& profile, uint8_t target) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Sending profile details inquiry to MUID: 0x" << std::hex << muid << std::dec << std::endl;
 }
@@ -120,15 +115,15 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
     }
 }
 
-void CIDeviceModel::add_local_profile(const midi_ci::profiles::Profile& profile) {
+void CIDeviceModel::add_local_profile(const midi_ci::profiles::MidiCIProfile& profile) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto profile_state = std::make_shared<MidiCIProfileState>(
-        profile.group, profile.address, profile.profile_id, 
+        profile.group, profile.address, profile.profile,
         profile.enabled, profile.num_channels_requested);
     pimpl_->local_profile_states_.push_back(profile_state);
 }
 
-void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::ProfileId& profile_id) {
+void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto it = std::remove_if(pimpl_->local_profile_states_.begin(), pimpl_->local_profile_states_.end(),
         [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
@@ -185,7 +180,7 @@ void CIDeviceModel::on_connections_changed() {
         if (std::find(existing_muids.begin(), existing_muids.end(), muid) == existing_muids.end()) {
             auto device_conn = pimpl_->device_->get_connection(muid);
             if (device_conn) {
-                auto conn_model = std::make_shared<ClientConnectionModel>(*this, device_conn);
+                auto conn_model = std::make_shared<ClientConnectionModel>(shared_from_this(), device_conn);
                 pimpl_->connections_.push_back(conn_model);
                 std::cout << "Added connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;
             }
@@ -206,8 +201,8 @@ void CIDeviceModel::on_connections_changed() {
 }
 
 void CIDeviceModel::add_test_profile_items() {
-    midi_ci::profiles::ProfileId test_profile({0x7E, 0x00, 0x01, 0x02, 0x03});
-    midi_ci::profiles::Profile profile(test_profile, 0, 0x7F, false, 1);
+    midi_ci::profiles::MidiCIProfileId test_profile({0x7E, 0x00, 0x01, 0x02, 0x03});
+    midi_ci::profiles::MidiCIProfile profile(test_profile, 0, 0x7F, false, 1);
     add_local_profile(profile);
     
     std::cout << "Added test profile items" << std::endl;

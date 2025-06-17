@@ -8,7 +8,6 @@ set(MIDI_CI_SOURCES
     midi-ci/profiles/ObservableProfileList.cpp
     midi-ci/profiles/ProfileClientFacade.cpp
     midi-ci/profiles/ProfileHostFacade.cpp
-    midi-ci/profiles/ProfileManager.cpp
     midi-ci/properties/PropertyChunkManager.cpp
     midi-ci/properties/PropertyClientFacade.cpp
     midi-ci/properties/PropertyHostFacade.cpp
@@ -26,7 +25,6 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/core/DeviceConfig.hpp
     ../include/midi-ci/messages/Message.hpp
     ../include/midi-ci/messages/Messenger.hpp
-    ../include/midi-ci/profiles/ProfileManager.hpp
     ../include/midi-ci/properties/PropertyManager.hpp
     ../include/midi-ci/properties/PropertyChunkManager.hpp
     ../include/midi-ci/properties/PropertyCommonRules.hpp

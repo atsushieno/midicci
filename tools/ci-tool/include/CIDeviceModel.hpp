@@ -8,24 +8,11 @@
 #include "MidiCIProfileState.hpp"
 #include "ClientConnectionModel.hpp"
 
-namespace midi_ci {
-namespace core {
-class MidiCIDevice;
-}
-namespace profiles {
-struct Profile;
-struct ProfileId;
-}
-namespace properties {
-struct PropertyMetadata;
-}
-}
-
 namespace ci_tool {
 
 class CIDeviceManager;
 
-class CIDeviceModel {
+class CIDeviceModel : public std::enable_shared_from_this<CIDeviceModel> {
     
 public:
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
@@ -58,12 +45,12 @@ public:
     
     void send_discovery();
     void send_profile_details_inquiry(uint8_t address, uint32_t muid, 
-                                    const midi_ci::profiles::ProfileId& profile, uint8_t target);
+                                    const midi_ci::profiles::MidiCIProfileId& profile, uint8_t target);
     
     void update_local_profile_target(const std::shared_ptr<MidiCIProfileState>& profile_state,
                                    uint8_t new_address, bool enabled, uint16_t num_channels_requested);
-    void add_local_profile(const midi_ci::profiles::Profile& profile);
-    void remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::ProfileId& profile_id);
+    void add_local_profile(const midi_ci::profiles::MidiCIProfile& profile);
+    void remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile_id);
     
     void add_local_property(const midi_ci::properties::PropertyMetadata& property);
     void remove_local_property(const std::string& property_id);

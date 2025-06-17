@@ -1,5 +1,4 @@
 #include "midi-ci/profiles/ObservableProfileList.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
 #include <algorithm>
 #include <mutex>
 

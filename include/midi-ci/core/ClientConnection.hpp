@@ -4,24 +4,11 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include "../json/Json.hpp"
+#include "../profiles/ProfileClientFacade.hpp"
+#include "../properties/PropertyClientFacade.hpp"
 
 namespace midi_ci {
-namespace messages {
-class Message;
-struct DeviceInfo;
-}
-
-namespace json {
-class JsonValue;
-}
-
-namespace profiles {
-class ProfileClientFacade;
-}
-
-namespace properties {
-class PropertyClientFacade;
-}
 
 namespace core {
 

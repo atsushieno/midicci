@@ -1,8 +1,5 @@
 #include "ClientConnectionModel.hpp"
 #include "CIDeviceModel.hpp"
-#include "MidiCIProfileState.hpp"
-#include "midi-ci/core/ClientConnection.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
 #include "midi-ci/properties/PropertyManager.hpp"
 #include <mutex>
 #include <iostream>
@@ -41,7 +38,7 @@ std::vector<std::shared_ptr<MidiCIProfileState>> ClientConnectionModel::get_prof
     return pimpl_->profiles_;
 }
 
-void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::ProfileId& profile,
+void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
                                        bool new_enabled, uint16_t new_num_channels_requested) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     

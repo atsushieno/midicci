@@ -1,25 +1,24 @@
 #include "MidiCIProfileState.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
 #include <mutex>
 
 namespace ci_tool {
 
 class MidiCIProfileState::Impl {
 public:
-    explicit Impl(uint8_t grp, uint8_t addr, const midi_ci::profiles::ProfileId& prof,
+    explicit Impl(uint8_t grp, uint8_t addr, const midi_ci::profiles::MidiCIProfileId& prof,
                   bool en, uint16_t channels)
         : group_(grp), address_(addr), profile_(prof), enabled_(en), num_channels_requested_(channels) {}
     
     uint8_t group_;
     uint8_t address_;
-    midi_ci::profiles::ProfileId profile_;
+    midi_ci::profiles::MidiCIProfileId profile_;
     bool enabled_;
     uint16_t num_channels_requested_;
     mutable std::mutex mutex_;
 };
 
 MidiCIProfileState::MidiCIProfileState(uint8_t grp, uint8_t addr, 
-                                     const midi_ci::profiles::ProfileId& prof,
+                                     const midi_ci::profiles::MidiCIProfileId& prof,
                                      bool en, uint16_t channels)
     : pimpl_(std::make_unique<Impl>(grp, addr, prof, en, channels)) {}
 
@@ -45,7 +44,7 @@ void MidiCIProfileState::set_address(uint8_t address) noexcept {
     pimpl_->address_ = address;
 }
 
-const midi_ci::profiles::ProfileId& MidiCIProfileState::get_profile() const noexcept {
+const midi_ci::profiles::MidiCIProfileId& MidiCIProfileState::get_profile() const noexcept {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->profile_;
 }

@@ -5,18 +5,8 @@
 #include <functional>
 #include <cstdint>
 #include <string>
+#include "midi-ci/core/ClientConnection.hpp"
 
-namespace midi_ci {
-namespace core {
-class ClientConnection;
-}
-namespace profiles {
-struct ProfileId;
-}
-namespace properties {
-struct PropertyMetadata;
-}
-}
 
 namespace ci_tool {
 
@@ -47,7 +37,7 @@ public:
     
     std::vector<std::shared_ptr<MidiCIProfileState>> get_profiles() const;
     
-    void set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::ProfileId& profile,
+    void set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
                     bool new_enabled, uint16_t new_num_channels_requested);
     
     std::vector<midi_ci::properties::PropertyMetadata> get_metadata_list() const;

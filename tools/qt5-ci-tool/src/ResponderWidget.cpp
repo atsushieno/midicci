@@ -2,9 +2,7 @@
 #include "CIToolRepository.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
-#include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/properties/PropertyManager.hpp"
-#include "midi-ci/profiles/ProfileManager.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -19,7 +17,6 @@
 ResponderWidget::ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
-    , m_updateTimer(nullptr)
     , m_lastProfileCount(0)
     , m_lastPropertyCount(0)
 {

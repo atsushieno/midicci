@@ -6,12 +6,9 @@
 #include <functional>
 #include <map>
 #include "../messages/Message.hpp"
+#include "../core/MidiCIDevice.hpp"
 
 namespace midi_ci {
-namespace core {
-class MidiCIDevice;
-class ClientConnection;
-}
 
 namespace properties {
 class MidiCIClientPropertyRules;

@@ -3,6 +3,7 @@
 #include <memory>
 #include <cstdint>
 #include "../messages/Message.hpp"
+#include "ObservableProfileList.hpp"
 
 namespace midi_ci {
 namespace core {
@@ -11,8 +12,6 @@ class ClientConnection;
 }
 
 namespace profiles {
-class ObservableProfileList;
-struct MidiCIProfileId;
 
 class ProfileClientFacade {
 public:

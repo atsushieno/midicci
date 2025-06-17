@@ -13,6 +13,7 @@ namespace midi_ci {
 namespace properties {
 class MidiCIClientPropertyRules;
 struct PropertyMetadata;
+struct PropertySubscription;
 
 class PropertyClientFacade {
 public:
@@ -42,6 +43,11 @@ public:
     void process_set_data_reply(const messages::SetPropertyDataReply& msg);
     void process_subscribe_property(const messages::SubscribeProperty& msg);
     void process_subscribe_property_reply(const messages::SubscribePropertyReply& msg);
+    
+    // Additional methods for test support
+    std::vector<uint8_t> getProperty(const std::string& property_id) const;
+    std::vector<PropertyMetadata> get_metadata_list() const;
+    std::vector<PropertySubscription> get_subscriptions() const;
     
 private:
     class Impl;

@@ -82,13 +82,52 @@ TEST(ProfileFacadesTest, configureProfiles2) {
     device2.get_profile_host_facade().add_profile(localProfile3);
 
     device1.sendDiscovery();
-    EXPECT_EQ(2, numEnabledProfiles);
-    EXPECT_EQ(1, numDisabledProfiles);
+    EXPECT_EQ(2, numEnabledProfiles) << "numEnabledProfiles";
+    EXPECT_EQ(1, numDisabledProfiles) << "numDisabledProfiles";
+
+    std::vector<uint8_t> profileDetailsData = {1, 3, 5, 7, 9};
+    uint8_t detailsTarget = 0x40;
+    device2.get_profile_host_facade().add_profile_details(
+        localProfile.profile, detailsTarget, profileDetailsData
+    );
+    
+    auto retrievedDetails = device2.get_profile_host_facade().get_profile_details(
+        localProfile.profile, detailsTarget
+    );
+    EXPECT_EQ(profileDetailsData, retrievedDetails) << "getLocalProfileDetails";
+
+    bool detailsValidated = false;
+    device1.set_message_received_callback([&](const auto& msg) {
+        if (msg.get_type() == MessageType::ProfileDetailsReply) {
+            auto* detailsReply = dynamic_cast<const ProfileDetailsReply*>(&msg);
+            if (detailsReply) {
+                EXPECT_EQ(profileDetailsData, detailsReply->get_data()) << "ProfileDetailsReply data";
+                detailsValidated = true;
+            }
+        }
+    });
+    device1.request_profile_details(localProfile.address, device2.get_muid(), localProfile.profile, detailsTarget);
+    EXPECT_TRUE(detailsValidated) << "detailsValidated";
+
+    std::vector<uint8_t> profileSpecificData = {9, 8, 7, 6, 5};
+    bool specificDataValidated = false;
+    device2.set_message_received_callback([&](const auto& msg) {
+        if (msg.get_type() == MessageType::ProfileSpecificData) {
+            auto* specificMsg = dynamic_cast<const ProfileSpecificData*>(&msg);
+            if (specificMsg) {
+                EXPECT_EQ(profileSpecificData, specificMsg->get_data()) << "ProfileSpecificData";
+                specificDataValidated = true;
+            }
+        }
+    });
+    device1.send_profile_specific_data(localProfile.address, device2.get_muid(), localProfile.profile, profileSpecificData);
+    EXPECT_TRUE(specificDataValidated) << "specificDataValidated";
 }
 
 TEST(ProfileFacadesTest, configureProfiles3) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
+    device1.get_config().set_auto_send_profile_inquiry(false);
     auto& device2 = mediator.getDevice2();
 
     MidiCIProfile localProfile(MidiCIProfileId({1, 2, 3, 4, 5}), 0, 1, true, 1);
@@ -100,5 +139,8 @@ TEST(ProfileFacadesTest, configureProfiles3) {
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
-    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size());
+    EXPECT_EQ(0, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size before requesting";
+
+    device1.request_profiles(0, MidiCIConstants::ADDRESS_FUNCTION_BLOCK, conn->get_target_muid());
+    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size after requesting";
 }

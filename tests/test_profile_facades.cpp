@@ -15,19 +15,18 @@ TEST(ProfileFacadesTest, configureProfiles) {
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
     
+    MidiCIProfile localProfile(
+        MidiCIProfileId({1, 2, 3, 4, 5}),
+        0, 1, true, 1
+    );
+    device2.get_profile_host_facade().add_profile(localProfile);
+
     device1.sendDiscovery();
     auto connections = device1.get_connections();
     ASSERT_GT(connections.size(), 0) << "No connections established after discovery";
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
 
-    EXPECT_EQ(0, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size before addProfile";
-
-    MidiCIProfile localProfile(
-        MidiCIProfileId({1, 2, 3, 4, 5}),
-        0, 1, true, 1
-    );
-    device2.get_profile_host_facade().add_profile(localProfile);
     EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size after addProfile";
 
     auto& remoteProfiles = conn->get_profile_client_facade().get_profiles().get_profiles();

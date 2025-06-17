@@ -339,9 +339,7 @@ std::vector<uint8_t> GetPropertyData::serialize() const {
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
-bool GetPropertyData::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 18;
-}
+
 
 std::string GetPropertyData::get_label() const {
     return "GetPropertyData";
@@ -373,9 +371,7 @@ std::vector<uint8_t> SetPropertyData::serialize() const {
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
-bool SetPropertyData::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 20;
-}
+
 
 std::string SetPropertyData::get_label() const {
     return "SetPropertyData";
@@ -926,31 +922,7 @@ std::vector<uint8_t> ProfileReply::serialize() const {
     return result;
 }
 
-bool ProfileReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 2) return false;
-    
-    size_t pos = 0;
-    uint8_t enabled_count = (data[pos++]) + (data[pos++] & 0x7F);
-    
-    enabled_profiles_.clear();
-    for (int i = 0; i < enabled_count && pos + 5 <= data.size(); ++i) {
-        std::vector<uint8_t> profile(data.begin() + pos, data.begin() + pos + 5);
-        enabled_profiles_.push_back(profile);
-        pos += 5;
-    }
-    
-    if (pos >= data.size()) return false;
-    uint8_t disabled_count = (data[pos++]) + (data[pos++] & 0x7F);
 
-    disabled_profiles_.clear();
-    for (int i = 0; i < disabled_count && pos + 5 <= data.size(); ++i) {
-        std::vector<uint8_t> profile(data.begin() + pos, data.begin() + pos + 5);
-        disabled_profiles_.push_back(profile);
-        pos += 5;
-    }
-    
-    return true;
-}
 
 std::string ProfileReply::get_label() const {
     return "ProfileReply";
@@ -998,18 +970,7 @@ std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize_multi() const 
     return {serialize()};
 }
 
-bool GetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 1) return false;
-    request_id_ = data[0];
-    
-    if (data.size() > 1) {
-        size_t header_end = data.size() / 2;
-        header_.assign(data.begin() + 1, data.begin() + header_end);
-        body_.assign(data.begin() + header_end, data.end());
-    }
-    
-    return true;
-}
+
 
 std::string GetPropertyDataReply::get_label() const {
     return "GetPropertyDataReply";
@@ -1038,16 +999,7 @@ std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize_multi() const 
     return {serialize()};
 }
 
-bool SetPropertyDataReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 1) return false;
-    request_id_ = data[0];
-    
-    if (data.size() > 1) {
-        header_.assign(data.begin() + 1, data.end());
-    }
-    
-    return true;
-}
+
 
 std::string SetPropertyDataReply::get_label() const {
     return "SetPropertyDataReply";

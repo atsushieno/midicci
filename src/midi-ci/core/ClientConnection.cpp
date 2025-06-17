@@ -80,15 +80,31 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
                 
                 switch (msg_type) {
                     case midi_ci::messages::MessageType::GetPropertyData: {
-                        midi_ci::messages::GetPropertyData msg(midi_ci::messages::Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{});
-                        if (msg.deserialize(midi_ci_data)) {
+                        if (midi_ci_data.size() >= 16) {
+                            uint32_t source_muid = midi_ci_data[5] | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
+                            uint32_t dest_muid = midi_ci_data[9] | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
+                            uint8_t request_id = midi_ci_data[13];
+                            uint16_t header_size = midi_ci_data[14] | (midi_ci_data[15] << 7);
+                            std::vector<uint8_t> header(midi_ci_data.begin() + 16, midi_ci_data.begin() + 16 + header_size);
+                            
+                            midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
+                            midi_ci::messages::GetPropertyData msg(common, request_id, header);
                             pimpl_->message_callback_(msg);
                         }
                         break;
                     }
                     case midi_ci::messages::MessageType::SetPropertyData: {
-                        midi_ci::messages::SetPropertyData msg(midi_ci::messages::Common{0, 0, 0, 0}, 0, std::vector<uint8_t>{}, std::vector<uint8_t>{});
-                        if (msg.deserialize(midi_ci_data)) {
+                        if (midi_ci_data.size() >= 18) {
+                            uint32_t source_muid = midi_ci_data[5] | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
+                            uint32_t dest_muid = midi_ci_data[9] | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
+                            uint8_t request_id = midi_ci_data[13];
+                            uint16_t header_size = midi_ci_data[14] | (midi_ci_data[15] << 7);
+                            uint16_t body_size = midi_ci_data[16] | (midi_ci_data[17] << 7);
+                            std::vector<uint8_t> header(midi_ci_data.begin() + 18, midi_ci_data.begin() + 18 + header_size);
+                            std::vector<uint8_t> body(midi_ci_data.begin() + 18 + header_size, midi_ci_data.begin() + 18 + header_size + body_size);
+                            
+                            midi_ci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
+                            midi_ci::messages::SetPropertyData msg(common, request_id, header, body);
                             pimpl_->message_callback_(msg);
                         }
                         break;

@@ -144,20 +144,28 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
     
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
     if (it != pimpl_->open_requests_.end()) {
-        messages::GetPropertyData stored_request(
-            messages::Common(0, 0, 0, 0), 0, std::vector<uint8_t>{}
-        );
-        if (stored_request.deserialize(it->second)) {
+        const auto& data = it->second;
+        if (data.size() >= 16) {
+            uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
+            uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
+            uint8_t request_id = data[13];
+            uint16_t header_size = data[14] | (data[15] << 7);
+            std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+            
+            messages::Common common(source_muid, dest_muid, 0x7F, 0);
+            messages::GetPropertyData stored_request(common, request_id, header);
+            
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
+                
+                if (pimpl_->property_rules_) {
+                    auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
+                    pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
+                }
+                
                 pimpl_->open_requests_.erase(it);
             }
         }
-    }
-    
-    if (pimpl_->property_rules_) {
-        auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
-        pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
     }
 }
 
@@ -166,22 +174,32 @@ void PropertyClientFacade::process_set_data_reply(const messages::SetPropertyDat
     
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
     if (it != pimpl_->open_requests_.end()) {
-        messages::SetPropertyData stored_request(
-            messages::Common(0, 0, 0, 0), 0, std::vector<uint8_t>{}, std::vector<uint8_t>{}
-        );
-        if (stored_request.deserialize(it->second)) {
+        const auto& data = it->second;
+        if (data.size() >= 18) {
+            uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
+            uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
+            uint8_t request_id = data[13];
+            uint16_t header_size = data[14] | (data[15] << 7);
+            uint16_t body_size = data[16] | (data[17] << 7);
+            std::vector<uint8_t> header(data.begin() + 18, data.begin() + 18 + header_size);
+            std::vector<uint8_t> body(data.begin() + 18 + header_size, data.begin() + 18 + header_size + body_size);
+            
+            messages::Common common(source_muid, dest_muid, 0x7F, 0);
+            messages::SetPropertyData stored_request(common, request_id, header, body);
+            
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
+                
+                if (pimpl_->property_rules_) {
+                    auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
+                    if (status == 200) {
+                        auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
+                        pimpl_->property_rules_->property_value_updated(property_id, {});
+                    }
+                }
+                
                 pimpl_->open_requests_.erase(it);
             }
-        }
-    }
-    
-    if (pimpl_->property_rules_) {
-        auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
-        if (status == 200) {
-            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
-            pimpl_->property_rules_->property_value_updated(property_id, {});
         }
     }
 }

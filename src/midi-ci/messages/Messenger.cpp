@@ -286,8 +286,10 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
                 std::vector<uint8_t> profile_data(data.begin() + 13, data.end());
-                ProfileReply reply(common, {}, {});
-                if (reply.deserialize(profile_data)) {
+                if (profile_data.size() >= 5) {
+                    std::vector<uint8_t> profile_id(profile_data.begin(), profile_data.begin() + 5);
+                    std::vector<uint8_t> data(profile_data.begin() + 5, profile_data.end());
+                    ProfileReply reply(common, profile_id, data);
                     pimpl_->log_message(reply, false);
                     processProfileReply(reply);
                 }

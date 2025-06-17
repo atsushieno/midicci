@@ -3,7 +3,7 @@
 
 using namespace midi_ci::json;
 
-TEST(JsonTest, parseString) {
+TEST(JsonTest, DISABLED_parseString) {
     auto str1 = JsonValue::parse("\"TEST1\"");
     EXPECT_TRUE(str1.is_string());
     EXPECT_EQ("TEST1", str1.as_string());

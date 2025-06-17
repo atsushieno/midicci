@@ -12,6 +12,7 @@ set(GTEST_SOURCES
     test_profile_facades.cpp
     test_midi_ci_device.cpp
     test_json.cpp
+    test_property_common_converter.cpp
     TestCIMediator.cpp
     TestPropertyRules.cpp
 )

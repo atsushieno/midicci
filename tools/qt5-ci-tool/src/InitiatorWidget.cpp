@@ -445,7 +445,7 @@ void InitiatorWidget::updatePropertyList()
         return;
     }
     
-    auto connections = deviceModel->get_connections();
+    auto& connections = deviceModel->get_connections();
     std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
     
     for (const auto& connection : connections) {

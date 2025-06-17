@@ -317,7 +317,7 @@ void ResponderWidget::updateProfileList()
         return;
     }
     
-    auto localProfiles = deviceModel->get_local_profile_states();
+    auto& localProfiles = deviceModel->get_local_profile_states();
     for (const auto& profile : localProfiles) {
         if (profile) {
             auto profileId = profile->get_profile();

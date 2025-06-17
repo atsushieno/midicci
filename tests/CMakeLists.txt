@@ -1,6 +1,7 @@
 find_package(Threads REQUIRED)
 
 set(GTEST_SOURCES
+    test_ci_factory.cpp
     test_property_json_serialization.cpp
     test_message_serialization.cpp
     test_messenger.cpp

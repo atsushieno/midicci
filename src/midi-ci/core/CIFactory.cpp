@@ -67,57 +67,55 @@ std::vector<uint8_t> CIFactory::midiCIMessageCommon(
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 13);
 }
 
-std::vector<uint8_t> CIFactory::midiCIDiscoveryCommon(
+void CIFactory::midiCIDiscoveryCommon(
     std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
     uint8_t version_and_format, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-    const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size) {
+    uint32_t device_manufacturer_3bytes, uint16_t device_family,
+    uint16_t device_model, uint32_t software_revision,
+    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+    uint8_t initiatorOutputPathId) {
     
     dst.resize(std::max(dst.size(), size_t(32)));
     midiCIMessageCommon(dst, address, sub_id_2, version_and_format, source_muid, destination_muid);
-    
-    if (device_manufacturer.size() >= 3) {
-        memcpy(dst, 13, device_manufacturer, 3);
-    }
-    if (device_family.size() >= 2) {
-        memcpy(dst, 16, device_family, 2);
-    }
-    if (device_model.size() >= 2) {
-        memcpy(dst, 18, device_model, 2);
-    }
-    if (software_revision.size() >= 4) {
-        memcpy(dst, 20, software_revision, 4);
-    }
-    
+
+    midiCiDirectUint32At(dst, 13, device_manufacturer_3bytes);
+    midiCiDirectInt16At(dst, 16, device_family);
+    midiCiDirectInt16At(dst, 18, device_model);
+    midiCiDirectUint32At(dst, 20, software_revision);
+
     dst[24] = ci_category_supported;
     midiCI7bitInt28At(dst, 25, receivable_max_sysex_size);
-    
-    return std::vector<uint8_t>(dst.begin(), dst.begin() + 29);
+    dst[29] = initiatorOutputPathId;
 }
 
 std::vector<uint8_t> CIFactory::midiCIDiscovery(
-    std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-    const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size) {
+    std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid,
+    uint32_t device_manufacturer_3bytes, uint16_t device_family,
+    uint16_t device_model, uint32_t software_revision,
+    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+    uint8_t initiatorOutputPathId) {
     
-    return midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
-        constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid,
-        device_manufacturer, device_family, device_model, software_revision,
-        ci_category_supported, receivable_max_sysex_size);
+    midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
+        constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F,
+        device_manufacturer_3bytes, device_family, device_model, software_revision,
+        ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
+    return {dst.begin() + 30, dst.end()};
 }
 
 std::vector<uint8_t> CIFactory::midiCIDiscoveryReply(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-    const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size) {
+    uint32_t device_manufacturer_3bytes, uint16_t device_family,
+    uint16_t device_model, uint32_t software_revision,
+    uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+    uint8_t initiatorOutputPathId, uint8_t functionBlock) {
     
-    return midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_REPLY),
+    midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_REPLY),
         constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid,
-        device_manufacturer, device_family, device_model, software_revision,
-        ci_category_supported, receivable_max_sysex_size);
+        device_manufacturer_3bytes, device_family, device_model, software_revision,
+        ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
+    dst[30] = functionBlock;
+    return {dst.begin() + 31, dst.end()};
+
 }
 
 std::vector<uint8_t> CIFactory::midiCIPropertyCommon(
@@ -177,6 +175,10 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
     return result;
 }
 
+void CIFactory::midiCIProfile(std::vector<uint8_t>& dst, size_t offset, MidiCIProfileId info) {
+    memcpy(dst, offset, info.data, 5);
+}
+
 std::vector<uint8_t> CIFactory::midiCIProfileInquiry(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid) {
     
@@ -186,8 +188,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileInquiry(
 
 std::vector<uint8_t> CIFactory::midiCIProfileInquiryReply(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<std::vector<uint8_t>>& enabled_profiles,
-    const std::vector<std::vector<uint8_t>>& disabled_profiles) {
+    const std::vector<MidiCIProfileId>& enabled_profiles,
+    const std::vector<MidiCIProfileId>& disabled_profiles) {
     
     size_t required_size = 17 + (enabled_profiles.size() * 5) + (disabled_profiles.size() * 5);
     dst.resize(std::max(dst.size(), required_size));
@@ -199,58 +201,51 @@ std::vector<uint8_t> CIFactory::midiCIProfileInquiryReply(
     
     size_t offset = 15;
     for (const auto& profile : enabled_profiles) {
-        if (profile.size() >= 5) {
-            memcpy(dst, offset, profile, 5);
-            offset += 5;
-        }
+        midiCIProfile(dst, offset, profile);
+        offset += 5;
     }
     
     midiCI7bitInt14At(dst, offset, static_cast<uint16_t>(disabled_profiles.size()));
     offset += 2;
     
     for (const auto& profile : disabled_profiles) {
-        if (profile.size() >= 5) {
-            memcpy(dst, offset, profile, 5);
-            offset += 5;
-        }
+        midiCIProfile(dst, offset, profile);
+        offset += 5;
     }
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + offset);
 }
 
 std::vector<uint8_t> CIFactory::midiCIProfileSet(
-    std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& profile_id, bool enabled, uint16_t num_channels) {
+    std::vector<uint8_t>& dst, uint8_t address, bool turnOn, uint32_t source_muid, uint32_t destination_muid,
+    const MidiCIProfileId profile_id, uint16_t num_channels) {
     
     dst.resize(std::max(dst.size(), size_t(20)));
     
-    uint8_t sub_id = enabled ? static_cast<uint8_t>(constants::CISubId2::PROFILE_SET_ON) 
+    uint8_t sub_id = turnOn ? static_cast<uint8_t>(constants::CISubId2::PROFILE_SET_ON)
                              : static_cast<uint8_t>(constants::CISubId2::PROFILE_SET_OFF);
     
     midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
-    if (profile_id.size() >= 5) {
-        memcpy(dst, 13, profile_id, 5);
-    }
-    
+    midiCIProfile(dst, 13, profile_id);
+
     midiCI7bitInt14At(dst, 18, num_channels);
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 20);
 }
 
 std::vector<uint8_t> CIFactory::midiCIProfileReport(
-    std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
-    uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
+    std::vector<uint8_t>& dst, uint8_t address, bool isEnabledReport,
+    uint32_t source_muid, const MidiCIProfileId profile_id, uint16_t num_channels) {
     
     dst.resize(std::max(dst.size(), size_t(20)));
     
-    midiCIMessageCommon(dst, address, sub_id_2, constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address,
+                        static_cast<uint8_t>(isEnabledReport ? constants::CISubId2::PROFILE_ENABLED_REPORT : constants::CISubId2::PROFILE_DISABLED_REPORT),
+                        constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F);
     
-    if (profile_id.size() >= 5) {
-        memcpy(dst, 13, profile_id, 5);
-    }
-    
+    midiCIProfile(dst, 13, profile_id);
+
     midiCI7bitInt14At(dst, 18, num_channels);
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 20);
@@ -258,17 +253,15 @@ std::vector<uint8_t> CIFactory::midiCIProfileReport(
 
 std::vector<uint8_t> CIFactory::midiCIProfileDetailsInquiry(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& profile_id, uint8_t inquiry_target) {
+    const MidiCIProfileId profile_id, uint8_t inquiry_target) {
     
     dst.resize(std::max(dst.size(), size_t(19)));
     
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_DETAILS_INQUIRY),
                        constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
-    if (profile_id.size() >= 5) {
-        memcpy(dst, 13, profile_id, 5);
-    }
-    
+    midiCIProfile(dst, 13, profile_id);
+
     dst[18] = inquiry_target;
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 19);
@@ -276,7 +269,7 @@ std::vector<uint8_t> CIFactory::midiCIProfileDetailsInquiry(
 
 std::vector<uint8_t> CIFactory::midiCIProfileDetailsReply(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& profile_id, uint8_t inquiry_target,
+    const MidiCIProfileId profile_id, uint8_t inquiry_target,
     const std::vector<uint8_t>& data) {
     
     size_t required_size = 19 + data.size();
@@ -285,10 +278,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileDetailsReply(
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_DETAILS_REPLY),
                        constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
-    if (profile_id.size() >= 5) {
-        memcpy(dst, 13, profile_id, 5);
-    }
-    
+    midiCIProfile(dst, 13, profile_id);
+
     dst[18] = inquiry_target;
     
     if (!data.empty()) {
@@ -300,7 +291,7 @@ std::vector<uint8_t> CIFactory::midiCIProfileDetailsReply(
 
 std::vector<uint8_t> CIFactory::midiCIProfileSpecificData(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-    const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data) {
+    const MidiCIProfileId profile_id, const std::vector<uint8_t>& data) {
     
     size_t required_size = 20 + data.size();
     dst.resize(std::max(dst.size(), required_size));
@@ -308,10 +299,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileSpecificData(
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_SPECIFIC_DATA),
                        constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
-    if (profile_id.size() >= 5) {
-        memcpy(dst, 13, profile_id, 5);
-    }
-    
+    midiCIProfile(dst, 13, profile_id);
+
     midiCI7bitInt14At(dst, 18, static_cast<uint16_t>(data.size()));
     
     if (!data.empty()) {

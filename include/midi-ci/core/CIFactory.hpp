@@ -3,9 +3,12 @@
 #include <cstdint>
 #include <vector>
 #include <cstring>
+#include "midi-ci/profiles/MidiCIProfile.hpp"
 
 namespace midi_ci {
 namespace core {
+
+    using namespace midi_ci::profiles;
 
 class CIFactory {
 public:
@@ -21,24 +24,27 @@ public:
         std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
         uint8_t version_and_format, uint32_t source_muid, uint32_t destination_muid);
     
-    static std::vector<uint8_t> midiCIDiscoveryCommon(
+    static void midiCIDiscoveryCommon(
         std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
         uint8_t version_and_format, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-        const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size);
+        uint32_t device_manufacturer_3bytes, uint16_t device_family,
+        uint16_t device_model, uint32_t software_revision,
+        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+        uint8_t initiatorOutputPathId);
     
     static std::vector<uint8_t> midiCIDiscovery(
-        std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-        const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size);
+        std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid,
+        uint32_t device_manufacturer, uint16_t device_family,
+        uint16_t device_model, uint32_t software_revision,
+        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+        uint8_t initiatorOutputPathId);
     
     static std::vector<uint8_t> midiCIDiscoveryReply(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& device_manufacturer, const std::vector<uint8_t>& device_family,
-        const std::vector<uint8_t>& device_model, const std::vector<uint8_t>& software_revision,
-        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size);
+        uint32_t device_manufacturer_3bytes, uint16_t device_family,
+        uint16_t device_model, uint32_t software_revision,
+        uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
+        uint8_t initiatorOutputPathId, uint8_t functionBlock);
     
     static std::vector<uint8_t> midiCIPropertyCommon(
         std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
@@ -50,36 +56,37 @@ public:
         std::vector<uint8_t>& dst, uint32_t max_chunk_size, uint8_t sub_id_2,
         uint32_t source_muid, uint32_t destination_muid, uint8_t request_id,
         const std::vector<uint8_t>& header, const std::vector<uint8_t>& data);
-    
+
+    static void midiCIProfile(std::vector<uint8_t>& dst, size_t offset, MidiCIProfileId info);
+
     static std::vector<uint8_t> midiCIProfileInquiry(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid);
     
     static std::vector<uint8_t> midiCIProfileInquiryReply(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<std::vector<uint8_t>>& enabled_profiles,
-        const std::vector<std::vector<uint8_t>>& disabled_profiles);
+        const std::vector<MidiCIProfileId>& enabled_profiles,
+        const std::vector<MidiCIProfileId>& disabled_profiles);
     
     static std::vector<uint8_t> midiCIProfileSet(
-        std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& profile_id, bool enabled, uint16_t num_channels);
+        std::vector<uint8_t>& dst, uint8_t address, bool turnOn, uint32_t source_muid, uint32_t destination_muid,
+        const MidiCIProfileId profile_id, uint16_t num_channels);
     
     static std::vector<uint8_t> midiCIProfileReport(
-        std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
-        uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& profile_id, uint16_t num_channels);
+        std::vector<uint8_t>& dst, uint8_t address, bool isEnabledReport,
+        uint32_t source_muid, const MidiCIProfileId profile_id, uint16_t num_channels);
     
     static std::vector<uint8_t> midiCIProfileDetailsInquiry(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& profile_id, uint8_t inquiry_target);
+        const MidiCIProfileId profile_id, uint8_t inquiry_target);
     
     static std::vector<uint8_t> midiCIProfileDetailsReply(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& profile_id, uint8_t inquiry_target,
+        const MidiCIProfileId profile_id, uint8_t inquiry_target,
         const std::vector<uint8_t>& data);
     
     static std::vector<uint8_t> midiCIProfileSpecificData(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
-        const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data);
+        const MidiCIProfileId profile_id, const std::vector<uint8_t>& data);
     
     static std::vector<uint8_t> midiCIPropertyExchangeCapabilities(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,

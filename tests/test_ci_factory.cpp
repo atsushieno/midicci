@@ -1,26 +1,15 @@
 #include <gtest/gtest.h>
+#include "midi-ci/core/MidiCIConstants.hpp"
 #include "midi-ci/core/CIFactory.hpp"
 #include "midi-ci/messages/Message.hpp"
-#include "midi-ci/messages/Discovery.hpp"
-#include "midi-ci/messages/DiscoveryReply.hpp"
-#include "midi-ci/messages/ProfileInquiry.hpp"
-#include "midi-ci/messages/ProfileInquiryReply.hpp"
-#include "midi-ci/messages/SetProfileOn.hpp"
-#include "midi-ci/messages/SetProfileOff.hpp"
-#include "midi-ci/messages/ProfileEnabledReport.hpp"
-#include "midi-ci/messages/ProfileDisabledReport.hpp"
-#include "midi-ci/messages/GetPropertyData.hpp"
-#include "midi-ci/messages/GetPropertyDataReply.hpp"
-#include "midi-ci/messages/SetPropertyData.hpp"
-#include "midi-ci/messages/SetPropertyDataReply.hpp"
-#include "midi-ci/messages/SubscribeProperty.hpp"
-#include "midi-ci/messages/SubscribePropertyReply.hpp"
-#include "midi-ci/messages/PropertyNotify.hpp"
+#include "midi-ci/profiles/MidiCIProfile.hpp"
 #include <vector>
 #include <cstdint>
 
 using namespace midi_ci::core;
 using namespace midi_ci::messages;
+using namespace midi_ci::core::constants;
+using namespace midi_ci::profiles;
 
 TEST(CIFactoryTest, testDiscoveryMessages) {
     uint8_t all_supported = 0x1C;
@@ -184,7 +173,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual5(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual5, 5, CISubId2::PROPERTY_GET_DATA_INQUIRY,
+        actual5, 5, static_cast<uint8_t>(CISubId2::PROPERTY_GET_DATA_INQUIRY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -192,7 +181,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual6(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual6, 5, CISubId2::PROPERTY_GET_DATA_REPLY,
+        actual6, 5, static_cast<uint8_t>(CISubId2::PROPERTY_GET_DATA_REPLY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -200,7 +189,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual7(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual7, 5, CISubId2::PROPERTY_SET_DATA_INQUIRY,
+        actual7, 5, static_cast<uint8_t>(CISubId2::PROPERTY_SET_DATA_INQUIRY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -208,7 +197,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual8(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual8, 5, CISubId2::PROPERTY_SET_DATA_REPLY,
+        actual8, 5, static_cast<uint8_t>(CISubId2::PROPERTY_SET_DATA_REPLY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -216,7 +205,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual9(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual9, 5, CISubId2::PROPERTY_SUBSCRIBE,
+        actual9, 5, static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -224,7 +213,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual10(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual10, 5, CISubId2::PROPERTY_SUBSCRIBE_REPLY,
+        actual10, 5, static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_REPLY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );
@@ -232,7 +221,7 @@ TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
 
     std::vector<uint8_t> actual11(31, 0);
     CIFactory::midiCIPropertyCommon(
-        actual11, 5, CISubId2::PROPERTY_NOTIFY,
+        actual11, 5, static_cast<uint8_t>(CISubId2::PROPERTY_NOTIFY),
         0x10101010, 0x20202020,
         2, header, 3, 1, data
     );

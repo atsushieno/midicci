@@ -3,6 +3,7 @@ set(MIDI_CI_SOURCES
     midi-ci/core/ClientConnection.cpp
     midi-ci/core/MidiCIConstants.cpp
     midi-ci/core/CIFactory.cpp
+    midi-ci/core/CIRetrieval.cpp
     midi-ci/json/Json.cpp
     midi-ci/messages/Message.cpp
     midi-ci/messages/Messenger.cpp

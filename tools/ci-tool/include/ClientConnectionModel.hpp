@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include "midi-ci/core/ClientConnection.hpp"
+#include "MutableState.hpp"
 
 
 namespace ci_tool {
@@ -22,10 +23,18 @@ struct SubscriptionState {
     } state;
     
     SubscriptionState(const std::string& id, State s) : property_id(id), state(s) {}
+    
+    bool operator==(const SubscriptionState& other) const {
+        return property_id == other.property_id && state == other.state;
+    }
 };
 
 class ClientConnectionModel {
 public:
+    using ProfilesChangedCallback = std::function<void()>;
+    using PropertiesChangedCallback = std::function<void()>;
+    using DeviceInfoChangedCallback = std::function<void()>;
+    
     explicit ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
                                  std::shared_ptr<midi_ci::core::ClientConnection> connection);
     ~ClientConnectionModel();
@@ -34,14 +43,16 @@ public:
     ClientConnectionModel& operator=(const ClientConnectionModel&) = delete;
     
     std::shared_ptr<midi_ci::core::ClientConnection> get_connection() const;
+    const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
+    const MutableStateList<SubscriptionState>& get_subscriptions() const;
     
-    std::vector<std::shared_ptr<MidiCIProfileState>> get_profiles() const;
+    std::string get_device_info_value() const;
+    const MutableState<std::string>& get_device_info() const;
     
     void set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
                     bool new_enabled, uint16_t new_num_channels_requested);
     
     std::vector<midi_ci::properties::PropertyMetadata> get_metadata_list() const;
-    std::vector<SubscriptionState> get_subscriptions() const;
     
     void get_property_data(const std::string& resource, const std::string& encoding = "",
                           int paginate_offset = -1, int paginate_limit = -1);
@@ -56,6 +67,14 @@ public:
                                    uint8_t system_messages = 0xFF,
                                    uint8_t channel_controller_messages = 0xFF,
                                    uint8_t note_data_messages = 0xFF);
+    
+    void add_profiles_changed_callback(ProfilesChangedCallback callback);
+    void add_properties_changed_callback(PropertiesChangedCallback callback);
+    void add_device_info_changed_callback(DeviceInfoChangedCallback callback);
+    
+    void remove_profiles_changed_callback(const ProfilesChangedCallback& callback);
+    void remove_properties_changed_callback(const PropertiesChangedCallback& callback);
+    void remove_device_info_changed_callback(const DeviceInfoChangedCallback& callback);
     
 private:
     void setup_profile_listeners();

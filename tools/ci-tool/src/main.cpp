@@ -48,13 +48,14 @@ int main(int argc, char* argv[]) {
         if (device_model) {
             std::cout << "Device model initialized successfully" << std::endl;
             
-            auto profiles = device_model->get_local_profile_states();
+            const auto& profiles = device_model->get_local_profile_states();
             std::cout << "Local profiles: " << profiles.size() << std::endl;
             
-            for (const auto& profile : profiles) {
-                std::cout << "  Profile - Group: " << static_cast<int>(profile->get_group())
-                          << ", Address: " << static_cast<int>(profile->get_address())
-                          << ", Enabled: " << profile->is_enabled() << std::endl;
+            auto profiles_vec = profiles.to_vector();
+            for (const auto& profile : profiles_vec) {
+                std::cout << "  Profile - Group: " << static_cast<int>(profile->group().get())
+                          << ", Address: " << static_cast<int>(profile->address().get())
+                          << ", Enabled: " << profile->enabled().get() << std::endl;
             }
         }
         

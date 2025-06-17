@@ -7,6 +7,7 @@
 #include <string>
 #include "MidiCIProfileState.hpp"
 #include "ClientConnectionModel.hpp"
+#include "MutableState.hpp"
 
 namespace ci_tool {
 
@@ -17,6 +18,10 @@ class CIDeviceModel : public std::enable_shared_from_this<CIDeviceModel> {
 public:
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using MidiMessageReportSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    
+    using ConnectionsChangedCallback = std::function<void()>;
+    using ProfilesUpdatedCallback = std::function<void()>;
+    using PropertiesUpdatedCallback = std::function<void()>;
     
     explicit CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
                           CIOutputSender ci_output_sender,
@@ -40,8 +45,8 @@ public:
     
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
     
-    std::vector<std::shared_ptr<ClientConnectionModel>> get_connections() const;
-    std::vector<std::shared_ptr<MidiCIProfileState>> get_local_profile_states() const;
+    const MutableStateList<std::shared_ptr<ClientConnectionModel>>& get_connections() const;
+    const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_local_profile_states() const;
     
     void send_discovery();
     void send_profile_details_inquiry(uint8_t address, uint32_t muid, 
@@ -59,12 +64,18 @@ public:
     
     void add_test_profile_items();
     
+    void add_connections_changed_callback(ConnectionsChangedCallback callback);
+    void add_profiles_updated_callback(ProfilesUpdatedCallback callback);
+    void add_properties_updated_callback(PropertiesUpdatedCallback callback);
+    
+    void remove_connections_changed_callback(const ConnectionsChangedCallback& callback);
+    void remove_profiles_updated_callback(const ProfilesUpdatedCallback& callback);
+    void remove_properties_updated_callback(const PropertiesUpdatedCallback& callback);
+    
     bool receiving_midi_message_reports;
     uint8_t last_chunked_message_channel;
     std::vector<uint8_t> chunked_messages;
 
-
-    
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

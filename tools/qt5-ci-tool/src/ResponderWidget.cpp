@@ -323,8 +323,8 @@ void ResponderWidget::updateProfileList()
             auto profileId = profile->get_profile();
             QString profileText = QString("%1 (G%2 A%3)")
                 .arg(QString::fromStdString(profileId.to_string()))
-                .arg(profile->get_group())
-                .arg(profile->get_address());
+                .arg(profile->group().get())
+                .arg(profile->address().get());
             m_profileList->addItem(profileText);
         }
     }
@@ -398,9 +398,23 @@ void ResponderWidget::setupEventBridge()
     }
     
     auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-    if (!deviceModel || !deviceModel->get_device()) {
+    if (!deviceModel) {
         return;
     }
+    
+    deviceModel->add_profiles_updated_callback([this]() {
+        QMetaObject::invokeMethod(this, [this]() {
+            updateProfileList();
+            emit localProfilesChanged();
+        }, Qt::QueuedConnection);
+    });
+    
+    deviceModel->add_properties_updated_callback([this]() {
+        QMetaObject::invokeMethod(this, [this]() {
+            updatePropertyList();
+            emit localPropertiesChanged();
+        }, Qt::QueuedConnection);
+    });
     
     QMetaObject::invokeMethod(this, [this]() {
         updateProfileList();

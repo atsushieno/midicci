@@ -292,8 +292,9 @@ void InitiatorWidget::updateDeviceList()
     if (m_repository && m_repository->get_ci_device_manager()) {
         auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
         if (deviceModel) {
-            auto connections = deviceModel->get_connections();
-            for (const auto& connection : connections) {
+            const auto& connections = deviceModel->get_connections();
+            auto connections_vec = connections.to_vector();
+            for (const auto& connection : connections_vec) {
                 if (connection && connection->get_connection()) {
                     uint32_t muid = connection->get_connection()->get_target_muid();
                     QString deviceName = QString("Device 0x%1").arg(muid, 8, 16, QChar('0'));
@@ -340,10 +341,11 @@ void InitiatorWidget::updateConnectionInfo()
         return;
     }
     
-    auto connections = deviceModel->get_connections();
+    const auto& connections = deviceModel->get_connections();
+    auto connections_vec = connections.to_vector();
     std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
     
-    for (const auto& connection : connections) {
+    for (const auto& connection : connections_vec) {
         if (connection && connection->get_connection()) {
             uint32_t connectionMuid = connection->get_connection()->get_target_muid();
             if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
@@ -396,10 +398,11 @@ void InitiatorWidget::updateProfileList()
         return;
     }
     
-    auto connections = deviceModel->get_connections();
+    const auto& connections = deviceModel->get_connections();
+    auto connections_vec = connections.to_vector();
     std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
     
-    for (const auto& connection : connections) {
+    for (const auto& connection : connections_vec) {
         if (connection && connection->get_connection()) {
             uint32_t connectionMuid = connection->get_connection()->get_target_muid();
             if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
@@ -410,15 +413,16 @@ void InitiatorWidget::updateProfileList()
     }
     
     if (targetConnection) {
-        auto profiles = targetConnection->get_profiles();
-        for (const auto& profile : profiles) {
+        const auto& profiles = targetConnection->get_profiles();
+        auto profiles_vec = profiles.to_vector();
+        for (const auto& profile : profiles_vec) {
             if (profile) {
                 auto profileId = profile->get_profile();
                 QString profileText = QString("%1 (G%2 A%3) %4")
                     .arg(QString::fromStdString(profileId.to_string()))
-                    .arg(profile->get_group())
-                    .arg(profile->get_address())
-                    .arg(profile->is_enabled() ? "ON" : "OFF");
+                    .arg(profile->group().get())
+                    .arg(profile->address().get())
+                    .arg(profile->enabled().get() ? "ON" : "OFF");
                 m_profileList->addItem(profileText);
             }
         }
@@ -475,12 +479,11 @@ void InitiatorWidget::setupEventBridge()
     }
     
     auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-    if (!deviceModel || !deviceModel->get_device()) {
+    if (!deviceModel) {
         return;
     }
     
-    auto device = deviceModel->get_device();
-    device->set_connections_changed_callback([this]() {
+    deviceModel->add_connections_changed_callback([this]() {
         QMetaObject::invokeMethod(this, [this]() {
             updateDeviceList();
             if (m_selectedDeviceMUID != 0) {
@@ -488,6 +491,25 @@ void InitiatorWidget::setupEventBridge()
                 updateProfileList();
                 updatePropertyList();
             }
+            emit deviceConnected(m_selectedDeviceMUID);
+        }, Qt::QueuedConnection);
+    });
+    
+    deviceModel->add_profiles_updated_callback([this]() {
+        QMetaObject::invokeMethod(this, [this]() {
+            if (m_selectedDeviceMUID != 0) {
+                updateProfileList();
+            }
+            emit profilesUpdated(m_selectedDeviceMUID);
+        }, Qt::QueuedConnection);
+    });
+    
+    deviceModel->add_properties_updated_callback([this]() {
+        QMetaObject::invokeMethod(this, [this]() {
+            if (m_selectedDeviceMUID != 0) {
+                updatePropertyList();
+            }
+            emit propertiesUpdated(m_selectedDeviceMUID);
         }, Qt::QueuedConnection);
     });
 }

@@ -14,8 +14,14 @@ public:
     
     std::shared_ptr<CIDeviceModel> parent_;
     std::shared_ptr<midi_ci::core::ClientConnection> connection_;
-    std::vector<std::shared_ptr<MidiCIProfileState>> profiles_;
-    std::vector<SubscriptionState> subscriptions_;
+    MutableStateList<std::shared_ptr<MidiCIProfileState>> profiles_;
+    MutableStateList<SubscriptionState> subscriptions_;
+    MutableState<std::string> device_info_;
+    
+    std::vector<ProfilesChangedCallback> profiles_changed_callbacks_;
+    std::vector<PropertiesChangedCallback> properties_changed_callbacks_;
+    std::vector<DeviceInfoChangedCallback> device_info_changed_callbacks_;
+    
     mutable std::mutex mutex_;
 };
 
@@ -33,29 +39,37 @@ std::shared_ptr<midi_ci::core::ClientConnection> ClientConnectionModel::get_conn
     return pimpl_->connection_;
 }
 
-std::vector<std::shared_ptr<MidiCIProfileState>> ClientConnectionModel::get_profiles() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+const MutableStateList<std::shared_ptr<MidiCIProfileState>>& ClientConnectionModel::get_profiles() const {
     return pimpl_->profiles_;
+}
+
+const MutableStateList<SubscriptionState>& ClientConnectionModel::get_subscriptions() const {
+    return pimpl_->subscriptions_;
+}
+
+const MutableState<std::string>& ClientConnectionModel::get_device_info() const {
+    return pimpl_->device_info_;
 }
 
 void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
                                        bool new_enabled, uint16_t new_num_channels_requested) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     
-    auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
+    auto profiles_vec = pimpl_->profiles_.to_vector();
+    auto it = std::find_if(profiles_vec.begin(), profiles_vec.end(),
         [group, address, &profile](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->get_group() == group && 
-                   state->get_address() == address && 
+            return state->group().get() == group && 
+                   state->address().get() == address && 
                    state->get_profile() == profile;
         });
     
-    if (it != pimpl_->profiles_.end()) {
-        (*it)->set_enabled(new_enabled);
-        (*it)->set_num_channels_requested(new_num_channels_requested);
+    if (it != profiles_vec.end()) {
+        (*it)->enabled().set(new_enabled);
+        (*it)->num_channels_requested().set(new_num_channels_requested);
     } else {
         auto new_profile = std::make_shared<MidiCIProfileState>(
             group, address, profile, new_enabled, new_num_channels_requested);
-        pimpl_->profiles_.push_back(new_profile);
+        pimpl_->profiles_.add(new_profile);
     }
     
     std::cout << "Set profile state - Group: " << static_cast<int>(group) 
@@ -68,10 +82,7 @@ std::vector<midi_ci::properties::PropertyMetadata> ClientConnectionModel::get_me
     return {};
 }
 
-std::vector<SubscriptionState> ClientConnectionModel::get_subscriptions() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    return pimpl_->subscriptions_;
-}
+
 
 void ClientConnectionModel::get_property_data(const std::string& resource, const std::string& encoding,
                                             int paginate_offset, int paginate_limit) {
@@ -90,13 +101,14 @@ void ClientConnectionModel::set_property_data(const std::string& resource, const
 void ClientConnectionModel::subscribe_property(const std::string& resource, const std::string& mutual_encoding) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     
-    auto it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+    auto subscriptions_vec = pimpl_->subscriptions_.to_vector();
+    auto it = std::find_if(subscriptions_vec.begin(), subscriptions_vec.end(),
         [&resource](const SubscriptionState& sub) {
             return sub.property_id == resource;
         });
     
-    if (it == pimpl_->subscriptions_.end()) {
-        pimpl_->subscriptions_.emplace_back(resource, SubscriptionState::State::Subscribing);
+    if (it == subscriptions_vec.end()) {
+        pimpl_->subscriptions_.add(SubscriptionState(resource, SubscriptionState::State::Subscribing));
     }
     
     std::cout << "Subscribing to property: " << resource << std::endl;
@@ -105,13 +117,15 @@ void ClientConnectionModel::subscribe_property(const std::string& resource, cons
 void ClientConnectionModel::unsubscribe_property(const std::string& resource) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     
-    auto it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+    auto subscriptions_vec = pimpl_->subscriptions_.to_vector();
+    auto it = std::find_if(subscriptions_vec.begin(), subscriptions_vec.end(),
         [&resource](const SubscriptionState& sub) {
             return sub.property_id == resource;
         });
     
-    if (it != pimpl_->subscriptions_.end()) {
-        it->state = SubscriptionState::State::Unsubscribed;
+    if (it != subscriptions_vec.end()) {
+        pimpl_->subscriptions_.remove(*it);
+        pimpl_->subscriptions_.add(SubscriptionState(resource, SubscriptionState::State::Unsubscribed));
     }
     
     std::cout << "Unsubscribing from property: " << resource << std::endl;
@@ -162,15 +176,71 @@ void ClientConnectionModel::on_profile_changed() {
         auto profile_state = std::make_shared<MidiCIProfileState>(
             profile.group, profile.address, profile.profile, 
             profile.enabled, profile.num_channels_requested);
-        pimpl_->profiles_.push_back(profile_state);
+        pimpl_->profiles_.add(profile_state);
     }
     
     std::cout << "Updated profile list - count: " << pimpl_->profiles_.size() << std::endl;
+    
+    for (const auto& callback : pimpl_->profiles_changed_callbacks_) {
+        callback();
+    }
+}
+
+void ClientConnectionModel::add_profiles_changed_callback(ProfilesChangedCallback callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->profiles_changed_callbacks_.push_back(callback);
+}
+
+void ClientConnectionModel::add_properties_changed_callback(PropertiesChangedCallback callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->properties_changed_callbacks_.push_back(callback);
+}
+
+void ClientConnectionModel::add_device_info_changed_callback(DeviceInfoChangedCallback callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->device_info_changed_callbacks_.push_back(callback);
+}
+
+void ClientConnectionModel::remove_profiles_changed_callback(const ProfilesChangedCallback& callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->profiles_changed_callbacks_.erase(
+        std::remove_if(pimpl_->profiles_changed_callbacks_.begin(), 
+                      pimpl_->profiles_changed_callbacks_.end(),
+                      [&callback](const ProfilesChangedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->profiles_changed_callbacks_.end());
+}
+
+void ClientConnectionModel::remove_properties_changed_callback(const PropertiesChangedCallback& callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->properties_changed_callbacks_.erase(
+        std::remove_if(pimpl_->properties_changed_callbacks_.begin(), 
+                      pimpl_->properties_changed_callbacks_.end(),
+                      [&callback](const PropertiesChangedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->properties_changed_callbacks_.end());
+}
+
+void ClientConnectionModel::remove_device_info_changed_callback(const DeviceInfoChangedCallback& callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->device_info_changed_callbacks_.erase(
+        std::remove_if(pimpl_->device_info_changed_callbacks_.begin(), 
+                      pimpl_->device_info_changed_callbacks_.end(),
+                      [&callback](const DeviceInfoChangedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->device_info_changed_callbacks_.end());
 }
 
 void ClientConnectionModel::on_property_value_updated() {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     std::cout << "Property value updated" << std::endl;
+    
+    for (const auto& callback : pimpl_->properties_changed_callbacks_) {
+        callback();
+    }
 }
 
 } // namespace ci_tool

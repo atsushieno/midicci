@@ -1,5 +1,7 @@
 #include "MidiCIProfileState.hpp"
 #include <mutex>
+#include <vector>
+#include <algorithm>
 
 namespace ci_tool {
 
@@ -7,13 +9,39 @@ class MidiCIProfileState::Impl {
 public:
     explicit Impl(uint8_t grp, uint8_t addr, const midi_ci::profiles::MidiCIProfileId& prof,
                   bool en, uint16_t channels)
-        : group_(grp), address_(addr), profile_(prof), enabled_(en), num_channels_requested_(channels) {}
+        : group_(grp), address_(addr), profile_(prof), enabled_(en), num_channels_requested_(channels) {
+        
+        group_.set_value_changed_handler([this](const uint8_t& newValue) {
+            notify_state_changed();
+        });
+        
+        address_.set_value_changed_handler([this](const uint8_t& newValue) {
+            notify_state_changed();
+        });
+        
+        enabled_.set_value_changed_handler([this](const bool& newValue) {
+            notify_state_changed();
+        });
+        
+        num_channels_requested_.set_value_changed_handler([this](const uint16_t& newValue) {
+            notify_state_changed();
+        });
+    }
     
-    uint8_t group_;
-    uint8_t address_;
+    void notify_state_changed() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (const auto& callback : state_changed_callbacks_) {
+            callback();
+        }
+    }
+    
+    MutableState<uint8_t> group_;
+    MutableState<uint8_t> address_;
     midi_ci::profiles::MidiCIProfileId profile_;
-    bool enabled_;
-    uint16_t num_channels_requested_;
+    MutableState<bool> enabled_;
+    MutableState<uint16_t> num_channels_requested_;
+    
+    std::vector<StateChangedCallback> state_changed_callbacks_;
     mutable std::mutex mutex_;
 };
 
@@ -24,49 +52,56 @@ MidiCIProfileState::MidiCIProfileState(uint8_t grp, uint8_t addr,
 
 MidiCIProfileState::~MidiCIProfileState() = default;
 
-uint8_t MidiCIProfileState::get_group() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+MutableState<uint8_t>& MidiCIProfileState::group() {
     return pimpl_->group_;
 }
 
-void MidiCIProfileState::set_group(uint8_t group) noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    pimpl_->group_ = group;
+const MutableState<uint8_t>& MidiCIProfileState::group() const {
+    return pimpl_->group_;
 }
 
-uint8_t MidiCIProfileState::get_address() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+MutableState<uint8_t>& MidiCIProfileState::address() {
     return pimpl_->address_;
 }
 
-void MidiCIProfileState::set_address(uint8_t address) noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    pimpl_->address_ = address;
+const MutableState<uint8_t>& MidiCIProfileState::address() const {
+    return pimpl_->address_;
 }
 
 const midi_ci::profiles::MidiCIProfileId& MidiCIProfileState::get_profile() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->profile_;
 }
 
-bool MidiCIProfileState::is_enabled() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+MutableState<bool>& MidiCIProfileState::enabled() {
     return pimpl_->enabled_;
 }
 
-void MidiCIProfileState::set_enabled(bool enabled) noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    pimpl_->enabled_ = enabled;
+const MutableState<bool>& MidiCIProfileState::enabled() const {
+    return pimpl_->enabled_;
 }
 
-uint16_t MidiCIProfileState::get_num_channels_requested() const noexcept {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+MutableState<uint16_t>& MidiCIProfileState::num_channels_requested() {
     return pimpl_->num_channels_requested_;
 }
 
-void MidiCIProfileState::set_num_channels_requested(uint16_t channels) noexcept {
+const MutableState<uint16_t>& MidiCIProfileState::num_channels_requested() const {
+    return pimpl_->num_channels_requested_;
+}
+
+void MidiCIProfileState::add_state_changed_callback(StateChangedCallback callback) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    pimpl_->num_channels_requested_ = channels;
+    pimpl_->state_changed_callbacks_.push_back(callback);
+}
+
+void MidiCIProfileState::remove_state_changed_callback(const StateChangedCallback& callback) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->state_changed_callbacks_.erase(
+        std::remove_if(pimpl_->state_changed_callbacks_.begin(), 
+                      pimpl_->state_changed_callbacks_.end(),
+                      [&callback](const StateChangedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->state_changed_callbacks_.end());
 }
 
 } // namespace ci_tool

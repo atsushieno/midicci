@@ -2,12 +2,16 @@
 
 #include <memory>
 #include <cstdint>
+#include <functional>
 #include <midi-ci/profiles/MidiCIProfile.hpp>
+#include "MutableState.hpp"
 
 namespace ci_tool {
 
 class MidiCIProfileState {
 public:
+    using StateChangedCallback = std::function<void()>;
+    
     explicit MidiCIProfileState(uint8_t grp, uint8_t addr, 
                                const midi_ci::profiles::MidiCIProfileId& prof,
                                bool en, uint16_t channels);
@@ -19,19 +23,22 @@ public:
     MidiCIProfileState(MidiCIProfileState&&) = default;
     MidiCIProfileState& operator=(MidiCIProfileState&&) = default;
     
-    uint8_t get_group() const noexcept;
-    void set_group(uint8_t group) noexcept;
+    MutableState<uint8_t>& group();
+    const MutableState<uint8_t>& group() const;
     
-    uint8_t get_address() const noexcept;
-    void set_address(uint8_t address) noexcept;
+    MutableState<uint8_t>& address();
+    const MutableState<uint8_t>& address() const;
     
     const midi_ci::profiles::MidiCIProfileId& get_profile() const noexcept;
     
-    bool is_enabled() const noexcept;
-    void set_enabled(bool enabled) noexcept;
+    MutableState<bool>& enabled();
+    const MutableState<bool>& enabled() const;
     
-    uint16_t get_num_channels_requested() const noexcept;
-    void set_num_channels_requested(uint16_t channels) noexcept;
+    MutableState<uint16_t>& num_channels_requested();
+    const MutableState<uint16_t>& num_channels_requested() const;
+    
+    void add_state_changed_callback(StateChangedCallback callback);
+    void remove_state_changed_callback(const StateChangedCallback& callback);
     
 private:
     class Impl;

@@ -23,8 +23,12 @@ public:
     std::function<void(const std::string&, bool)> logger_;
     
     std::shared_ptr<midi_ci::core::MidiCIDevice> device_;
-    std::vector<std::shared_ptr<ClientConnectionModel>> connections_;
-    std::vector<std::shared_ptr<MidiCIProfileState>> local_profile_states_;
+    MutableStateList<std::shared_ptr<ClientConnectionModel>> connections_;
+    MutableStateList<std::shared_ptr<MidiCIProfileState>> local_profile_states_;
+    
+    std::vector<ConnectionsChangedCallback> connections_changed_callbacks_;
+    std::vector<ProfilesUpdatedCallback> profiles_updated_callbacks_;
+    std::vector<PropertiesUpdatedCallback> properties_updated_callbacks_;
     
     bool receiving_midi_message_reports_;
     uint8_t last_chunked_message_channel_;
@@ -81,13 +85,11 @@ void CIDeviceModel::process_ci_message(uint8_t group, const std::vector<uint8_t>
     }
 }
 
-std::vector<std::shared_ptr<ClientConnectionModel>> CIDeviceModel::get_connections() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+const MutableStateList<std::shared_ptr<ClientConnectionModel>>& CIDeviceModel::get_connections() const {
     return pimpl_->connections_;
 }
 
-std::vector<std::shared_ptr<MidiCIProfileState>> CIDeviceModel::get_local_profile_states() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+const MutableStateList<std::shared_ptr<MidiCIProfileState>>& CIDeviceModel::get_local_profile_states() const {
     return pimpl_->local_profile_states_;
 }
 
@@ -109,9 +111,9 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
                                                uint8_t new_address, bool enabled, uint16_t num_channels_requested) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (profile_state) {
-        profile_state->set_address(new_address);
-        profile_state->set_enabled(enabled);
-        profile_state->set_num_channels_requested(num_channels_requested);
+        profile_state->address().set(new_address);
+        profile_state->enabled().set(enabled);
+        profile_state->num_channels_requested().set(num_channels_requested);
     }
 }
 
@@ -120,34 +122,53 @@ void CIDeviceModel::add_local_profile(const midi_ci::profiles::MidiCIProfile& pr
     auto profile_state = std::make_shared<MidiCIProfileState>(
         profile.group, profile.address, profile.profile,
         profile.enabled, profile.num_channels_requested);
-    pimpl_->local_profile_states_.push_back(profile_state);
+    pimpl_->local_profile_states_.add(profile_state);
+    
+    for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto it = std::remove_if(pimpl_->local_profile_states_.begin(), pimpl_->local_profile_states_.end(),
+    pimpl_->local_profile_states_.remove_if(
         [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->get_group() == group && 
-                   state->get_address() == address && 
+            return state->group().get() == group && 
+                   state->address().get() == address && 
                    state->get_profile() == profile_id;
         });
-    pimpl_->local_profile_states_.erase(it, pimpl_->local_profile_states_.end());
+    
+    for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::add_local_property(const midi_ci::properties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.property_id << std::endl;
+    
+    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
+    
+    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::update_property_value(const std::string& property_id, const std::string& res_id, 
                                          const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
+    
+    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::setup_event_listeners() {
@@ -170,7 +191,8 @@ void CIDeviceModel::on_connections_changed() {
     }
     
     std::vector<uint8_t> existing_muids;
-    for (const auto& conn_model : pimpl_->connections_) {
+    auto connections_vec = pimpl_->connections_.to_vector();
+    for (const auto& conn_model : connections_vec) {
         if (conn_model && conn_model->get_connection()) {
             existing_muids.push_back(conn_model->get_connection()->get_target_muid());
         }
@@ -181,13 +203,13 @@ void CIDeviceModel::on_connections_changed() {
             auto device_conn = pimpl_->device_->get_connection(muid);
             if (device_conn) {
                 auto conn_model = std::make_shared<ClientConnectionModel>(shared_from_this(), device_conn);
-                pimpl_->connections_.push_back(conn_model);
+                pimpl_->connections_.add(conn_model);
                 std::cout << "Added connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;
             }
         }
     }
     
-    auto it = std::remove_if(pimpl_->connections_.begin(), pimpl_->connections_.end(),
+    pimpl_->connections_.remove_if(
         [&current_muids](const std::shared_ptr<ClientConnectionModel>& conn_model) {
             if (!conn_model || !conn_model->get_connection()) return true;
             uint8_t muid = conn_model->get_connection()->get_target_muid();
@@ -197,7 +219,10 @@ void CIDeviceModel::on_connections_changed() {
             }
             return should_remove;
         });
-    pimpl_->connections_.erase(it, pimpl_->connections_.end());
+    
+    for (const auto& callback : pimpl_->connections_changed_callbacks_) {
+        callback();
+    }
 }
 
 void CIDeviceModel::add_test_profile_items() {
@@ -206,6 +231,54 @@ void CIDeviceModel::add_test_profile_items() {
     add_local_profile(profile);
     
     std::cout << "Added test profile items" << std::endl;
+}
+
+void CIDeviceModel::add_connections_changed_callback(ConnectionsChangedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->connections_changed_callbacks_.push_back(callback);
+}
+
+void CIDeviceModel::add_profiles_updated_callback(ProfilesUpdatedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->profiles_updated_callbacks_.push_back(callback);
+}
+
+void CIDeviceModel::add_properties_updated_callback(PropertiesUpdatedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->properties_updated_callbacks_.push_back(callback);
+}
+
+void CIDeviceModel::remove_connections_changed_callback(const ConnectionsChangedCallback& callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->connections_changed_callbacks_.erase(
+        std::remove_if(pimpl_->connections_changed_callbacks_.begin(), 
+                      pimpl_->connections_changed_callbacks_.end(),
+                      [&callback](const ConnectionsChangedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->connections_changed_callbacks_.end());
+}
+
+void CIDeviceModel::remove_profiles_updated_callback(const ProfilesUpdatedCallback& callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->profiles_updated_callbacks_.erase(
+        std::remove_if(pimpl_->profiles_updated_callbacks_.begin(), 
+                      pimpl_->profiles_updated_callbacks_.end(),
+                      [&callback](const ProfilesUpdatedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->profiles_updated_callbacks_.end());
+}
+
+void CIDeviceModel::remove_properties_updated_callback(const PropertiesUpdatedCallback& callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->properties_updated_callbacks_.erase(
+        std::remove_if(pimpl_->properties_updated_callbacks_.begin(), 
+                      pimpl_->properties_updated_callbacks_.end(),
+                      [&callback](const PropertiesUpdatedCallback& cb) {
+                          return cb.target<void()>() == callback.target<void()>();
+                      }),
+        pimpl_->properties_updated_callbacks_.end());
 }
 
 } // namespace ci_tool

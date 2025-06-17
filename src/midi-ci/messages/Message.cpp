@@ -1,5 +1,6 @@
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
+#include "midi-ci/core/CIFactory.hpp"
 #include "midi-ci/json/Json.hpp"
 #include <sstream>
 #include <iomanip>
@@ -274,15 +275,17 @@ std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& reso
 }
 
 std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
-    return midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    return midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
 }
 
 std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
-    return midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    return midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
@@ -316,8 +319,9 @@ std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& reso
 }
 
 std::vector<uint8_t> GetPropertyData::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
@@ -348,8 +352,9 @@ SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, const
 }
 
 std::vector<uint8_t> SetPropertyData::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
@@ -380,8 +385,9 @@ SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, c
 }
 
 std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
-    return midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    return midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
@@ -404,8 +410,9 @@ std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::
 }
 
 std::vector<uint8_t> SubscribeProperty::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
@@ -881,8 +888,9 @@ GetPropertyDataReply::GetPropertyDataReply(const Common& common, uint8_t request
     : MultiPacketMessage(MessageType::GetPropertyDataReply, common), request_id_(request_id), header_(header), body_(body) {}
 
 std::vector<uint8_t> GetPropertyDataReply::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_GET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
@@ -910,8 +918,9 @@ SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request
     : MultiPacketMessage(MessageType::SetPropertyDataReply, common), request_id_(request_id), header_(header) {}
 
 std::vector<uint8_t> SetPropertyDataReply::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
@@ -940,8 +949,9 @@ SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t req
     : MultiPacketMessage(MessageType::SubscribePropertyReply, common), request_id_(request_id), header_(header), body_(body) {}
 
 std::vector<uint8_t> SubscribePropertyReply::serialize() const {
-    auto chunks = midi_ci::core::constants::serialize_property_chunks(
-        4096 - 256, // max chunk size
+    std::vector<uint8_t> dst(4096);
+    auto chunks = midi_ci::core::CIFactory::midiCIPropertyChunks(
+        dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midi_ci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];

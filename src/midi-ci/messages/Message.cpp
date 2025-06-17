@@ -89,10 +89,6 @@ std::vector<uint8_t> DiscoveryInquiry::serialize() const {
     return data;
 }
 
-bool DiscoveryInquiry::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 32;
-}
-
 std::string DiscoveryInquiry::get_label() const {
     return "DiscoveryInquiry";
 }
@@ -146,10 +142,6 @@ std::vector<uint8_t> DiscoveryReply::serialize() const {
     return data;
 }
 
-bool DiscoveryReply::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 33;
-}
-
 std::string DiscoveryReply::get_label() const {
     return "DiscoveryReply";
 }
@@ -194,10 +186,6 @@ std::vector<uint8_t> SetProfileOn::serialize() const {
     return data;
 }
 
-bool SetProfileOn::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 22;
-}
-
 std::string SetProfileOn::get_label() const {
     return "SetProfileOn";
 }
@@ -233,10 +221,6 @@ std::vector<uint8_t> PropertyGetCapabilities::serialize() const {
     data.push_back(max_simultaneous_requests_);
     
     return data;
-}
-
-bool PropertyGetCapabilities::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 16;
 }
 
 std::string PropertyGetCapabilities::get_label() const {
@@ -427,10 +411,6 @@ std::vector<uint8_t> SubscribeProperty::serialize() const {
     return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
 }
 
-bool SubscribeProperty::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 20;
-}
-
 std::string SubscribeProperty::get_label() const {
     return "SubscribeProperty";
 }
@@ -465,10 +445,6 @@ std::vector<uint8_t> EndpointInquiry::serialize() const {
     return data;
 }
 
-bool EndpointInquiry::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 16;
-}
-
 std::string EndpointInquiry::get_label() const {
     return "EndpointInquiry";
 }
@@ -500,18 +476,6 @@ std::vector<uint8_t> EndpointReply::serialize() const {
     result.insert(result.end(), data_.begin(), data_.end());
     
     return result;
-}
-
-bool EndpointReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 15) return false;
-    
-    status_ = data[14];
-    if (data.size() > 16) {
-        data_.assign(data.begin() + 15, data.end() - 1);
-    } else {
-        data_.clear();
-    }
-    return true;
 }
 
 std::string EndpointReply::get_label() const {
@@ -549,10 +513,6 @@ std::vector<uint8_t> InvalidateMUID::serialize() const {
     return data;
 }
 
-bool InvalidateMUID::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 19;
-}
-
 std::string InvalidateMUID::get_label() const {
     return "InvalidateMUID";
 }
@@ -581,10 +541,6 @@ std::vector<uint8_t> ProfileInquiry::serialize() const {
     serialize_muid_32(data, common_.destination_muid);
     
     return data;
-}
-
-bool ProfileInquiry::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 15;
 }
 
 std::string ProfileInquiry::get_label() const {
@@ -617,10 +573,6 @@ std::vector<uint8_t> SetProfileOff::serialize() const {
     }
     
     return data;
-}
-
-bool SetProfileOff::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 20;
 }
 
 std::string SetProfileOff::get_label() const {
@@ -662,10 +614,6 @@ std::vector<uint8_t> ProfileEnabledReport::serialize() const {
     data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
     
     return data;
-}
-
-bool ProfileEnabledReport::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 22;
 }
 
 std::string ProfileEnabledReport::get_label() const {
@@ -710,10 +658,6 @@ std::vector<uint8_t> ProfileDisabledReport::serialize() const {
     return data;
 }
 
-bool ProfileDisabledReport::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 22;
-}
-
 std::string ProfileDisabledReport::get_label() const {
     return "ProfileDisabledReport";
 }
@@ -753,10 +697,6 @@ std::vector<uint8_t> ProfileAddedReport::serialize() const {
     return data;
 }
 
-bool ProfileAddedReport::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 20;
-}
-
 std::string ProfileAddedReport::get_label() const {
     return "ProfileAddedReport";
 }
@@ -793,10 +733,6 @@ std::vector<uint8_t> ProfileRemovedReport::serialize() const {
     }
     
     return data;
-}
-
-bool ProfileRemovedReport::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 20;
 }
 
 std::string ProfileRemovedReport::get_label() const {
@@ -842,10 +778,6 @@ std::vector<uint8_t> MidiMessageReportInquiry::serialize() const {
     return data;
 }
 
-bool MidiMessageReportInquiry::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 19;
-}
-
 std::string MidiMessageReportInquiry::get_label() const {
     return "MidiMessageReportInquiry";
 }
@@ -877,10 +809,6 @@ std::vector<uint8_t> ProcessInquiryCapabilities::serialize() const {
     serialize_muid_32(data, common_.destination_muid);
     
     return data;
-}
-
-bool ProcessInquiryCapabilities::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 15;
 }
 
 std::string ProcessInquiryCapabilities::get_label() const {
@@ -938,12 +866,6 @@ PropertyGetCapabilitiesReply::PropertyGetCapabilitiesReply(const Common& common,
 
 std::vector<uint8_t> PropertyGetCapabilitiesReply::serialize() const {
     return {max_simultaneous_requests_};
-}
-
-bool PropertyGetCapabilitiesReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 1) return false;
-    max_simultaneous_requests_ = data[0];
-    return true;
 }
 
 std::string PropertyGetCapabilitiesReply::get_label() const {
@@ -1029,19 +951,6 @@ std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize_multi() cons
     return {serialize()};
 }
 
-bool SubscribePropertyReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 1) return false;
-    request_id_ = data[0];
-    
-    if (data.size() > 1) {
-        size_t header_end = data.size() / 2;
-        header_.assign(data.begin() + 1, data.begin() + header_end);
-        body_.assign(data.begin() + header_end, data.end());
-    }
-    
-    return true;
-}
-
 std::string SubscribePropertyReply::get_label() const {
     return "SubscribePropertyReply";
 }
@@ -1061,11 +970,6 @@ std::vector<uint8_t> ProfileAdded::serialize() const {
     return profile_id_;
 }
 
-bool ProfileAdded::deserialize(const std::vector<uint8_t>& data) {
-    profile_id_ = data;
-    return true;
-}
-
 std::string ProfileAdded::get_label() const {
     return "ProfileAdded";
 }
@@ -1079,11 +983,6 @@ ProfileRemoved::ProfileRemoved(const Common& common, const std::vector<uint8_t>&
 
 std::vector<uint8_t> ProfileRemoved::serialize() const {
     return profile_id_;
-}
-
-bool ProfileRemoved::deserialize(const std::vector<uint8_t>& data) {
-    profile_id_ = data;
-    return true;
 }
 
 std::string ProfileRemoved::get_label() const {
@@ -1104,14 +1003,6 @@ std::vector<uint8_t> ProfileEnabled::serialize() const {
     return result;
 }
 
-bool ProfileEnabled::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 2) return false;
-    
-    profile_id_.assign(data.begin(), data.end() - 2);
-    num_channels_ = data[data.size() - 2] | (data[data.size() - 1] << 8);
-    return true;
-}
-
 std::string ProfileEnabled::get_label() const {
     return "ProfileEnabled";
 }
@@ -1129,14 +1020,6 @@ std::vector<uint8_t> ProfileDisabled::serialize() const {
     result.push_back(static_cast<uint8_t>(num_channels_ & 0xFF));
     result.push_back(static_cast<uint8_t>((num_channels_ >> 8) & 0xFF));
     return result;
-}
-
-bool ProfileDisabled::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 2) return false;
-    
-    profile_id_.assign(data.begin(), data.end() - 2);
-    num_channels_ = data[data.size() - 2] | (data[data.size() - 1] << 8);
-    return true;
 }
 
 std::string ProfileDisabled::get_label() const {
@@ -1159,15 +1042,6 @@ std::vector<uint8_t> ProfileDetailsReply::serialize() const {
     return result;
 }
 
-bool ProfileDetailsReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 6) return false;
-    
-    profile_id_.assign(data.begin(), data.begin() + 5);
-    target_ = data[5];
-    data_.assign(data.begin() + 6, data.end());
-    return true;
-}
-
 std::string ProfileDetailsReply::get_label() const {
     return "ProfileDetailsReply";
 }
@@ -1183,12 +1057,6 @@ ProcessInquiryCapabilitiesReply::ProcessInquiryCapabilitiesReply(const Common& c
 
 std::vector<uint8_t> ProcessInquiryCapabilitiesReply::serialize() const {
     return {supported_features_};
-}
-
-bool ProcessInquiryCapabilitiesReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 1) return false;
-    supported_features_ = data[0];
-    return true;
 }
 
 std::string ProcessInquiryCapabilitiesReply::get_label() const {
@@ -1225,14 +1093,6 @@ std::vector<uint8_t> MidiMessageReportReply::serialize() const {
     return data;
 }
 
-bool MidiMessageReportReply::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 17) return false;
-    system_messages_ = data[13];
-    channel_controller_messages_ = data[15];
-    note_data_messages_ = data[16];
-    return true;
-}
-
 std::string MidiMessageReportReply::get_label() const {
     return "MidiMessageReportReply";
 }
@@ -1264,10 +1124,6 @@ std::vector<uint8_t> MidiMessageReportNotifyEnd::serialize() const {
     
     data.push_back(MIDI_CI_SYSEX_END);
     return data;
-}
-
-bool MidiMessageReportNotifyEnd::deserialize(const std::vector<uint8_t>& data) {
-    return data.size() >= 13;
 }
 
 std::string MidiMessageReportNotifyEnd::get_label() const {
@@ -1309,18 +1165,6 @@ std::vector<uint8_t> ProfileSpecificData::serialize() const {
     
     data.push_back(MIDI_CI_SYSEX_END);
     return data;
-}
-
-bool ProfileSpecificData::deserialize(const std::vector<uint8_t>& data) {
-    if (data.size() < 22) return false;
-    
-    profile_id_.assign(data.begin() + 13, data.begin() + 18);
-    uint16_t data_length = data[19] | (data[20] << 7);
-    
-    if (data.size() < 22 + data_length) return false;
-    data_.assign(data.begin() + 22, data.begin() + 22 + data_length);
-    
-    return true;
 }
 
 std::string ProfileSpecificData::get_label() const {

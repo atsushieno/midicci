@@ -74,7 +74,6 @@ public:
     
     virtual std::vector<uint8_t> serialize() const = 0;
     virtual std::vector<std::vector<uint8_t>> serialize_multi() const;
-    virtual bool deserialize(const std::vector<uint8_t>& data) = 0;
     virtual std::string get_label() const = 0;
     virtual std::string get_body_string() const = 0;
     virtual std::string get_log_message() const;
@@ -100,7 +99,6 @@ public:
                     uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -117,7 +115,6 @@ public:
                   uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id, uint8_t function_block);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -134,7 +131,6 @@ public:
     SetProfileOn(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -148,7 +144,6 @@ public:
     PropertyGetCapabilities(const Common& common, uint8_t max_simultaneous_requests);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -165,7 +160,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -190,7 +184,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -217,7 +210,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -240,7 +232,6 @@ public:
     EndpointInquiry(const Common& common, uint8_t status);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -255,7 +246,6 @@ public:
     EndpointReply(const Common& common, uint8_t status, const std::vector<uint8_t>& data);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -272,7 +262,6 @@ public:
     InvalidateMUID(const Common& common, uint32_t target_muid);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -285,7 +274,6 @@ public:
     ProfileInquiry(const Common& common);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -295,7 +283,6 @@ public:
     SetProfileOff(const Common& common, const std::vector<uint8_t>& profile_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -308,7 +295,6 @@ public:
     ProfileEnabledReport(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -322,7 +308,6 @@ public:
     ProfileDisabledReport(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -336,7 +321,6 @@ public:
     ProfileAddedReport(const Common& common, const std::vector<uint8_t>& profile_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -349,7 +333,6 @@ public:
     ProfileRemovedReport(const Common& common, const std::vector<uint8_t>& profile_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -364,7 +347,6 @@ public:
                            uint8_t note_data_messages);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -380,7 +362,6 @@ public:
     ProcessInquiryCapabilities(const Common& common);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -391,7 +372,6 @@ public:
                 const std::vector<std::vector<uint8_t>>& disabled_profiles);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -408,7 +388,6 @@ public:
     PropertyGetCapabilitiesReply(const Common& common, uint8_t max_simultaneous_requests);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -425,7 +404,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -445,7 +423,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -464,7 +441,6 @@ public:
     
     std::vector<uint8_t> serialize() const override;
     std::vector<std::vector<uint8_t>> serialize_multi() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -483,7 +459,6 @@ public:
     ProfileAdded(const Common& common, const std::vector<uint8_t>& profile_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -498,7 +473,6 @@ public:
     ProfileRemoved(const Common& common, const std::vector<uint8_t>& profile_id);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -513,7 +487,6 @@ public:
     ProfileEnabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -530,7 +503,6 @@ public:
     ProfileDisabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -548,7 +520,6 @@ public:
                        uint8_t target, const std::vector<uint8_t>& data);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -567,7 +538,6 @@ public:
     ProcessInquiryCapabilitiesReply(const Common& common, uint8_t supported_features);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -582,7 +552,6 @@ public:
     MidiMessageReportReply(const Common& common, uint8_t system_messages, uint8_t channel_controller_messages, uint8_t note_data_messages);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -601,7 +570,6 @@ public:
     MidiMessageReportNotifyEnd(const Common& common);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -611,7 +579,6 @@ public:
     ProfileSpecificData(const Common& common, const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data);
     
     std::vector<uint8_t> serialize() const override;
-    bool deserialize(const std::vector<uint8_t>& data) override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     

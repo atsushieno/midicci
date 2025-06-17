@@ -146,8 +146,9 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
     if (it != pimpl_->open_requests_.end()) {
         const auto& data = it->second;
         if (data.size() >= 16) {
-            uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
-            uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
+            // FIXME: this should reuse our common header parser.
+            uint32_t source_muid = data[5] | (data[6] << 8) | (data[7] << 16) | (data[8] << 24);
+            uint32_t dest_muid = data[9] | (data[10] << 8) | (data[11] << 16) | (data[12] << 24);
             uint8_t request_id = data[13];
             uint16_t header_size = data[14] | (data[15] << 7);
             std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);

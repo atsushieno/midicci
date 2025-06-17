@@ -17,23 +17,55 @@
 namespace midi_ci {
 namespace messages {
 
+std::pair<std::vector<std::vector<uint8_t>>, std::vector<std::vector<uint8_t>>>
+parse_profile_set(const std::vector<uint8_t>& data) {
+    std::vector<std::vector<uint8_t>> enabled_profiles;
+    std::vector<std::vector<uint8_t>> disabled_profiles;
+
+    if (data.size() < 15) {
+        return {enabled_profiles, disabled_profiles};
+    }
+
+    uint16_t num_enabled = data[13] + (data[14] << 7);
+    size_t pos = 15;
+
+    for (uint16_t i = 0; i < num_enabled && pos + 5 <= data.size(); ++i) {
+        std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+        enabled_profiles.push_back(profile_id);
+        pos += 5;
+    }
+
+    if (pos + 2 <= data.size()) {
+        uint16_t num_disabled = data[pos] + (data[pos + 1] << 7);
+        pos += 2;
+
+        for (uint16_t i = 0; i < num_disabled && pos + 5 <= data.size(); ++i) {
+            std::vector<uint8_t> profile_id(data.begin() + pos, data.begin() + pos + 5);
+            disabled_profiles.push_back(profile_id);
+            pos += 5;
+        }
+    }
+
+    return {enabled_profiles, disabled_profiles};
+}
+
 class Messenger::Impl {
 public:
-    explicit Impl(core::MidiCIDevice& device) 
+    explicit Impl(core::MidiCIDevice& device)
         : device_(device), request_id_counter_(0) {}
-    
+
     core::MidiCIDevice& device_;
     std::vector<MessageCallback> callbacks_;
     mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
-    
+
     void notify_callbacks(const Message& message) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& callback : callbacks_) {
             callback(message);
         }
     }
-    
+
     void log_message(const Message& message, bool is_outgoing) {
         auto logger = device_.get_logger();
         if (logger) {
@@ -42,14 +74,14 @@ public:
     }
 };
 
-Messenger::Messenger(core::MidiCIDevice& device) 
+Messenger::Messenger(core::MidiCIDevice& device)
     : pimpl_(std::make_unique<Impl>(device)) {}
 
 Messenger::~Messenger() = default;
 
 void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
-    
+
     auto serialized = message.serialize();
     if (!serialized.empty()) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
@@ -63,119 +95,119 @@ void Messenger::send(const Message& message) {
 
 void Messenger::send_discovery_inquiry(uint8_t group, uint32_t destination_muid) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
     auto device_info = pimpl_->device_.get_device_info();
-    
-    DiscoveryInquiry inquiry(common, 
+
+    DiscoveryInquiry inquiry(common,
         {device_info.manufacturer, device_info.family, device_info.model, device_info.version},
         0x7F, pimpl_->device_.get_config().max_sysex_size, false);
-    
+
     send(inquiry);
 }
 
 void Messenger::send_discovery_reply(uint8_t group, uint32_t destination_muid) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
     auto device_info = pimpl_->device_.get_device_info();
-    
-    DiscoveryReply reply(common, 
+
+    DiscoveryReply reply(common,
         {device_info.manufacturer, device_info.family, device_info.model, device_info.version},
         0x7F, pimpl_->device_.get_config().max_sysex_size, 0, false);
-    
+
     send(reply);
 }
 
 void Messenger::send_endpoint_inquiry(uint8_t group, uint32_t destination_muid, uint8_t status) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     EndpointInquiry inquiry(common, status);
     send(inquiry);
 }
 
 void Messenger::send_invalidate_muid(uint8_t group, uint32_t destination_muid, uint32_t target_muid) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     InvalidateMUID invalidate(common, target_muid);
     send(invalidate);
 }
 
 void Messenger::send_profile_inquiry(uint8_t group, uint32_t destination_muid) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     ProfileInquiry inquiry(common);
     send(inquiry);
 }
 
-void Messenger::send_set_profile_on(uint8_t group, uint8_t address, uint32_t destination_muid, 
+void Messenger::send_set_profile_on(uint8_t group, uint8_t address, uint32_t destination_muid,
                                    const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
     Common common(pimpl_->device_.get_muid(), destination_muid, address, group);
-    
+
     SetProfileOn set_on(common, profile_id, num_channels);
     send(set_on);
 }
 
-void Messenger::send_set_profile_off(uint8_t group, uint8_t address, uint32_t destination_muid, 
+void Messenger::send_set_profile_off(uint8_t group, uint8_t address, uint32_t destination_muid,
                                     const std::vector<uint8_t>& profile_id) {
     Common common(pimpl_->device_.get_muid(), destination_muid, address, group);
-    
+
     SetProfileOff set_off(common, profile_id);
     send(set_off);
 }
 
-void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address, 
+void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address,
                                           const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
-    
+
     ProfileEnabledReport report(common, profile_id, num_channels);
     send(report);
 }
 
-void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address, 
+void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address,
                                            const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
-    
+
     ProfileDisabledReport report(common, profile_id, num_channels);
     send(report);
 }
 
-void Messenger::send_profile_added_report(uint8_t group, uint8_t address, 
+void Messenger::send_profile_added_report(uint8_t group, uint8_t address,
                                         const std::vector<uint8_t>& profile_id) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
-    
+
     ProfileAddedReport report(common, profile_id);
     send(report);
 }
 
-void Messenger::send_profile_removed_report(uint8_t group, uint8_t address, 
+void Messenger::send_profile_removed_report(uint8_t group, uint8_t address,
                                           const std::vector<uint8_t>& profile_id) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
-    
+
     ProfileRemovedReport report(common, profile_id);
     send(report);
 }
 
-void Messenger::send_property_get_capabilities(uint8_t group, uint32_t destination_muid, 
+void Messenger::send_property_get_capabilities(uint8_t group, uint32_t destination_muid,
                                              uint8_t max_simultaneous_requests) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     PropertyGetCapabilities capabilities(common, max_simultaneous_requests);
     send(capabilities);
 }
@@ -183,9 +215,9 @@ void Messenger::send_property_get_capabilities(uint8_t group, uint32_t destinati
 void Messenger::send_property_get_data(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                      const std::vector<uint8_t>& header) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     GetPropertyData get_data(common, request_id, header);
     send(get_data);
 }
@@ -193,9 +225,9 @@ void Messenger::send_property_get_data(uint8_t group, uint32_t destination_muid,
 void Messenger::send_property_set_data(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                      const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     SetPropertyData set_data(common, request_id, header, body);
     send(set_data);
 }
@@ -203,18 +235,18 @@ void Messenger::send_property_set_data(uint8_t group, uint32_t destination_muid,
 void Messenger::send_property_subscribe(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                       const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     SubscribeProperty subscribe(common, request_id, header, body);
     send(subscribe);
 }
 
 void Messenger::send_process_inquiry_capabilities(uint8_t group, uint32_t destination_muid) {
     using namespace midi_ci::core::constants;
-    
+
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    
+
     ProcessInquiryCapabilities inquiry(common);
     send(inquiry);
 }
@@ -223,51 +255,51 @@ void Messenger::send_midi_message_report_inquiry(uint8_t group, uint8_t address,
                                                 uint8_t message_data_control, uint8_t system_messages,
                                                 uint8_t channel_controller_messages, uint8_t note_data_messages) {
     Common common(pimpl_->device_.get_muid(), destination_muid, address, group);
-    
-    MidiMessageReportInquiry inquiry(common, message_data_control, system_messages, 
+
+    MidiMessageReportInquiry inquiry(common, message_data_control, system_messages,
                                    channel_controller_messages, note_data_messages);
     send(inquiry);
 }
 
 void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     using namespace midi_ci::core::constants;
-    
-    if (data.size() < 4 || 
-        data[0] != MIDI_CI_UNIVERSAL_SYSEX_ID || 
+
+    if (data.size() < 4 ||
+        data[0] != MIDI_CI_UNIVERSAL_SYSEX_ID ||
         data[2] != MIDI_CI_SUB_ID_1) {
         return;
     }
-    
+
     if (data.size() < MIDI_CI_COMMON_HEADER_SIZE) {
         return;
     }
-    
+
     uint32_t source_muid = data[5] | (data[6] << 8) | (data[7] << 16) | (data[8] << 24);
     uint32_t dest_muid = data[9] | (data[10] << 8) | (data[11] << 16) | (data[12] << 24);
     uint8_t address = data[4];
-    
+
     Common common(source_muid, dest_muid, address, group);
-    
+
     if (dest_muid != pimpl_->device_.get_muid() && dest_muid != MIDI_CI_BROADCAST_MUID_32) {
         return;
     }
-    
+
     CISubId2 message_type = static_cast<CISubId2>(data[3]);
-    
+
     switch (message_type) {
         case CISubId2::DISCOVERY_REPLY: {
             if (data.size() >= 30) {
                 std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);  
+                std::string family(reinterpret_cast<const char*>(&data[16]), 2);
                 std::string model(reinterpret_cast<const char*>(&data[18]), 2);
                 std::string version(reinterpret_cast<const char*>(&data[20]), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
-                
+
                 uint8_t ci_supported = data[24];
                 uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
-                
+
                 DiscoveryReply reply(common, device_info, ci_supported, max_sysex, output_path, function_block);
                 pimpl_->log_message(reply, false);
                 processDiscoveryReply(reply);
@@ -285,14 +317,10 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
-                std::vector<uint8_t> profile_data(data.begin() + 13, data.end());
-                if (profile_data.size() >= 5) {
-                    std::vector<uint8_t> profile_id(profile_data.begin(), profile_data.begin() + 5);
-                    std::vector<uint8_t> data(profile_data.begin() + 5, profile_data.end());
-                    ProfileReply reply(common, profile_id, data);
-                    pimpl_->log_message(reply, false);
-                    processProfileReply(reply);
-                }
+                auto [enabled_profiles, disabled_profiles] = parse_profile_set(data);
+                ProfileReply reply(common, enabled_profiles, disabled_profiles);
+                pimpl_->log_message(reply, false);
+                processProfileReply(reply);
             }
             break;
         }
@@ -393,15 +421,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::DISCOVERY_INQUIRY: {
             if (data.size() >= 30) {
                 std::string manufacturer(reinterpret_cast<const char*>(&data[13]), 3);
-                std::string family(reinterpret_cast<const char*>(&data[16]), 2);  
+                std::string family(reinterpret_cast<const char*>(&data[16]), 2);
                 std::string model(reinterpret_cast<const char*>(&data[18]), 2);
                 std::string version(reinterpret_cast<const char*>(&data[20]), 4);
                 DeviceInfo device_info(manufacturer, family, model, version);
-                
+
                 uint8_t ci_supported = data[24];
                 uint32_t max_sysex = data[25] | (data[26] << 8) | (data[27] << 16) | (data[28] << 24);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
-                
+
                 DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);
                 pimpl_->log_message(inquiry, false);
                 processDiscovery(inquiry);
@@ -620,10 +648,10 @@ void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
     if (existing) {
         pimpl_->device_.remove_connection(msg.get_source_muid());
     }
-    
+
     auto connection = std::make_shared<core::ClientConnection>(pimpl_->device_, msg.get_source_muid());
     pimpl_->device_.store_connection(msg.get_source_muid(), connection);
-    
+
     send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);
     send_profile_inquiry(msg.get_common().group, msg.get_source_muid());
     send_property_get_capabilities(msg.get_common().group, msg.get_source_muid(), 8);
@@ -641,12 +669,12 @@ void Messenger::onClient(const MessageType& msg, Func func) {
 EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) {
     const auto& config = pimpl_->device_.get_config();
     std::vector<uint8_t> data;
-    
+
     if (msg.get_status() == 0 && !config.product_instance_id.empty()) {
         const auto& prod_id = config.product_instance_id;
         data.assign(prod_id.begin(), prod_id.end());
     }
-    
+
     return EndpointReply(
         Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
         msg.get_status(),
@@ -656,10 +684,10 @@ EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) 
 
 std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileInquiry& msg) {
     std::vector<ProfileReply> replies;
-    
+
     std::vector<std::vector<uint8_t>> enabled_profiles;
     std::vector<std::vector<uint8_t>> disabled_profiles;
-    
+
     replies.emplace_back(
         Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
         enabled_profiles,

@@ -44,11 +44,12 @@ private slots:
     void onDeleteProperty();
     void onUpdatePropertyValue();
     void onUpdatePropertyMetadata();
-    void checkForLocalUpdates();
+
 
 private:
     void setupUI();
     void setupConnections();
+    void setupEventBridge();
     void updateProfileList();
     void updateProfileDetails();
     void updatePropertyList();
@@ -95,7 +96,6 @@ private:
     QString m_selectedProfile;
     QString m_selectedProperty;
     
-    QTimer* m_updateTimer;
     size_t m_lastProfileCount;
     size_t m_lastPropertyCount;
 };

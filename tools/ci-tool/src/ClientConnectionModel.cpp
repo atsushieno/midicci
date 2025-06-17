@@ -24,7 +24,10 @@ public:
 
 ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
                                            std::shared_ptr<midi_ci::core::ClientConnection> connection)
-    : pimpl_(std::make_unique<Impl>(parent, connection)) {}
+    : pimpl_(std::make_unique<Impl>(parent, connection)) {
+    setup_profile_listeners();
+    setup_property_listeners();
+}
 
 ClientConnectionModel::~ClientConnectionModel() = default;
 
@@ -124,6 +127,53 @@ void ClientConnectionModel::request_midi_message_report(uint8_t address, uint32_
                                                        uint8_t note_data_messages) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     std::cout << "Requesting MIDI message report from MUID: 0x" << std::hex << target_muid << std::dec << std::endl;
+}
+
+void ClientConnectionModel::setup_profile_listeners() {
+    if (!pimpl_->connection_) return;
+    
+    auto& profile_client = pimpl_->connection_->get_profile_client_facade();
+    auto& profiles = profile_client.get_profiles();
+    
+    profiles.add_profiles_changed_callback([this](auto change, const auto& profile) {
+        on_profile_changed();
+    });
+    
+    profiles.add_profile_enabled_changed_callback([this](const auto& profile) {
+        on_profile_changed();
+    });
+}
+
+void ClientConnectionModel::setup_property_listeners() {
+    if (!pimpl_->connection_) return;
+    
+    auto& property_client = pimpl_->connection_->get_property_client_facade();
+    
+    std::cout << "Set up property listeners for connection" << std::endl;
+}
+
+void ClientConnectionModel::on_profile_changed() {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->connection_) return;
+    
+    auto& profile_client = pimpl_->connection_->get_profile_client_facade();
+    auto& profiles = profile_client.get_profiles();
+    const auto& profile_list = profiles.get_profiles();
+    
+    pimpl_->profiles_.clear();
+    for (const auto& profile : profile_list) {
+        auto profile_state = std::make_shared<MidiCIProfileState>(
+            profile.group, profile.address, profile.profile, 
+            profile.enabled, profile.num_channels_requested);
+        pimpl_->profiles_.push_back(profile_state);
+    }
+    
+    std::cout << "Updated profile list - count: " << pimpl_->profiles_.size() << std::endl;
+}
+
+void ClientConnectionModel::on_property_value_updated() {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::cout << "Property value updated" << std::endl;
 }
 
 } // namespace ci_tool

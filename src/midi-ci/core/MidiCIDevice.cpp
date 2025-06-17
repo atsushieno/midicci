@@ -23,6 +23,8 @@ public:
     uint32_t muid_;
     bool initialized_;
     MessageCallback message_callback_;
+    MessageReceivedCallback message_received_callback_;
+    ConnectionsChangedCallback connections_changed_callback_;
     MidiCIDevice::CIOutputSender ci_output_sender_;
     std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>> connections_;
     std::unique_ptr<profiles::ProfileHostFacade> profile_host_facade_;
@@ -75,14 +77,32 @@ void MidiCIDevice::set_message_callback(MessageCallback callback) {
     pimpl_->message_callback_ = std::move(callback);
 }
 
+void MidiCIDevice::set_message_received_callback(MessageReceivedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->message_received_callback_ = std::move(callback);
+}
+
+void MidiCIDevice::set_connections_changed_callback(ConnectionsChangedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->connections_changed_callback_ = std::move(callback);
+}
+
 void MidiCIDevice::store_connection(uint8_t destination_id, std::shared_ptr<ClientConnection> connection) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->connections_[destination_id] = connection;
+    
+    if (pimpl_->connections_changed_callback_) {
+        pimpl_->connections_changed_callback_();
+    }
 }
 
 void MidiCIDevice::remove_connection(uint8_t destination_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->connections_.erase(destination_id);
+    
+    if (pimpl_->connections_changed_callback_) {
+        pimpl_->connections_changed_callback_();
+    }
 }
 
 std::shared_ptr<ClientConnection> MidiCIDevice::get_connection(uint8_t destination_id) const {

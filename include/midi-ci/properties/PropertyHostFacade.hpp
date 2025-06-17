@@ -17,6 +17,8 @@ struct PropertyMetadata;
 
 class PropertyHostFacade {
 public:
+    using PropertyUpdatedCallback = std::function<void(const std::string&)>;
+    
     explicit PropertyHostFacade(core::MidiCIDevice& device);
     ~PropertyHostFacade();
     
@@ -38,6 +40,8 @@ public:
     messages::SubscribePropertyReply process_subscribe_property(const messages::SubscribeProperty& msg);
     
     void notify_property_updated(const std::string& property_id);
+    
+    void set_property_updated_callback(PropertyUpdatedCallback callback);
     
 private:
     class Impl;

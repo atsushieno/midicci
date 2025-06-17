@@ -68,6 +68,11 @@ public:
                                    uint8_t note_data_messages = 0xFF);
     
 private:
+    void setup_profile_listeners();
+    void setup_property_listeners();
+    void on_profile_changed();
+    void on_property_value_updated();
+    
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };

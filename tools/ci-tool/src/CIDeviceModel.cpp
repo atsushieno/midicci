@@ -57,6 +57,7 @@ void CIDeviceModel::initialize() {
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
     pimpl_->device_->initialize();
     
+    setup_event_listeners();
     add_test_profile_items();
     
     std::cout << "CIDeviceModel initialized with MUID: 0x" << std::hex << pimpl_->muid_ << std::dec << std::endl;
@@ -152,6 +153,56 @@ void CIDeviceModel::update_property_value(const std::string& property_id, const 
                                          const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
+}
+
+void CIDeviceModel::setup_event_listeners() {
+    if (!pimpl_->device_) return;
+    
+    pimpl_->device_->set_connections_changed_callback([this]() {
+        on_connections_changed();
+    });
+}
+
+void CIDeviceModel::on_connections_changed() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->device_) return;
+    
+    const auto& device_connections = pimpl_->device_->get_connections();
+    
+    std::vector<uint8_t> current_muids;
+    for (const auto& [muid, conn] : device_connections) {
+        current_muids.push_back(muid);
+    }
+    
+    std::vector<uint8_t> existing_muids;
+    for (const auto& conn_model : pimpl_->connections_) {
+        if (conn_model && conn_model->get_connection()) {
+            existing_muids.push_back(conn_model->get_connection()->get_target_muid());
+        }
+    }
+    
+    for (uint8_t muid : current_muids) {
+        if (std::find(existing_muids.begin(), existing_muids.end(), muid) == existing_muids.end()) {
+            auto device_conn = pimpl_->device_->get_connection(muid);
+            if (device_conn) {
+                auto conn_model = std::make_shared<ClientConnectionModel>(*this, device_conn);
+                pimpl_->connections_.push_back(conn_model);
+                std::cout << "Added connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;
+            }
+        }
+    }
+    
+    auto it = std::remove_if(pimpl_->connections_.begin(), pimpl_->connections_.end(),
+        [&current_muids](const std::shared_ptr<ClientConnectionModel>& conn_model) {
+            if (!conn_model || !conn_model->get_connection()) return true;
+            uint8_t muid = conn_model->get_connection()->get_target_muid();
+            bool should_remove = std::find(current_muids.begin(), current_muids.end(), muid) == current_muids.end();
+            if (should_remove) {
+                std::cout << "Removed connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;
+            }
+            return should_remove;
+        });
+    pimpl_->connections_.erase(it, pimpl_->connections_.end());
 }
 
 void CIDeviceModel::add_test_profile_items() {

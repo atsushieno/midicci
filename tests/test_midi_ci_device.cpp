@@ -1,44 +1,27 @@
-#include "midi-ci/core/MidiCIDevice.hpp"
-#include <iostream>
-#include <cassert>
+#include <gtest/gtest.h>
+#include "TestCIMediator.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
 
-using namespace midi_ci::core;
-
-void test_device_initialization() {
-    MidiCIDevice device;
+TEST(MidiCIDeviceTest, initialState) {
+    TestCIMediator mediator;
+    auto& device1 = mediator.getDevice1();
     
-    assert(!device.is_initialized());
-    
-    device.initialize();
-    assert(device.is_initialized());
-    
-    device.shutdown();
-    assert(!device.is_initialized());
-    
-    std::cout << "✓ Device initialization test passed\n";
+    EXPECT_EQ("", device1.get_device_info().manufacturer);
+    EXPECT_EQ(19474, device1.get_muid());
 }
 
-void test_device_id() {
-    MidiCIDevice device;
+TEST(MidiCIDeviceTest, basicRun) {
+    TestCIMediator mediator;
+    auto& device1 = mediator.getDevice1();
+    auto& device2 = mediator.getDevice2();
     
-    assert(device.get_device_id() == 0x7F);
+    device1.sendDiscovery();
+    EXPECT_EQ(1, device1.get_connections().size());
     
-    device.set_device_id(0x42);
-    assert(device.get_device_id() == 0x42);
+    auto connections = device1.get_connections();
+    auto conn = connections.begin()->second;
+    ASSERT_NE(nullptr, conn);
     
-    std::cout << "✓ Device ID test passed\n";
-}
-
-int run_all_tests() {
-    try {
-        test_device_initialization();
-        test_device_id();
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Test failed with exception: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Test failed with unknown exception" << std::endl;
-        return 1;
-    }
+    EXPECT_EQ(device2.get_device_info().manufacturer, 
+              conn->get_device_info()->manufacturer);
 }

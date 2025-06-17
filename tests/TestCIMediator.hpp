@@ -1,11 +1,16 @@
 #pragma once
 
 #include "midi-ci/core/MidiCIDevice.hpp"
+#include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/properties/PropertyHostFacade.hpp"
+#include "midi-ci/profiles/ProfileHostFacade.hpp"
 #include <memory>
 #include <vector>
 #include <cstdint>
 
 using namespace midi_ci::core;
+
+class TestPropertyRules;
 
 class TestCIMediator {
 public:

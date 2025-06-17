@@ -16,6 +16,7 @@ public:
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;
     std::vector<PropertyMetadata> properties_;
     PropertyHostFacade::PropertyUpdatedCallback property_updated_callback_;
+    std::vector<PropertySubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -122,6 +123,52 @@ void PropertyHostFacade::notify_property_updated(const std::string& property_id)
 void PropertyHostFacade::set_property_updated_callback(PropertyUpdatedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->property_updated_callback_ = std::move(callback);
+}
+
+void PropertyHostFacade::setPropertyValue(const std::string& property_id, const std::string& res_id, const std::vector<uint8_t>& data, bool notify) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
+        [&property_id](const PropertyMetadata& p) {
+            return p.property_id == property_id;
+        });
+    
+    if (it != pimpl_->properties_.end()) {
+        it->data = data;
+        if (notify) {
+            notify_property_updated(property_id);
+        }
+    }
+}
+
+std::vector<uint8_t> PropertyHostFacade::getProperty(const std::string& property_id) const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
+        [&property_id](const PropertyMetadata& p) {
+            return p.property_id == property_id;
+        });
+    
+    if (it != pimpl_->properties_.end()) {
+        return it->data;
+    }
+    return {};
+}
+
+std::vector<PropertySubscription> PropertyHostFacade::get_subscriptions() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->subscriptions_;
+}
+
+void PropertyHostFacade::shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [subscriber_muid, &property_id](const PropertySubscription& sub) {
+            return sub.subscriber_muid == subscriber_muid && sub.property_id == property_id;
+        });
+    
+    pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
 }
 
 } // namespace properties

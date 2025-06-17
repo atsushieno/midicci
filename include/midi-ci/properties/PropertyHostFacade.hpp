@@ -15,6 +15,12 @@ namespace properties {
 class MidiCIServicePropertyRules;
 struct PropertyMetadata;
 
+struct PropertySubscription {
+    uint32_t subscriber_muid;
+    std::string property_id;
+    std::string subscription_id;
+};
+
 class PropertyHostFacade {
 public:
     using PropertyUpdatedCallback = std::function<void(const std::string&)>;
@@ -42,6 +48,12 @@ public:
     void notify_property_updated(const std::string& property_id);
     
     void set_property_updated_callback(PropertyUpdatedCallback callback);
+    
+    // Additional methods for test support
+    void setPropertyValue(const std::string& property_id, const std::string& res_id, const std::vector<uint8_t>& data, bool notify);
+    std::vector<uint8_t> getProperty(const std::string& property_id) const;
+    std::vector<PropertySubscription> get_subscriptions() const;
+    void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id);
     
 private:
     class Impl;

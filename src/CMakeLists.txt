@@ -14,6 +14,7 @@ set(MIDI_CI_SOURCES
     midi-ci/properties/ObservablePropertyList.cpp
     midi-ci/properties/CommonRulesPropertyHelper.cpp
     midi-ci/properties/CommonRulesPropertyClient.cpp
+    midi-ci/properties/CommonRulesPropertyMetadata.cpp
     midi-ci/ump/Ump.cpp
     midi-ci/ump/UmpRetriever.cpp
 )

@@ -1,4 +1,9 @@
 #include "TestCIMediator.hpp"
+#include "TestPropertyRules.hpp"
+#include "midi-ci/core/MidiCIDevice.hpp"
+#include <memory>
+
+using namespace midi_ci::core;
 
 TestCIMediator::TestCIMediator() {
     device1_ = std::make_unique<MidiCIDevice>(19474 & 0x7F7F7F7F);
@@ -19,4 +24,10 @@ TestCIMediator::TestCIMediator() {
     
     device1_->initialize();
     device2_->initialize();
+    
+    auto property_rules1 = std::make_unique<TestPropertyRules>();
+    auto property_rules2 = std::make_unique<TestPropertyRules>();
+    
+    device1_->get_property_host_facade().set_property_rules(std::move(property_rules1));
+    device2_->get_property_host_facade().set_property_rules(std::move(property_rules2));
 }

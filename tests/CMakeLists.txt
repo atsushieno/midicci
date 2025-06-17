@@ -18,7 +18,6 @@ set(GTEST_SOURCES
 
 set(CUSTOM_TEST_SOURCES
     test_main.cpp
-    test_midi_ci_device.cpp
 )
 
 add_executable(midi-ci-gtest ${GTEST_SOURCES})

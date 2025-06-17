@@ -6,7 +6,7 @@ TEST(MidiCIDeviceTest, initialState) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     
-    EXPECT_EQ(0, device1.get_device_info().manufacturer_id);
+    EXPECT_EQ("", device1.get_device_info().manufacturer);
     EXPECT_EQ(19474, device1.get_muid());
 }
 
@@ -24,6 +24,6 @@ TEST(MidiCIDeviceTest, basicRun) {
     auto conn = it->second;
     ASSERT_NE(nullptr, conn) << "conn";
     
-    EXPECT_EQ(device2.get_device_info().manufacturer_id, 
-              conn->get_device_info()->manufacturer_id) << "conn.device.manufacturer";
+    EXPECT_EQ(device2.get_device_info().manufacturer, 
+              conn->get_device_info()->manufacturer) << "conn.device.manufacturer";
 }

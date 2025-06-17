@@ -2,7 +2,7 @@
 
 #include "midi-ci/properties/PropertyClientFacade.hpp"
 #include "midi-ci/properties/CommonRulesPropertyHelper.hpp"
-#include "midi-ci/properties/PropertyManager.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include <memory>
 #include <vector>
 #include <functional>

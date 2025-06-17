@@ -1,6 +1,6 @@
 #include "ClientConnectionModel.hpp"
 #include "CIDeviceModel.hpp"
-#include "midi-ci/properties/PropertyManager.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include <mutex>
 #include <iostream>
 

@@ -11,7 +11,7 @@ set(MIDI_CI_SOURCES
     midi-ci/properties/PropertyChunkManager.cpp
     midi-ci/properties/PropertyClientFacade.cpp
     midi-ci/properties/PropertyHostFacade.cpp
-    midi-ci/properties/PropertyManager.cpp
+    midi-ci/properties/ObsevablePropertyList.cpp
     midi-ci/properties/CommonRulesPropertyHelper.cpp
     midi-ci/properties/CommonRulesPropertyClient.cpp
     midi-ci/ump/Ump.cpp
@@ -25,7 +25,7 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/core/DeviceConfig.hpp
     ../include/midi-ci/messages/Message.hpp
     ../include/midi-ci/messages/Messenger.hpp
-    ../include/midi-ci/properties/PropertyManager.hpp
+    ../include/midi-ci/properties/ObservablePropertyList.hpp
     ../include/midi-ci/properties/PropertyChunkManager.hpp
     ../include/midi-ci/properties/PropertyCommonRules.hpp
     ../include/midi-ci/properties/CommonRulesPropertyHelper.hpp

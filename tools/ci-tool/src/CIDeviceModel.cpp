@@ -1,6 +1,6 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
-#include "midi-ci/properties/PropertyManager.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include <mutex>
 #include <iostream>
 

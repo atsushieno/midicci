@@ -6,7 +6,7 @@ TEST(MidiCIDeviceTest, initialState) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     
-    EXPECT_EQ("", device1.get_device_info().manufacturer);
+    EXPECT_EQ("Generic MIDI-CI Device", device1.get_device_info().manufacturer);
     EXPECT_EQ(19474, device1.get_muid());
 }
 

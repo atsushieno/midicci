@@ -459,15 +459,24 @@ void InitiatorWidget::updatePropertyList()
     }
     
     if (targetConnection) {
-        auto metadata = targetConnection->get_metadata_list();
-        for (const auto& meta : metadata) {
-            m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
+        const auto& properties = targetConnection->get_properties();
+        auto properties_vec = properties.to_vector();
+        
+        for (const auto& property : properties_vec) {
+            m_propertyList->addItem(QString::fromStdString(property.id));
         }
         
-        if (metadata.empty()) {
-            m_propertyList->addItem("DeviceInfo");
-            m_propertyList->addItem("ChannelList");
-            m_propertyList->addItem("JSONSchema");
+        if (properties_vec.empty()) {
+            auto metadata = targetConnection->get_metadata_list();
+            for (const auto& meta : metadata) {
+                m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
+            }
+            
+            if (metadata.empty()) {
+                m_propertyList->addItem("DeviceInfo");
+                m_propertyList->addItem("ChannelList");
+                m_propertyList->addItem("JSONSchema");
+            }
         }
     }
 }

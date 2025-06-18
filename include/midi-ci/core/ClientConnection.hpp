@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <optional>
 #include "../json/Json.hpp"
 #include "../profiles/ProfileClientFacade.hpp"
 #include "../properties/PropertyClientFacade.hpp"

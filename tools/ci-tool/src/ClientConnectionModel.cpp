@@ -16,6 +16,7 @@ public:
     std::shared_ptr<midi_ci::core::ClientConnection> connection_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> profiles_;
     MutableStateList<SubscriptionState> subscriptions_;
+    MutableStateList<midi_ci::properties::PropertyValue> properties_;
     MutableState<std::string> device_info_;
     
     std::vector<ProfilesChangedCallback> profiles_changed_callbacks_;
@@ -45,6 +46,10 @@ const MutableStateList<std::shared_ptr<MidiCIProfileState>>& ClientConnectionMod
 
 const MutableStateList<SubscriptionState>& ClientConnectionModel::get_subscriptions() const {
     return pimpl_->subscriptions_;
+}
+
+const MutableStateList<midi_ci::properties::PropertyValue>& ClientConnectionModel::get_properties() const {
+    return pimpl_->properties_;
 }
 
 std::string ClientConnectionModel::get_device_info_value() const {
@@ -166,11 +171,53 @@ void ClientConnectionModel::setup_property_listeners() {
     auto* observable_properties = property_facade.get_properties();
     
     if (observable_properties) {
+        auto initial_values = observable_properties->getValues();
+        for (const auto& value : initial_values) {
+            pimpl_->properties_.add(value);
+        }
+        
         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
+            if (pimpl_->connection_) {
+                auto& property_facade = pimpl_->connection_->get_property_client_facade();
+                auto* observable_properties = property_facade.get_properties();
+                if (observable_properties) {
+                    auto current_values = observable_properties->getValues();
+                    auto& properties_list = pimpl_->properties_;
+                    
+                    auto properties_vec = properties_list.to_vector();
+                    auto it = std::find_if(properties_vec.begin(), properties_vec.end(),
+                        [&propertyId](const midi_ci::properties::PropertyValue& prop) {
+                            return prop.id == propertyId;
+                        });
+                    
+                    auto new_prop_it = std::find_if(current_values.begin(), current_values.end(),
+                        [&propertyId](const midi_ci::properties::PropertyValue& prop) {
+                            return prop.id == propertyId;
+                        });
+                    
+                    if (new_prop_it != current_values.end()) {
+                        if (it != properties_vec.end()) {
+                            properties_list.remove(*it);
+                        }
+                        properties_list.add(*new_prop_it);
+                    }
+                }
+            }
             on_property_value_updated();
         });
         
         observable_properties->addPropertyCatalogUpdatedCallback([this]() {
+            if (pimpl_->connection_) {
+                auto& property_facade = pimpl_->connection_->get_property_client_facade();
+                auto* observable_properties = property_facade.get_properties();
+                if (observable_properties) {
+                    pimpl_->properties_.clear();
+                    auto current_values = observable_properties->getValues();
+                    for (const auto& value : current_values) {
+                        pimpl_->properties_.add(value);
+                    }
+                }
+            }
             on_property_value_updated();
         });
     }

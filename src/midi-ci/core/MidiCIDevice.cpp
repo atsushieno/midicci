@@ -1,6 +1,6 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
-#include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/MidiCIDeviceConfiguration.hpp"
 #include "midi-ci/messages/Message.hpp"
 #include "midi-ci/messages/Messenger.hpp"
 #include "midi-ci/transport/SysExTransport.hpp"
@@ -14,13 +14,13 @@ namespace core {
 
 class MidiCIDevice::Impl {
 public:
-    Impl(MidiCIDevice& device, DeviceConfig& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid), initialized_(false),
+    Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid), initialized_(false),
         profile_host_facade_(std::make_unique<profiles::ProfileHostFacade>(device)),
         property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)),
         messenger_(device) {}
     
     uint8_t device_id_;
-    DeviceConfig& config_;
+    MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
     bool initialized_;
     MessageCallback message_callback_;
@@ -35,7 +35,7 @@ public:
     messages::Messenger messenger_;
 };
 
-MidiCIDevice::MidiCIDevice(uint32_t muid, DeviceConfig& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, config, muid)) {
+MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, config, muid)) {
     if (logger) {
         set_logger(std::move(logger));
     }
@@ -134,7 +134,7 @@ midi_ci::core::DeviceInfo& MidiCIDevice::get_device_info() const {
     return pimpl_->config_.device_info;
 }
 
-midi_ci::core::DeviceConfig& MidiCIDevice::get_config() const {
+midi_ci::core::MidiCIDeviceConfiguration& MidiCIDevice::get_config() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->config_;
 }

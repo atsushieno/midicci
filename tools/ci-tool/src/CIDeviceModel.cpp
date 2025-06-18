@@ -8,7 +8,7 @@ namespace ci_tool {
 
 class CIDeviceModel::Impl {
 public:
-    explicit Impl(CIDeviceManager& parent, midi_ci::core::DeviceConfig& config, uint32_t muid,
+    explicit Impl(CIDeviceManager& parent, midi_ci::core::MidiCIDeviceConfiguration& config, uint32_t muid,
                   CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
                   std::function<void(const std::string&, bool)> logger)
         : parent_(parent), config_(config), muid_(muid),
@@ -17,7 +17,7 @@ public:
           receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
     
     CIDeviceManager& parent_;
-    midi_ci::core::DeviceConfig& config_;
+    midi_ci::core::MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
     CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
@@ -38,7 +38,7 @@ public:
     mutable std::recursive_mutex mutex_{};
 };
 
-CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midi_ci::core::DeviceConfig& config,
+CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midi_ci::core::MidiCIDeviceConfiguration& config,
                            uint32_t muid, CIOutputSender ci_output_sender,
                            MidiMessageReportSender midi_message_report_sender,
                            std::function<void(const std::string&, bool)> logger)

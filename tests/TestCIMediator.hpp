@@ -4,7 +4,7 @@
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/properties/PropertyHostFacade.hpp"
 #include "midi-ci/profiles/ProfileHostFacade.hpp"
-#include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/MidiCIDeviceConfiguration.hpp"
 #include <memory>
 #include <vector>
 #include <cstdint>
@@ -22,7 +22,7 @@ public:
     MidiCIDevice& getDevice2() { return *device2_; }
     
 private:
-    DeviceConfig config_{};
+    MidiCIDeviceConfiguration config_{};
     std::unique_ptr<MidiCIDevice> device1_;
     std::unique_ptr<MidiCIDevice> device2_;
     

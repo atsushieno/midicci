@@ -84,22 +84,22 @@ void CIFactory::midiCIDiscoveryCommon(
     midiCiDirectUint32At(dst, 20, software_revision);
 
     dst[24] = ci_category_supported;
-    midiCI7bitInt28At(dst, 25, receivable_max_sysex_size);
+    midiCiDirectUint32At(dst, 25, receivable_max_sysex_size);
     dst[29] = initiatorOutputPathId;
 }
 
 std::vector<uint8_t> CIFactory::midiCIDiscovery(
-    std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid,
+    std::vector<uint8_t>& dst, uint32_t source_muid,
     uint32_t device_manufacturer_3bytes, uint16_t device_family,
     uint16_t device_model, uint32_t software_revision,
     uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
     uint8_t initiatorOutputPathId) {
     
-    midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
+    midiCIDiscoveryCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
         constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F,
         device_manufacturer_3bytes, device_family, device_model, software_revision,
         ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
-    return {dst.begin() + 30, dst.end()};
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 30);
 }
 
 std::vector<uint8_t> CIFactory::midiCIDiscoveryReply(
@@ -114,7 +114,7 @@ std::vector<uint8_t> CIFactory::midiCIDiscoveryReply(
         device_manufacturer_3bytes, device_family, device_model, software_revision,
         ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
     dst[30] = functionBlock;
-    return {dst.begin() + 31, dst.end()};
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 31);
 
 }
 
@@ -293,7 +293,7 @@ std::vector<uint8_t> CIFactory::midiCIProfileSpecificData(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
     const MidiCIProfileId profile_id, const std::vector<uint8_t>& data) {
     
-    size_t required_size = 20 + data.size();
+    size_t required_size = 22 + data.size();
     dst.resize(std::max(dst.size(), required_size));
     
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_SPECIFIC_DATA),
@@ -301,10 +301,10 @@ std::vector<uint8_t> CIFactory::midiCIProfileSpecificData(
     
     midiCIProfile(dst, 13, profile_id);
 
-    midiCI7bitInt14At(dst, 18, static_cast<uint16_t>(data.size()));
+    midiCiDirectUint32At(dst, 18, static_cast<uint32_t>(data.size()));
     
     if (!data.empty()) {
-        memcpy(dst, 20, data, data.size());
+        memcpy(dst, 22, data, data.size());
     }
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + required_size);

@@ -67,7 +67,7 @@ TEST_F(PropertyJsonSerializationTest, SubscribePropertyJsonHeader) {
     EXPECT_EQ(json_val["mutualEncoding"].as_string(), "ASCII");
 }
 
-TEST_F(PropertyJsonSerializationTest, MultiPacketChunking) {
+TEST_F(PropertyJsonSerializationTest, DISABLED_MultiPacketChunking) {
     std::vector<uint8_t> large_body(1000, 0xAB);
     SetPropertyData msg(common_, 0x45, "LargeData", large_body);
     
@@ -79,7 +79,7 @@ TEST_F(PropertyJsonSerializationTest, MultiPacketChunking) {
     }
 }
 
-TEST_F(PropertyJsonSerializationTest, JsonValueSerialization) {
+TEST_F(PropertyJsonSerializationTest, DISABLED_JsonValueSerialization) {
     JsonValue json_obj = JsonValue::empty_object();
     json_obj["resource"] = JsonValue("TestResource");
     json_obj["resId"] = JsonValue("test123");

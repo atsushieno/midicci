@@ -249,10 +249,9 @@ JsonValue JsonParser::parse_string() {
                     if (pos_ + 4 > json_.size()) {
                         throw std::runtime_error("Invalid unicode escape");
                     }
-                    std::string hex = json_.substr(pos_, 4);
+                    str += "\\u";
+                    str += json_.substr(pos_, 4);
                     pos_ += 4;
-                    int codepoint = std::stoi(hex, nullptr, 16);
-                    str += static_cast<char>(codepoint);
                     break;
                 }
                 default:

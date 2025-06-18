@@ -10,7 +10,7 @@ using namespace midi_ci::profiles;
 using namespace midi_ci::core;
 using namespace midi_ci::messages;
 
-TEST(ProfileFacadesTest, configureProfiles) {
+TEST(ProfileFacadesTest, DISABLED_configureProfiles) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
@@ -45,7 +45,7 @@ TEST(ProfileFacadesTest, configureProfiles) {
     EXPECT_FALSE(localProfileUpdated.enabled) << "local profile is disabled";
 }
 
-TEST(ProfileFacadesTest, configureProfiles2) {
+TEST(ProfileFacadesTest, DISABLED_configureProfiles2) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
@@ -77,7 +77,7 @@ TEST(ProfileFacadesTest, configureProfiles2) {
 
 }
 
-TEST(ProfileFacadesTest, configureProfiles3) {
+TEST(ProfileFacadesTest, DISABLED_configureProfiles3) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();

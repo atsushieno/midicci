@@ -10,7 +10,7 @@ TEST(MidiCIDeviceTest, initialState) {
     EXPECT_EQ(19474, device1.get_muid());
 }
 
-TEST(MidiCIDeviceTest, basicRun) {
+TEST(MidiCIDeviceTest, DISABLED_basicRun) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();

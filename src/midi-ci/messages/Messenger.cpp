@@ -117,7 +117,7 @@ void Messenger::send_profile_inquiry(uint8_t group, uint32_t destination_muid) {
 }
 
 void Messenger::send_set_profile_on(uint8_t group, uint8_t address, uint32_t destination_muid,
-                                   const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
+                                   const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels) {
     Common common(pimpl_->device_.get_muid(), destination_muid, address, group);
 
     SetProfileOn set_on(common, profile_id, num_channels);
@@ -125,7 +125,7 @@ void Messenger::send_set_profile_on(uint8_t group, uint8_t address, uint32_t des
 }
 
 void Messenger::send_set_profile_off(uint8_t group, uint8_t address, uint32_t destination_muid,
-                                    const std::vector<uint8_t>& profile_id) {
+                                    const midi_ci::profiles::MidiCIProfileId& profile_id) {
     Common common(pimpl_->device_.get_muid(), destination_muid, address, group);
 
     SetProfileOff set_off(common, profile_id);
@@ -133,7 +133,7 @@ void Messenger::send_set_profile_off(uint8_t group, uint8_t address, uint32_t de
 }
 
 void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address,
-                                          const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
+                                          const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels) {
     using namespace midi_ci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
@@ -143,7 +143,7 @@ void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address,
 }
 
 void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address,
-                                           const std::vector<uint8_t>& profile_id, uint16_t num_channels) {
+                                           const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels) {
     using namespace midi_ci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
@@ -153,7 +153,7 @@ void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address,
 }
 
 void Messenger::send_profile_added_report(uint8_t group, uint8_t address,
-                                        const std::vector<uint8_t>& profile_id) {
+                                        const midi_ci::profiles::MidiCIProfileId& profile_id) {
     using namespace midi_ci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
@@ -163,7 +163,7 @@ void Messenger::send_profile_added_report(uint8_t group, uint8_t address,
 }
 
 void Messenger::send_profile_removed_report(uint8_t group, uint8_t address,
-                                          const std::vector<uint8_t>& profile_id) {
+                                          const midi_ci::profiles::MidiCIProfileId& profile_id) {
     using namespace midi_ci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
@@ -283,7 +283,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
-                auto [enabled_profiles, disabled_profiles] = core::CIRetrieval::get_profile_set(data);
+                const auto [enabled_profiles, disabled_profiles] = core::CIRetrieval::get_profile_set(data);
                 ProfileReply reply(common, enabled_profiles, disabled_profiles);
                 pimpl_->log_message(reply, false);
                 processProfileReply(reply);
@@ -292,7 +292,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ADDED_REPORT: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                auto profile_id = core::CIRetrieval::get_profile_id(data);
                 ProfileAdded added(common, profile_id);
                 pimpl_->log_message(added, false);
                 processProfileAddedReport(added);
@@ -301,7 +301,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_REMOVED_REPORT: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                auto profile_id = core::CIRetrieval::get_profile_id(data);
                 ProfileRemoved removed(common, profile_id);
                 pimpl_->log_message(removed, false);
                 processProfileRemovedReport(removed);
@@ -310,7 +310,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ENABLED_REPORT: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 ProfileEnabled enabled(common, profile_id, channels);
                 pimpl_->log_message(enabled, false);
@@ -320,7 +320,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DISABLED_REPORT: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 ProfileDisabled disabled(common, profile_id, channels);
                 pimpl_->log_message(disabled, false);
@@ -402,7 +402,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_ON: {
             if (data.size() >= 20) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
                 SetProfileOn set_on(common, profile_id, channels);
                 pimpl_->log_message(set_on, false);
@@ -412,7 +412,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_OFF: {
             if (data.size() >= 18) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 SetProfileOff set_off(common, profile_id);
                 pimpl_->log_message(set_off, false);
                 processSetProfileOff(set_off);
@@ -497,7 +497,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DETAILS_REPLY: {
             if (data.size() >= 22) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 uint8_t target = data[18];
                 uint16_t data_size = data[19] | (data[20] << 7);
                 std::vector<uint8_t> profile_data(data.begin() + 21, data.begin() + 21 + data_size);
@@ -509,7 +509,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SPECIFIC_DATA: {
             if (data.size() >= 22) {
-                std::vector<uint8_t> profile_id = core::CIRetrieval::get_profile_id(data);
+                midi_ci::profiles::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
                 uint16_t data_length = core::CIRetrieval::get_profile_specific_data_size(data);
                 std::vector<uint8_t> profile_data(data.begin() + 22, data.begin() + 22 + data_length);
                 ProfileSpecificData specific_data(common, profile_id, profile_data);
@@ -640,8 +640,8 @@ EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) 
 std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileInquiry& msg) {
     std::vector<ProfileReply> replies;
 
-    std::vector<std::vector<uint8_t>> enabled_profiles;
-    std::vector<std::vector<uint8_t>> disabled_profiles;
+    std::vector<midi_ci::profiles::MidiCIProfileId> enabled_profiles;
+    std::vector<midi_ci::profiles::MidiCIProfileId> disabled_profiles;
 
     replies.emplace_back(
         Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),

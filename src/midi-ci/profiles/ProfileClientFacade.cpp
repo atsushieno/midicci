@@ -57,16 +57,14 @@ void ProfileClientFacade::process_profile_reply(const messages::ProfileReply& ms
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     for (const auto& profile_data : msg.get_enabled_profiles()) {
-        MidiCIProfileId profile_id(profile_data);
         uint16_t num_channels = (msg.get_common().address >= 0x7E) ? 0 : 1;
-        MidiCIProfile profile(profile_id, msg.get_common().group, msg.get_common().address, true, num_channels);
+        MidiCIProfile profile(profile_data, msg.get_common().group, msg.get_common().address, true, num_channels);
         pimpl_->profiles_->add(profile);
     }
     
     for (const auto& profile_data : msg.get_disabled_profiles()) {
-        MidiCIProfileId profile_id(profile_data);
         uint16_t num_channels = (msg.get_common().address >= 0x7E) ? 0 : 1;
-        MidiCIProfile profile(profile_id, msg.get_common().group, msg.get_common().address, false, num_channels);
+        MidiCIProfile profile(profile_data, msg.get_common().group, msg.get_common().address, false, num_channels);
         pimpl_->profiles_->add(profile);
     }
 }

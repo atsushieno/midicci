@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <utility>
 #include "MidiCIConstants.hpp"
+#include "midi-ci/profiles/MidiCIProfile.hpp"
 
 namespace midi_ci {
 namespace core {
@@ -22,10 +23,10 @@ public:
     
     static uint32_t get_max_sysex_size(const std::vector<uint8_t>& sysex);
     
-    static std::pair<std::vector<std::vector<uint8_t>>, std::vector<std::vector<uint8_t>>> 
+    static std::pair<std::vector<midi_ci::profiles::MidiCIProfileId>, std::vector<midi_ci::profiles::MidiCIProfileId>>
     get_profile_set(const std::vector<uint8_t>& sysex);
     
-    static std::vector<uint8_t> get_profile_id(const std::vector<uint8_t>& sysex);
+    static midi_ci::profiles::MidiCIProfileId get_profile_id(const std::vector<uint8_t>& sysex);
     
     static uint16_t get_profile_enabled_channels(const std::vector<uint8_t>& sysex);
     
@@ -42,7 +43,7 @@ public:
     static uint16_t get_property_chunk_index(const std::vector<uint8_t>& sysex);
 
 private:
-    static std::vector<uint8_t> get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
+    static midi_ci::profiles::MidiCIProfileId get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
 };
 
 } // namespace core

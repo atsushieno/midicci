@@ -124,7 +124,7 @@ std::string DiscoveryReply::get_body_string() const {
     return oss.str();
 }
 
-SetProfileOn::SetProfileOn(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+SetProfileOn::SetProfileOn(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::SetProfileOn, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> SetProfileOn::serialize() const {
@@ -144,9 +144,9 @@ std::string SetProfileOn::get_label() const {
 std::string SetProfileOn::get_body_string() const {
     std::ostringstream oss;
     oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
     oss << ", numChannels=" << num_channels_;
     return oss.str();
@@ -456,7 +456,7 @@ std::string ProfileInquiry::get_body_string() const {
     return "";
 }
 
-SetProfileOff::SetProfileOff(const Common& common, const std::vector<uint8_t>& profile_id)
+SetProfileOff::SetProfileOff(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::SetProfileOff, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> SetProfileOff::serialize() const {
@@ -475,15 +475,15 @@ std::string SetProfileOff::get_label() const {
 
 std::string SetProfileOff::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
     return oss.str();
 }
 
-ProfileEnabledReport::ProfileEnabledReport(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+ProfileEnabledReport::ProfileEnabledReport(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileEnabledReport::serialize() const {
@@ -501,16 +501,16 @@ std::string ProfileEnabledReport::get_label() const {
 
 std::string ProfileEnabledReport::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
-    oss << ", numChannels=" << num_channels_;
+    oss << ", numChannels=" << std::dec << num_channels_;
     return oss.str();
 }
 
-ProfileDisabledReport::ProfileDisabledReport(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+ProfileDisabledReport::ProfileDisabledReport(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileDisabledReport::serialize() const {
@@ -528,16 +528,16 @@ std::string ProfileDisabledReport::get_label() const {
 
 std::string ProfileDisabledReport::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
     oss << ", numChannels=" << num_channels_;
     return oss.str();
 }
 
-ProfileAddedReport::ProfileAddedReport(const Common& common, const std::vector<uint8_t>& profile_id)
+ProfileAddedReport::ProfileAddedReport(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileAddedReport::serialize() const {
@@ -555,15 +555,15 @@ std::string ProfileAddedReport::get_label() const {
 
 std::string ProfileAddedReport::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
     return oss.str();
 }
 
-ProfileRemovedReport::ProfileRemovedReport(const Common& common, const std::vector<uint8_t>& profile_id)
+ProfileRemovedReport::ProfileRemovedReport(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileRemovedReport::serialize() const {
@@ -581,10 +581,10 @@ std::string ProfileRemovedReport::get_label() const {
 
 std::string ProfileRemovedReport::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ":";
-        oss << std::hex << static_cast<int>(profile_id_[i]);
+        oss << std::hex << static_cast<int>(profile_id_.data[i]);
     }
     return oss.str();
 }
@@ -646,25 +646,16 @@ std::string Message::get_log_message() const {
     return oss.str();
 }
 
-ProfileReply::ProfileReply(const Common& common, const std::vector<std::vector<uint8_t>>& enabled_profiles, 
-                          const std::vector<std::vector<uint8_t>>& disabled_profiles)
+ProfileReply::ProfileReply(const Common& common, const std::vector<profiles::MidiCIProfileId>& enabled_profiles,
+                          const std::vector<profiles::MidiCIProfileId>& disabled_profiles)
     : SinglePacketMessage(MessageType::ProfileInquiryReply, common), enabled_profiles_(enabled_profiles), disabled_profiles_(disabled_profiles) {}
 
 std::vector<uint8_t> ProfileReply::serialize() const {
     std::vector<uint8_t> result;
     result.reserve(256);
-    
-    result.push_back(static_cast<uint8_t>(enabled_profiles_.size() & 0x7F));
-    for (const auto& profile : enabled_profiles_) {
-        result.insert(result.end(), profile.begin(), profile.end());
-    }
-    
-    result.push_back(static_cast<uint8_t>(disabled_profiles_.size() & 0x7F));
-    for (const auto& profile : disabled_profiles_) {
-        result.insert(result.end(), profile.begin(), profile.end());
-    }
-    
-    return result;
+    return core::CIFactory::midiCIProfileInquiryReply(result, common_.address,
+                                               common_.source_muid, common_.destination_muid,
+                                               enabled_profiles_, disabled_profiles_);
 }
 
 
@@ -783,11 +774,12 @@ std::string SubscribePropertyReply::get_body_string() const {
     return oss.str();
 }
 
-ProfileAdded::ProfileAdded(const Common& common, const std::vector<uint8_t>& profile_id)
+ProfileAdded::ProfileAdded(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileAdded::serialize() const {
-    return profile_id_;
+    std::vector<uint8_t> dst(256);
+    return midi_ci::core::CIFactory::midiCIProfileAddedRemoved(dst, common_.address, false, common_.source_muid, profile_id_);
 }
 
 std::string ProfileAdded::get_label() const {
@@ -795,14 +787,15 @@ std::string ProfileAdded::get_label() const {
 }
 
 std::string ProfileAdded::get_body_string() const {
-    return "profile_id_size=" + std::to_string(profile_id_.size());
+    return "profile_id_size=" + std::to_string(profile_id_.data.size());
 }
 
-ProfileRemoved::ProfileRemoved(const Common& common, const std::vector<uint8_t>& profile_id)
+ProfileRemoved::ProfileRemoved(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
 
 std::vector<uint8_t> ProfileRemoved::serialize() const {
-    return profile_id_;
+    std::vector<uint8_t> dst(256);
+    return midi_ci::core::CIFactory::midiCIProfileAddedRemoved(dst, common_.address, true, common_.source_muid, profile_id_);
 }
 
 std::string ProfileRemoved::get_label() const {
@@ -810,17 +803,15 @@ std::string ProfileRemoved::get_label() const {
 }
 
 std::string ProfileRemoved::get_body_string() const {
-    return "profile_id_size=" + std::to_string(profile_id_.size());
+    return "profile_id_size=" + std::to_string(profile_id_.data.size());
 }
 
-ProfileEnabled::ProfileEnabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+ProfileEnabled::ProfileEnabled(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileEnabled::serialize() const {
-    std::vector<uint8_t> result = profile_id_;
-    result.push_back(static_cast<uint8_t>(num_channels_ & 0xFF));
-    result.push_back(static_cast<uint8_t>((num_channels_ >> 8) & 0xFF));
-    return result;
+    std::vector<uint8_t> dst(256);
+    return midi_ci::core::CIFactory::midiCIProfileReport(dst, common_.address, true, common_.source_muid, profile_id_, num_channels_);
 }
 
 std::string ProfileEnabled::get_label() const {
@@ -828,18 +819,16 @@ std::string ProfileEnabled::get_label() const {
 }
 
 std::string ProfileEnabled::get_body_string() const {
-    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+    return "profile_id_size=" + std::to_string(profile_id_.data.size()) +
            ", num_channels=" + std::to_string(num_channels_);
 }
 
-ProfileDisabled::ProfileDisabled(const Common& common, const std::vector<uint8_t>& profile_id, uint16_t num_channels)
+ProfileDisabled::ProfileDisabled(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
 std::vector<uint8_t> ProfileDisabled::serialize() const {
-    std::vector<uint8_t> result = profile_id_;
-    result.push_back(static_cast<uint8_t>(num_channels_ & 0xFF));
-    result.push_back(static_cast<uint8_t>((num_channels_ >> 8) & 0xFF));
-    return result;
+    std::vector<uint8_t> dst(256);
+    return midi_ci::core::CIFactory::midiCIProfileReport(dst, common_.address, false, common_.source_muid, profile_id_, num_channels_);
 }
 
 std::string ProfileDisabled::get_label() const {
@@ -847,19 +836,17 @@ std::string ProfileDisabled::get_label() const {
 }
 
 std::string ProfileDisabled::get_body_string() const {
-    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+    return "profile_id_size=" + std::to_string(profile_id_.data.size()) +
            ", num_channels=" + std::to_string(num_channels_);
 }
 
-ProfileDetailsReply::ProfileDetailsReply(const Common& common, const std::vector<uint8_t>& profile_id, 
+ProfileDetailsReply::ProfileDetailsReply(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id,
                                         uint8_t target, const std::vector<uint8_t>& data)
     : SinglePacketMessage(MessageType::ProfileInquiryReply, common), profile_id_(profile_id), target_(target), data_(data) {}
 
 std::vector<uint8_t> ProfileDetailsReply::serialize() const {
-    std::vector<uint8_t> result = profile_id_;
-    result.push_back(target_);
-    result.insert(result.end(), data_.begin(), data_.end());
-    return result;
+    std::vector<uint8_t> dst(256);
+    return midi_ci::core::CIFactory::midiCIProfileDetailsReply(dst, common_.address, false, common_.source_muid, profile_id_, target_, data_);
 }
 
 std::string ProfileDetailsReply::get_label() const {
@@ -867,7 +854,7 @@ std::string ProfileDetailsReply::get_label() const {
 }
 
 std::string ProfileDetailsReply::get_body_string() const {
-    return "profile_id_size=" + std::to_string(profile_id_.size()) + 
+    return "profile_id_size=" + std::to_string(profile_id_.data.size()) +
            ", target=" + std::to_string(target_) + 
            ", data_size=" + std::to_string(data_.size());
 }
@@ -933,17 +920,15 @@ std::string MidiMessageReportNotifyEnd::get_body_string() const {
     return "";
 }
 
-ProfileSpecificData::ProfileSpecificData(const Common& common, const std::vector<uint8_t>& profile_id, const std::vector<uint8_t>& data)
+ProfileSpecificData::ProfileSpecificData(const Common& common, const midi_ci::profiles::MidiCIProfileId& profile_id, const std::vector<uint8_t>& data)
     : SinglePacketMessage(MessageType::ProfileInquiry, common), profile_id_(profile_id), data_(data) {}
 
 std::vector<uint8_t> ProfileSpecificData::serialize() const {
     std::vector<uint8_t> data;
     data.resize(32 + data_.size());
-    
-    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
-    return core::CIFactory::midiCIProfileSpecificData(data, common_.address, 
-                                                      common_.source_muid, common_.destination_muid, 
-                                                      profile_id, data_);
+    return core::CIFactory::midiCIProfileSpecificData(data, common_.address,
+                                                      common_.source_muid, common_.destination_muid,
+                                                      profile_id_, data_);
 }
 
 std::string ProfileSpecificData::get_label() const {
@@ -952,10 +937,10 @@ std::string ProfileSpecificData::get_label() const {
 
 std::string ProfileSpecificData::get_body_string() const {
     std::ostringstream oss;
-    oss << "profileId=[";
-    for (size_t i = 0; i < profile_id_.size(); ++i) {
+    oss << "profileId=[" << std::hex;
+    for (size_t i = 0; i < profile_id_.data.size(); ++i) {
         if (i > 0) oss << ",";
-        oss << "0x" << std::hex << static_cast<int>(profile_id_[i]);
+        oss << "0x" << static_cast<int>(profile_id_.data[i]);
     }
     oss << "], dataSize=" << std::dec << data_.size();
     return oss.str();

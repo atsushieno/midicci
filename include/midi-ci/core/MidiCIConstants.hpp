@@ -38,6 +38,30 @@ struct DeviceInfo {
 
 namespace constants {
 
+constexpr uint8_t UNIVERSAL_SYSEX = 0x7E;
+constexpr uint8_t SYSEX_SUB_ID_MIDI_CI = 0x0D;
+
+constexpr uint8_t CI_VERSION_AND_FORMAT = 0x2;
+constexpr uint8_t PROPERTY_EXCHANGE_MAJOR_VERSION = 0;
+constexpr uint8_t PROPERTY_EXCHANGE_MINOR_VERSION = 0;
+
+constexpr uint8_t ENDPOINT_STATUS_PRODUCT_INSTANCE_ID = 0;
+
+constexpr uint8_t DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE = 4096;
+constexpr uint8_t DEFAULT_MAX_PROPERTY_CHUNK_SIZE = 4096 - 256;
+constexpr uint8_t DEFAULT_MAX_SIMULTANEOUS_PROPERTY_REQUESTS = 127;
+
+constexpr uint8_t ADDRESS_GROUP = 0x7E;
+constexpr uint8_t ADDRESS_FUNCTION_BLOCK = 0x7F;
+
+constexpr uint8_t NO_FUNCTION_BLOCK = 0x7F;
+constexpr uint8_t WHOLE_FUNCTION_BLOCK = 0x7F;
+
+constexpr uint32_t BROADCAST_MUID_28 = 0xFFFFFFF;
+constexpr uint32_t BROADCAST_MUID_32 = 0x7F7F7F7F;
+
+constexpr uint8_t STANDARD_DEFINED_PROFILE = 0x7E;
+
 constexpr uint8_t MIDI_CI_SYSEX_START = 0xF0;
 constexpr uint8_t MIDI_CI_SYSEX_END = 0xF7;
 constexpr uint8_t MIDI_CI_UNIVERSAL_SYSEX_ID = 0x7E;
@@ -194,12 +218,6 @@ enum class MidiCISupportedCategories {
     // Even worse, the definition of those Three Ps had changed...
     THREE_P = PROFILE_CONFIGURATION + PROPERTY_EXCHANGE + PROCES_INQUIRY
 };
-
-// Default configuration values
-constexpr int DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE = 4096;
-constexpr int DEFAULT_MAX_PROPERTY_CHUNK_SIZE = 4096 - 256;
-constexpr uint8_t DEFAULT_MAX_SIMULTANEOUS_PROPERTY_REQUESTS = 127;
-constexpr uint8_t NO_FUNCTION_BLOCK = 0x7F;
 
 // Process Inquiry Features
 enum class MidiCIProcessInquiryFeatures : uint8_t {

@@ -12,6 +12,8 @@
 namespace midi_ci {
 namespace core {
 
+    using namespace midi_ci::core::constants;
+
 struct MidiCIDeviceConfiguration {
     // Device identification
     DeviceInfo device_info{0x654321, 0x4321, 0x765, 0x00000002,
@@ -58,8 +60,8 @@ struct MidiCIDeviceConfiguration {
     std::vector<std::unique_ptr<properties::PropertyMetadata>> property_metadata_list;
     
     // Constructor with backward compatibility for existing usage
-    MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE, 
-                             int max_chunk = DEFAULT_MAX_PROPERTY_CHUNK_SIZE, 
+    MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE,
+                             int max_chunk = DEFAULT_MAX_PROPERTY_CHUNK_SIZE,
                              const std::string& prod_id = "cpp-midi-ci", 
                              uint8_t group = 0)
         : receivable_max_sysex_size(max_sysex), max_property_chunk_size(max_chunk), 

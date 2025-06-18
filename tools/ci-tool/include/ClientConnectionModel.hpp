@@ -33,7 +33,7 @@ class ClientConnectionModel {
 public:
     using ProfilesChangedCallback = std::function<void()>;
     using PropertiesChangedCallback = std::function<void()>;
-    using DeviceInfoChangedCallback = std::function<void()>;
+    using DeviceDetailsChangedCallback = std::function<void()>;
     
     explicit ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
                                  std::shared_ptr<midi_ci::core::ClientConnection> connection);
@@ -70,11 +70,11 @@ public:
     
     void add_profiles_changed_callback(ProfilesChangedCallback callback);
     void add_properties_changed_callback(PropertiesChangedCallback callback);
-    void add_device_info_changed_callback(DeviceInfoChangedCallback callback);
+    void add_device_info_changed_callback(DeviceDetailsChangedCallback callback);
     
     void remove_profiles_changed_callback(const ProfilesChangedCallback& callback);
     void remove_properties_changed_callback(const PropertiesChangedCallback& callback);
-    void remove_device_info_changed_callback(const DeviceInfoChangedCallback& callback);
+    void remove_device_info_changed_callback(const DeviceDetailsChangedCallback& callback);
     
 private:
     void setup_profile_listeners();

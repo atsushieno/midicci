@@ -129,26 +129,12 @@ SetProfileOn::SetProfileOn(const Common& common, const std::vector<uint8_t>& pro
 
 std::vector<uint8_t> SetProfileOn::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileSet(data, common_.address, true, 
+                                             common_.source_muid, common_.destination_muid, 
+                                             profile_id, num_channels_);
 }
 
 std::string SetProfileOn::get_label() const {
@@ -389,21 +375,11 @@ EndpointInquiry::EndpointInquiry(const Common& common, uint8_t status)
 
 std::vector<uint8_t> EndpointInquiry::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(16);
+    data.resize(16);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(status_);
-    
-    return data;
+    return core::CIFactory::midiCIEndpointMessage(data, MIDI_CI_VERSION_1_2, 
+                                                 common_.source_muid, common_.destination_muid, 
+                                                 status_);
 }
 
 std::string EndpointInquiry::get_label() const {
@@ -422,21 +398,11 @@ EndpointReply::EndpointReply(const Common& common, uint8_t status, const std::ve
 
 std::vector<uint8_t> EndpointReply::serialize() const {
     std::vector<uint8_t> result;
-    result.reserve(32);
-
-    result.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    result.push_back(0x7F);
-    result.push_back(MIDI_CI_SUB_ID_1);
-    result.push_back(static_cast<uint8_t>(type_));
-    result.push_back(MIDI_CI_VERSION_1_2);
+    result.resize(32 + data_.size());
     
-    serialize_muid_32(result, common_.source_muid);
-    serialize_muid_32(result, common_.destination_muid);
-    
-    result.push_back(status_);
-    result.insert(result.end(), data_.begin(), data_.end());
-    
-    return result;
+    return core::CIFactory::midiCIEndpointMessageReply(result, MIDI_CI_VERSION_1_2, 
+                                                      common_.source_muid, common_.destination_muid, 
+                                                      status_, data_);
 }
 
 std::string EndpointReply::get_label() const {
@@ -457,21 +423,10 @@ InvalidateMUID::InvalidateMUID(const Common& common, uint32_t target_muid)
 
 std::vector<uint8_t> InvalidateMUID::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(20);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    serialize_muid_32(data, target_muid_);
-    
-    return data;
+    return core::CIFactory::midiCIInvalidateMuid(data, common_.address, 
+                                                common_.source_muid, target_muid_);
 }
 
 std::string InvalidateMUID::get_label() const {
@@ -506,23 +461,12 @@ SetProfileOff::SetProfileOff(const Common& common, const std::vector<uint8_t>& p
 
 std::vector<uint8_t> SetProfileOff::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileSet(data, common_.address, false, 
+                                             common_.source_muid, common_.destination_muid, 
+                                             profile_id, 0);
 }
 
 std::string SetProfileOff::get_label() const {
@@ -544,26 +488,11 @@ ProfileEnabledReport::ProfileEnabledReport(const Common& common, const std::vect
 
 std::vector<uint8_t> ProfileEnabledReport::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileReport(data, common_.address, true, 
+                                                common_.source_muid, profile_id, num_channels_);
 }
 
 std::string ProfileEnabledReport::get_label() const {
@@ -586,26 +515,11 @@ ProfileDisabledReport::ProfileDisabledReport(const Common& common, const std::ve
 
 std::vector<uint8_t> ProfileDisabledReport::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    data.push_back(static_cast<uint8_t>(num_channels_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((num_channels_ >> 7) & 0x7F));
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileReport(data, common_.address, false, 
+                                                common_.source_muid, profile_id, num_channels_);
 }
 
 std::string ProfileDisabledReport::get_label() const {
@@ -628,23 +542,11 @@ ProfileAddedReport::ProfileAddedReport(const Common& common, const std::vector<u
 
 std::vector<uint8_t> ProfileAddedReport::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileAddedRemoved(data, common_.address, false, 
+                                                     common_.source_muid, profile_id);
 }
 
 std::string ProfileAddedReport::get_label() const {
@@ -666,23 +568,11 @@ ProfileRemovedReport::ProfileRemovedReport(const Common& common, const std::vect
 
 std::vector<uint8_t> ProfileRemovedReport::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < midi_ci::core::constants::MIDI_CI_PROFILE_ID_SIZE && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileAddedRemoved(data, common_.address, true, 
+                                                     common_.source_muid, profile_id);
 }
 
 std::string ProfileRemovedReport::get_label() const {
@@ -708,24 +598,12 @@ MidiMessageReportInquiry::MidiMessageReportInquiry(const Common& common, uint8_t
 
 std::vector<uint8_t> MidiMessageReportInquiry::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(20);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(message_data_control_);
-    data.push_back(system_messages_);
-    data.push_back(channel_controller_messages_);
-    data.push_back(note_data_messages_);
-    
-    return data;
+    return core::CIFactory::midiCIMidiMessageReport(data, common_.address, 
+                                                   common_.source_muid, common_.destination_muid,
+                                                   message_data_control_, system_messages_, 
+                                                   channel_controller_messages_, note_data_messages_);
 }
 
 std::string MidiMessageReportInquiry::get_label() const {
@@ -1015,24 +893,12 @@ MidiMessageReportReply::MidiMessageReportReply(const Common& common, uint8_t sys
 
 std::vector<uint8_t> MidiMessageReportReply::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT_REPLY));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(system_messages_);
-    data.push_back(0); // reserved
-    data.push_back(channel_controller_messages_);
-    data.push_back(note_data_messages_);
-    
-    data.push_back(MIDI_CI_SYSEX_END);
-    return data;
+    return core::CIFactory::midiCIMidiMessageReportReply(data, common_.address, 
+                                                        common_.source_muid, common_.destination_muid,
+                                                        system_messages_, channel_controller_messages_, 
+                                                        note_data_messages_);
 }
 
 std::string MidiMessageReportReply::get_label() const {
@@ -1053,19 +919,10 @@ MidiMessageReportNotifyEnd::MidiMessageReportNotifyEnd(const Common& common)
 
 std::vector<uint8_t> MidiMessageReportNotifyEnd::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32);
+    data.resize(32);
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_END_OF_MIDI_MESSAGE));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(MIDI_CI_SYSEX_END);
-    return data;
+    return core::CIFactory::midiCIEndOfMidiMessage(data, common_.address, 
+                                                  common_.source_muid, common_.destination_muid);
 }
 
 std::string MidiMessageReportNotifyEnd::get_label() const {
@@ -1081,32 +938,12 @@ ProfileSpecificData::ProfileSpecificData(const Common& common, const std::vector
 
 std::vector<uint8_t> ProfileSpecificData::serialize() const {
     std::vector<uint8_t> data;
-    data.reserve(32 + data_.size());
+    data.resize(32 + data_.size());
     
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(CISubId2::PROFILE_SPECIFIC_DATA));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    serialize_muid_32(data, common_.destination_muid);
-    
-    for (size_t i = 0; i < 5 && i < profile_id_.size(); ++i) {
-        data.push_back(profile_id_[i]);
-    }
-    for (size_t i = profile_id_.size(); i < 5; ++i) {
-        data.push_back(0);
-    }
-    
-    uint16_t data_length = static_cast<uint16_t>(data_.size());
-    data.push_back(data_length & 0x7F);
-    data.push_back((data_length >> 7) & 0x7F);
-    
-    data.insert(data.end(), data_.begin(), data_.end());
-    
-    data.push_back(MIDI_CI_SYSEX_END);
-    return data;
+    midi_ci::profiles::MidiCIProfileId profile_id(profile_id_);
+    return core::CIFactory::midiCIProfileSpecificData(data, common_.address, 
+                                                      common_.source_muid, common_.destination_muid, 
+                                                      profile_id, data_);
 }
 
 std::string ProfileSpecificData::get_label() const {

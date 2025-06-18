@@ -14,12 +14,13 @@ namespace core {
 
 class MidiCIDevice::Impl {
 public:
-    Impl(MidiCIDevice& device, uint32_t muid) : device_id_(0x7F), muid_(muid), initialized_(false), 
+    Impl(MidiCIDevice& device, DeviceConfig& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid), initialized_(false),
         profile_host_facade_(std::make_unique<profiles::ProfileHostFacade>(device)),
         property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)),
         messenger_(device) {}
     
     uint8_t device_id_;
+    DeviceConfig& config_;
     uint32_t muid_;
     bool initialized_;
     MessageCallback message_callback_;
@@ -34,7 +35,7 @@ public:
     messages::Messenger messenger_;
 };
 
-MidiCIDevice::MidiCIDevice(uint32_t muid, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, muid)) {
+MidiCIDevice::MidiCIDevice(uint32_t muid, DeviceConfig& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, config, muid)) {
     if (logger) {
         set_logger(std::move(logger));
     }
@@ -128,14 +129,14 @@ uint32_t MidiCIDevice::get_muid() const noexcept {
     return pimpl_->muid_;
 }
 
-midi_ci::core::DeviceDetails MidiCIDevice::get_device_info() const {
+midi_ci::core::DeviceInfo& MidiCIDevice::get_device_info() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return midi_ci::core::DeviceDetails(0x7D, 0x00, 0x01, 0x01000000);
+    return pimpl_->config_.device_info;
 }
 
-midi_ci::core::DeviceConfig MidiCIDevice::get_config() const {
+midi_ci::core::DeviceConfig& MidiCIDevice::get_config() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return {};
+    return pimpl_->config_;
 }
 
 void MidiCIDevice::set_sysex_sender(MidiCIDevice::CIOutputSender sender) {

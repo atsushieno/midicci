@@ -6,8 +6,9 @@
 using namespace midi_ci::core;
 
 TestCIMediator::TestCIMediator() {
-    device1_ = std::make_unique<MidiCIDevice>(19474 & 0x7F7F7F7F);
-    device2_ = std::make_unique<MidiCIDevice>(37564 & 0x7F7F7F7F);
+    config_.device_info = {0, 0, 0, 0, "TestDevice", "TestInitiatorFamily", "TestInitiatorModel", "0.0", "ABCDEFGH"};
+    device1_ = std::make_unique<MidiCIDevice>(19474 & 0x7F7F7F7F, config_);
+    device2_ = std::make_unique<MidiCIDevice>(37564 & 0x7F7F7F7F, config_);
     
     device1Sender_ = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         device2_->processInput(group, data);

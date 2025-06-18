@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <utility>
-#include "../core/MidiCIConstants.hpp"
+#include "MidiCIConstants.hpp"
 
 namespace midi_ci {
 namespace core {

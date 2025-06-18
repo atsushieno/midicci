@@ -8,15 +8,16 @@ namespace ci_tool {
 
 class CIDeviceModel::Impl {
 public:
-    explicit Impl(CIDeviceManager& parent, uint32_t muid,
+    explicit Impl(CIDeviceManager& parent, midi_ci::core::DeviceConfig& config, uint32_t muid,
                   CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
                   std::function<void(const std::string&, bool)> logger)
-        : parent_(parent), muid_(muid),
+        : parent_(parent), config_(config), muid_(muid),
           ci_output_sender_(ci_sender), midi_message_report_sender_(mmr_sender),
           logger_(logger),
           receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
     
     CIDeviceManager& parent_;
+    midi_ci::core::DeviceConfig& config_;
     uint32_t muid_;
     CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
@@ -37,11 +38,11 @@ public:
     mutable std::recursive_mutex mutex_{};
 };
 
-CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, uint32_t muid,
-                           CIOutputSender ci_output_sender,
+CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midi_ci::core::DeviceConfig& config,
+                           uint32_t muid, CIOutputSender ci_output_sender,
                            MidiMessageReportSender midi_message_report_sender,
                            std::function<void(const std::string&, bool)> logger)
-    : pimpl_(std::make_unique<Impl>(parent, muid, ci_output_sender, midi_message_report_sender, logger)) {
+    : pimpl_(std::make_unique<Impl>(parent, config, muid, ci_output_sender, midi_message_report_sender, logger)) {
     receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;
     last_chunked_message_channel = pimpl_->last_chunked_message_channel_;
     chunked_messages = pimpl_->chunked_messages_;
@@ -52,7 +53,7 @@ CIDeviceModel::~CIDeviceModel() = default;
 void CIDeviceModel::initialize() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->device_ = std::make_shared<midi_ci::core::MidiCIDevice>(pimpl_->muid_, pimpl_->logger_);
+    pimpl_->device_ = std::make_shared<midi_ci::core::MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
     pimpl_->device_->initialize();
     

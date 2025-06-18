@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
+#include "midi-ci/core/DeviceConfig.hpp"
 
 namespace midi_ci {
 namespace core {
@@ -19,7 +20,8 @@ class CIDeviceModel;
 
 class CIDeviceManager {
 public:
-    explicit CIDeviceManager(CIToolRepository& repository, 
+    explicit CIDeviceManager(CIToolRepository& repository,
+                           midi_ci::core::DeviceConfig& config,
                            std::shared_ptr<MidiDeviceManager> midi_manager);
     ~CIDeviceManager();
     

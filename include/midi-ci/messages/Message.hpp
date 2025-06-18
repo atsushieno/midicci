@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "midi-ci/core/MidiCIConstants.hpp"
+#include "../core/MidiCIConstants.hpp"
 
 namespace midi_ci {
 namespace messages {

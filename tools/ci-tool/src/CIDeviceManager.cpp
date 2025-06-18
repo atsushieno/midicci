@@ -13,10 +13,11 @@ namespace ci_tool {
 
 class CIDeviceManager::Impl {
 public:
-    explicit Impl(CIToolRepository& repo, std::shared_ptr<MidiDeviceManager> midi_mgr)
-        : repository_(repo), midi_device_manager_(midi_mgr) {}
+    explicit Impl(CIToolRepository& repo, midi_ci::core::DeviceConfig& config, std::shared_ptr<MidiDeviceManager> midi_mgr)
+        : repository_(repo), config_(config), midi_device_manager_(midi_mgr) {}
     
     CIToolRepository& repository_;
+    midi_ci::core::DeviceConfig& config_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
     mutable std::mutex mutex_;
@@ -25,9 +26,10 @@ public:
     std::vector<uint8_t> buffered_sysex8_;
 };
 
-CIDeviceManager::CIDeviceManager(CIToolRepository& repository, 
+CIDeviceManager::CIDeviceManager(CIToolRepository& repository,
+                               midi_ci::core::DeviceConfig& config,
                                std::shared_ptr<MidiDeviceManager> midi_manager)
-    : pimpl_(std::make_unique<Impl>(repository, midi_manager)) {}
+    : pimpl_(std::make_unique<Impl>(repository, config, midi_manager)) {}
 
 CIDeviceManager::~CIDeviceManager() = default;
 
@@ -69,7 +71,7 @@ void CIDeviceManager::initialize() {
     };
     
     pimpl_->device_model_ = std::make_shared<CIDeviceModel>(
-        *this, pimpl_->repository_.get_muid(),
+        *this, pimpl_->config_, pimpl_->repository_.get_muid(),
         ci_output_sender, midi_message_report_sender, logger_wrapper);
     
     pimpl_->device_model_->initialize();

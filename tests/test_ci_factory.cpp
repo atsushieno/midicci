@@ -23,14 +23,14 @@ TEST(CIFactoryTest, testDiscoveryMessages) {
         0x00, 0x02, 0, 0, 0
     };
     std::vector<uint8_t> actual1(30, 0);
-    CIFactory::midiCIDiscovery(
-        actual1, 1, 0x10101010,
+    auto result1 = CIFactory::midiCIDiscovery(
+        actual1, 0x10101010,
         0x123456, 0x1357, 0x2468, 0x1F3F5F7F,
         all_supported,
         512,
         0
     );
-    EXPECT_EQ(expected1, actual1);
+    EXPECT_EQ(expected1, result1);
 
     std::vector<uint8_t> actual2(31, 0);
     CIFactory::midiCIDiscoveryReply(
@@ -154,7 +154,7 @@ TEST(CIFactoryTest, testProfileConfigurationMessages) {
     EXPECT_EQ(expected7, actual7);
 }
 
-TEST(CIFactoryTest, DISABLED_testPropertyExchangeMessages) {
+TEST(CIFactoryTest, testPropertyExchangeMessages) {
     std::vector<uint8_t> header = {11, 22, 33, 44};
     std::vector<uint8_t> data = {55, 66, 77, 88, 99};
 

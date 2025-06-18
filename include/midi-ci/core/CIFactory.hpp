@@ -33,7 +33,7 @@ public:
         uint8_t initiatorOutputPathId);
     
     static std::vector<uint8_t> midiCIDiscovery(
-        std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid,
+        std::vector<uint8_t>& dst, uint32_t source_muid,
         uint32_t device_manufacturer, uint16_t device_family,
         uint16_t device_model, uint32_t software_revision,
         uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,

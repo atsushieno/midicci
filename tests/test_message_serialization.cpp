@@ -52,9 +52,9 @@ TEST_F(MessageSerializationTest, GetPropertyDataSerialize) {
     auto data = get_data.serialize();
     EXPECT_GT(data.size(), 0);
     EXPECT_EQ(data[3], static_cast<uint8_t>(MessageType::GetPropertyData));
-    EXPECT_EQ(data[12], 1);
+    EXPECT_EQ(data[13], 1);
     
-    uint16_t header_size = data[13] | (data[14] << 8);
+    uint16_t header_size = data[14] | (data[15] << 7);
     EXPECT_EQ(header_size, header.size());
 }
 

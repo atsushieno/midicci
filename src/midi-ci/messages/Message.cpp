@@ -63,41 +63,12 @@ DiscoveryInquiry::DiscoveryInquiry(const Common& common, const core::DeviceDetai
 std::vector<uint8_t> DiscoveryInquiry::serialize() const {
     std::vector<uint8_t> data;
     data.reserve(64);
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(device_details_.manufacturer & 0xFF);
-    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
-    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
-    
-    data.push_back(device_details_.family & 0xFF);
-    data.push_back((device_details_.family >> 8) & 0xFF);
-    
-    data.push_back(device_details_.modelNumber & 0xFF);
-    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
-    
-    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
-    data.push_back(supported_features_);
-    
-    data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 21) & 0x7F));
-    
-    data.push_back(output_path_id_);
-    
-    return data;
+    return core::CIFactory::midiCIDiscovery(data, common_.source_muid,
+                                     device_details_.manufacturer,
+                                     device_details_.family,
+                                     device_details_.modelNumber,
+                                     device_details_.softwareRevisionLevel,
+                                     supported_features_, max_sysex_size_, output_path_id_);
 }
 
 std::string DiscoveryInquiry::get_label() const {
@@ -125,42 +96,15 @@ DiscoveryReply::DiscoveryReply(const Common& common, const core::DeviceDetails& 
 std::vector<uint8_t> DiscoveryReply::serialize() const {
     std::vector<uint8_t> data;
     data.reserve(64);
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(device_details_.manufacturer & 0xFF);
-    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
-    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
-    
-    data.push_back(device_details_.family & 0xFF);
-    data.push_back((device_details_.family >> 8) & 0xFF);
-    
-    data.push_back(device_details_.modelNumber & 0xFF);
-    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
-    
-    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
-    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
-    data.push_back(supported_features_);
-    
-    data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 7) & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 14) & 0x7F));
-    data.push_back(static_cast<uint8_t>((max_sysex_size_ >> 21) & 0x7F));
-    
-    data.push_back(output_path_id_);
-    data.push_back(function_block_);
-    
-    return data;
+
+    return core::CIFactory::midiCIDiscoveryReply(data, common_.address,
+                                                 common_.source_muid, common_.destination_muid,
+                                                 device_details_.manufacturer,
+                                                 device_details_.family,
+                                                 device_details_.modelNumber,
+                                                 device_details_.softwareRevisionLevel,
+                                                 supported_features_, max_sysex_size_,
+                                                 output_path_id_, function_block_);
 }
 
 std::string DiscoveryReply::get_label() const {
@@ -228,20 +172,10 @@ PropertyGetCapabilities::PropertyGetCapabilities(const Common& common, uint8_t m
 std::vector<uint8_t> PropertyGetCapabilities::serialize() const {
     std::vector<uint8_t> data;
     data.reserve(16);
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    data.push_back(max_simultaneous_requests_);
-    
-    return data;
+
+    return core::CIFactory::midiCIPropertyGetCapabilities(data, common_.address, false,
+                                                          common_.source_muid, common_.destination_muid,
+                                                          max_simultaneous_requests_);
 }
 
 std::string PropertyGetCapabilities::get_label() const {
@@ -489,7 +423,7 @@ EndpointReply::EndpointReply(const Common& common, uint8_t status, const std::ve
 std::vector<uint8_t> EndpointReply::serialize() const {
     std::vector<uint8_t> result;
     result.reserve(32);
-    
+
     result.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     result.push_back(0x7F);
     result.push_back(MIDI_CI_SUB_ID_1);
@@ -556,18 +490,7 @@ ProfileInquiry::ProfileInquiry(const Common& common)
 std::vector<uint8_t> ProfileInquiry::serialize() const {
     std::vector<uint8_t> data;
     data.reserve(16);
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    return data;
+    return core::CIFactory::midiCIProfileInquiry(data, common_.address, common_.source_muid, common_.destination_muid);
 }
 
 std::string ProfileInquiry::get_label() const {
@@ -824,18 +747,7 @@ ProcessInquiryCapabilities::ProcessInquiryCapabilities(const Common& common)
 std::vector<uint8_t> ProcessInquiryCapabilities::serialize() const {
     std::vector<uint8_t> data;
     data.reserve(16);
-    
-    data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
-    data.push_back(0x7F);
-    data.push_back(MIDI_CI_SUB_ID_1);
-    data.push_back(static_cast<uint8_t>(type_));
-    data.push_back(MIDI_CI_VERSION_1_2);
-    
-    serialize_muid_32(data, common_.source_muid);
-    
-    serialize_muid_32(data, common_.destination_muid);
-    
-    return data;
+    return core::CIFactory::midiCIProcessInquiryCapabilities(data, common_.source_muid, common_.destination_muid);
 }
 
 std::string ProcessInquiryCapabilities::get_label() const {

@@ -33,6 +33,10 @@ struct PropertyValue {
     
     PropertyValue(const std::string& property_id, const std::string& media_type, const std::vector<uint8_t>& data)
         : id(property_id), mediaType(media_type), body(data) {}
+    
+    bool operator==(const PropertyValue& other) const {
+        return id == other.id && mediaType == other.mediaType && body == other.body;
+    }
 };
 
 struct SubscriptionEntry {

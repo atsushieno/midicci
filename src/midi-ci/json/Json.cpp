@@ -1,4 +1,5 @@
 #include "midi-ci/json/Json.hpp"
+#include "midi-ci/core/MidiCIConverter.hpp"
 #include <sstream>
 #include <stdexcept>
 #include <cctype>
@@ -48,7 +49,13 @@ const JsonValue& JsonValue::operator[](size_t index) const {
 
 std::vector<uint8_t> JsonValue::get_serialized_bytes() const {
     auto json_str = serialize();
-    auto escaped = escape_string(json_str);
+    auto ascii_encoded = midi_ci::core::MidiCIConverter::encodeStringToASCII(json_str);
+    auto escaped = ascii_encoded;
+    size_t pos = 0;
+    while ((pos = escaped.find("\\", pos)) != std::string::npos) {
+        escaped.replace(pos, 1, "\\\\");
+        pos += 2;
+    }
     std::vector<uint8_t> result;
     result.reserve(escaped.size());
     for (char c : escaped) {

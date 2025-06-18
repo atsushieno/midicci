@@ -96,7 +96,7 @@ std::vector<uint8_t> CIFactory::midiCIDiscovery(
     uint8_t initiatorOutputPathId) {
     
     midiCIDiscoveryCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
-        constants::MIDI_CI_VERSION_1_1, source_muid, 0x7F7F7F7F,
+        constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F,
         device_manufacturer_3bytes, device_family, device_model, software_revision,
         ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 30);

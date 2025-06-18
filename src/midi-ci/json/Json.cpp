@@ -252,7 +252,16 @@ JsonValue JsonParser::parse_string() {
                     std::string hex = json_.substr(pos_, 4);
                     pos_ += 4;
                     int codepoint = std::stoi(hex, nullptr, 16);
-                    str += static_cast<char>(codepoint);
+                    if (codepoint <= 0x7F) {
+                        str += static_cast<char>(codepoint);
+                    } else if (codepoint <= 0x7FF) {
+                        str += static_cast<char>(0xC0 | (codepoint >> 6));
+                        str += static_cast<char>(0x80 | (codepoint & 0x3F));
+                    } else {
+                        str += static_cast<char>(0xE0 | (codepoint >> 12));
+                        str += static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                        str += static_cast<char>(0x80 | (codepoint & 0x3F));
+                    }
                     break;
                 }
                 default:
@@ -365,7 +374,82 @@ std::string escape_string(const std::string& str) {
 }
 
 std::string unescape_string(const std::string& str) {
-    return str;
+    if (str.find('\\') == std::string::npos) {
+        return str;
+    }
+    
+    std::string result;
+    result.reserve(str.size());
+    
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] == '\\' && i + 1 < str.size()) {
+            char next = str[i + 1];
+            switch (next) {
+                case '"':
+                    result += '"';
+                    i++;
+                    break;
+                case '\\':
+                    result += '\\';
+                    i++;
+                    break;
+                case '/':
+                    result += '/';
+                    i++;
+                    break;
+                case 'b':
+                    result += '\b';
+                    i++;
+                    break;
+                case 'f':
+                    result += '\f';
+                    i++;
+                    break;
+                case 'n':
+                    result += '\n';
+                    i++;
+                    break;
+                case 'r':
+                    result += '\r';
+                    i++;
+                    break;
+                case 't':
+                    result += '\t';
+                    i++;
+                    break;
+                case 'u':
+                    if (i + 5 < str.size()) {
+                        std::string hex = str.substr(i + 2, 4);
+                        try {
+                            int codepoint = std::stoi(hex, nullptr, 16);
+                            if (codepoint <= 0x7F) {
+                                result += static_cast<char>(codepoint);
+                            } else if (codepoint <= 0x7FF) {
+                                result += static_cast<char>(0xC0 | (codepoint >> 6));
+                                result += static_cast<char>(0x80 | (codepoint & 0x3F));
+                            } else {
+                                result += static_cast<char>(0xE0 | (codepoint >> 12));
+                                result += static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                                result += static_cast<char>(0x80 | (codepoint & 0x3F));
+                            }
+                            i += 5;
+                        } catch (...) {
+                            result += str[i];
+                        }
+                    } else {
+                        result += str[i];
+                    }
+                    break;
+                default:
+                    result += str[i];
+                    break;
+            }
+        } else {
+            result += str[i];
+        }
+    }
+    
+    return result;
 }
 
 } // namespace json

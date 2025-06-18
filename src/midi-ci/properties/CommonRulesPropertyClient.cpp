@@ -108,14 +108,19 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
         try {
             json::JsonValue json_body;
             convert_application_json_bytes_to_json(body, json_body);
-            
-            std::string manufacturer = json_body["manufacturer"].is_string() ? json_body["manufacturer"].as_string() : "";
-            std::string family = json_body["family"].is_string() ? json_body["family"].as_string() : "";
-            std::string model = json_body["model"].is_string() ? json_body["model"].as_string() : "";
-            std::string version = json_body["version"].is_string() ? json_body["version"].as_string() : "";
 
-            // FIXME: fill these properties correctly later.
-            core::DeviceInfo device_info(0, 0, 0, 0, manufacturer, family, model, version, "");
+            auto manufacturerId = json_body[DeviceInfoPropertyNames::MANUFACTURER_ID].as_int();
+            auto familyId = json_body[DeviceInfoPropertyNames::FAMILY_ID].as_int();
+            auto modelId = json_body[DeviceInfoPropertyNames::MODEL_ID].as_int();
+            auto versionId = json_body[DeviceInfoPropertyNames::VERSION_ID].as_int();
+            std::string manufacturer = json_body[DeviceInfoPropertyNames::MANUFACTURER].is_string() ? json_body[DeviceInfoPropertyNames::MANUFACTURER].as_string() : "";
+            std::string family = json_body[DeviceInfoPropertyNames::FAMILY].is_string() ? json_body[DeviceInfoPropertyNames::FAMILY].as_string() : "";
+            std::string model = json_body[DeviceInfoPropertyNames::MODEL].is_string() ? json_body[DeviceInfoPropertyNames::MODEL].as_string() : "";
+            std::string version = json_body[DeviceInfoPropertyNames::VERSION].is_string() ? json_body[DeviceInfoPropertyNames::VERSION].as_string() : "";
+            std::string serial = json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].is_string() ? json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].as_string() : "";
+
+            core::DeviceInfo device_info(manufacturerId, familyId, modelId, versionId,
+                                         manufacturer, family, model, version, serial);
             conn_.set_device_info(device_info);
         } catch (...) {
         }

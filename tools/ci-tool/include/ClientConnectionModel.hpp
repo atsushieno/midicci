@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include "midi-ci/core/ClientConnection.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include "MutableState.hpp"
 
 
@@ -45,6 +46,7 @@ public:
     std::shared_ptr<midi_ci::core::ClientConnection> get_connection() const;
     const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
     const MutableStateList<SubscriptionState>& get_subscriptions() const;
+    const MutableStateList<midi_ci::properties::PropertyValue>& get_properties() const;
     
     std::string get_device_info_value() const;
     const MutableState<std::string>& get_device_info() const;

@@ -461,7 +461,7 @@ void InitiatorWidget::updatePropertyList()
     if (targetConnection) {
         auto metadata = targetConnection->get_metadata_list();
         for (const auto& meta : metadata) {
-            m_propertyList->addItem(QString::fromStdString(meta.resource_id));
+            m_propertyList->addItem(QString::fromStdString(meta.getResourceId()));
         }
         
         if (metadata.empty()) {

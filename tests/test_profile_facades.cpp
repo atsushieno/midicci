@@ -30,6 +30,7 @@ TEST(ProfileFacadesTest, configureProfiles) {
     EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size after addProfile";
 
     auto& remoteProfiles = conn->get_profile_client_facade().get_profiles().get_profiles();
+    ASSERT_GT(remoteProfiles.size(), 0) << "No entry in remoteProfiles";
     auto remoteProfile = remoteProfiles[0];
     EXPECT_EQ(localProfile.profile.to_string(), remoteProfile.profile.to_string()) << "localProfile == remoteProfile: profile";
     EXPECT_EQ(localProfile.address, remoteProfile.address) << "localProfile == remoteProfile: address";

@@ -5,7 +5,7 @@
 
 using namespace midi_ci::properties::property_common_rules;
 
-TEST(PropertyCommonConverterTest, DISABLED_encodeToMcoded7) {
+TEST(PropertyCommonConverterTest, encodeToMcoded7) {
     std::string input_str = "{\"foo\": [1,2,3,4,5], \"bar\": [6,7,8,9,0]}\n";
     std::vector<uint8_t> input(input_str.begin(), input_str.end());
     
@@ -22,7 +22,7 @@ TEST(PropertyCommonConverterTest, DISABLED_encodeToMcoded7) {
     // EXPECT_EQ(expected, actual);
 }
 
-TEST(PropertyCommonConverterTest, DISABLED_decodeMcoded7) {
+TEST(PropertyCommonConverterTest, decodeMcoded7) {
     std::string expected_str = "{\"foo\": [1,2,3,4,5], \"bar\": [6,7,8,9,0]}\n";
     std::vector<uint8_t> expected(expected_str.begin(), expected_str.end());
     

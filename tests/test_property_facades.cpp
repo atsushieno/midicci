@@ -9,7 +9,7 @@ using namespace midi_ci::properties;
 using namespace midi_ci::json;
 using namespace midi_ci::properties::property_common_rules;
 
-TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
+TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();

@@ -55,7 +55,7 @@ SinglePacketMessage::SinglePacketMessage(MessageType type, const Common& common)
 MultiPacketMessage::MultiPacketMessage(MessageType type, const Common& common)
     : Message(type, common) {}
 
-DiscoveryInquiry::DiscoveryInquiry(const Common& common, const DeviceDetails& device_details, 
+DiscoveryInquiry::DiscoveryInquiry(const Common& common, const core::DeviceDetails& device_details,
                                  uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id)
     : SinglePacketMessage(MessageType::DiscoveryInquiry, common), device_details_(device_details),
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), output_path_id_(output_path_id) {}
@@ -116,7 +116,7 @@ std::string DiscoveryInquiry::get_body_string() const {
     return oss.str();
 }
 
-DiscoveryReply::DiscoveryReply(const Common& common, const DeviceDetails& device_details, 
+DiscoveryReply::DiscoveryReply(const Common& common, const core::DeviceDetails& device_details,
                               uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id, uint8_t function_block)
     : SinglePacketMessage(MessageType::DiscoveryReply, common), device_details_(device_details),
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), 

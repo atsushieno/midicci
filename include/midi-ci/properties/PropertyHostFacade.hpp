@@ -37,7 +37,7 @@ public:
     void set_property_rules(std::unique_ptr<MidiCIServicePropertyRules> rules);
     MidiCIServicePropertyRules* get_property_rules();
     
-    void add_property(const PropertyMetadata& property);
+    void add_property(std::unique_ptr<PropertyMetadata> property);
     void remove_property(const std::string& property_id);
     void update_property(const std::string& property_id, const std::vector<uint8_t>& data);
     

@@ -46,17 +46,17 @@ public:
     
     void add_property_catalog_updated_callback(std::function<void()> callback);
     
-    std::vector<PropertyMetadata> get_metadata_list() const;
+    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;
 
 private:
     core::MidiCIDevice& device_;
     core::ClientConnection& conn_;
     std::unique_ptr<CommonRulesPropertyHelper> helper_;
     std::vector<std::function<void()>> property_catalog_updated_callbacks_;
-    std::vector<PropertyMetadata> resource_list_;
+    std::vector<std::unique_ptr<PropertyMetadata>> resource_list_;
     std::vector<SubscriptionEntry> subscriptions_;
     
-    std::vector<PropertyMetadata> get_metadata_list_for_body(const std::vector<uint8_t>& body);
+    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list_for_body(const std::vector<uint8_t>& body);
     void convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, json::JsonValue& result);
 };
 

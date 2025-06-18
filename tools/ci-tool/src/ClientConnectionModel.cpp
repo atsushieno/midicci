@@ -81,7 +81,7 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const mi
               << ", Enabled: " << new_enabled << std::endl;
 }
 
-std::vector<midi_ci::properties::PropertyMetadata> ClientConnectionModel::get_metadata_list() const {
+std::vector<std::unique_ptr<midi_ci::properties::PropertyMetadata>> ClientConnectionModel::get_metadata_list() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return {};
 }

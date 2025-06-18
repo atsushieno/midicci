@@ -1,21 +1,20 @@
 #include "TestPropertyRules.hpp"
+#include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midi-ci/messages/Message.hpp"
+#include "midi-ci/properties/PropertyCommonRules.hpp"
 
 TestPropertyRules::TestPropertyRules() {
     initialize_default_properties();
 }
 
 void TestPropertyRules::initialize_default_properties() {
-    PropertyMetadata deviceInfo(PropertyResourceNames::DEVICE_INFO, "Device Info", "Device information", 
-                               CommonRulesKnownMimeTypes::APPLICATION_JSON, {});
-    PropertyMetadata channelList(PropertyResourceNames::CHANNEL_LIST, "Channel List", "MIDI channel list",
-                                CommonRulesKnownMimeTypes::APPLICATION_JSON, {});
-    PropertyMetadata jsonSchema(PropertyResourceNames::JSON_SCHEMA, "JSON Schema", "JSON schema definitions",
-                               CommonRulesKnownMimeTypes::APPLICATION_JSON, {});
+    auto deviceInfo = std::make_unique<CommonRulesPropertyMetadata>(PropertyResourceNames::DEVICE_INFO);
+    auto channelList = std::make_unique<CommonRulesPropertyMetadata>(PropertyResourceNames::CHANNEL_LIST);
+    auto jsonSchema = std::make_unique<CommonRulesPropertyMetadata>(PropertyResourceNames::JSON_SCHEMA);
     
-    metadata_list_.push_back(deviceInfo);
-    metadata_list_.push_back(channelList);
-    metadata_list_.push_back(jsonSchema);
+    metadata_list_.push_back(std::move(deviceInfo));
+    metadata_list_.push_back(std::move(channelList));
+    metadata_list_.push_back(std::move(jsonSchema));
     
     JsonValue deviceInfoValue = JsonValue::empty_object();
     std::string deviceInfoJson = deviceInfoValue.serialize();
@@ -38,8 +37,20 @@ std::vector<uint8_t> TestPropertyRules::create_update_notification_header(const 
     return create_json_header(property_id, fields);
 }
 
-std::vector<PropertyMetadata> TestPropertyRules::get_metadata_list() {
-    return metadata_list_;
+std::vector<std::unique_ptr<PropertyMetadata>> TestPropertyRules::get_metadata_list() {
+    std::vector<std::unique_ptr<PropertyMetadata>> result;
+    for (const auto& metadata : metadata_list_) {
+        auto copy = std::make_unique<CommonRulesPropertyMetadata>();
+        copy->resource = metadata->getPropertyId();
+        
+        auto it = property_values_.find(metadata->getPropertyId());
+        if (it != property_values_.end()) {
+            copy->setData(it->second);
+        }
+        
+        result.push_back(std::move(copy));
+    }
+    return result;
 }
 
 GetPropertyDataReply TestPropertyRules::get_property_data(const GetPropertyData& msg) {
@@ -67,29 +78,29 @@ SubscribePropertyReply TestPropertyRules::subscribe_property(const SubscribeProp
     std::string property_id = parse_property_id_from_header(msg.get_header());
     
     std::string subscription_id = "sub_" + std::to_string(subscriptions_.size() + 1);
-    subscriptions_.emplace_back(subscription_id, property_id, msg.get_common().source_muid);
+    subscriptions_.emplace_back(msg.get_common().source_muid, property_id, subscription_id, "");
     
     std::vector<uint8_t> reply_header = create_json_header(property_id);
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), reply_header, {});
 }
 
-void TestPropertyRules::add_metadata(const PropertyMetadata& property) {
+void TestPropertyRules::add_metadata(std::unique_ptr<PropertyMetadata> property) {
     auto it = std::find_if(metadata_list_.begin(), metadata_list_.end(),
-        [&property](const PropertyMetadata& p) {
-            return p.property_id == property.property_id;
+        [&property](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property->getPropertyId();
         });
     
     if (it != metadata_list_.end()) {
-        *it = property;
+        *it = std::move(property);
     } else {
-        metadata_list_.push_back(property);
+        metadata_list_.push_back(std::move(property));
     }
 }
 
 void TestPropertyRules::remove_metadata(const std::string& property_id) {
     auto it = std::remove_if(metadata_list_.begin(), metadata_list_.end(),
-        [&property_id](const PropertyMetadata& p) {
-            return p.property_id == property_id;
+        [&property_id](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property_id;
         });
     
     metadata_list_.erase(it, metadata_list_.end());

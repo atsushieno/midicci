@@ -23,7 +23,8 @@ TEST(MidiCIDeviceTest, basicRun) {
     ASSERT_NE(connections.end(), it) << "conn";
     auto conn = it->second;
     ASSERT_NE(nullptr, conn) << "conn";
-    
+
+    ASSERT_NE(nullptr, conn->get_device_info()) << "conn->get_device_info()";
     EXPECT_EQ(device2.get_device_info().manufacturer, 
               conn->get_device_info()->manufacturer) << "conn.device.manufacturer";
 }

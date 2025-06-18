@@ -1,5 +1,6 @@
 #pragma once
 
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include "midi-ci/properties/MidiCIServicePropertyRules.hpp"
 #include "midi-ci/properties/PropertyCommonRules.hpp"
 #include "midi-ci/json/Json.hpp"
@@ -17,13 +18,13 @@ public:
     
     std::string get_property_id_for_header(const std::vector<uint8_t>& header) override;
     std::vector<uint8_t> create_update_notification_header(const std::string& property_id, const std::map<std::string, std::string>& fields) override;
-    std::vector<PropertyMetadata> get_metadata_list() override;
+    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() override;
     
     GetPropertyDataReply get_property_data(const GetPropertyData& msg) override;
     SetPropertyDataReply set_property_data(const SetPropertyData& msg) override;
     SubscribePropertyReply subscribe_property(const SubscribeProperty& msg) override;
     
-    void add_metadata(const PropertyMetadata& property) override;
+    void add_metadata(std::unique_ptr<PropertyMetadata> property) override;
     void remove_metadata(const std::string& property_id) override;
     
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;
@@ -38,7 +39,7 @@ public:
     std::vector<uint8_t> get_property_value(const std::string& property_id) const;
     
 private:
-    std::vector<PropertyMetadata> metadata_list_;
+    std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::unordered_map<std::string, std::vector<uint8_t>> property_values_;
     std::vector<SubscriptionEntry> subscriptions_;
     

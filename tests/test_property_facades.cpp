@@ -9,18 +9,18 @@ using namespace midi_ci::properties;
 using namespace midi_ci::json;
 using namespace midi_ci::properties::property_common_rules;
 
-TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
+TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
     
     std::string id = "X-01";
-    CommonRulesPropertyMetadata prop1(id);
-    prop1.canSet = "partial";
-    prop1.canSubscribe = true;
+    auto prop1 = std::make_unique<CommonRulesPropertyMetadata>(id);
+    prop1->canSet = "partial";
+    prop1->canSubscribe = true;
     
     auto& host = device2.get_property_host_facade();
-    host.add_property(prop1);
+    host.add_property(std::move(prop1));
     
     JsonValue fooValue("FOO");
     std::string fooJson = fooValue.serialize();

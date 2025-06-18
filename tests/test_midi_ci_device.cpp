@@ -10,7 +10,7 @@ TEST(MidiCIDeviceTest, initialState) {
     EXPECT_EQ(19474, device1.get_muid());
 }
 
-TEST(MidiCIDeviceTest, DISABLED_basicRun) {
+TEST(MidiCIDeviceTest, basicRun) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
@@ -24,14 +24,7 @@ TEST(MidiCIDeviceTest, DISABLED_basicRun) {
     auto conn = it->second;
     ASSERT_NE(nullptr, conn) << "conn";
 
-    EXPECT_NE(nullptr, conn) << "conn should not be null";
-    if (conn) {
-        auto device_info = conn->get_device_info();
-        if (device_info) {
-            EXPECT_EQ(device2.get_device_info().manufacturer, 
-                      device_info->manufacturer) << "conn.device.manufacturer";
-        } else {
-            EXPECT_TRUE(false) << "Device info not available after connection - may indicate implementation difference from Kotlin";
-        }
-    }
+    ASSERT_NE(nullptr, conn->get_device_info()) << "conn->get_device_info()";
+    EXPECT_EQ(device2.get_device_info().manufacturer, 
+              conn->get_device_info()->manufacturer) << "conn.device.manufacturer";
 }

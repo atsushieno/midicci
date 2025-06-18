@@ -9,7 +9,7 @@ using namespace midi_ci::properties;
 using namespace midi_ci::json;
 using namespace midi_ci::properties::property_common_rules;
 
-TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
+TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     auto& device2 = mediator.getDevice2();
@@ -38,16 +38,12 @@ TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
     
     auto& client = conn->get_property_client_facade();
     auto metadata_list = client.get_metadata_list();
-    EXPECT_GE(metadata_list.size(), 0) << "Metadata list accessibility check";
+    EXPECT_EQ(4, metadata_list.size()) << "Expected 4 properties in metadata list";
     
     client.send_get_property_data(id, "");
     
     auto retrievedProperty = client.getProperty(id);
-    if (!retrievedProperty.empty()) {
-        EXPECT_EQ(fooBytes, retrievedProperty) << "Retrieved property value doesn't match expected FOO";
-    } else {
-        EXPECT_TRUE(false) << "Property retrieval returned empty data";
-    }
+    EXPECT_EQ(fooBytes, retrievedProperty) << "Retrieved property value doesn't match expected FOO";
     
     JsonValue barValue("BAR");
     std::string barJson = barValue.serialize();
@@ -55,37 +51,26 @@ TEST(PropertyFacadesTest, DISABLED_propertyExchange1) {
     
     client.send_set_property_data(id, "", barBytes);
     
-    auto hostProperty = host.getProperty(id);
-    auto clientProperty = client.getProperty(id);
-    
-    if (!hostProperty.empty() && !clientProperty.empty()) {
-        EXPECT_EQ(barBytes, hostProperty) << "Host property value not updated";
-        EXPECT_EQ(barBytes, clientProperty) << "Client property value not updated";
-    } else {
-        EXPECT_TRUE(false) << "Property set operation failed - empty property values";
-    }
+    EXPECT_EQ(barBytes, host.getProperty(id)) << "Host property value not updated";
+    EXPECT_EQ(barBytes, client.getProperty(id)) << "Client property value not updated";
     
     client.send_subscribe_property(id, "");
-    auto subscriptions = host.get_subscriptions();
-    EXPECT_GE(subscriptions.size(), 0) << "Subscription functionality not working properly";
+    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host";
     
     host.setPropertyValue(id, "", fooBytes, false);
-    auto updatedProperty = client.getProperty(id);
-    if (!updatedProperty.empty()) {
-        EXPECT_EQ(fooBytes, updatedProperty) << "Property update not reflected on client after subscription";
-    }
+    EXPECT_EQ(fooBytes, client.getProperty(id)) << "Property update not reflected on client after subscription";
     
     client.send_unsubscribe_property(id);
-    auto remainingSubscriptions = host.get_subscriptions();
-    EXPECT_GE(remainingSubscriptions.size(), 0) << "Unsubscription functionality check";
+    EXPECT_EQ(0, host.get_subscriptions().size()) << "Subscription not removed after unsubscription";
     
     client.send_subscribe_property(id, "");
-    auto subscriptions2 = host.get_subscriptions();
-    if (!subscriptions2.empty()) {
-        auto sub = subscriptions2[0];
+    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host, 2nd time";
+    auto subscriptions = host.get_subscriptions();
+    if (!subscriptions.empty()) {
+        auto sub = subscriptions[0];
         host.shutdownSubscription(sub.subscriber_muid, sub.property_id);
-        EXPECT_GE(client.get_subscriptions().size(), 0) << "Client subscriptions after host shutdown";
-        EXPECT_GE(host.get_subscriptions().size(), 0) << "Host subscriptions after shutdown";
+        EXPECT_EQ(0, client.get_subscriptions().size()) << "Client subscriptions not cleared after host shutdown";
+        EXPECT_EQ(0, host.get_subscriptions().size()) << "Host subscriptions not cleared after shutdown";
     }
 }
 
@@ -106,5 +91,5 @@ TEST(PropertyFacadesTest, propertyExchange2) {
     client.send_get_property_data(PropertyResourceNames::CHANNEL_LIST, "");
     
     auto channelList = client.getProperty(PropertyResourceNames::CHANNEL_LIST);
-    EXPECT_GE(channelList.size(), 0) << "ChannelList property access check";
+    EXPECT_GT(channelList.size(), 0) << "ChannelList should not be empty";
 }

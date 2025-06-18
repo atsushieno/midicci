@@ -2,6 +2,7 @@
 #include "midi-ci/properties/PropertyHostFacade.hpp"
 #include "midi-ci/properties/CommonRulesPropertyClient.hpp"
 #include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/messages/Message.hpp"
@@ -16,11 +17,15 @@ namespace properties {
 class PropertyClientFacade::Impl {
 public:
     Impl(core::MidiCIDevice& device, core::ClientConnection& conn) : device_(device), conn_(conn), 
-          property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {}
+          property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {
+        observable_properties_ = std::make_unique<ClientObservablePropertyList>(
+            device.get_logger(), property_rules_.get());
+    }
     
     core::MidiCIDevice& device_;
     core::ClientConnection& conn_;
     std::unique_ptr<MidiCIClientPropertyRules> property_rules_;
+    std::unique_ptr<ClientObservablePropertyList> observable_properties_;
     std::unordered_map<uint8_t, std::vector<uint8_t>> open_requests_;
     std::unordered_map<std::string, std::vector<uint8_t>> cached_properties_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
@@ -168,6 +173,9 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
                     auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
                     pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
                     pimpl_->cached_properties_[property_id] = msg.get_body();
+                    if (pimpl_->observable_properties_) {
+                        pimpl_->observable_properties_->updateValue(property_id, msg.get_body());
+                    }
                 }
                 
                 pimpl_->open_requests_.erase(it);
@@ -269,6 +277,11 @@ std::vector<PropertySubscription> PropertyClientFacade::get_subscriptions() cons
         }
     }
     return pimpl_->subscriptions_;
+}
+
+ClientObservablePropertyList* PropertyClientFacade::get_observable_properties() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->observable_properties_.get();
 }
 
 } // namespace properties

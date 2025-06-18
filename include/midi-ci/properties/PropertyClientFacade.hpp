@@ -14,6 +14,7 @@ namespace properties {
 class MidiCIClientPropertyRules;
 struct PropertyMetadata;
 struct PropertySubscription;
+class ClientObservablePropertyList;
 
 class PropertyClientFacade {
 public:
@@ -48,6 +49,7 @@ public:
     std::vector<uint8_t> getProperty(const std::string& property_id) const;
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;
     std::vector<PropertySubscription> get_subscriptions() const;
+    ClientObservablePropertyList* get_observable_properties();
     
 private:
     class Impl;

@@ -74,20 +74,20 @@ std::vector<uint8_t> DiscoveryInquiry::serialize() const {
     
     serialize_muid_32(data, common_.destination_muid);
     
-    data.push_back(device_details_.manufacturer & 0x7F);
-    data.push_back((device_details_.manufacturer >> 7) & 0x7F);
-    data.push_back((device_details_.manufacturer >> 14) & 0x7F);
+    data.push_back(device_details_.manufacturer & 0xFF);
+    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
+    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
     
-    data.push_back(device_details_.family & 0x7F);
-    data.push_back((device_details_.family >> 7) & 0x7F);
+    data.push_back(device_details_.family & 0xFF);
+    data.push_back((device_details_.family >> 8) & 0xFF);
     
-    data.push_back(device_details_.modelNumber & 0x7F);
-    data.push_back((device_details_.modelNumber >> 7) & 0x7F);
+    data.push_back(device_details_.modelNumber & 0xFF);
+    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
     
-    data.push_back(device_details_.softwareRevisionLevel & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 7) & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 14) & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 21) & 0x7F);
+    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
     data.push_back(supported_features_);
     
     data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));
@@ -136,20 +136,20 @@ std::vector<uint8_t> DiscoveryReply::serialize() const {
     
     serialize_muid_32(data, common_.destination_muid);
     
-    data.push_back(device_details_.manufacturer & 0x7F);
-    data.push_back((device_details_.manufacturer >> 7) & 0x7F);
-    data.push_back((device_details_.manufacturer >> 14) & 0x7F);
+    data.push_back(device_details_.manufacturer & 0xFF);
+    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
+    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
     
-    data.push_back(device_details_.family & 0x7F);
-    data.push_back((device_details_.family >> 7) & 0x7F);
+    data.push_back(device_details_.family & 0xFF);
+    data.push_back((device_details_.family >> 8) & 0xFF);
     
-    data.push_back(device_details_.modelNumber & 0x7F);
-    data.push_back((device_details_.modelNumber >> 7) & 0x7F);
+    data.push_back(device_details_.modelNumber & 0xFF);
+    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
     
-    data.push_back(device_details_.softwareRevisionLevel & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 7) & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 14) & 0x7F);
-    data.push_back((device_details_.softwareRevisionLevel >> 21) & 0x7F);
+    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
     data.push_back(supported_features_);
     
     data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));

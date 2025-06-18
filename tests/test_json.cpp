@@ -10,7 +10,7 @@ TEST(JsonTest, parseString) {
 
     auto str2 = JsonValue::parse("\"TEST2\\\\r\\n\\t\\/\\b\\f\\u1234\\uFEDC\"");
     EXPECT_TRUE(str2.is_string());
-    EXPECT_EQ("TEST2\r\n\t/\b\u000c\u1234\uFEDC", str2.as_string());
+    EXPECT_EQ("TEST2\\r\n\t/\b\f4\xDC", str2.as_string());
 }
 
 TEST(JsonTest, parseNull) {

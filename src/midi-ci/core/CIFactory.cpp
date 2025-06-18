@@ -489,5 +489,58 @@ std::vector<uint8_t> CIFactory::midiCIPropertyGetCapabilities(
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 16);
 }
 
+std::vector<uint8_t> CIFactory::midiCIEndpointMessage(
+    std::vector<uint8_t>& dst, uint8_t version_and_format, uint32_t source_muid, 
+    uint32_t destination_muid, uint8_t status) {
+    
+    dst.resize(std::max(dst.size(), size_t(14)));
+    
+    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(constants::CISubId2::ENDPOINT_MESSAGE_INQUIRY),
+                       version_and_format, source_muid, destination_muid);
+    
+    dst[13] = status;
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 14);
+}
+
+std::vector<uint8_t> CIFactory::midiCIEndpointMessageReply(
+    std::vector<uint8_t>& dst, uint8_t version_and_format, uint32_t source_muid, 
+    uint32_t destination_muid, uint8_t status, const std::vector<uint8_t>& information_data) {
+    
+    size_t required_size = 16 + information_data.size();
+    dst.resize(std::max(dst.size(), required_size));
+    
+    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(constants::CISubId2::ENDPOINT_MESSAGE_REPLY),
+                       version_and_format, source_muid, destination_muid);
+    
+    dst[13] = status;
+    midiCI7bitInt14At(dst, 14, static_cast<uint16_t>(information_data.size()));
+    
+    if (!information_data.empty()) {
+        memcpy(dst, 16, information_data, information_data.size());
+    }
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + required_size);
+}
+
+std::vector<uint8_t> CIFactory::midiCIProfileAddedRemoved(
+    std::vector<uint8_t>& dst, uint8_t address, bool is_removed, 
+    uint32_t source_muid, const MidiCIProfileId& profile_id) {
+    
+    dst.resize(std::max(dst.size(), size_t(18)));
+    
+    uint8_t sub_id = is_removed ? static_cast<uint8_t>(constants::CISubId2::PROFILE_REMOVED_REPORT)
+                                : static_cast<uint8_t>(constants::CISubId2::PROFILE_ADDED_REPORT);
+    
+    midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, 
+                       source_muid, constants::MIDI_CI_BROADCAST_MUID_32);
+    
+    midiCIProfile(dst, 13, profile_id);
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 18);
+}
+
 } // namespace core
 } // namespace midi_ci

@@ -115,6 +115,18 @@ public:
     static std::vector<uint8_t> midiCIEndOfMidiMessage(
         std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid);
     
+    static std::vector<uint8_t> midiCIEndpointMessage(
+        std::vector<uint8_t>& dst, uint8_t version_and_format, uint32_t source_muid, 
+        uint32_t destination_muid, uint8_t status);
+    
+    static std::vector<uint8_t> midiCIEndpointMessageReply(
+        std::vector<uint8_t>& dst, uint8_t version_and_format, uint32_t source_muid, 
+        uint32_t destination_muid, uint8_t status, const std::vector<uint8_t>& information_data);
+    
+    static std::vector<uint8_t> midiCIProfileAddedRemoved(
+        std::vector<uint8_t>& dst, uint8_t address, bool is_removed, 
+        uint32_t source_muid, const MidiCIProfileId& profile_id);
+    
     static std::vector<uint8_t> midiCIAckNak(
         std::vector<uint8_t>& dst, bool is_nak, uint8_t address, uint8_t version_and_format,
         uint32_t source_muid, uint32_t destination_muid, uint8_t original_sub_id,

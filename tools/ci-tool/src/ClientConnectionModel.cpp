@@ -1,6 +1,6 @@
 #include "ClientConnectionModel.hpp"
 #include "CIDeviceModel.hpp"
-#include "midi-ci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/ObservablePropertyList.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -9,14 +9,14 @@ namespace ci_tool {
 class ClientConnectionModel::Impl {
 public:
     explicit Impl(std::shared_ptr<CIDeviceModel> parent,
-                  std::shared_ptr<midi_ci::core::ClientConnection> conn)
+                  std::shared_ptr<midicci::core::ClientConnection> conn)
         : parent_(parent), connection_(conn) {}
     
     std::shared_ptr<CIDeviceModel> parent_;
-    std::shared_ptr<midi_ci::core::ClientConnection> connection_;
+    std::shared_ptr<midicci::core::ClientConnection> connection_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> profiles_;
     MutableStateList<SubscriptionState> subscriptions_;
-    MutableStateList<midi_ci::properties::PropertyValue> properties_;
+    MutableStateList<midicci::properties::PropertyValue> properties_;
     MutableState<std::string> device_info_;
     
     std::vector<ProfilesChangedCallback> profiles_changed_callbacks_;
@@ -27,7 +27,7 @@ public:
 };
 
 ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
-                                           std::shared_ptr<midi_ci::core::ClientConnection> connection)
+                                           std::shared_ptr<midicci::core::ClientConnection> connection)
     : pimpl_(std::make_unique<Impl>(parent, connection)) {
     setup_profile_listeners();
     setup_property_listeners();
@@ -35,7 +35,7 @@ ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> pare
 
 ClientConnectionModel::~ClientConnectionModel() = default;
 
-std::shared_ptr<midi_ci::core::ClientConnection> ClientConnectionModel::get_connection() const {
+std::shared_ptr<midicci::core::ClientConnection> ClientConnectionModel::get_connection() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->connection_;
 }
@@ -48,7 +48,7 @@ const MutableStateList<SubscriptionState>& ClientConnectionModel::get_subscripti
     return pimpl_->subscriptions_;
 }
 
-const MutableStateList<midi_ci::properties::PropertyValue>& ClientConnectionModel::get_properties() const {
+const MutableStateList<midicci::properties::PropertyValue>& ClientConnectionModel::get_properties() const {
     return pimpl_->properties_;
 }
 
@@ -60,7 +60,7 @@ const MutableState<std::string>& ClientConnectionModel::get_device_info() const 
     return pimpl_->device_info_;
 }
 
-void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
+void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile,
                                        bool new_enabled, uint16_t new_num_channels_requested) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     
@@ -86,7 +86,7 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const mi
               << ", Enabled: " << new_enabled << std::endl;
 }
 
-std::vector<std::unique_ptr<midi_ci::properties::PropertyMetadata>> ClientConnectionModel::get_metadata_list() const {
+std::vector<std::unique_ptr<midicci::properties::PropertyMetadata>> ClientConnectionModel::get_metadata_list() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return {};
 }
@@ -186,12 +186,12 @@ void ClientConnectionModel::setup_property_listeners() {
                     
                     auto properties_vec = properties_list.to_vector();
                     auto it = std::find_if(properties_vec.begin(), properties_vec.end(),
-                        [&propertyId](const midi_ci::properties::PropertyValue& prop) {
+                        [&propertyId](const midicci::properties::PropertyValue& prop) {
                             return prop.id == propertyId;
                         });
                     
                     auto new_prop_it = std::find_if(current_values.begin(), current_values.end(),
-                        [&propertyId](const midi_ci::properties::PropertyValue& prop) {
+                        [&propertyId](const midicci::properties::PropertyValue& prop) {
                             return prop.id == propertyId;
                         });
                     

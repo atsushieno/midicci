@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
 #include "TestPropertyRules.hpp"
-#include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
-#include "midi-ci/json/Json.hpp"
-#include "midi-ci/properties/PropertyCommonRules.hpp"
+#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/json_ish/Json.hpp"
+#include "midicci/properties/PropertyCommonRules.hpp"
 
-using namespace midi_ci::properties;
-using namespace midi_ci::json;
-using namespace midi_ci::properties::property_common_rules;
+using namespace midicci::properties;
+using namespace midicci::json_ish;
+using namespace midicci::properties::property_common_rules;
 
 TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;

@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstdint>
 #include <functional>
-#include <midi-ci/profiles/MidiCIProfile.hpp>
+#include <midicci/profiles/MidiCIProfile.hpp>
 #include "MutableState.hpp"
 
 namespace ci_tool {
@@ -13,7 +13,7 @@ public:
     using StateChangedCallback = std::function<void()>;
     
     explicit MidiCIProfileState(uint8_t grp, uint8_t addr, 
-                               const midi_ci::profiles::MidiCIProfileId& prof,
+                               const midicci::profiles::MidiCIProfileId& prof,
                                bool en, uint16_t channels);
     ~MidiCIProfileState();
     
@@ -29,7 +29,7 @@ public:
     MutableState<uint8_t>& address();
     const MutableState<uint8_t>& address() const;
     
-    const midi_ci::profiles::MidiCIProfileId& get_profile() const noexcept;
+    const midicci::profiles::MidiCIProfileId& get_profile() const noexcept;
     
     MutableState<bool>& enabled();
     const MutableState<bool>& enabled() const;

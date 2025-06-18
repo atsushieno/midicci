@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
-#include "midi-ci/core/MidiCIConstants.hpp"
-#include "midi-ci/core/CIFactory.hpp"
-#include "midi-ci/messages/Message.hpp"
-#include "midi-ci/profiles/MidiCIProfile.hpp"
+#include "midicci/core/MidiCIConstants.hpp"
+#include "midicci/core/CIFactory.hpp"
+#include "midicci/messages/Message.hpp"
+#include "midicci/profiles/MidiCIProfile.hpp"
 #include <vector>
 #include <cstdint>
 
-using namespace midi_ci::core;
-using namespace midi_ci::messages;
-using namespace midi_ci::core::constants;
-using namespace midi_ci::profiles;
+using namespace midicci::core;
+using namespace midicci::messages;
+using namespace midicci::core::constants;
+using namespace midicci::profiles;
 
 TEST(CIFactoryTest, testDiscoveryMessages) {
     uint8_t all_supported = 0x1C;

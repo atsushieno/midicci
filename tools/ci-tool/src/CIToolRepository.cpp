@@ -1,8 +1,8 @@
 #include "CIToolRepository.hpp"
 #include "MidiDeviceManager.hpp"
 #include "CIDeviceManager.hpp"
-#include "midi-ci/json/Json.hpp"
-#include "midi-ci/core/MidiCIDevice.hpp"
+#include "midicci/json_ish/Json.hpp"
+#include "midicci/core/MidiCIDevice.hpp"
 #include <random>
 #include <fstream>
 #include <iostream>
@@ -26,7 +26,7 @@ public:
     }
     
     CIToolRepository* parent_;
-    midi_ci::core::MidiCIDeviceConfiguration config_{};
+    midicci::core::MidiCIDeviceConfiguration config_{};
     std::vector<LogEntry> logs_;
     std::vector<LogCallback> log_callbacks_;
     mutable std::mutex mutex_;
@@ -103,7 +103,7 @@ void CIToolRepository::load_config(const std::string& filename) {
                            std::istreambuf_iterator<char>());
         file.close();
         
-        auto json_val = midi_ci::json::JsonValue::parse_or_null(content);
+        auto json_val = midicci::json_ish::JsonValue::parse_or_null(content);
         if (json_val.is_null()) {
             log("Failed to parse config file: " + filename, MessageDirection::In);
             return;
@@ -117,8 +117,8 @@ void CIToolRepository::load_config(const std::string& filename) {
 
 void CIToolRepository::save_config(const std::string& filename) {
     try {
-        midi_ci::json::JsonValue config = midi_ci::json::JsonValue::empty_object();
-        config["muid"] = midi_ci::json::JsonValue(static_cast<int>(pimpl_->muid_));
+        midicci::json_ish::JsonValue config = midicci::json_ish::JsonValue::empty_object();
+        config["muid"] = midicci::json_ish::JsonValue(static_cast<int>(pimpl_->muid_));
         
         std::ofstream file(filename);
         if (!file.is_open()) {

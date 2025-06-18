@@ -1,6 +1,6 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
-#include "midi-ci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/ObservablePropertyList.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -8,7 +8,7 @@ namespace ci_tool {
 
 class CIDeviceModel::Impl {
 public:
-    explicit Impl(CIDeviceManager& parent, midi_ci::core::MidiCIDeviceConfiguration& config, uint32_t muid,
+    explicit Impl(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config, uint32_t muid,
                   CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
                   std::function<void(const std::string&, bool)> logger)
         : parent_(parent), config_(config), muid_(muid),
@@ -17,13 +17,13 @@ public:
           receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
     
     CIDeviceManager& parent_;
-    midi_ci::core::MidiCIDeviceConfiguration& config_;
+    midicci::core::MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
     CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
     std::function<void(const std::string&, bool)> logger_;
     
-    std::shared_ptr<midi_ci::core::MidiCIDevice> device_;
+    std::shared_ptr<midicci::core::MidiCIDevice> device_;
     MutableStateList<std::shared_ptr<ClientConnectionModel>> connections_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> local_profile_states_;
     
@@ -38,10 +38,10 @@ public:
     mutable std::recursive_mutex mutex_{};
 };
 
-CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midi_ci::core::MidiCIDeviceConfiguration& config,
-                           uint32_t muid, CIOutputSender ci_output_sender,
-                           MidiMessageReportSender midi_message_report_sender,
-                           std::function<void(const std::string&, bool)> logger)
+CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config,
+                             uint32_t muid, CIOutputSender ci_output_sender,
+                             MidiMessageReportSender midi_message_report_sender,
+                             std::function<void(const std::string&, bool)> logger)
     : pimpl_(std::make_unique<Impl>(parent, config, muid, ci_output_sender, midi_message_report_sender, logger)) {
     receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;
     last_chunked_message_channel = pimpl_->last_chunked_message_channel_;
@@ -53,7 +53,7 @@ CIDeviceModel::~CIDeviceModel() = default;
 void CIDeviceModel::initialize() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->device_ = std::make_shared<midi_ci::core::MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
+    pimpl_->device_ = std::make_shared<midicci::core::MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
     pimpl_->device_->initialize();
     
@@ -74,7 +74,7 @@ void CIDeviceModel::shutdown() {
     std::cout << "CIDeviceModel shutdown" << std::endl;
 }
 
-std::shared_ptr<midi_ci::core::MidiCIDevice> CIDeviceModel::get_device() const {
+std::shared_ptr<midicci::core::MidiCIDevice> CIDeviceModel::get_device() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->device_;
 }
@@ -102,8 +102,8 @@ void CIDeviceModel::send_discovery() {
     }
 }
 
-void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid, 
-                                                const midi_ci::profiles::MidiCIProfileId& profile, uint8_t target) {
+void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid,
+                                                 const midicci::profiles::MidiCIProfileId& profile, uint8_t target) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Sending profile details inquiry to MUID: 0x" << std::hex << muid << std::dec << std::endl;
 }
@@ -118,7 +118,7 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
     }
 }
 
-void CIDeviceModel::add_local_profile(const midi_ci::profiles::MidiCIProfile& profile) {
+void CIDeviceModel::add_local_profile(const midicci::profiles::MidiCIProfile& profile) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     auto profile_state = std::make_shared<MidiCIProfileState>(
         profile.group, profile.address, profile.profile,
@@ -130,7 +130,7 @@ void CIDeviceModel::add_local_profile(const midi_ci::profiles::MidiCIProfile& pr
     }
 }
 
-void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile_id) {
+void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->local_profile_states_.remove_if(
         [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
@@ -144,7 +144,7 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const m
     }
 }
 
-void CIDeviceModel::add_local_property(const midi_ci::properties::PropertyMetadata& property) {
+void CIDeviceModel::add_local_property(const midicci::properties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
     
@@ -227,8 +227,8 @@ void CIDeviceModel::on_connections_changed() {
 }
 
 void CIDeviceModel::add_test_profile_items() {
-    midi_ci::profiles::MidiCIProfileId test_profile({0x7E, 0x00, 0x01, 0x02, 0x03});
-    midi_ci::profiles::MidiCIProfile profile(test_profile, 0, 0x7F, false, 1);
+    midicci::profiles::MidiCIProfileId test_profile({0x7E, 0x00, 0x01, 0x02, 0x03});
+    midicci::profiles::MidiCIProfile profile(test_profile, 0, 0x7F, false, 1);
     add_local_profile(profile);
     
     std::cout << "Added test profile items" << std::endl;

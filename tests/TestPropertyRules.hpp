@@ -1,16 +1,16 @@
 #pragma once
 
-#include "midi-ci/properties/ObservablePropertyList.hpp"
-#include "midi-ci/properties/MidiCIServicePropertyRules.hpp"
-#include "midi-ci/properties/PropertyCommonRules.hpp"
-#include "midi-ci/json/Json.hpp"
-#include "midi-ci/messages/Message.hpp"
+#include "midicci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/MidiCIServicePropertyRules.hpp"
+#include "midicci/properties/PropertyCommonRules.hpp"
+#include "midicci/json_ish/Json.hpp"
+#include "midicci/messages/Message.hpp"
 #include <unordered_map>
 
-using namespace midi_ci::properties;
-using namespace midi_ci::json;
-using namespace midi_ci::messages;
-using namespace midi_ci::properties::property_common_rules;
+using namespace midicci::properties;
+using namespace midicci::json_ish;
+using namespace midicci::messages;
+using namespace midicci::properties::property_common_rules;
 
 class TestPropertyRules : public MidiCIServicePropertyRules {
 public:

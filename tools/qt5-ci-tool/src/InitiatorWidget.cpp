@@ -2,7 +2,7 @@
 #include "CIToolRepository.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
-#include "midi-ci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/ObservablePropertyList.hpp"
 
 #include <QGridLayout>
 #include <QSplitter>

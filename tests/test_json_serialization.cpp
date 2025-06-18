@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "midi-ci/json/Json.hpp"
+#include "midicci/json_ish/Json.hpp"
 
-using namespace midi_ci::json;
+using namespace midicci::json_ish;
 
 class JsonSerializationTest : public ::testing::Test {
 protected:
@@ -77,7 +77,7 @@ TEST_F(JsonSerializationTest, ParseWithBooleans) {
 
 TEST_F(JsonSerializationTest, ParseOrNull) {
     std::string valid_json = "{\"test\":\"value\"}";
-    std::string invalid_json = "{invalid json";
+    std::string invalid_json = "{invalid json_ish";
     
     JsonValue valid_parsed = JsonValue::parse_or_null(valid_json);
     JsonValue invalid_parsed = JsonValue::parse_or_null(invalid_json);

@@ -1,11 +1,11 @@
 
 #include <gtest/gtest.h>
-#include "midi-ci/messages/Message.hpp"
-#include "midi-ci/profiles/MidiCIProfile.hpp"
-#include "midi-ci/core/MidiCIConstants.hpp"
+#include "midicci/messages/Message.hpp"
+#include "midicci/profiles/MidiCIProfile.hpp"
+#include "midicci/core/MidiCIConstants.hpp"
 
-using namespace midi_ci::messages;
-using namespace midi_ci::core::constants;
+using namespace midicci::messages;
+using namespace midicci::core::constants;
 
 class MessageSerializationTest : public ::testing::Test {
 protected:
@@ -13,7 +13,7 @@ protected:
     }
     
     Common common{0x12345678, 0x87654321, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 0};
-    midi_ci::core::DeviceDetails device_info{0x7D, 0x00, 0x01, 0x01000000};
+    midicci::core::DeviceDetails device_info{0x7D, 0x00, 0x01, 0x01000000};
 };
 
 TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {
@@ -27,7 +27,7 @@ TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {
 
 TEST_F(MessageSerializationTest, SetProfileOnSerialize) {
     std::vector<uint8_t> profile_id = {0x7E, 0x00, 0x01, 0x02, 0x03};
-    SetProfileOn set_on(common, midi_ci::profiles::MidiCIProfileId{profile_id}, 16);
+    SetProfileOn set_on(common, midicci::profiles::MidiCIProfileId{profile_id}, 16);
     
     auto data = set_on.serialize();
     EXPECT_GT(data.size(), 0);

@@ -2,10 +2,10 @@
 #include "CIToolRepository.hpp"
 #include "MidiDeviceManager.hpp"
 #include "CIDeviceModel.hpp"
-#include "midi-ci/core/MidiCIDevice.hpp"
-#include "midi-ci/core/MidiCIConstants.hpp"
-#include "midi-ci/ump/Ump.hpp"
-#include "midi-ci/ump/UmpRetriever.hpp"
+#include "midicci/core/MidiCIDevice.hpp"
+#include "midicci/core/MidiCIConstants.hpp"
+#include "midicci/ump/Ump.hpp"
+#include "midicci/ump/UmpRetriever.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -13,11 +13,11 @@ namespace ci_tool {
 
 class CIDeviceManager::Impl {
 public:
-    explicit Impl(CIToolRepository& repo, midi_ci::core::MidiCIDeviceConfiguration& config, std::shared_ptr<MidiDeviceManager> midi_mgr)
+    explicit Impl(CIToolRepository& repo, midicci::core::MidiCIDeviceConfiguration& config, std::shared_ptr<MidiDeviceManager> midi_mgr)
         : repository_(repo), config_(config), midi_device_manager_(midi_mgr) {}
     
     CIToolRepository& repository_;
-    midi_ci::core::MidiCIDeviceConfiguration& config_;
+    midicci::core::MidiCIDeviceConfiguration& config_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
     mutable std::mutex mutex_;
@@ -27,8 +27,8 @@ public:
 };
 
 CIDeviceManager::CIDeviceManager(CIToolRepository& repository,
-                               midi_ci::core::MidiCIDeviceConfiguration& config,
-                               std::shared_ptr<MidiDeviceManager> midi_manager)
+                                 midicci::core::MidiCIDeviceConfiguration& config,
+                                 std::shared_ptr<MidiDeviceManager> midi_manager)
     : pimpl_(std::make_unique<Impl>(repository, config, midi_manager)) {}
 
 CIDeviceManager::~CIDeviceManager() = default;
@@ -154,22 +154,22 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
     }
     pimpl_->repository_.log("[received UMP] " + hex_str, MessageDirection::In);
     
-    auto umps = midi_ci::ump::parse_umps_from_bytes(data, start, length);
+    auto umps = midicci::ump::parse_umps_from_bytes(data, start, length);
     
     for (const auto& ump : umps) {
         switch (ump.get_message_type()) {
-            case midi_ci::ump::MessageType::SYSEX7: {
-                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::START)) {
+            case midicci::ump::MessageType::SYSEX7: {
+                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
                     pimpl_->buffered_sysex7_.clear();
                 }
                 
-                std::vector<midi_ci::ump::Ump> single_ump = {ump};
-                auto sysex_data = midi_ci::ump::UmpRetriever::get_sysex7_data(single_ump);
+                std::vector<midicci::ump::Ump> single_ump = {ump};
+                auto sysex_data = midicci::ump::UmpRetriever::get_sysex7_data(single_ump);
                 pimpl_->buffered_sysex7_.insert(pimpl_->buffered_sysex7_.end(), 
                                                sysex_data.begin(), sysex_data.end());
                 
-                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::END) ||
-                    ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
+                    ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
                     
                     if (pimpl_->buffered_sysex7_.size() > 2 &&
                         pimpl_->buffered_sysex7_[0] == 0x7E &&
@@ -192,18 +192,18 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                 break;
             }
             
-            case midi_ci::ump::MessageType::SYSEX8_MDS: {
-                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::START)) {
+            case midicci::ump::MessageType::SYSEX8_MDS: {
+                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
                     pimpl_->buffered_sysex8_.clear();
                 }
                 
-                std::vector<midi_ci::ump::Ump> single_ump = {ump};
-                auto sysex_data = midi_ci::ump::UmpRetriever::get_sysex8_data(single_ump);
+                std::vector<midicci::ump::Ump> single_ump = {ump};
+                auto sysex_data = midicci::ump::UmpRetriever::get_sysex8_data(single_ump);
                 pimpl_->buffered_sysex8_.insert(pimpl_->buffered_sysex8_.end(), 
                                                sysex_data.begin(), sysex_data.end());
                 
-                if (ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::END) ||
-                    ump.get_status_code() == static_cast<uint8_t>(midi_ci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
+                    ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
                     
                     if (pimpl_->buffered_sysex8_.size() > 2 &&
                         pimpl_->buffered_sysex8_[0] == 0x7E &&

@@ -9,7 +9,7 @@
 #include "MidiDeviceManager.hpp"
 #include "CIDeviceManager.hpp"
 
-namespace midi_ci {
+namespace midicci {
 namespace messages {
 class Message;
 }
@@ -57,7 +57,7 @@ public:
     void load_default_config();
     void save_default_config();
     
-    static constexpr const char* DEFAULT_CONFIG_FILE = "midi-ci-tool.settings.json";
+    static constexpr const char* DEFAULT_CONFIG_FILE = "midi-ci-tool.settings.json_ish";
     
 private:
     class Impl;

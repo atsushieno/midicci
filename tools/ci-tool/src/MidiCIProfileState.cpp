@@ -7,7 +7,7 @@ namespace ci_tool {
 
 class MidiCIProfileState::Impl {
 public:
-    explicit Impl(uint8_t grp, uint8_t addr, const midi_ci::profiles::MidiCIProfileId& prof,
+    explicit Impl(uint8_t grp, uint8_t addr, const midicci::profiles::MidiCIProfileId& prof,
                   bool en, uint16_t channels)
         : group_(grp), address_(addr), profile_(prof), enabled_(en), num_channels_requested_(channels) {
         
@@ -37,7 +37,7 @@ public:
     
     MutableState<uint8_t> group_;
     MutableState<uint8_t> address_;
-    midi_ci::profiles::MidiCIProfileId profile_;
+    midicci::profiles::MidiCIProfileId profile_;
     MutableState<bool> enabled_;
     MutableState<uint16_t> num_channels_requested_;
     
@@ -46,7 +46,7 @@ public:
 };
 
 MidiCIProfileState::MidiCIProfileState(uint8_t grp, uint8_t addr, 
-                                     const midi_ci::profiles::MidiCIProfileId& prof,
+                                     const midicci::profiles::MidiCIProfileId& prof,
                                      bool en, uint16_t channels)
     : pimpl_(std::make_unique<Impl>(grp, addr, prof, en, channels)) {}
 
@@ -68,7 +68,7 @@ const MutableState<uint8_t>& MidiCIProfileState::address() const {
     return pimpl_->address_;
 }
 
-const midi_ci::profiles::MidiCIProfileId& MidiCIProfileState::get_profile() const noexcept {
+const midicci::profiles::MidiCIProfileId& MidiCIProfileState::get_profile() const noexcept {
     return pimpl_->profile_;
 }
 

@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include "midi-ci/profiles/ProfileClientFacade.hpp"
-#include "midi-ci/profiles/ProfileHostFacade.hpp"
-#include "midi-ci/profiles/MidiCIProfile.hpp"
-#include "midi-ci/core/ClientConnection.hpp"
-#include "midi-ci/messages/Message.hpp"
+#include "midicci/profiles/ProfileClientFacade.hpp"
+#include "midicci/profiles/ProfileHostFacade.hpp"
+#include "midicci/profiles/MidiCIProfile.hpp"
+#include "midicci/core/ClientConnection.hpp"
+#include "midicci/messages/Message.hpp"
 
-using namespace midi_ci::profiles;
-using namespace midi_ci::core;
-using namespace midi_ci::messages;
+using namespace midicci::profiles;
+using namespace midicci::core;
+using namespace midicci::messages;
 
 TEST(ProfileFacadesTest, configureProfiles) {
     TestCIMediator mediator;

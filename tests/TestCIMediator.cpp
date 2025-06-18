@@ -1,9 +1,9 @@
 #include "TestCIMediator.hpp"
 #include "TestPropertyRules.hpp"
-#include "midi-ci/core/MidiCIDevice.hpp"
+#include "midicci/core/MidiCIDevice.hpp"
 #include <memory>
 
-using namespace midi_ci::core;
+using namespace midicci::core;
 
 TestCIMediator::TestCIMediator() {
     config_.device_info = {0, 0, 0, 0, "TestDevice", "TestInitiatorFamily", "TestInitiatorModel", "0.0", "ABCDEFGH"};

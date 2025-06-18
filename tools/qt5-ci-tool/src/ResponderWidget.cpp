@@ -2,7 +2,7 @@
 #include "CIToolRepository.hpp"
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
-#include "midi-ci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/ObservablePropertyList.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -382,7 +382,7 @@ void ResponderWidget::updatePropertyDetails()
         m_canSubscribeCheck->setChecked(true);
         m_requireResIdCheck->setChecked(false);
         m_canPaginateCheck->setChecked(false);
-        m_mediaTypesEdit->setText("application/json");
+        m_mediaTypesEdit->setText("application/json_ish");
         m_encodingsEdit->setText("ascii");
         m_schemaEdit->setText("{}");
         

@@ -1,45 +1,45 @@
 set(MIDI_CI_SOURCES
-    midi-ci/core/MidiCIDevice.cpp
-    midi-ci/core/ClientConnection.cpp
-    midi-ci/core/MidiCIConstants.cpp
-    midi-ci/core/MidiCIConverter.cpp
-    midi-ci/core/CIFactory.cpp
-    midi-ci/core/CIRetrieval.cpp
-    midi-ci/json/Json.cpp
-    midi-ci/messages/Message.cpp
-    midi-ci/messages/Messenger.cpp
-    midi-ci/profiles/ObservableProfileList.cpp
-    midi-ci/profiles/ProfileClientFacade.cpp
-    midi-ci/profiles/ProfileHostFacade.cpp
-    midi-ci/properties/PropertyChunkManager.cpp
-    midi-ci/properties/PropertyClientFacade.cpp
-    midi-ci/properties/PropertyHostFacade.cpp
-    midi-ci/properties/ObservablePropertyList.cpp
-    midi-ci/properties/CommonRulesPropertyHelper.cpp
-    midi-ci/properties/CommonRulesPropertyClient.cpp
-    midi-ci/properties/CommonRulesPropertyMetadata.cpp
-    midi-ci/ump/Ump.cpp
-    midi-ci/ump/UmpRetriever.cpp
+        midicci/core/MidiCIDevice.cpp
+        midicci/core/ClientConnection.cpp
+        midicci/core/MidiCIConstants.cpp
+        midicci/core/MidiCIConverter.cpp
+        midicci/core/CIFactory.cpp
+        midicci/core/CIRetrieval.cpp
+        midicci/json_ish/Json.cpp
+        midicci/messages/Message.cpp
+        midicci/messages/Messenger.cpp
+        midicci/profiles/ObservableProfileList.cpp
+        midicci/profiles/ProfileClientFacade.cpp
+        midicci/profiles/ProfileHostFacade.cpp
+        midicci/properties/PropertyChunkManager.cpp
+        midicci/properties/PropertyClientFacade.cpp
+        midicci/properties/PropertyHostFacade.cpp
+        midicci/properties/ObservablePropertyList.cpp
+        midicci/properties/CommonRulesPropertyHelper.cpp
+        midicci/properties/CommonRulesPropertyClient.cpp
+        midicci/properties/CommonRulesPropertyMetadata.cpp
+        midicci/ump/Ump.cpp
+        midicci/ump/UmpRetriever.cpp
 )
 
 set(MIDI_CI_HEADERS
-    ../include/midi-ci/core/MidiCIDevice.hpp
-    ../include/midi-ci/core/ClientConnection.hpp
-    ../include/midi-ci/core/MidiCIConstants.hpp
-    ../include/midi-ci/core/CIFactory.hpp
-    ../include/midi-ci/core/MidiCIDeviceConfiguration.hpp
-    ../include/midi-ci/core/MidiCIChannelList.hpp
-    ../include/midi-ci/messages/Message.hpp
-    ../include/midi-ci/messages/Messenger.hpp
-    ../include/midi-ci/properties/ObservablePropertyList.hpp
-    ../include/midi-ci/properties/PropertyChunkManager.hpp
-    ../include/midi-ci/properties/PropertyCommonRules.hpp
-    ../include/midi-ci/properties/CommonRulesPropertyHelper.hpp
-    ../include/midi-ci/properties/CommonRulesPropertyClient.hpp
-    ../include/midi-ci/transport/SysExTransport.hpp
-    ../include/midi-ci/json/Json.hpp
-    ../include/midi-ci/ump/Ump.hpp
-    ../include/midi-ci/ump/UmpRetriever.hpp
+        ../include/midicci/core/MidiCIDevice.hpp
+        ../include/midicci/core/ClientConnection.hpp
+        ../include/midicci/core/MidiCIConstants.hpp
+        ../include/midicci/core/CIFactory.hpp
+        ../include/midicci/core/MidiCIDeviceConfiguration.hpp
+        ../include/midicci/core/MidiCIChannelList.hpp
+        ../include/midicci/messages/Message.hpp
+        ../include/midicci/messages/Messenger.hpp
+        ../include/midicci/properties/ObservablePropertyList.hpp
+        ../include/midicci/properties/PropertyChunkManager.hpp
+        ../include/midicci/properties/PropertyCommonRules.hpp
+        ../include/midicci/properties/CommonRulesPropertyHelper.hpp
+        ../include/midicci/properties/CommonRulesPropertyClient.hpp
+        ../include/midicci/transport/SysExTransport.hpp
+        ../include/midicci/json_ish/Json.hpp
+        ../include/midicci/ump/Ump.hpp
+        ../include/midicci/ump/UmpRetriever.hpp
 )
 
 add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})

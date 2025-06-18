@@ -1,15 +1,15 @@
 #pragma once
 
-#include "midi-ci/core/MidiCIDevice.hpp"
-#include "midi-ci/core/ClientConnection.hpp"
-#include "midi-ci/properties/PropertyHostFacade.hpp"
-#include "midi-ci/profiles/ProfileHostFacade.hpp"
-#include "midi-ci/core/MidiCIDeviceConfiguration.hpp"
+#include "midicci/core/MidiCIDevice.hpp"
+#include "midicci/core/ClientConnection.hpp"
+#include "midicci/properties/PropertyHostFacade.hpp"
+#include "midicci/profiles/ProfileHostFacade.hpp"
+#include "midicci/core/MidiCIDeviceConfiguration.hpp"
 #include <memory>
 #include <vector>
 #include <cstdint>
 
-using namespace midi_ci::core;
+using namespace midicci::core;
 
 class TestPropertyRules;
 

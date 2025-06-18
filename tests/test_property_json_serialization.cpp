@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "midi-ci/messages/Message.hpp"
-#include "midi-ci/json/Json.hpp"
+#include "midicci/messages/Message.hpp"
+#include "midicci/json_ish/Json.hpp"
 
-using namespace midi_ci::messages;
-using namespace midi_ci::json;
+using namespace midicci::messages;
+using namespace midicci::json_ish;
 
 class PropertyJsonSerializationTest : public ::testing::Test {
 protected:

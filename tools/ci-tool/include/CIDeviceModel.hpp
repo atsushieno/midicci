@@ -23,10 +23,10 @@ public:
     using ProfilesUpdatedCallback = std::function<void()>;
     using PropertiesUpdatedCallback = std::function<void()>;
     
-    explicit CIDeviceModel(CIDeviceManager& parent, midi_ci::core::MidiCIDeviceConfiguration& config,
-                          uint32_t muid, CIOutputSender ci_output_sender,
-                          MidiMessageReportSender midi_message_report_sender,
-                          std::function<void(const std::string&, bool)> logger = {});
+    explicit CIDeviceModel(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config,
+                           uint32_t muid, CIOutputSender ci_output_sender,
+                           MidiMessageReportSender midi_message_report_sender,
+                           std::function<void(const std::string&, bool)> logger = {});
     ~CIDeviceModel();
     
     CIDeviceModel(const CIDeviceModel&) = delete;
@@ -41,7 +41,7 @@ private:
 
 public:
     
-    std::shared_ptr<midi_ci::core::MidiCIDevice> get_device() const;
+    std::shared_ptr<midicci::core::MidiCIDevice> get_device() const;
     
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
     
@@ -49,15 +49,15 @@ public:
     const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_local_profile_states() const;
     
     void send_discovery();
-    void send_profile_details_inquiry(uint8_t address, uint32_t muid, 
-                                    const midi_ci::profiles::MidiCIProfileId& profile, uint8_t target);
+    void send_profile_details_inquiry(uint8_t address, uint32_t muid,
+                                      const midicci::profiles::MidiCIProfileId& profile, uint8_t target);
     
     void update_local_profile_target(const std::shared_ptr<MidiCIProfileState>& profile_state,
                                    uint8_t new_address, bool enabled, uint16_t num_channels_requested);
-    void add_local_profile(const midi_ci::profiles::MidiCIProfile& profile);
-    void remove_local_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile_id);
+    void add_local_profile(const midicci::profiles::MidiCIProfile& profile);
+    void remove_local_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile_id);
     
-    void add_local_property(const midi_ci::properties::PropertyMetadata& property);
+    void add_local_property(const midicci::properties::PropertyMetadata& property);
     void remove_local_property(const std::string& property_id);
     void update_property_value(const std::string& property_id, const std::string& res_id, 
                              const std::vector<uint8_t>& data);

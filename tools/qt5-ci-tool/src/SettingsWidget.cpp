@@ -43,7 +43,7 @@ void SettingsWidget::setupUI()
     m_configGroup = new QGroupBox("Load and Save", this);
     auto *configLayout = new QVBoxLayout(m_configGroup);
     
-    m_configFileLabel = new QLabel("Configuration file is 'ktmidi-ci-tool.settings.json'", this);
+    m_configFileLabel = new QLabel("Configuration file is 'ktmidi-ci-tool.settings.json_ish'", this);
     configLayout->addWidget(m_configFileLabel);
     
     auto *configButtonLayout = new QHBoxLayout();
@@ -176,7 +176,7 @@ void SettingsWidget::onOutputDeviceChanged(int index)
 
 void SettingsWidget::onLoadConfiguration()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, "Load Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Load Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json_ish)");
     if (!fileName.isEmpty() && m_repository) {
         m_repository->log(QString("Loading configuration from: %1").arg(fileName).toStdString(), ci_tool::MessageDirection::Out);
         updateDeviceConfiguration();
@@ -185,7 +185,7 @@ void SettingsWidget::onLoadConfiguration()
 
 void SettingsWidget::onSaveConfiguration()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, "Save Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ktmidi-ci-tool.settings.json", "JSON Files (*.json)");
+    QString fileName = QFileDialog::getSaveFileName(this, "Save Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ktmidi-ci-tool.settings.json_ish", "JSON Files (*.json_ish)");
     if (!fileName.isEmpty() && m_repository) {
         m_repository->log(QString("Saving configuration to: %1").arg(fileName).toStdString(), ci_tool::MessageDirection::Out);
     }

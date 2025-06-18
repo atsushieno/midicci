@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "midi-ci/json/Json.hpp"
+#include "midicci/json_ish/Json.hpp"
 
-using namespace midi_ci::json;
+using namespace midicci::json_ish;
 
 TEST(JsonTest, parseString) {
     auto str1 = JsonValue::parse("\"TEST1\"");

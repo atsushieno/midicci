@@ -162,7 +162,18 @@ void ClientConnectionModel::setup_profile_listeners() {
 void ClientConnectionModel::setup_property_listeners() {
     if (!pimpl_->connection_) return;
     
-    auto& property_client = pimpl_->connection_->get_property_client_facade();
+    auto& property_facade = pimpl_->connection_->get_property_client_facade();
+    auto* observable_properties = property_facade.get_observable_properties();
+    
+    if (observable_properties) {
+        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
+            on_property_value_updated();
+        });
+        
+        observable_properties->addPropertyCatalogUpdatedCallback([this]() {
+            on_property_value_updated();
+        });
+    }
     
     std::cout << "Set up property listeners for connection" << std::endl;
 }

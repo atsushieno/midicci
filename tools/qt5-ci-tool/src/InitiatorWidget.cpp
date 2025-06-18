@@ -490,6 +490,7 @@ void InitiatorWidget::setupEventBridge()
                 updateConnectionInfo();
                 updateProfileList();
                 updatePropertyList();
+                setupPropertyCallbacks();
             }
             emit deviceConnected(m_selectedDeviceMUID);
         }, Qt::QueuedConnection);
@@ -512,4 +513,47 @@ void InitiatorWidget::setupEventBridge()
             emit propertiesUpdated(m_selectedDeviceMUID);
         }, Qt::QueuedConnection);
     });
+}
+
+void InitiatorWidget::setupPropertyCallbacks()
+{
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    const auto& connections = deviceModel->get_connections();
+    auto connections_vec = connections.to_vector();
+    
+    for (const auto& connection : connections_vec) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    auto* observable_properties = property_facade.get_observable_properties();
+                    
+                    if (observable_properties) {
+                        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
+                            QMetaObject::invokeMethod(this, [this]() {
+                                updatePropertyList();
+                            }, Qt::QueuedConnection);
+                        });
+                        
+                        observable_properties->addPropertyCatalogUpdatedCallback([this]() {
+                            QMetaObject::invokeMethod(this, [this]() {
+                                updatePropertyList();
+                            }, Qt::QueuedConnection);
+                        });
+                    }
+                }
+                break;
+            }
+        }
+    }
 }

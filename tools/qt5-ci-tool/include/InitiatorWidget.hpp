@@ -51,6 +51,7 @@ private:
     void setupUI();
     void setupConnections();
     void setupEventBridge();
+    void setupPropertyCallbacks();
     void updateDeviceList();
     void updateConnectionInfo();
     void updateProfileList();

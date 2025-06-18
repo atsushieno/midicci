@@ -122,6 +122,18 @@ public:
         const std::vector<uint8_t>& message_text_data);
     
     static uint32_t midiCI32to28(uint32_t value);
+    
+    static std::vector<uint8_t> midiCIInvalidateMuid(
+        std::vector<uint8_t>& dst, uint8_t version_and_format, 
+        uint32_t source_muid, uint32_t target_muid);
+    
+    static std::vector<uint8_t> midiCIDiscoveryNak(
+        std::vector<uint8_t>& dst, uint8_t address, uint8_t version_and_format,
+        uint32_t source_muid, uint32_t destination_muid);
+    
+    static std::vector<uint8_t> midiCIPropertyGetCapabilities(
+        std::vector<uint8_t>& dst, uint8_t address, bool is_reply,
+        uint32_t source_muid, uint32_t destination_muid, uint8_t max_simultaneous_requests);
 };
 
 } // namespace core

@@ -443,5 +443,51 @@ uint32_t CIFactory::midiCI32to28(uint32_t value) {
            (value & 0x7F);
 }
 
+std::vector<uint8_t> CIFactory::midiCIInvalidateMuid(
+    std::vector<uint8_t>& dst, uint8_t version_and_format, 
+    uint32_t source_muid, uint32_t target_muid) {
+    
+    dst.resize(std::max(dst.size(), size_t(17)));
+    
+    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(constants::CISubId2::INVALIDATE_MUID),
+                       version_and_format, source_muid, constants::MIDI_CI_BROADCAST_MUID_32);
+    
+    midiCI7bitInt28At(dst, 13, midiCI32to28(target_muid));
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 17);
+}
+
+std::vector<uint8_t> CIFactory::midiCIDiscoveryNak(
+    std::vector<uint8_t>& dst, uint8_t address, uint8_t version_and_format,
+    uint32_t source_muid, uint32_t destination_muid) {
+    
+    dst.resize(std::max(dst.size(), size_t(13)));
+    
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::NAK),
+                       version_and_format, source_muid, destination_muid);
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 13);
+}
+
+std::vector<uint8_t> CIFactory::midiCIPropertyGetCapabilities(
+    std::vector<uint8_t>& dst, uint8_t address, bool is_reply,
+    uint32_t source_muid, uint32_t destination_muid, uint8_t max_simultaneous_requests) {
+    
+    dst.resize(std::max(dst.size(), size_t(16)));
+    
+    uint8_t sub_id = is_reply ? static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY)
+                              : static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY);
+    
+    midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, 
+                       source_muid, destination_muid);
+    
+    dst[13] = max_simultaneous_requests;
+    dst[14] = 0;
+    dst[15] = 0;
+    
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 16);
+}
+
 } // namespace core
 } // namespace midi_ci

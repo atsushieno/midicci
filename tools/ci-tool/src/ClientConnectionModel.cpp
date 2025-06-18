@@ -20,7 +20,7 @@ public:
     
     std::vector<ProfilesChangedCallback> profiles_changed_callbacks_;
     std::vector<PropertiesChangedCallback> properties_changed_callbacks_;
-    std::vector<DeviceInfoChangedCallback> device_info_changed_callbacks_;
+    std::vector<DeviceDetailsChangedCallback> device_info_changed_callbacks_;
     
     mutable std::mutex mutex_;
 };
@@ -200,7 +200,7 @@ void ClientConnectionModel::add_properties_changed_callback(PropertiesChangedCal
     pimpl_->properties_changed_callbacks_.push_back(callback);
 }
 
-void ClientConnectionModel::add_device_info_changed_callback(DeviceInfoChangedCallback callback) {
+void ClientConnectionModel::add_device_info_changed_callback(DeviceDetailsChangedCallback callback) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     pimpl_->device_info_changed_callbacks_.push_back(callback);
 }
@@ -227,12 +227,12 @@ void ClientConnectionModel::remove_properties_changed_callback(const PropertiesC
         pimpl_->properties_changed_callbacks_.end());
 }
 
-void ClientConnectionModel::remove_device_info_changed_callback(const DeviceInfoChangedCallback& callback) {
+void ClientConnectionModel::remove_device_info_changed_callback(const DeviceDetailsChangedCallback& callback) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     pimpl_->device_info_changed_callbacks_.erase(
         std::remove_if(pimpl_->device_info_changed_callbacks_.begin(), 
                       pimpl_->device_info_changed_callbacks_.end(),
-                      [&callback](const DeviceInfoChangedCallback& cb) {
+                      [&callback](const DeviceDetailsChangedCallback& cb) {
                           return cb.target<void()>() == callback.target<void()>();
                       }),
         pimpl_->device_info_changed_callbacks_.end());

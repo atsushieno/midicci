@@ -11,7 +11,7 @@ protected:
     }
     
     Common common{0x12345678, 0x87654321, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 0};
-    DeviceInfo device_info{"TestMfg", "TestFamily", "TestModel", "1.0"};
+    DeviceDetails device_info{0x7D, 0x00, 0x01, 0x01000000};
 };
 
 TEST_F(MessageSerializationTest, DiscoveryInquirySerialize) {

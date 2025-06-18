@@ -128,9 +128,9 @@ uint32_t MidiCIDevice::get_muid() const noexcept {
     return pimpl_->muid_;
 }
 
-midi_ci::messages::DeviceInfo MidiCIDevice::get_device_info() const {
+midi_ci::messages::DeviceDetails MidiCIDevice::get_device_info() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return midi_ci::messages::DeviceInfo("Generic MIDI-CI Device", "Default Family", "Default Model", "1.0.0");
+    return midi_ci::messages::DeviceDetails(0x7D, 0x00, 0x01, 0x01000000);
 }
 
 midi_ci::core::DeviceConfig MidiCIDevice::get_config() const {

@@ -22,7 +22,7 @@ TEST_F(MessengerTest, DeviceInitialization) {
 
 TEST_F(MessengerTest, DeviceInfo) {
     auto device_info = device->get_device_info();
-    EXPECT_FALSE(device_info.manufacturer.empty());
+    EXPECT_NE(device_info.manufacturer, 0);
 }
 
 TEST_F(MessengerTest, ProcessInputMidi1Format) {

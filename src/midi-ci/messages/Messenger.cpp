@@ -71,9 +71,7 @@ void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
     Common common(pimpl_->device_.get_muid(), BROADCAST_MUID, MIDI_CI_ADDRESS_FUNCTION_BLOCK, pimpl_->device_.get_config().group);
     auto device_info = pimpl_->device_.get_device_info();
 
-    DiscoveryInquiry inquiry(common,
-        {device_info.manufacturer, device_info.family, device_info.model, device_info.version},
-        0x7F, pimpl_->device_.get_config().max_sysex_size, false);
+    DiscoveryInquiry inquiry(common, device_info, 0x7F, pimpl_->device_.get_config().max_sysex_size, false);
 
     send(inquiry);
 }
@@ -82,11 +80,9 @@ void Messenger::send_discovery_reply(uint8_t group, uint32_t destination_muid) {
     using namespace midi_ci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
-    auto device_info = pimpl_->device_.get_device_info();
+    auto device_details = pimpl_->device_.get_device_info();
 
-    DiscoveryReply reply(common,
-        {device_info.manufacturer, device_info.family, device_info.model, device_info.version},
-        0x7F, pimpl_->device_.get_config().max_sysex_size, 0, false);
+    DiscoveryReply reply(common, device_details, 0x7F, pimpl_->device_.get_config().max_sysex_size, 0, false);
 
     send(reply);
 }
@@ -262,18 +258,13 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::DISCOVERY_REPLY: {
             if (data.size() >= 30) {
                 auto device_details = core::CIRetrieval::get_device_details(data);
-                std::string manufacturer(reinterpret_cast<const char*>(&device_details.manufacturer), 3);
-                std::string family(reinterpret_cast<const char*>(&device_details.family), 2);
-                std::string model(reinterpret_cast<const char*>(&device_details.model), 2);
-                std::string version(reinterpret_cast<const char*>(&device_details.version), 4);
-                DeviceInfo device_info(manufacturer, family, model, version);
 
                 uint8_t ci_supported = data[24];
                 uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
 
-                DiscoveryReply reply(common, device_info, ci_supported, max_sysex, output_path, function_block);
+                DiscoveryReply reply(common, device_details, ci_supported, max_sysex, output_path, function_block);
                 pimpl_->log_message(reply, false);
                 processDiscoveryReply(reply);
             }
@@ -390,17 +381,12 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::DISCOVERY_INQUIRY: {
             if (data.size() >= 30) {
                 auto device_details = core::CIRetrieval::get_device_details(data);
-                std::string manufacturer(reinterpret_cast<const char*>(&device_details.manufacturer), 3);
-                std::string family(reinterpret_cast<const char*>(&device_details.family), 2);
-                std::string model(reinterpret_cast<const char*>(&device_details.model), 2);
-                std::string version(reinterpret_cast<const char*>(&device_details.version), 4);
-                DeviceInfo device_info(manufacturer, family, model, version);
 
                 uint8_t ci_supported = data[24];
                 uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
 
-                DiscoveryInquiry inquiry(common, device_info, ci_supported, max_sysex, output_path);
+                DiscoveryInquiry inquiry(common, device_details, ci_supported, max_sysex, output_path);
                 pimpl_->log_message(inquiry, false);
                 processDiscovery(inquiry);
             }

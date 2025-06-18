@@ -25,7 +25,7 @@ public:
     CIOutputSender ci_output_sender_;
     std::unique_ptr<profiles::ProfileClientFacade> profile_client_facade_;
     std::unique_ptr<properties::PropertyClientFacade> property_client_facade_;
-    std::unique_ptr<messages::DeviceInfo> device_info_;
+    std::unique_ptr<messages::DeviceDetails> device_info_;
     std::unique_ptr<json::JsonValue> channel_list_;
     std::unique_ptr<json::JsonValue> json_schema_;
     mutable std::recursive_mutex mutex_;
@@ -165,12 +165,12 @@ const properties::PropertyClientFacade& ClientConnection::get_property_client_fa
     return *pimpl_->property_client_facade_;
 }
 
-void ClientConnection::set_device_info(const messages::DeviceInfo& device_info) {
+void ClientConnection::set_device_info(const messages::DeviceDetails& device_details) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->device_info_ = std::make_unique<messages::DeviceInfo>(device_info);
+    pimpl_->device_info_ = std::make_unique<messages::DeviceDetails>(device_details);
 }
 
-const messages::DeviceInfo* ClientConnection::get_device_info() const {
+const messages::DeviceDetails* ClientConnection::get_device_info() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->device_info_.get();
 }

@@ -154,10 +154,7 @@ void MidiCIDevice::set_sysex_transport(std::unique_ptr<midi_ci::transport::SysEx
 
 void MidiCIDevice::sendDiscovery() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->initialized_) {
-        messages::Messenger messenger(*this);
-        messenger.send_discovery_inquiry(0, 0x7F7F7F7F);
-    }
+    this->pimpl_->messenger_.send_discovery_inquiry();
 }
 
 profiles::ProfileHostFacade& MidiCIDevice::get_profile_host_facade() {

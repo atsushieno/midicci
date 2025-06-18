@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include "Message.hpp"
+#include "../core/MidiCIConstants.hpp"
 
 namespace midi_ci {
 namespace messages {
@@ -36,7 +37,7 @@ public:
     Messenger& operator=(Messenger&&) = default;
     
     void send(const Message& message);
-    void send_discovery_inquiry(uint8_t group, uint32_t destination_muid);
+    void send_discovery_inquiry(uint8_t ciCategorySupported = static_cast<uint8_t>(core::constants::MidiCISupportedCategories::THREE_P));
     void send_discovery_reply(uint8_t group, uint32_t destination_muid);
     void send_endpoint_inquiry(uint8_t group, uint32_t destination_muid, uint8_t status);
     void send_invalidate_muid(uint8_t group, uint32_t destination_muid, uint32_t target_muid);

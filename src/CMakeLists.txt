@@ -2,6 +2,7 @@ set(MIDI_CI_SOURCES
     midi-ci/core/MidiCIDevice.cpp
     midi-ci/core/ClientConnection.cpp
     midi-ci/core/MidiCIConstants.cpp
+    midi-ci/core/MidiCIConverter.cpp
     midi-ci/core/CIFactory.cpp
     midi-ci/core/CIRetrieval.cpp
     midi-ci/json/Json.cpp

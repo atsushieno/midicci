@@ -65,10 +65,10 @@ void Messenger::send(const Message& message) {
     }
 }
 
-void Messenger::send_discovery_inquiry(uint8_t group, uint32_t destination_muid) {
+void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
     using namespace midi_ci::core::constants;
 
-    Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
+    Common common(pimpl_->device_.get_muid(), BROADCAST_MUID, MIDI_CI_ADDRESS_FUNCTION_BLOCK, pimpl_->device_.get_config().group);
     auto device_info = pimpl_->device_.get_device_info();
 
     DiscoveryInquiry inquiry(common,

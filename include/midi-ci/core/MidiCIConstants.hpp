@@ -155,6 +155,18 @@ enum class CISubId2 : uint8_t {
     PROCESS_INQUIRY_END_OF_MIDI_MESSAGE = 0x44
 };
 
+enum class MidiCISupportedCategories {
+    NONE = 0,
+    PROTOCOL_NEGOTIATION = 1, // Deprecated in MIDI-CI 1.2
+    PROFILE_CONFIGURATION = 4,
+    PROPERTY_EXCHANGE = 8,
+    PROCES_INQUIRY = 16,
+    // I'm inclined to say "All", but that may change in the future and it indeed did.
+    // Even worse, the definition of those Three Ps had changed...
+    THREE_P = PROFILE_CONFIGURATION + PROPERTY_EXCHANGE + PROCES_INQUIRY
+};
+
+
 } // namespace constants
 
 } // namespace core

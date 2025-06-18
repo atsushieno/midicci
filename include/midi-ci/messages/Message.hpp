@@ -46,6 +46,16 @@ struct DeviceInfo {
         : manufacturer(mfg), family(fam), model(mod), version(ver) {}
 };
 
+struct DeviceDetails {
+    uint32_t manufacturer;
+    uint16_t family;
+    uint16_t modelNumber;
+    uint32_t softwareRevisionLevel;
+    
+    DeviceDetails(uint32_t mfg = 0, uint16_t fam = 0, uint16_t model = 0, uint32_t version = 0)
+        : manufacturer(mfg), family(fam), modelNumber(model), softwareRevisionLevel(version) {}
+};
+
 struct Common {
     uint32_t source_muid;
     uint32_t destination_muid;
@@ -95,7 +105,7 @@ public:
 
 class DiscoveryInquiry : public SinglePacketMessage {
 public:
-    DiscoveryInquiry(const Common& common, const DeviceInfo& device_info, 
+    DiscoveryInquiry(const Common& common, const DeviceDetails& device_details, 
                     uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id);
     
     std::vector<uint8_t> serialize() const override;
@@ -103,7 +113,7 @@ public:
     std::string get_body_string() const override;
     
 private:
-    DeviceInfo device_info_;
+    DeviceDetails device_details_;
     uint8_t supported_features_;
     uint32_t max_sysex_size_;
     uint8_t output_path_id_;
@@ -111,7 +121,7 @@ private:
 
 class DiscoveryReply : public SinglePacketMessage {
 public:
-    DiscoveryReply(const Common& common, const DeviceInfo& device_info, 
+    DiscoveryReply(const Common& common, const DeviceDetails& device_details, 
                   uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id, uint8_t function_block);
     
     std::vector<uint8_t> serialize() const override;
@@ -119,7 +129,7 @@ public:
     std::string get_body_string() const override;
     
 private:
-    DeviceInfo device_info_;
+    DeviceDetails device_details_;
     uint8_t supported_features_;
     uint32_t max_sysex_size_;
     uint8_t output_path_id_;

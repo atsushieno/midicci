@@ -55,9 +55,9 @@ SinglePacketMessage::SinglePacketMessage(MessageType type, const Common& common)
 MultiPacketMessage::MultiPacketMessage(MessageType type, const Common& common)
     : Message(type, common) {}
 
-DiscoveryInquiry::DiscoveryInquiry(const Common& common, const DeviceInfo& device_info, 
+DiscoveryInquiry::DiscoveryInquiry(const Common& common, const DeviceDetails& device_details, 
                                  uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id)
-    : SinglePacketMessage(MessageType::DiscoveryInquiry, common), device_info_(device_info),
+    : SinglePacketMessage(MessageType::DiscoveryInquiry, common), device_details_(device_details),
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), output_path_id_(output_path_id) {}
 
 std::vector<uint8_t> DiscoveryInquiry::serialize() const {
@@ -74,10 +74,20 @@ std::vector<uint8_t> DiscoveryInquiry::serialize() const {
     
     serialize_muid_32(data, common_.destination_muid);
     
-    for (int i = 0; i < 3; ++i) data.push_back(0x00);
-    for (int i = 0; i < 2; ++i) data.push_back(0x00);
-    for (int i = 0; i < 2; ++i) data.push_back(0x00);
-    for (int i = 0; i < 4; ++i) data.push_back(0x00);
+    data.push_back(device_details_.manufacturer & 0xFF);
+    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
+    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
+    
+    data.push_back(device_details_.family & 0xFF);
+    data.push_back((device_details_.family >> 8) & 0xFF);
+    
+    data.push_back(device_details_.modelNumber & 0xFF);
+    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
+    
+    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
     data.push_back(supported_features_);
     
     data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));
@@ -106,9 +116,9 @@ std::string DiscoveryInquiry::get_body_string() const {
     return oss.str();
 }
 
-DiscoveryReply::DiscoveryReply(const Common& common, const DeviceInfo& device_info, 
+DiscoveryReply::DiscoveryReply(const Common& common, const DeviceDetails& device_details, 
                               uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id, uint8_t function_block)
-    : SinglePacketMessage(MessageType::DiscoveryReply, common), device_info_(device_info),
+    : SinglePacketMessage(MessageType::DiscoveryReply, common), device_details_(device_details),
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), 
       output_path_id_(output_path_id), function_block_(function_block) {}
 
@@ -126,10 +136,20 @@ std::vector<uint8_t> DiscoveryReply::serialize() const {
     
     serialize_muid_32(data, common_.destination_muid);
     
-    for (int i = 0; i < 3; ++i) data.push_back(0x00);
-    for (int i = 0; i < 2; ++i) data.push_back(0x00);
-    for (int i = 0; i < 2; ++i) data.push_back(0x00);
-    for (int i = 0; i < 4; ++i) data.push_back(0x00);
+    data.push_back(device_details_.manufacturer & 0xFF);
+    data.push_back((device_details_.manufacturer >> 8) & 0xFF);
+    data.push_back((device_details_.manufacturer >> 16) & 0xFF);
+    
+    data.push_back(device_details_.family & 0xFF);
+    data.push_back((device_details_.family >> 8) & 0xFF);
+    
+    data.push_back(device_details_.modelNumber & 0xFF);
+    data.push_back((device_details_.modelNumber >> 8) & 0xFF);
+    
+    data.push_back(device_details_.softwareRevisionLevel & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 8) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 16) & 0xFF);
+    data.push_back((device_details_.softwareRevisionLevel >> 24) & 0xFF);
     data.push_back(supported_features_);
     
     data.push_back(static_cast<uint8_t>(max_sysex_size_ & 0x7F));

@@ -13,8 +13,26 @@ struct DeviceDetails {
     uint16_t modelNumber;
     uint32_t softwareRevisionLevel;
 
-    DeviceDetails(uint32_t mfg = 0, uint16_t fam = 0, uint16_t model = 0, uint32_t version = 0)
+    explicit DeviceDetails(uint32_t mfg = 0, uint16_t fam = 0, uint16_t model = 0, uint32_t version = 0)
             : manufacturer(mfg), family(fam), modelNumber(model), softwareRevisionLevel(version) {}
+};
+
+struct DeviceInfo {
+    uint32_t manufacturer_id;
+    uint16_t family_id;
+    uint16_t model_id;
+    uint32_t version_id;
+    std::string manufacturer;
+    std::string family;
+    std::string model;
+    std::string version;
+    std::string serial_number;
+
+    DeviceInfo(uint32_t manufacturer_id, uint16_t family_id, uint16_t model_id, uint32_t version_id,
+               const std::string& mfg, const std::string& fam, const std::string& mod, const std::string& ver,
+               const std::string& serial_number)
+            : manufacturer_id(manufacturer_id), family_id(family_id), model_id(model_id), version_id(version_id),
+              manufacturer(mfg), family(fam), model(mod), version(ver), serial_number(serial_number) {}
 };
 
 namespace constants {
@@ -74,7 +92,7 @@ inline void serialize_7bit_int14(std::vector<uint8_t>& data, uint16_t value) {
     data.push_back(static_cast<uint8_t>((value >> 7) & 0x7F));
 }
 
-inline void serialize_common_header(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2, 
+inline void serialize_common_header(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2,
                                    uint8_t version, uint32_t source_muid, uint32_t dest_muid) {
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(address);
@@ -102,9 +120,9 @@ inline void serialize_property_common(std::vector<uint8_t>& data, uint8_t addres
 inline std::vector<std::vector<uint8_t>> serialize_property_chunks(
     uint32_t max_chunk_size, uint8_t sub_id_2, uint32_t source_muid, uint32_t dest_muid,
     uint8_t request_id, const std::vector<uint8_t>& header, const std::vector<uint8_t>& data) {
-    
+
     std::vector<std::vector<uint8_t>> result;
-    
+
     if (data.empty()) {
         std::vector<uint8_t> packet;
         serialize_property_common(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
@@ -112,13 +130,13 @@ inline std::vector<std::vector<uint8_t>> serialize_property_chunks(
         result.push_back(std::move(packet));
         return result;
     }
-    
+
     size_t num_chunks = (data.size() + max_chunk_size - 1) / max_chunk_size;
     for (size_t i = 0; i < num_chunks; ++i) {
         size_t start = i * max_chunk_size;
         size_t end = std::min(start + max_chunk_size, data.size());
         std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
-        
+
         std::vector<uint8_t> packet;
         serialize_property_common(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
                                 source_muid, dest_muid, request_id, header,

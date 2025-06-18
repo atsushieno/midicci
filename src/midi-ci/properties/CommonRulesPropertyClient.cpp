@@ -113,8 +113,9 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
             std::string family = json_body["family"].is_string() ? json_body["family"].as_string() : "";
             std::string model = json_body["model"].is_string() ? json_body["model"].as_string() : "";
             std::string version = json_body["version"].is_string() ? json_body["version"].as_string() : "";
-            
-            messages::DeviceInfo device_info(manufacturer, family, model, version);
+
+            // FIXME: fill these properties correctly later.
+            core::DeviceInfo device_info(0, 0, 0, 0, manufacturer, family, model, version, "");
             conn_.set_device_info(device_info);
         } catch (...) {
         }

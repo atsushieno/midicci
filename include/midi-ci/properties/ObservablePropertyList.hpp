@@ -10,16 +10,17 @@
 namespace midi_ci {
 namespace properties {
 
-struct PropertyMetadata {
-    std::string property_id;
-    std::string resource_id;
-    std::string name;
-    std::string media_type;
-    std::string encoding;
-    std::vector<uint8_t> data;
+class PropertyMetadata {
+public:
+    virtual ~PropertyMetadata() = default;
     
-    PropertyMetadata(const std::string& id, const std::string& res_id, const std::string& prop_name,
-                    const std::string& type, const std::string& enc, const std::vector<uint8_t>& prop_data);
+    virtual const std::string& getPropertyId() const = 0;
+    virtual const std::string& getResourceId() const = 0;
+    virtual const std::string& getName() const = 0;
+    virtual const std::string& getMediaType() const = 0;
+    virtual const std::string& getEncoding() const = 0;
+    virtual const std::vector<uint8_t>& getData() const = 0;
+    virtual std::string getExtra(const std::string& key) const = 0;
 };
 
 struct SubscriptionEntry {

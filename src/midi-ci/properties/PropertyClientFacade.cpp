@@ -1,6 +1,7 @@
 #include "midi-ci/properties/PropertyClientFacade.hpp"
 #include "midi-ci/properties/PropertyHostFacade.hpp"
 #include "midi-ci/properties/CommonRulesPropertyClient.hpp"
+#include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/messages/Message.hpp"
@@ -22,7 +23,7 @@ public:
     std::unique_ptr<MidiCIClientPropertyRules> property_rules_;
     std::unordered_map<uint8_t, std::vector<uint8_t>> open_requests_;
     std::unordered_map<std::string, std::vector<uint8_t>> cached_properties_;
-    std::vector<PropertyMetadata> metadata_list_;
+    std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<PropertySubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
 };
@@ -243,7 +244,7 @@ std::vector<uint8_t> PropertyClientFacade::getProperty(const std::string& proper
     return {};
 }
 
-std::vector<PropertyMetadata> PropertyClientFacade::get_metadata_list() const {
+std::vector<std::unique_ptr<PropertyMetadata>> PropertyClientFacade::get_metadata_list() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->property_rules_) {
         auto* common_rules = dynamic_cast<CommonRulesPropertyClient*>(pimpl_->property_rules_.get());
@@ -251,7 +252,13 @@ std::vector<PropertyMetadata> PropertyClientFacade::get_metadata_list() const {
             return common_rules->get_metadata_list();
         }
     }
-    return pimpl_->metadata_list_;
+    std::vector<std::unique_ptr<PropertyMetadata>> result;
+    for (const auto& metadata : pimpl_->metadata_list_) {
+        auto copy = std::make_unique<CommonRulesPropertyMetadata>();
+        copy->resource = metadata->getPropertyId();
+        result.push_back(std::move(copy));
+    }
+    return result;
 }
 
 std::vector<PropertySubscription> PropertyClientFacade::get_subscriptions() const {

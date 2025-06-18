@@ -145,7 +145,7 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const m
 
 void CIDeviceModel::add_local_property(const midi_ci::properties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    std::cout << "Added local property: " << property.property_id << std::endl;
+    std::cout << "Added local property: " << property.getPropertyId() << std::endl;
     
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();

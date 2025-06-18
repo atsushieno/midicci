@@ -1,4 +1,5 @@
 #include "midi-ci/properties/CommonRulesPropertyClient.hpp"
+#include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midi-ci/properties/PropertyCommonRules.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
@@ -87,7 +88,9 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
     if (property_id == PropertyResourceNames::RESOURCE_LIST) {
         auto list = get_metadata_list_for_body(body);
         resource_list_.clear();
-        resource_list_.insert(resource_list_.end(), list.begin(), list.end());
+        for (auto& item : list) {
+            resource_list_.push_back(std::move(item));
+        }
         
         for (auto& callback : property_catalog_updated_callbacks_) {
             callback();
@@ -96,9 +99,9 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
         bool auto_send_device_info = true;
         if (auto_send_device_info) {
             auto it = std::find_if(resource_list_.begin(), resource_list_.end(),
-                [](const PropertyMetadata& p) { return p.property_id == PropertyResourceNames::DEVICE_INFO; });
+                [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == PropertyResourceNames::DEVICE_INFO; });
             if (it != resource_list_.end()) {
-                conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, it->encoding);
+                conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, (*it)->getEncoding());
             }
         }
     } else if (property_id == PropertyResourceNames::DEVICE_INFO) {
@@ -148,16 +151,33 @@ void CommonRulesPropertyClient::add_property_catalog_updated_callback(std::funct
     property_catalog_updated_callbacks_.push_back(callback);
 }
 
-std::vector<PropertyMetadata> CommonRulesPropertyClient::get_metadata_list() const {
-    return resource_list_;
+std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_metadata_list() const {
+    std::vector<std::unique_ptr<PropertyMetadata>> result;
+    for (const auto& metadata : resource_list_) {
+        auto copy = std::make_unique<CommonRulesPropertyMetadata>();
+        copy->resource = metadata->getPropertyId();
+        if (auto* common_rules = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get())) {
+            copy->canGet = common_rules->canGet;
+            copy->canSet = common_rules->canSet;
+            copy->canSubscribe = common_rules->canSubscribe;
+            copy->requireResId = common_rules->requireResId;
+            copy->mediaTypes = common_rules->mediaTypes;
+            copy->encodings = common_rules->encodings;
+            copy->schema = common_rules->schema;
+            copy->canPaginate = common_rules->canPaginate;
+            copy->originator = common_rules->originator;
+        }
+        result.push_back(std::move(copy));
+    }
+    return result;
 }
 
-std::vector<PropertyMetadata> CommonRulesPropertyClient::get_metadata_list_for_body(const std::vector<uint8_t>& body) {
+std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_metadata_list_for_body(const std::vector<uint8_t>& body) {
     try {
         json::JsonValue json_body;
         convert_application_json_bytes_to_json(body, json_body);
         
-        std::vector<PropertyMetadata> result;
+        std::vector<std::unique_ptr<PropertyMetadata>> result;
         
         if (json_body.is_array()) {
             const auto& array = json_body.as_array();
@@ -165,28 +185,39 @@ std::vector<PropertyMetadata> CommonRulesPropertyClient::get_metadata_list_for_b
                 const auto& entry = array[i];
                 if (entry.is_object()) {
                     std::string resource = entry["resource"].is_string() ? entry["resource"].as_string() : "";
-                    std::string can_set = entry["canSet"].is_string() ? entry["canSet"].as_string() : "";
-                    std::string media_type = "application/json";
-                    std::string encoding = "ASCII";
+                    
+                    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(resource);
+                    
+                    if (entry["canSet"].is_string()) {
+                        metadata->canSet = entry["canSet"].as_string();
+                    }
                     
                     if (entry["encodings"].is_array() && entry["encodings"].as_array().size() > 0) {
                         const auto& encodings_array = entry["encodings"].as_array();
-                        encoding = encodings_array[0].is_string() ? encodings_array[0].as_string() : "ASCII";
+                        std::vector<std::string> encodings;
+                        for (const auto& enc : encodings_array) {
+                            if (enc.is_string()) encodings.push_back(enc.as_string());
+                        }
+                        metadata->encodings = encodings;
                     }
                     
                     if (entry["mediaType"].is_array() && entry["mediaType"].as_array().size() > 0) {
                         const auto& media_type_array = entry["mediaType"].as_array();
-                        media_type = media_type_array[0].is_string() ? media_type_array[0].as_string() : "application/json";
+                        std::vector<std::string> mediaTypes;
+                        for (const auto& mt : media_type_array) {
+                            if (mt.is_string()) mediaTypes.push_back(mt.as_string());
+                        }
+                        metadata->mediaTypes = mediaTypes;
                     }
                     
-                    result.emplace_back(resource, "", resource, media_type, encoding, std::vector<uint8_t>());
+                    result.push_back(std::move(metadata));
                 }
             }
         }
         
         return result;
     } catch (...) {
-        return std::vector<PropertyMetadata>();
+        return std::vector<std::unique_ptr<PropertyMetadata>>();
     }
 }
 

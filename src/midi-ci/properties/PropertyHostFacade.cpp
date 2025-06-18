@@ -1,5 +1,7 @@
 #include "midi-ci/properties/PropertyHostFacade.hpp"
 #include "midi-ci/properties/MidiCIServicePropertyRules.hpp"
+#include "midi-ci/properties/ObservablePropertyList.hpp"
+#include "midi-ci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/messages/Message.hpp"
 #include <mutex>
@@ -14,7 +16,7 @@ public:
     
     core::MidiCIDevice& device_;
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;
-    std::vector<PropertyMetadata> properties_;
+    std::vector<std::unique_ptr<PropertyMetadata>> properties_;
     PropertyHostFacade::PropertyUpdatedCallback property_updated_callback_;
     std::vector<PropertySubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
@@ -34,22 +36,18 @@ MidiCIServicePropertyRules* PropertyHostFacade::get_property_rules() {
     return pimpl_->property_rules_.get();
 }
 
-void PropertyHostFacade::add_property(const PropertyMetadata& property) {
+void PropertyHostFacade::add_property(std::unique_ptr<PropertyMetadata> property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
-        [&property](const PropertyMetadata& p) {
-            return p.property_id == property.property_id;
+        [&property](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property->getPropertyId();
         });
     
     if (it != pimpl_->properties_.end()) {
-        *it = property;
+        *it = std::move(property);
     } else {
-        pimpl_->properties_.push_back(property);
-    }
-    
-    if (pimpl_->property_rules_) {
-        pimpl_->property_rules_->add_metadata(property);
+        pimpl_->properties_.push_back(std::move(property));
     }
 }
 
@@ -57,8 +55,8 @@ void PropertyHostFacade::remove_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::remove_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
-        [&property_id](const PropertyMetadata& p) {
-            return p.property_id == property_id;
+        [&property_id](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property_id;
         });
     
     pimpl_->properties_.erase(it, pimpl_->properties_.end());
@@ -72,12 +70,14 @@ void PropertyHostFacade::update_property(const std::string& property_id, const s
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
-        [&property_id](const PropertyMetadata& p) {
-            return p.property_id == property_id;
+        [&property_id](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property_id;
         });
     
     if (it != pimpl_->properties_.end()) {
-        it->data = data;
+        if (auto* common_rules = dynamic_cast<CommonRulesPropertyMetadata*>(it->get())) {
+            common_rules->setData(data);
+        }
         notify_property_updated(property_id);
     }
 }
@@ -129,12 +129,14 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
-        [&property_id](const PropertyMetadata& p) {
-            return p.property_id == property_id;
+        [&property_id](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property_id;
         });
     
     if (it != pimpl_->properties_.end()) {
-        it->data = data;
+        if (auto* common_rules = dynamic_cast<CommonRulesPropertyMetadata*>(it->get())) {
+            common_rules->setData(data);
+        }
         if (notify) {
             notify_property_updated(property_id);
         }
@@ -145,12 +147,12 @@ std::vector<uint8_t> PropertyHostFacade::getProperty(const std::string& property
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->properties_.begin(), pimpl_->properties_.end(),
-        [&property_id](const PropertyMetadata& p) {
-            return p.property_id == property_id;
+        [&property_id](const std::unique_ptr<PropertyMetadata>& p) {
+            return p->getPropertyId() == property_id;
         });
     
     if (it != pimpl_->properties_.end()) {
-        return it->data;
+        return (*it)->getData();
     }
     return {};
 }

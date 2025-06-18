@@ -52,7 +52,7 @@ public:
     void set_profile(uint8_t group, uint8_t address, const midi_ci::profiles::MidiCIProfileId& profile,
                     bool new_enabled, uint16_t new_num_channels_requested);
     
-    std::vector<midi_ci::properties::PropertyMetadata> get_metadata_list() const;
+    std::vector<std::unique_ptr<midi_ci::properties::PropertyMetadata>> get_metadata_list() const;
     
     void get_property_data(const std::string& resource, const std::string& encoding = "",
                           int paginate_offset = -1, int paginate_limit = -1);

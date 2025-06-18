@@ -12,8 +12,8 @@ DeviceDetails CIRetrieval::get_device_details(const std::vector<uint8_t>& sysex)
     DeviceDetails details;
     details.manufacturer = sysex[13] | (sysex[14] << 8) | (sysex[15] << 16);
     details.family = static_cast<uint16_t>(sysex[16] | (sysex[17] << 8));
-    details.model = static_cast<uint16_t>(sysex[18] | (sysex[19] << 8));
-    details.version = sysex[20] | (sysex[21] << 8) | (sysex[22] << 16) | (sysex[23] << 24);
+    details.modelNumber = static_cast<uint16_t>(sysex[18] | (sysex[19] << 8));
+    details.softwareRevisionLevel = sysex[20] | (sysex[21] << 8) | (sysex[22] << 16) | (sysex[23] << 24);
     return details;
 }
 

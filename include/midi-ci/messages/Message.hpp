@@ -4,9 +4,11 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "midi-ci/core/MidiCIConstants.hpp"
 
 namespace midi_ci {
 namespace messages {
+    using DeviceDetails = midi_ci::core::DeviceDetails;
 
 enum class MessageType : uint8_t {
     DiscoveryInquiry = 0x70,
@@ -44,16 +46,6 @@ struct DeviceInfo {
     
     DeviceInfo(const std::string& mfg, const std::string& fam, const std::string& mod, const std::string& ver)
         : manufacturer(mfg), family(fam), model(mod), version(ver) {}
-};
-
-struct DeviceDetails {
-    uint32_t manufacturer;
-    uint16_t family;
-    uint16_t modelNumber;
-    uint32_t softwareRevisionLevel;
-    
-    DeviceDetails(uint32_t mfg = 0, uint16_t fam = 0, uint16_t model = 0, uint32_t version = 0)
-        : manufacturer(mfg), family(fam), modelNumber(model), softwareRevisionLevel(version) {}
 };
 
 struct Common {

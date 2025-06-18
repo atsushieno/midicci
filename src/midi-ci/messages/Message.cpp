@@ -106,10 +106,10 @@ std::string DiscoveryInquiry::get_label() const {
 
 std::string DiscoveryInquiry::get_body_string() const {
     std::ostringstream oss;
-    oss << "manufacturer=" << device_info_.manufacturer 
-        << ", family=" << device_info_.family
-        << ", model=" << device_info_.model
-        << ", version=" << device_info_.version
+    oss << "manufacturer=" << device_details_.manufacturer
+        << ", family=" << device_details_.family
+        << ", modelNumber=" << device_details_.modelNumber
+        << ", softwareRevisionLevel=" << device_details_.softwareRevisionLevel
         << ", features=" << std::hex << static_cast<int>(supported_features_)
         << ", maxSysEx=" << max_sysex_size_
         << ", outputPath=" << static_cast<int>(output_path_id_);
@@ -169,10 +169,10 @@ std::string DiscoveryReply::get_label() const {
 
 std::string DiscoveryReply::get_body_string() const {
     std::ostringstream oss;
-    oss << "manufacturer=" << device_info_.manufacturer 
-        << ", family=" << device_info_.family
-        << ", model=" << device_info_.model
-        << ", version=" << device_info_.version
+    oss << "manufacturer=" << device_details_.manufacturer
+        << ", family=" << device_details_.family
+        << ", modelNumber=" << device_details_.modelNumber
+        << ", softwareRevisionLevel=" << device_details_.softwareRevisionLevel
         << ", features=" << std::hex << static_cast<int>(supported_features_)
         << ", maxSysEx=" << max_sysex_size_
         << ", outputPath=" << static_cast<int>(output_path_id_)

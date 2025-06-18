@@ -15,7 +15,6 @@ class SysExTransport;
 
 namespace messages {
 struct DeviceInfo;
-struct DeviceDetails;
 }
 
 namespace profiles {

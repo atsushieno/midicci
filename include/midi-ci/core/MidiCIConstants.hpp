@@ -7,6 +7,16 @@
 namespace midi_ci {
 namespace core {
 
+struct DeviceDetails {
+    uint32_t manufacturer;
+    uint16_t family;
+    uint16_t modelNumber;
+    uint32_t softwareRevisionLevel;
+
+    DeviceDetails(uint32_t mfg = 0, uint16_t fam = 0, uint16_t model = 0, uint32_t version = 0)
+            : manufacturer(mfg), family(fam), modelNumber(model), softwareRevisionLevel(version) {}
+};
+
 namespace constants {
 
 constexpr uint8_t MIDI_CI_SYSEX_START = 0xF0;

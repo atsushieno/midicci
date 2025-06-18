@@ -3,16 +3,10 @@
 #include <vector>
 #include <cstdint>
 #include <utility>
+#include "../core/MidiCIConstants.hpp"
 
 namespace midi_ci {
 namespace core {
-
-struct DeviceDetails {
-    uint32_t manufacturer;
-    uint16_t family;
-    uint16_t model;
-    uint32_t version;
-};
 
 class CIRetrieval {
 public:

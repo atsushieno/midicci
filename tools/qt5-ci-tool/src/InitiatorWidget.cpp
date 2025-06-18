@@ -358,10 +358,11 @@ void InitiatorWidget::updateConnectionInfo()
     if (targetConnection && targetConnection->get_connection()) {
         auto deviceDetails = targetConnection->get_connection()->get_device_info();
         if (deviceDetails) {
-            m_manufacturerLabel->setText(QString("0x%1").arg(deviceDetails->manufacturer, 6, 16, QChar('0')));
-            m_familyLabel->setText(QString("0x%1").arg(deviceDetails->family, 4, 16, QChar('0')));
-            m_modelLabel->setText(QString("0x%1").arg(deviceDetails->modelNumber, 4, 16, QChar('0')));
-            m_versionLabel->setText(QString("0x%1").arg(deviceDetails->softwareRevisionLevel, 8, 16, QChar('0')));
+            // FIXME: should be updated when DeviceInfo got integer fields.
+            m_manufacturerLabel->setText(QString("0x%1").arg(/*deviceDetails->manufacturer*/0, 6, 16, QChar('0')));
+            m_familyLabel->setText(QString("0x%1").arg(/*deviceDetails->family*/0, 4, 16, QChar('0')));
+            m_modelLabel->setText(QString("0x%1").arg(/*deviceDetails->modelNumber*/0, 4, 16, QChar('0')));
+            m_versionLabel->setText(QString("0x%1").arg(/*deviceDetails->softwareRevisionLevel*/0, 8, 16, QChar('0')));
             m_serialLabel->setText("--");
             m_maxConnectionsLabel->setText("--");
         } else {

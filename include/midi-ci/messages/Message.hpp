@@ -36,6 +36,16 @@ enum class MessageType : uint8_t {
     MidiMessageReportInquiry = 0x41
 };
 
+struct DeviceInfo {
+    std::string manufacturer;
+    std::string family;
+    std::string model;
+    std::string version;
+    
+    DeviceInfo(const std::string& mfg, const std::string& fam, const std::string& mod, const std::string& ver)
+        : manufacturer(mfg), family(fam), model(mod), version(ver) {}
+};
+
 struct DeviceDetails {
     uint32_t manufacturer;
     uint16_t family;

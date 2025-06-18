@@ -45,8 +45,8 @@ public:
     properties::PropertyClientFacade& get_property_client_facade();
     const properties::PropertyClientFacade& get_property_client_facade() const;
     
-    void set_device_info(const messages::DeviceDetails& device_details);
-    const messages::DeviceDetails* get_device_info() const;
+    void set_device_info(const messages::DeviceInfo& device_info);
+    const messages::DeviceInfo* get_device_info() const;
     
     void set_channel_list(const json::JsonValue& channel_list);
     const json::JsonValue* get_channel_list() const;

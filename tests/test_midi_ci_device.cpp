@@ -6,7 +6,7 @@ TEST(MidiCIDeviceTest, initialState) {
     TestCIMediator mediator;
     auto& device1 = mediator.getDevice1();
     
-    EXPECT_EQ("Generic MIDI-CI Device", device1.get_device_info().manufacturer);
+    EXPECT_EQ("Generic MIDI-CI Device", device1.get_device_info_strings().manufacturer);
     EXPECT_EQ(19474, device1.get_muid());
 }
 
@@ -25,6 +25,6 @@ TEST(MidiCIDeviceTest, basicRun) {
     ASSERT_NE(nullptr, conn) << "conn";
 
     ASSERT_NE(nullptr, conn->get_device_info()) << "conn->get_device_info()";
-    EXPECT_EQ(device2.get_device_info().manufacturer, 
+    EXPECT_EQ(device2.get_device_info_strings().manufacturer, 
               conn->get_device_info()->manufacturer) << "conn.device.manufacturer";
 }

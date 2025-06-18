@@ -109,13 +109,13 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
             json::JsonValue json_body;
             convert_application_json_bytes_to_json(body, json_body);
             
-            uint32_t manufacturer = json_body["manufacturer"].is_number() ? static_cast<uint32_t>(json_body["manufacturer"].as_number()) : 0;
-            uint16_t family = json_body["family"].is_number() ? static_cast<uint16_t>(json_body["family"].as_number()) : 0;
-            uint16_t modelNumber = json_body["modelNumber"].is_number() ? static_cast<uint16_t>(json_body["modelNumber"].as_number()) : 0;
-            uint32_t softwareRevisionLevel = json_body["softwareRevisionLevel"].is_number() ? static_cast<uint32_t>(json_body["softwareRevisionLevel"].as_number()) : 0;
+            std::string manufacturer = json_body["manufacturer"].is_string() ? json_body["manufacturer"].as_string() : "";
+            std::string family = json_body["family"].is_string() ? json_body["family"].as_string() : "";
+            std::string model = json_body["model"].is_string() ? json_body["model"].as_string() : "";
+            std::string version = json_body["version"].is_string() ? json_body["version"].as_string() : "";
             
-            messages::DeviceDetails device_details(manufacturer, family, modelNumber, softwareRevisionLevel);
-            conn_.set_device_info(device_details);
+            messages::DeviceInfo device_info(manufacturer, family, model, version);
+            conn_.set_device_info(device_info);
         } catch (...) {
         }
     } else if (property_id == PropertyResourceNames::CHANNEL_LIST) {

@@ -465,7 +465,7 @@ void InitiatorWidget::updatePropertyList()
         }
         
         if (metadata.empty()) {
-            m_propertyList->addItem("DeviceDetails");
+            m_propertyList->addItem("DeviceInfo");
             m_propertyList->addItem("ChannelList");
             m_propertyList->addItem("JSONSchema");
         }

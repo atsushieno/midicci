@@ -14,6 +14,7 @@ class SysExTransport;
 }
 
 namespace messages {
+struct DeviceInfo;
 struct DeviceDetails;
 }
 
@@ -70,6 +71,7 @@ public:
     void processInput(uint8_t group, const std::vector<uint8_t>& sysex_data);
     
     uint32_t get_muid() const noexcept;
+    messages::DeviceInfo get_device_info_strings() const;
     messages::DeviceDetails get_device_info() const;
     DeviceConfig get_config() const;
     

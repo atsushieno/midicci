@@ -9,6 +9,10 @@
 #include "../core/MidiCIDevice.hpp"
 
 namespace midi_ci {
+namespace core {
+class ClientConnection;
+class ClientSubscription;
+}
 
 namespace properties {
 class MidiCIClientPropertyRules;
@@ -45,12 +49,9 @@ public:
     void process_subscribe_property(const messages::SubscribeProperty& msg);
     void process_subscribe_property_reply(const messages::SubscribePropertyReply& msg);
     
-    // Additional methods for test support
-    std::vector<uint8_t> getProperty(const std::string& property_id) const;
-    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;
-    std::vector<PropertySubscription> get_subscriptions() const;
-    ClientObservablePropertyList* get_observable_properties();
-    
+    std::vector<core::ClientSubscription> get_subscriptions() const;
+    ClientObservablePropertyList* get_properties();
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

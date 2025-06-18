@@ -14,6 +14,20 @@ namespace core {
 
 class MidiCIDevice;
 
+enum class SubscriptionActionState {
+    Subscribing,
+    Subscribed,
+    Unsubscribing,
+    Unsubscribed
+};
+
+struct ClientSubscription {
+    std::optional<uint8_t> pendingRequestId;
+    std::optional<std::string> subscriptionId;
+    std::string propertyId;
+    SubscriptionActionState state;
+};
+
 class ClientConnection {
 public:
     using MessageCallback = std::function<void(const messages::Message&)>;

@@ -536,7 +536,7 @@ void InitiatorWidget::setupPropertyCallbacks()
                 auto conn = connection->get_connection();
                 if (conn) {
                     auto& property_facade = conn->get_property_client_facade();
-                    auto* observable_properties = property_facade.get_observable_properties();
+                    auto* observable_properties = property_facade.get_properties();
                     
                     if (observable_properties) {
                         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {

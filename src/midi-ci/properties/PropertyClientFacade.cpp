@@ -18,18 +18,18 @@ class PropertyClientFacade::Impl {
 public:
     Impl(core::MidiCIDevice& device, core::ClientConnection& conn) : device_(device), conn_(conn), 
           property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {
-        observable_properties_ = std::make_unique<ClientObservablePropertyList>(
+        properties_ = std::make_unique<ClientObservablePropertyList>(
             device.get_logger(), property_rules_.get());
     }
     
     core::MidiCIDevice& device_;
     core::ClientConnection& conn_;
     std::unique_ptr<MidiCIClientPropertyRules> property_rules_;
-    std::unique_ptr<ClientObservablePropertyList> observable_properties_;
+    std::unique_ptr<ClientObservablePropertyList> properties_;
     std::unordered_map<uint8_t, std::vector<uint8_t>> open_requests_;
     std::unordered_map<std::string, std::vector<uint8_t>> cached_properties_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
-    std::vector<PropertySubscription> subscriptions_;
+    std::vector<core::ClientSubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -173,8 +173,8 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
                     auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
                     pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
                     pimpl_->cached_properties_[property_id] = msg.get_body();
-                    if (pimpl_->observable_properties_) {
-                        pimpl_->observable_properties_->updateValue(property_id, msg.get_body());
+                    if (pimpl_->properties_) {
+                        pimpl_->properties_->updateValue(property_id, msg.get_body());
                     }
                 }
                 
@@ -242,46 +242,14 @@ void PropertyClientFacade::process_subscribe_property_reply(const messages::Subs
     }
 }
 
-std::vector<uint8_t> PropertyClientFacade::getProperty(const std::string& property_id) const {
+std::vector<core::ClientSubscription> PropertyClientFacade::get_subscriptions() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    auto it = pimpl_->cached_properties_.find(property_id);
-    if (it != pimpl_->cached_properties_.end()) {
-        return it->second;
-    }
-    return {};
-}
-
-std::vector<std::unique_ptr<PropertyMetadata>> PropertyClientFacade::get_metadata_list() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->property_rules_) {
-        auto* common_rules = dynamic_cast<CommonRulesPropertyClient*>(pimpl_->property_rules_.get());
-        if (common_rules) {
-            return common_rules->get_metadata_list();
-        }
-    }
-    std::vector<std::unique_ptr<PropertyMetadata>> result;
-    for (const auto& metadata : pimpl_->metadata_list_) {
-        auto copy = std::make_unique<CommonRulesPropertyMetadata>();
-        copy->resource = metadata->getPropertyId();
-        result.push_back(std::move(copy));
-    }
-    return result;
-}
-
-std::vector<PropertySubscription> PropertyClientFacade::get_subscriptions() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->property_rules_) {
-        auto* common_rules = dynamic_cast<CommonRulesPropertyClient*>(pimpl_->property_rules_.get());
-        if (common_rules) {
-        }
-    }
     return pimpl_->subscriptions_;
 }
 
-ClientObservablePropertyList* PropertyClientFacade::get_observable_properties() {
+ClientObservablePropertyList* PropertyClientFacade::get_properties() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return pimpl_->observable_properties_.get();
+    return pimpl_->properties_.get();
 }
 
 } // namespace properties

@@ -6,7 +6,7 @@
 #include <iomanip>
 
 namespace {
-    std::string format_json_bytes(const std::vector<uint8_t>& bytes, size_t max_length = 1024) {
+    std::string format_json_bytes(const std::vector<uint8_t>& bytes, size_t max_length = 4096) {
         if (bytes.empty()) {
             return "";
         }

@@ -3,7 +3,7 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/core/MidiCIConstants.hpp"
 #include "midi-ci/core/CIFactory.hpp"
-#include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/MidiCIDeviceConfiguration.hpp"
 #include "midi-ci/core/ClientConnection.hpp"
 #include "midi-ci/core/CIRetrieval.hpp"
 #include "midi-ci/profiles/ProfileClientFacade.hpp"
@@ -72,7 +72,7 @@ void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
     auto deviceInfo = pimpl_->device_.get_device_info();
     core::DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
 
-    DiscoveryInquiry inquiry(common, details, 0x7F, pimpl_->device_.get_config().max_sysex_size, false);
+    DiscoveryInquiry inquiry(common, details, 0x7F, pimpl_->device_.get_config().receivable_max_sysex_size, false);
 
     send(inquiry);
 }
@@ -84,7 +84,7 @@ void Messenger::send_discovery_reply(uint8_t group, uint32_t destination_muid) {
     auto deviceInfo = pimpl_->device_.get_device_info();
     core::DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
 
-    DiscoveryReply reply(common, details, 0x7F, pimpl_->device_.get_config().max_sysex_size, 0, false);
+    DiscoveryReply reply(common, details, 0x7F, pimpl_->device_.get_config().receivable_max_sysex_size, 0, false);
 
     send(reply);
 }

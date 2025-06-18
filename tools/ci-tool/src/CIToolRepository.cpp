@@ -26,7 +26,7 @@ public:
     }
     
     CIToolRepository* parent_;
-    midi_ci::core::DeviceConfig config_{};
+    midi_ci::core::MidiCIDeviceConfiguration config_{};
     std::vector<LogEntry> logs_;
     std::vector<LogCallback> log_callbacks_;
     mutable std::mutex mutex_;

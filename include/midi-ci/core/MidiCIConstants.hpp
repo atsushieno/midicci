@@ -195,6 +195,53 @@ enum class MidiCISupportedCategories {
     THREE_P = PROFILE_CONFIGURATION + PROPERTY_EXCHANGE + PROCES_INQUIRY
 };
 
+// Default configuration values
+constexpr int DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE = 4096;
+constexpr int DEFAULT_MAX_PROPERTY_CHUNK_SIZE = 4096 - 256;
+constexpr uint8_t DEFAULT_MAX_SIMULTANEOUS_PROPERTY_REQUESTS = 127;
+constexpr uint8_t NO_FUNCTION_BLOCK = 0x7F;
+
+// Process Inquiry Features
+enum class MidiCIProcessInquiryFeatures : uint8_t {
+    MIDI_MESSAGE_REPORT = 1
+};
+
+// MIDI Message Report Data Control
+enum class MidiMessageReportDataControl : uint8_t {
+    None = 0,
+    OnlyNonDefaults = 1,
+    Full = 0x7F
+};
+
+// MIDI Message Report System Messages Flags
+enum class MidiMessageReportSystemMessagesFlags : uint8_t {
+    MtcQuarterFrame = 1,
+    SongPosition = 2,
+    SongSelect = 4,
+    All = 7
+};
+
+// MIDI Message Report Channel Controller Flags
+enum class MidiMessageReportChannelControllerFlags : uint8_t {
+    Pitchbend = 1,
+    CC = 2,
+    Rpn = 4,
+    Nrpn = 8,
+    Program = 16,
+    CAf = 32,
+    All = 63
+};
+
+// MIDI Message Report Note Data Flags
+enum class MidiMessageReportNoteDataFlags : uint8_t {
+    Notes = 1,
+    PAf = 2,
+    Pitchbend = 4,
+    RegisteredController = 8,
+    AssignableController = 16,
+    All = 31
+};
+
 
 } // namespace constants
 

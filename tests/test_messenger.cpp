@@ -3,7 +3,7 @@
 #include "midi-ci/core/MidiCIDevice.hpp"
 #include "midi-ci/messages/Messenger.hpp"
 #include "midi-ci/messages/Message.hpp"
-#include "midi-ci/core/DeviceConfig.hpp"
+#include "midi-ci/core/MidiCIDeviceConfiguration.hpp"
 
 using namespace midi_ci;
 

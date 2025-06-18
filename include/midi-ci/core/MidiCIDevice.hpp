@@ -27,7 +27,7 @@ namespace core {
 
 class ClientConnection;
 class Message;
-struct DeviceConfig;
+struct MidiCIDeviceConfiguration;
 
 class MidiCIDevice {
 public:
@@ -37,7 +37,7 @@ public:
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using LoggerFunction = std::function<void(const std::string&, bool)>;
     
-    MidiCIDevice(uint32_t muid, DeviceConfig& config, LoggerFunction logger = LoggerFunction{});
+    MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();
     
     MidiCIDevice(const MidiCIDevice&) = delete;
@@ -67,7 +67,7 @@ public:
     
     uint32_t get_muid() const noexcept;
     DeviceInfo& get_device_info() const;
-    DeviceConfig& get_config() const;
+    MidiCIDeviceConfiguration& get_config() const;
     
     void set_sysex_sender(CIOutputSender sender);
     CIOutputSender get_ci_output_sender() const;

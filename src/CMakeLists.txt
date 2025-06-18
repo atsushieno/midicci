@@ -27,7 +27,8 @@ set(MIDI_CI_HEADERS
     ../include/midi-ci/core/ClientConnection.hpp
     ../include/midi-ci/core/MidiCIConstants.hpp
     ../include/midi-ci/core/CIFactory.hpp
-    ../include/midi-ci/core/DeviceConfig.hpp
+    ../include/midi-ci/core/MidiCIDeviceConfiguration.hpp
+    ../include/midi-ci/core/MidiCIChannelList.hpp
     ../include/midi-ci/messages/Message.hpp
     ../include/midi-ci/messages/Messenger.hpp
     ../include/midi-ci/properties/ObservablePropertyList.hpp

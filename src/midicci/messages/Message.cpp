@@ -673,7 +673,10 @@ PropertyGetCapabilitiesReply::PropertyGetCapabilitiesReply(const Common& common,
     : SinglePacketMessage(MessageType::PropertyGetCapabilitiesReply, common), max_simultaneous_requests_(max_simultaneous_requests) {}
 
 std::vector<uint8_t> PropertyGetCapabilitiesReply::serialize() const {
-    return {max_simultaneous_requests_};
+    std::vector<uint8_t> data;
+    data.resize(32);
+    return core::CIFactory::midiCIPropertyExchangeCapabilitiesReply(data, common_.address,
+                                                      common_.source_muid, common_.destination_muid, max_simultaneous_requests_);
 }
 
 std::string PropertyGetCapabilitiesReply::get_label() const {

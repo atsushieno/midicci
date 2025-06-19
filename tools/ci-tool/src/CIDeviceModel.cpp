@@ -180,9 +180,7 @@ void CIDeviceModel::setup_event_listeners() {
             });
         }
         
-        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
-            callback();
-        }
+
     });
     
     observable_profiles.add_profile_enabled_changed_callback([this](const auto& profile) {
@@ -199,9 +197,7 @@ void CIDeviceModel::setup_event_listeners() {
             }
         }
         
-        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
-            callback();
-        }
+
     });
     
     observable_profiles.add_profile_updated_callback([this](const auto& profile_id, uint8_t old_address, bool enabled, uint8_t new_address, uint16_t num_channels) {
@@ -218,9 +214,7 @@ void CIDeviceModel::setup_event_listeners() {
             }
         }
         
-        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
-            callback();
-        }
+
     });
 }
 

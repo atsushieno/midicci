@@ -57,6 +57,7 @@ target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
 
 if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
+    set_target_properties(${MODULE_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 set_target_properties(${MODULE_NAME} PROPERTIES

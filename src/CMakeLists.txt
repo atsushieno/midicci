@@ -16,6 +16,7 @@ set(MIDICCI_SOURCES
         midicci/properties/PropertyHostFacade.cpp
         midicci/properties/ObservablePropertyList.cpp
         midicci/properties/CommonRulesPropertyHelper.cpp
+        midicci/properties/CommonRulesPropertyService.cpp
         midicci/properties/CommonRulesPropertyClient.cpp
         midicci/properties/CommonRulesPropertyMetadata.cpp
         midicci/ump/Ump.cpp
@@ -35,6 +36,7 @@ set(MIDICCI_HEADERS
         ../include/midicci/properties/PropertyChunkManager.hpp
         ../include/midicci/properties/PropertyCommonRules.hpp
         ../include/midicci/properties/CommonRulesPropertyHelper.hpp
+        ../include/midicci/properties/CommonRulesPropertyService.hpp
         ../include/midicci/properties/CommonRulesPropertyClient.hpp
         ../include/midicci/json_ish/Json.hpp
         ../include/midicci/ump/Ump.hpp

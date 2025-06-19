@@ -250,9 +250,16 @@ void ResponderWidget::onDeleteProfile()
 
 void ResponderWidget::onAddTestProfiles()
 {
-    m_profileList->addItem("7E:00:00:00:01");
-    m_profileList->addItem("7E:00:00:00:02");
-    m_profileList->addItem("00:01:02:03:04");
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    deviceModel->add_test_profile_items();
     m_repository->log("Added test profile items", ci_tool::MessageDirection::Out);
 }
 

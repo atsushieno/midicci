@@ -55,12 +55,12 @@ Messenger::~Messenger() = default;
 void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
 
-    auto serialized = message.serialize();
-    if (!serialized.empty()) {
+    auto parts = message.serialize_multi();
+    for (auto& part : parts) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
         if (ci_output_sender) {
             uint8_t group = message.get_common().group;
-            ci_output_sender(group, serialized);
+            ci_output_sender(group, part);
         }
         pimpl_->notify_callbacks(message);
     }

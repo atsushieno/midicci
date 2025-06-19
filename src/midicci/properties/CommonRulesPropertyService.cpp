@@ -74,8 +74,10 @@ messages::GetPropertyDataReply CommonRulesPropertyService::get_property_data(con
     json_ish::JsonValue header(header_obj);
     std::string json_str = header.serialize();
     std::vector<uint8_t> reply_header(json_str.begin(), json_str.end());
-    
-    return messages::GetPropertyDataReply(msg.get_common(), msg.get_request_id(), reply_header, body_data);
+
+    auto& srcCommon = msg.get_common();
+    messages::Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
+    return messages::GetPropertyDataReply(common, msg.get_request_id(), reply_header, body_data);
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::create_device_info_json() const {

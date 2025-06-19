@@ -2,6 +2,9 @@
 #include "midicci/properties/MidiCIServicePropertyRules.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
 #include "midicci/properties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/properties/PropertyCommonRules.hpp"
+#include "midicci/properties/CommonRulesPropertyService.hpp"
+#include "midicci/json_ish/Json.hpp"
 #include "midicci/core/MidiCIDevice.hpp"
 #include "midicci/messages/Message.hpp"
 #include <mutex>
@@ -12,7 +15,9 @@ namespace properties {
 
 class PropertyHostFacade::Impl {
 public:
-    explicit Impl(core::MidiCIDevice& device) : device_(device) {}
+    explicit Impl(core::MidiCIDevice& device) : device_(device) {
+        property_rules_ = std::make_unique<CommonRulesPropertyService>(device);
+    }
     
     core::MidiCIDevice& device_;
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;

@@ -160,6 +160,30 @@ void CIDeviceModel::setup_event_listeners() {
     pimpl_->device_->set_connections_changed_callback([this]() {
         on_connections_changed();
     });
+    
+    auto& profile_facade = pimpl_->device_->get_profile_host_facade();
+    auto& observable_profiles = profile_facade.get_profiles();
+    
+    observable_profiles.add_profiles_changed_callback([this](auto change, const auto& profile) {
+        std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
+            callback();
+        }
+    });
+    
+    observable_profiles.add_profile_enabled_changed_callback([this](const auto& profile) {
+        std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
+            callback();
+        }
+    });
+    
+    observable_profiles.add_profile_updated_callback([this](const auto& profile_id, uint8_t old_address, bool enabled, uint8_t new_address, uint16_t num_channels) {
+        std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
+            callback();
+        }
+    });
 }
 
 void CIDeviceModel::on_connections_changed() {

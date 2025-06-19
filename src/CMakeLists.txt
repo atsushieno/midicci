@@ -43,7 +43,11 @@ set(MIDICCI_HEADERS
 
 set(MODULE_NAME midicci)
 
-add_library(${MODULE_NAME} ${MIDICCI_SOURCES})
+if(WIN32 AND BUILD_SHARED_LIBS)
+    add_library(${MODULE_NAME} SHARED ${MIDICCI_SOURCES})
+else()
+    add_library(${MODULE_NAME} ${MIDICCI_SOURCES})
+endif()
 
 target_include_directories(${MODULE_NAME}
     PUBLIC

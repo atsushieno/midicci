@@ -43,6 +43,8 @@ target_link_libraries(midicci-cui
         midicci-tooling
 )
 
+add_dependencies(midicci-cui midicci)
+
 target_compile_features(midicci-tooling PRIVATE cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

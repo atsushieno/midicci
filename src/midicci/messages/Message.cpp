@@ -37,6 +37,10 @@ namespace messages {
 Message::Message(MessageType type, const Common& common)
     : type_(type), common_(common) {}
 
+std::vector<std::vector<uint8_t>> Message::serialize_multi(const core::MidiCIDeviceConfiguration& config) const {
+    return {};
+}
+
 MessageType Message::get_type() const noexcept {
     return type_;
 }
@@ -52,15 +56,28 @@ uint32_t Message::get_destination_muid() const noexcept {
 SinglePacketMessage::SinglePacketMessage(MessageType type, const Common& common)
     : Message(type, common) {}
 
+std::vector<std::vector<uint8_t>> SinglePacketMessage::serialize_multi(const core::MidiCIDeviceConfiguration& config) const {
+    auto single = serialize(config);
+    return {single};
+}
+
 MultiPacketMessage::MultiPacketMessage(MessageType type, const Common& common)
     : Message(type, common) {}
+
+PropertyMessage::PropertyMessage(MessageType type, const Common& common, uint8_t request_id,
+                               const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
+    : Message(type, common), request_id_(request_id), header_(header), body_(body) {}
+
+std::vector<std::vector<uint8_t>> PropertyMessage::serialize_multi(const core::MidiCIDeviceConfiguration& config) const {
+    return serialize(config);
+}
 
 DiscoveryInquiry::DiscoveryInquiry(const Common& common, const core::DeviceDetails& device_details,
                                  uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id)
     : SinglePacketMessage(MessageType::DiscoveryInquiry, common), device_details_(device_details),
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), output_path_id_(output_path_id) {}
 
-std::vector<uint8_t> DiscoveryInquiry::serialize() const {
+std::vector<uint8_t> DiscoveryInquiry::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.reserve(64);
     return core::CIFactory::midiCIDiscovery(data, common_.source_muid,
@@ -93,7 +110,7 @@ DiscoveryReply::DiscoveryReply(const Common& common, const core::DeviceDetails& 
       supported_features_(supported_features), max_sysex_size_(max_sysex_size), 
       output_path_id_(output_path_id), function_block_(function_block) {}
 
-std::vector<uint8_t> DiscoveryReply::serialize() const {
+std::vector<uint8_t> DiscoveryReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.reserve(64);
 
@@ -127,7 +144,7 @@ std::string DiscoveryReply::get_body_string() const {
 SetProfileOn::SetProfileOn(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::SetProfileOn, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
-std::vector<uint8_t> SetProfileOn::serialize() const {
+std::vector<uint8_t> SetProfileOn::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -155,7 +172,7 @@ std::string SetProfileOn::get_body_string() const {
 PropertyGetCapabilities::PropertyGetCapabilities(const Common& common, uint8_t max_simultaneous_requests)
     : SinglePacketMessage(MessageType::PropertyGetCapabilities, common), max_simultaneous_requests_(max_simultaneous_requests) {}
 
-std::vector<uint8_t> PropertyGetCapabilities::serialize() const {
+std::vector<uint8_t> PropertyGetCapabilities::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.reserve(16);
 
@@ -175,11 +192,11 @@ std::string PropertyGetCapabilities::get_body_string() const {
 }
 
 GetPropertyData::GetPropertyData(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header)
-    : MultiPacketMessage(MessageType::GetPropertyData, common), request_id_(request_id), header_(header) {}
+    : PropertyMessage(MessageType::GetPropertyData, common, request_id, header, {}) {}
 
 GetPropertyData::GetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
                                 const std::string& res_id)
-    : MultiPacketMessage(MessageType::GetPropertyData, common), request_id_(request_id) {
+    : PropertyMessage(MessageType::GetPropertyData, common, request_id, {}, {}) {
     header_ = create_json_header(resource_identifier, res_id, "", false, 0, 0);
 }
 
@@ -214,18 +231,22 @@ std::vector<uint8_t> GetPropertyData::create_json_header(const std::string& reso
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-std::vector<std::vector<uint8_t>> GetPropertyData::serialize_multi() const {
-    std::vector<uint8_t> dst(4096);
+
+
+std::vector<std::vector<uint8_t>> GetPropertyData::serialize(const core::MidiCIDeviceConfiguration& config) const {
+    std::vector<uint8_t> dst(config.receivable_max_sysex_size);
     return midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
 }
 
-std::vector<std::vector<uint8_t>> SetPropertyData::serialize_multi() const {
-    std::vector<uint8_t> dst(4096);
+
+
+std::vector<std::vector<uint8_t>> SetPropertyData::serialize(const core::MidiCIDeviceConfiguration& config) const {
+    std::vector<uint8_t> dst(config.receivable_max_sysex_size);
     return midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
@@ -258,14 +279,7 @@ std::vector<uint8_t> SetPropertyData::create_json_header(const std::string& reso
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-std::vector<uint8_t> GetPropertyData::serialize() const {
-    std::vector<uint8_t> dst(4096);
-    auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
-        static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_GET_DATA_INQUIRY),
-        common_.source_muid, common_.destination_muid, request_id_, header_, {});
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
-}
+
 
 
 
@@ -282,23 +296,16 @@ std::string GetPropertyData::get_body_string() const {
 }
 
 SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, 
-                                const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
-    : MultiPacketMessage(MessageType::SetPropertyData, common), request_id_(request_id), header_(header), body_(body) {}
+                                 const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
+    : PropertyMessage(MessageType::SetPropertyData, common, request_id, header, body) {}
 
 SetPropertyData::SetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
-                                const std::vector<uint8_t>& body, const std::string& res_id, bool set_partial)
-    : MultiPacketMessage(MessageType::SetPropertyData, common), request_id_(request_id), body_(body) {
+                                 const std::vector<uint8_t>& body, const std::string& res_id, bool set_partial)
+    : PropertyMessage(MessageType::SetPropertyData, common, request_id, {}, body) {
     header_ = create_json_header(resource_identifier, res_id, "", set_partial, 0, 0);
 }
 
-std::vector<uint8_t> SetPropertyData::serialize() const {
-    std::vector<uint8_t> dst(4096);
-    auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
-        static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SET_DATA_INQUIRY),
-        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
-}
+
 
 
 
@@ -316,18 +323,20 @@ std::string SetPropertyData::get_body_string() const {
 
 SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, 
                                    const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
-    : MultiPacketMessage(MessageType::SubscribeProperty, common), request_id_(request_id), header_(header), body_(body) {}
+    : PropertyMessage(MessageType::SubscribeProperty, common, request_id, header, body) {}
 
 SubscribeProperty::SubscribeProperty(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
                                    const std::string& command, const std::string& mutual_encoding)
-    : MultiPacketMessage(MessageType::SubscribeProperty, common), request_id_(request_id) {
+    : PropertyMessage(MessageType::SubscribeProperty, common, request_id, {}, {}) {
     header_ = create_subscribe_json_header(resource_identifier, command, mutual_encoding);
 }
 
-std::vector<std::vector<uint8_t>> SubscribeProperty::serialize_multi() const {
-    std::vector<uint8_t> dst(4096);
+
+
+std::vector<std::vector<uint8_t>> SubscribeProperty::serialize(const core::MidiCIDeviceConfiguration& config) const {
+    std::vector<uint8_t> dst(config.receivable_max_sysex_size);
     return midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
 }
@@ -349,14 +358,7 @@ std::vector<uint8_t> SubscribeProperty::create_subscribe_json_header(const std::
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-std::vector<uint8_t> SubscribeProperty::serialize() const {
-    std::vector<uint8_t> dst(4096);
-    auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
-        static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY),
-        common_.source_muid, common_.destination_muid, request_id_, header_, body_);
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
-}
+
 
 std::string SubscribeProperty::get_label() const {
     return "SubscribeProperty";
@@ -373,7 +375,7 @@ std::string SubscribeProperty::get_body_string() const {
 EndpointInquiry::EndpointInquiry(const Common& common, uint8_t status)
     : SinglePacketMessage(MessageType::EndpointInquiry, common), status_(status) {}
 
-std::vector<uint8_t> EndpointInquiry::serialize() const {
+std::vector<uint8_t> EndpointInquiry::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(16);
     
@@ -396,7 +398,7 @@ EndpointReply::EndpointReply(const Common& common, uint8_t status, const std::ve
     : SinglePacketMessage(MessageType::EndpointReply, common), status_(status), data_(data) {
 }
 
-std::vector<uint8_t> EndpointReply::serialize() const {
+std::vector<uint8_t> EndpointReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> result;
     result.resize(32 + data_.size());
     
@@ -421,7 +423,7 @@ std::string EndpointReply::get_body_string() const {
 InvalidateMUID::InvalidateMUID(const Common& common, uint32_t target_muid)
     : SinglePacketMessage(MessageType::InvalidateMUID, common), target_muid_(target_muid) {}
 
-std::vector<uint8_t> InvalidateMUID::serialize() const {
+std::vector<uint8_t> InvalidateMUID::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -442,7 +444,7 @@ std::string InvalidateMUID::get_body_string() const {
 ProfileInquiry::ProfileInquiry(const Common& common)
     : SinglePacketMessage(MessageType::ProfileInquiry, common) {}
 
-std::vector<uint8_t> ProfileInquiry::serialize() const {
+std::vector<uint8_t> ProfileInquiry::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.reserve(16);
     return core::CIFactory::midiCIProfileInquiry(data, common_.address, common_.source_muid, common_.destination_muid);
@@ -459,7 +461,7 @@ std::string ProfileInquiry::get_body_string() const {
 SetProfileOff::SetProfileOff(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::SetProfileOff, common), profile_id_(profile_id) {}
 
-std::vector<uint8_t> SetProfileOff::serialize() const {
+std::vector<uint8_t> SetProfileOff::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -486,7 +488,7 @@ std::string SetProfileOff::get_body_string() const {
 ProfileEnabledReport::ProfileEnabledReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
-std::vector<uint8_t> ProfileEnabledReport::serialize() const {
+std::vector<uint8_t> ProfileEnabledReport::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -513,7 +515,7 @@ std::string ProfileEnabledReport::get_body_string() const {
 ProfileDisabledReport::ProfileDisabledReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
-std::vector<uint8_t> ProfileDisabledReport::serialize() const {
+std::vector<uint8_t> ProfileDisabledReport::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -540,7 +542,7 @@ std::string ProfileDisabledReport::get_body_string() const {
 ProfileAddedReport::ProfileAddedReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
 
-std::vector<uint8_t> ProfileAddedReport::serialize() const {
+std::vector<uint8_t> ProfileAddedReport::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -566,7 +568,7 @@ std::string ProfileAddedReport::get_body_string() const {
 ProfileRemovedReport::ProfileRemovedReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
 
-std::vector<uint8_t> ProfileRemovedReport::serialize() const {
+std::vector<uint8_t> ProfileRemovedReport::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -596,7 +598,7 @@ MidiMessageReportInquiry::MidiMessageReportInquiry(const Common& common, uint8_t
       message_data_control_(message_data_control), system_messages_(system_messages),
       channel_controller_messages_(channel_controller_messages), note_data_messages_(note_data_messages) {}
 
-std::vector<uint8_t> MidiMessageReportInquiry::serialize() const {
+std::vector<uint8_t> MidiMessageReportInquiry::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -622,7 +624,7 @@ std::string MidiMessageReportInquiry::get_body_string() const {
 ProcessInquiryCapabilities::ProcessInquiryCapabilities(const Common& common)
     : SinglePacketMessage(MessageType::ProcessInquiryCapabilities, common) {}
 
-std::vector<uint8_t> ProcessInquiryCapabilities::serialize() const {
+std::vector<uint8_t> ProcessInquiryCapabilities::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.reserve(16);
     return core::CIFactory::midiCIProcessInquiryCapabilities(data, common_.source_muid, common_.destination_muid);
@@ -636,9 +638,7 @@ std::string ProcessInquiryCapabilities::get_body_string() const {
     return "";
 }
 
-std::vector<std::vector<uint8_t>> Message::serialize_multi() const {
-    return {serialize()};
-}
+
 
 std::string Message::get_log_message() const {
     std::ostringstream oss;
@@ -650,7 +650,7 @@ ProfileReply::ProfileReply(const Common& common, const std::vector<profiles::Mid
                           const std::vector<profiles::MidiCIProfileId>& disabled_profiles)
     : SinglePacketMessage(MessageType::ProfileInquiryReply, common), enabled_profiles_(enabled_profiles), disabled_profiles_(disabled_profiles) {}
 
-std::vector<uint8_t> ProfileReply::serialize() const {
+std::vector<uint8_t> ProfileReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> result;
     result.reserve(256);
     return core::CIFactory::midiCIProfileInquiryReply(result, common_.address,
@@ -672,7 +672,7 @@ std::string ProfileReply::get_body_string() const {
 PropertyGetCapabilitiesReply::PropertyGetCapabilitiesReply(const Common& common, uint8_t max_simultaneous_requests)
     : SinglePacketMessage(MessageType::PropertyGetCapabilitiesReply, common), max_simultaneous_requests_(max_simultaneous_requests) {}
 
-std::vector<uint8_t> PropertyGetCapabilitiesReply::serialize() const {
+std::vector<uint8_t> PropertyGetCapabilitiesReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     return core::CIFactory::midiCIPropertyExchangeCapabilitiesReply(data, common_.address,
@@ -689,20 +689,18 @@ std::string PropertyGetCapabilitiesReply::get_body_string() const {
 
 GetPropertyDataReply::GetPropertyDataReply(const Common& common, uint8_t request_id, 
                                           const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
-    : MultiPacketMessage(MessageType::GetPropertyDataReply, common), request_id_(request_id), header_(header), body_(body) {}
+    : PropertyMessage(MessageType::GetPropertyDataReply, common, request_id, header, body) {}
 
-std::vector<uint8_t> GetPropertyDataReply::serialize() const {
+std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(4096);
     auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
         dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_GET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
+    return chunks;
 }
 
-std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize_multi() const {
-    return {serialize()};
-}
+
 
 
 
@@ -719,20 +717,18 @@ std::string GetPropertyDataReply::get_body_string() const {
 }
 
 SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header)
-    : MultiPacketMessage(MessageType::SetPropertyDataReply, common), request_id_(request_id), header_(header) {}
+    : PropertyMessage(MessageType::SetPropertyDataReply, common, request_id, header, {}) {}
 
-std::vector<uint8_t> SetPropertyDataReply::serialize() const {
+std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(4096);
     auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
         dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
+    return chunks;
 }
 
-std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize_multi() const {
-    return {serialize()};
-}
+
 
 
 
@@ -750,20 +746,18 @@ std::string SetPropertyDataReply::get_body_string() const {
 
 SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t request_id, 
                                               const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
-    : MultiPacketMessage(MessageType::SubscribePropertyReply, common), request_id_(request_id), header_(header), body_(body) {}
+    : PropertyMessage(MessageType::SubscribePropertyReply, common, request_id, header, body) {}
 
-std::vector<uint8_t> SubscribePropertyReply::serialize() const {
+std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(4096);
     auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
         dst, 4096 - 256, // max chunk size
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_SUBSCRIPTION_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
-    return chunks.empty() ? std::vector<uint8_t>() : chunks[0];
+    return chunks;
 }
 
-std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize_multi() const {
-    return {serialize()};
-}
+
 
 std::string SubscribePropertyReply::get_label() const {
     return "SubscribePropertyReply";
@@ -780,7 +774,7 @@ std::string SubscribePropertyReply::get_body_string() const {
 ProfileAdded::ProfileAdded(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileAddedReport, common), profile_id_(profile_id) {}
 
-std::vector<uint8_t> ProfileAdded::serialize() const {
+std::vector<uint8_t> ProfileAdded::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(256);
     return midicci::core::CIFactory::midiCIProfileAddedRemoved(dst, common_.address, false, common_.source_muid, profile_id_);
 }
@@ -796,7 +790,7 @@ std::string ProfileAdded::get_body_string() const {
 ProfileRemoved::ProfileRemoved(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id)
     : SinglePacketMessage(MessageType::ProfileRemovedReport, common), profile_id_(profile_id) {}
 
-std::vector<uint8_t> ProfileRemoved::serialize() const {
+std::vector<uint8_t> ProfileRemoved::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(256);
     return midicci::core::CIFactory::midiCIProfileAddedRemoved(dst, common_.address, true, common_.source_muid, profile_id_);
 }
@@ -812,7 +806,7 @@ std::string ProfileRemoved::get_body_string() const {
 ProfileEnabled::ProfileEnabled(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileEnabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
-std::vector<uint8_t> ProfileEnabled::serialize() const {
+std::vector<uint8_t> ProfileEnabled::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(256);
     return midicci::core::CIFactory::midiCIProfileReport(dst, common_.address, true, common_.source_muid, profile_id_, num_channels_);
 }
@@ -829,7 +823,7 @@ std::string ProfileEnabled::get_body_string() const {
 ProfileDisabled::ProfileDisabled(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels)
     : SinglePacketMessage(MessageType::ProfileDisabledReport, common), profile_id_(profile_id), num_channels_(num_channels) {}
 
-std::vector<uint8_t> ProfileDisabled::serialize() const {
+std::vector<uint8_t> ProfileDisabled::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(256);
     return midicci::core::CIFactory::midiCIProfileReport(dst, common_.address, false, common_.source_muid, profile_id_, num_channels_);
 }
@@ -847,7 +841,7 @@ ProfileDetailsReply::ProfileDetailsReply(const Common& common, const midicci::pr
                                         uint8_t target, const std::vector<uint8_t>& data)
     : SinglePacketMessage(MessageType::ProfileInquiryReply, common), profile_id_(profile_id), target_(target), data_(data) {}
 
-std::vector<uint8_t> ProfileDetailsReply::serialize() const {
+std::vector<uint8_t> ProfileDetailsReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(256);
     return midicci::core::CIFactory::midiCIProfileDetailsReply(dst, common_.address, false, common_.source_muid, profile_id_, target_, data_);
 }
@@ -865,7 +859,7 @@ std::string ProfileDetailsReply::get_body_string() const {
 ProcessInquiryCapabilitiesReply::ProcessInquiryCapabilitiesReply(const Common& common, uint8_t supported_features)
     : SinglePacketMessage(MessageType::ProcessInquiryCapabilitiesReply, common), supported_features_(supported_features) {}
 
-std::vector<uint8_t> ProcessInquiryCapabilitiesReply::serialize() const {
+std::vector<uint8_t> ProcessInquiryCapabilitiesReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     return {supported_features_};
 }
 
@@ -881,7 +875,7 @@ std::string ProcessInquiryCapabilitiesReply::get_body_string() const {
 MidiMessageReportReply::MidiMessageReportReply(const Common& common, uint8_t system_messages, uint8_t channel_controller_messages, uint8_t note_data_messages)
     : SinglePacketMessage(MessageType::MidiMessageReportInquiry, common), system_messages_(system_messages), channel_controller_messages_(channel_controller_messages), note_data_messages_(note_data_messages) {}
 
-std::vector<uint8_t> MidiMessageReportReply::serialize() const {
+std::vector<uint8_t> MidiMessageReportReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -907,7 +901,7 @@ std::string MidiMessageReportReply::get_body_string() const {
 MidiMessageReportNotifyEnd::MidiMessageReportNotifyEnd(const Common& common)
     : SinglePacketMessage(MessageType::MidiMessageReportInquiry, common) {}
 
-std::vector<uint8_t> MidiMessageReportNotifyEnd::serialize() const {
+std::vector<uint8_t> MidiMessageReportNotifyEnd::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32);
     
@@ -926,7 +920,7 @@ std::string MidiMessageReportNotifyEnd::get_body_string() const {
 ProfileSpecificData::ProfileSpecificData(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, const std::vector<uint8_t>& data)
     : SinglePacketMessage(MessageType::ProfileInquiry, common), profile_id_(profile_id), data_(data) {}
 
-std::vector<uint8_t> ProfileSpecificData::serialize() const {
+std::vector<uint8_t> ProfileSpecificData::serialize(const core::MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> data;
     data.resize(32 + data_.size());
     return core::CIFactory::midiCIProfileSpecificData(data, common_.address,

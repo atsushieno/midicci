@@ -147,6 +147,18 @@ std::vector<uint8_t> CIFactory::midiCIPropertyCommon(
     return std::vector<uint8_t>(dst.begin(), dst.begin() + required_size);
 }
 
+std::vector<uint8_t> CIFactory::midiCIPropertyPacketCommon(
+    std::vector<uint8_t>& dst, uint8_t sub_id_2, uint32_t source_muid, uint32_t destination_muid,
+    uint8_t request_id, const std::vector<uint8_t>& header, uint16_t num_chunks,
+    uint16_t chunk_index, const std::vector<uint8_t>& data) {
+    
+    midiCIPropertyCommon(dst, constants::WHOLE_FUNCTION_BLOCK, sub_id_2,
+                        source_muid, destination_muid, request_id, header, num_chunks, chunk_index, data);
+    
+    size_t result_size = 16 + header.size() + 6 + data.size();
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + result_size);
+}
+
 std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
     std::vector<uint8_t>& dst, uint32_t max_chunk_size, uint8_t sub_id_2,
     uint32_t source_muid, uint32_t destination_muid, uint8_t request_id,
@@ -155,8 +167,8 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
     std::vector<std::vector<uint8_t>> result;
     
     if (data.empty()) {
-        auto packet = midiCIPropertyCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
-                                         source_muid, destination_muid, request_id, header, 1, 1, data);
+        auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
+                                               source_muid, destination_muid, request_id, header, 1, 1, data);
         result.push_back(packet);
         return result;
     }
@@ -167,9 +179,9 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
         size_t end = std::min(start + max_chunk_size, data.size());
         std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
         
-        auto packet = midiCIPropertyCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
-                                         source_muid, destination_muid, request_id, header,
-                                         static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);
+        auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
+                                               source_muid, destination_muid, request_id, header,
+                                               static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);
         result.push_back(packet);
     }
     return result;

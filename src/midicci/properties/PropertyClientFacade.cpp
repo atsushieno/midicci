@@ -72,7 +72,7 @@ void PropertyClientFacade::send_get_property_data(const std::string& resource, c
 void PropertyClientFacade::send_get_property_data(const messages::GetPropertyData& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->open_requests_[msg.get_request_id()] = msg.serialize();
+    pimpl_->open_requests_[msg.get_request_id()] = msg.serialize(pimpl_->device_.get_config())[0];
     pimpl_->device_.get_messenger().send(msg);
 }
 
@@ -100,7 +100,7 @@ void PropertyClientFacade::send_set_property_data(const std::string& resource, c
 void PropertyClientFacade::send_set_property_data(const messages::SetPropertyData& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->open_requests_[msg.get_request_id()] = msg.serialize();
+    pimpl_->open_requests_[msg.get_request_id()] = msg.serialize(pimpl_->device_.get_config())[0];
     pimpl_->device_.get_messenger().send(msg);
 }
 

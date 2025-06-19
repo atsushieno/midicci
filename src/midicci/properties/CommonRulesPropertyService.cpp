@@ -1,4 +1,5 @@
 #include "midicci/properties/CommonRulesPropertyService.hpp"
+#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/properties/PropertyCommonRules.hpp"
 #include "midicci/json_ish/Json.hpp"
 #include "midicci/core/MidiCIConstants.hpp"
@@ -136,11 +137,20 @@ std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() con
     json_ish::JsonArray resources_array;
     
     for (const auto& property_id : get_property_ids()) {
-        resources_array.push_back(json_ish::JsonValue(property_id));
+        CommonRulesPropertyMetadata metadata(property_id);
+        metadata.originator = CommonRulesPropertyMetadata::Originator::SYSTEM;
+        resources_array.push_back(metadata.toJsonValue());
     }
     
     for (const auto& metadata : metadata_list_) {
-        resources_array.push_back(json_ish::JsonValue(metadata->getPropertyId()));
+        auto* common_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get());
+        if (common_metadata) {
+            resources_array.push_back(common_metadata->toJsonValue());
+        } else {
+            CommonRulesPropertyMetadata fallback_metadata(metadata->getPropertyId());
+            fallback_metadata.originator = CommonRulesPropertyMetadata::Originator::USER;
+            resources_array.push_back(fallback_metadata.toJsonValue());
+        }
     }
     
     json_ish::JsonValue resources_json(resources_array);

@@ -224,12 +224,12 @@ void CIDeviceModel::on_connections_changed() {
     
     const auto& device_connections = pimpl_->device_->get_connections();
     
-    std::vector<uint8_t> current_muids;
+    std::vector<uint32_t> current_muids;
     for (const auto& [muid, conn] : device_connections) {
         current_muids.push_back(muid);
     }
     
-    std::vector<uint8_t> existing_muids;
+    std::vector<uint32_t> existing_muids;
     auto connections_vec = pimpl_->connections_.to_vector();
     for (const auto& conn_model : connections_vec) {
         if (conn_model && conn_model->get_connection()) {
@@ -237,7 +237,7 @@ void CIDeviceModel::on_connections_changed() {
         }
     }
     
-    for (uint8_t muid : current_muids) {
+    for (uint32_t muid : current_muids) {
         if (std::find(existing_muids.begin(), existing_muids.end(), muid) == existing_muids.end()) {
             auto device_conn = pimpl_->device_->get_connection(muid);
             if (device_conn) {
@@ -251,7 +251,7 @@ void CIDeviceModel::on_connections_changed() {
     pimpl_->connections_.remove_if(
         [&current_muids](const std::shared_ptr<ClientConnectionModel>& conn_model) {
             if (!conn_model || !conn_model->get_connection()) return true;
-            uint8_t muid = conn_model->get_connection()->get_target_muid();
+            uint32_t muid = conn_model->get_connection()->get_target_muid();
             bool should_remove = std::find(current_muids.begin(), current_muids.end(), muid) == current_muids.end();
             if (should_remove) {
                 std::cout << "Removed connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;

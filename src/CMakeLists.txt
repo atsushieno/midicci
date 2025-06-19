@@ -36,7 +36,6 @@ set(MIDICCI_HEADERS
         ../include/midicci/properties/PropertyCommonRules.hpp
         ../include/midicci/properties/CommonRulesPropertyHelper.hpp
         ../include/midicci/properties/CommonRulesPropertyClient.hpp
-        ../include/midicci/transport/SysExTransport.hpp
         ../include/midicci/json_ish/Json.hpp
         ../include/midicci/ump/Ump.hpp
         ../include/midicci/ump/UmpRetriever.hpp
@@ -44,7 +43,7 @@ set(MIDICCI_HEADERS
 
 set(MODULE_NAME midicci)
 
-add_library(${MODULE_NAME} ${MIDICCI_SOURCES} ${MIDICCI_HEADERS})
+add_library(${MODULE_NAME} ${MIDICCI_SOURCES})
 
 target_include_directories(${MODULE_NAME}
     PUBLIC

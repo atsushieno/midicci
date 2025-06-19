@@ -15,6 +15,7 @@
 #include <functional>
 #include <atomic>
 #include <algorithm>
+#include <set>
 
 namespace midicci {
 namespace messages {
@@ -639,15 +640,33 @@ EndpointReply Messenger::getEndpointReplyForInquiry(const EndpointInquiry& msg) 
 
 std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileInquiry& msg) {
     std::vector<ProfileReply> replies;
-
-    std::vector<midicci::profiles::MidiCIProfileId> enabled_profiles;
-    std::vector<midicci::profiles::MidiCIProfileId> disabled_profiles;
-
-    replies.emplace_back(
-        Common(pimpl_->device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group),
-        enabled_profiles,
-        disabled_profiles
-    );
+    
+    std::vector<uint8_t> addresses;
+    if (msg.get_common().address == midicci::core::constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK) {
+        auto& profile_host = pimpl_->device_.get_profile_host_facade();
+        auto& profiles = profile_host.get_profiles();
+        auto all_profiles = profiles.get_profiles();
+        
+        std::set<uint8_t> unique_addresses;
+        for (const auto& profile : all_profiles) {
+            unique_addresses.insert(profile.address);
+        }
+        addresses.assign(unique_addresses.begin(), unique_addresses.end());
+    } else {
+        addresses.push_back(msg.get_common().address);
+    }
+    
+    for (uint8_t address : addresses) {
+        auto& profile_host = pimpl_->device_.get_profile_host_facade();
+        auto& profiles = profile_host.get_profiles();
+        
+        auto enabled_profiles = profiles.get_matching_profiles(address, true);
+        auto disabled_profiles = profiles.get_matching_profiles(address, false);
+        
+        Common common(pimpl_->device_.get_muid(), msg.get_source_muid(), address, msg.get_common().group);
+        replies.emplace_back(common, enabled_profiles, disabled_profiles);
+    }
+    
     return replies;
 }
 

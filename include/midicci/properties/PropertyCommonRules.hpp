@@ -23,7 +23,7 @@ struct PropertyCommonHeaderKeys {
 };
 
 struct CommonRulesKnownMimeTypes {
-    static constexpr const char* APPLICATION_JSON = "application/json_ish";
+    static constexpr const char* APPLICATION_JSON = "application/json";
 };
 
 struct PropertyExchangeStatus {

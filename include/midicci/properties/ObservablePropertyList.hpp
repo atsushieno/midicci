@@ -85,7 +85,7 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
     
-    void updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType = "application/json_ish");
+    void updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType = "application/json");
     
 private:
     LoggerFunction logger_;

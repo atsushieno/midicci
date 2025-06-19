@@ -105,7 +105,7 @@ void ServiceObservablePropertyList::addProperty(std::unique_ptr<PropertyMetadata
     
     const std::string propertyId = metadata->getPropertyId();
     metadata_list_.push_back(std::move(metadata));
-    values_.emplace(propertyId, PropertyValue(propertyId, "application/json_ish", initialValue));
+    values_.emplace(propertyId, PropertyValue(propertyId, "application/json", initialValue));
     
     notifyPropertyCatalogUpdated();
     notifyPropertyUpdated(propertyId);

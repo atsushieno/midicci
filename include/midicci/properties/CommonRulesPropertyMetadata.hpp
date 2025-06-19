@@ -25,7 +25,7 @@ public:
     std::string canSet = "none";
     bool canSubscribe = false;
     bool requireResId = false;
-    std::vector<std::string> mediaTypes = {"application/json_ish"};
+    std::vector<std::string> mediaTypes = {"application/json"};
     std::vector<std::string> encodings = {"ASCII"};
     std::string schema;
     bool canPaginate = false;

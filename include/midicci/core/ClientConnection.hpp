@@ -32,7 +32,7 @@ public:
     using MessageCallback = std::function<void(const messages::Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
-    explicit ClientConnection(MidiCIDevice& device, uint32_t target_muid);
+    explicit ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails target_device_details);
     ~ClientConnection();
     
     ClientConnection(const ClientConnection&) = delete;
@@ -42,7 +42,7 @@ public:
     ClientConnection& operator=(ClientConnection&&) = default;
     
     uint32_t get_target_muid() const noexcept;
-    
+
     void set_message_callback(MessageCallback callback);
     void set_ci_output_sender(CIOutputSender sender);
     

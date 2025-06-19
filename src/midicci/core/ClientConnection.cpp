@@ -13,11 +13,18 @@ namespace core {
 
 class ClientConnection::Impl {
 public:
-    explicit Impl(uint32_t target_muid, MidiCIDevice& device, ClientConnection& conn)
+    explicit Impl(uint32_t target_muid, MidiCIDevice& device, DeviceDetails& device_details, ClientConnection& conn)
         : target_muid_(target_muid), connected_(true),
           profile_client_facade_(std::make_unique<profiles::ProfileClientFacade>(device, conn)),
           property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)),
-          device_info_(nullptr), channel_list_(nullptr), json_schema_(nullptr) {}
+          channel_list_(nullptr), json_schema_(nullptr) {
+        // those string fields are unknown at DiscoveryReply.
+        device_info_ = std::make_unique<DeviceInfo>(device_details.manufacturer,
+                                                    device_details.family,
+                                                    device_details.modelNumber,
+                                                    device_details.softwareRevisionLevel,
+                                                    "", "", "", "", "");
+    }
     
     uint32_t target_muid_;
     bool connected_;
@@ -31,8 +38,8 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid)
-    : pimpl_(std::make_unique<Impl>(target_muid, device, *this)) {}
+ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails device_details)
+    : pimpl_(std::make_unique<Impl>(target_muid, device, device_details, *this)) {}
 
 ClientConnection::~ClientConnection() = default;
 

@@ -109,6 +109,8 @@ public:
     std::vector<uint8_t> serialize() const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
+
+    const core::DeviceDetails& get_device_details() const { return device_details_; }
     
 private:
     core::DeviceDetails device_details_;

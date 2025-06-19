@@ -55,7 +55,7 @@ Messenger::~Messenger() = default;
 void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
 
-    auto parts = message.serialize_multi();
+    auto parts = message.serialize_multi(pimpl_->device_.get_config());
     for (auto& part : parts) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
         if (ci_output_sender) {

@@ -46,7 +46,6 @@ public:
     void set_message_callback(MessageCallback callback);
     void set_ci_output_sender(CIOutputSender sender);
     
-    void send_message(const messages::Message& message);
     void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
     
     bool is_connected() const noexcept;

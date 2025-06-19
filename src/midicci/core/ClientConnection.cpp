@@ -58,20 +58,7 @@ void ClientConnection::set_ci_output_sender(CIOutputSender sender) {
     pimpl_->ci_output_sender_ = std::move(sender);
 }
 
-void ClientConnection::send_message(const midicci::messages::Message& message) {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->connected_ && pimpl_->ci_output_sender_) {
-        auto packets = message.serialize_multi();
-        for (const auto& packet : packets) {
-            std::vector<uint8_t> sysex_data;
-            sysex_data.push_back(0xF0);
-            sysex_data.insert(sysex_data.end(), packet.begin(), packet.end());
-            sysex_data.push_back(0xF7);
-            
-            pimpl_->ci_output_sender_(0, sysex_data);
-        }
-    }
-}
+
 
 void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);

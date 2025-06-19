@@ -19,7 +19,7 @@ std::vector<std::string> CommonRulesPropertyService::get_property_ids() const {
     return {
         PropertyResourceNames::DEVICE_INFO,
         PropertyResourceNames::CHANNEL_LIST,
-        PropertyResourceNames::RESOURCE_LIST
+        PropertyResourceNames::JSON_SCHEMA
     };
 }
 
@@ -33,6 +33,11 @@ std::vector<uint8_t> CommonRulesPropertyService::create_update_notification_head
 
 std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyService::get_metadata_list() {
     std::vector<std::unique_ptr<PropertyMetadata>> result;
+    
+    for (const auto& metadata : metadata_list_) {
+        result.push_back(std::unique_ptr<PropertyMetadata>(metadata.get()));
+    }
+    
     return result;
 }
 
@@ -52,6 +57,10 @@ messages::GetPropertyDataReply CommonRulesPropertyService::get_property_data(con
         header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
         header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_channel_list_json();
+    } else if (property_id == PropertyResourceNames::JSON_SCHEMA) {
+        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+        body_data = create_json_schema_json();
     } else if (property_id == PropertyResourceNames::RESOURCE_LIST) {
         header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
         header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
@@ -112,10 +121,26 @@ std::vector<uint8_t> CommonRulesPropertyService::create_channel_list_json() cons
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
+std::vector<uint8_t> CommonRulesPropertyService::create_json_schema_json() const {
+    const auto& json_schema_string = device_.get_config().json_schema_string;
+    
+    if (json_schema_string.empty()) {
+        std::string empty_json = "{}";
+        return std::vector<uint8_t>(empty_json.begin(), empty_json.end());
+    }
+    
+    return std::vector<uint8_t>(json_schema_string.begin(), json_schema_string.end());
+}
+
 std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() const {
     json_ish::JsonArray resources_array;
+    
     for (const auto& property_id : get_property_ids()) {
         resources_array.push_back(json_ish::JsonValue(property_id));
+    }
+    
+    for (const auto& metadata : metadata_list_) {
+        resources_array.push_back(json_ish::JsonValue(metadata->getPropertyId()));
     }
     
     json_ish::JsonValue resources_json(resources_array);

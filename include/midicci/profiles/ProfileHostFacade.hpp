@@ -25,7 +25,7 @@ public:
     const ObservableProfileList& get_profiles() const;
     
     void add_profile(const MidiCIProfile& profile);
-    void remove_profile(const MidiCIProfileId& profile_id, uint8_t group, uint8_t address);
+    void remove_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id);
     void enable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
     void disable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
     

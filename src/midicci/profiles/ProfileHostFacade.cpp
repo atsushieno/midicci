@@ -37,7 +37,7 @@ void ProfileHostFacade::add_profile(const MidiCIProfile& profile) {
     pimpl_->profiles_->add(profile);
 }
 
-void ProfileHostFacade::remove_profile(const MidiCIProfileId& profile_id, uint8_t group, uint8_t address) {
+void ProfileHostFacade::remove_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     MidiCIProfile profile(profile_id, group, address, false, 0);
     pimpl_->profiles_->remove(profile);

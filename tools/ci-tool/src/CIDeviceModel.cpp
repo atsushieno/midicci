@@ -1,6 +1,7 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
+#include "midicci/profiles/ProfileHostFacade.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -58,8 +59,7 @@ void CIDeviceModel::initialize() {
     pimpl_->device_->initialize();
     
     setup_event_listeners();
-    add_test_profile_items();
-    
+
     std::cout << "CIDeviceModel initialized with MUID: 0x" << std::hex << pimpl_->muid_ << std::dec << std::endl;
 }
 
@@ -119,35 +119,17 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
 }
 
 void CIDeviceModel::add_local_profile(const midicci::profiles::MidiCIProfile& profile) {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto profile_state = std::make_shared<MidiCIProfileState>(
-        profile.group, profile.address, profile.profile,
-        profile.enabled, profile.num_channels_requested);
-    pimpl_->local_profile_states_.add(profile_state);
-    
-    for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
-        callback();
-    }
+    get_device()->get_profile_host_facade().add_profile(profile);
 }
 
 void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile_id) {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->local_profile_states_.remove_if(
-        [group, address, &profile_id](const std::shared_ptr<MidiCIProfileState>& state) {
-            return state->group().get() == group && 
-                   state->address().get() == address && 
-                   state->get_profile() == profile_id;
-        });
-    
-    for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
-        callback();
-    }
+    get_device()->get_profile_host_facade().remove_profile(group, address, profile_id);
 }
 
 void CIDeviceModel::add_local_property(const midicci::properties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
-    
+
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
     }
@@ -156,13 +138,13 @@ void CIDeviceModel::add_local_property(const midicci::properties::PropertyMetada
 void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
-    
+
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
     }
 }
 
-void CIDeviceModel::update_property_value(const std::string& property_id, const std::string& res_id, 
+void CIDeviceModel::update_property_value(const std::string& property_id, const std::string& res_id,
                                          const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
@@ -227,11 +209,11 @@ void CIDeviceModel::on_connections_changed() {
 }
 
 void CIDeviceModel::add_test_profile_items() {
-    midicci::profiles::MidiCIProfileId test_profile({0x7E, 0x00, 0x01, 0x02, 0x03});
-    midicci::profiles::MidiCIProfile profile(test_profile, 0, 0x7F, false, 1);
-    add_local_profile(profile);
-    
-    std::cout << "Added test profile items" << std::endl;
+    std::vector<uint8_t> id1{0x7E, 0x00, 0x01, 0x02, 0x03}, id2{0x7E, 0x05, 0x06, 0x07, 0x08};
+    midicci::profiles::MidiCIProfile profile1{midicci::profiles::MidiCIProfileId{id1}, 0, 0x7E, true, 0};
+    midicci::profiles::MidiCIProfile profile2{midicci::profiles::MidiCIProfileId{id2}, 0, 0x7F, true, 0};
+    get_device()->get_profile_host_facade().add_profile(profile1);
+    get_device()->get_profile_host_facade().add_profile(profile2);
 }
 
 void CIDeviceModel::add_connections_changed_callback(ConnectionsChangedCallback callback) {

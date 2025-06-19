@@ -335,11 +335,6 @@ void ResponderWidget::updateProfileList()
             m_profileList->addItem(profileText);
         }
     }
-    
-    if (localProfiles.empty()) {
-        m_profileList->addItem("7E:00:00:00:01");
-        m_profileList->addItem("00:01:02:03:04");
-    }
 }
 
 void ResponderWidget::updateProfileDetails()

@@ -1,0 +1,161 @@
+name: Build Cross-Platform Artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        build_type: [Release]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            qt_arch: gcc_64
+          - os: macos-latest
+            platform: macos
+            qt_arch: clang_64
+          - os: windows-latest
+            platform: windows
+            qt_arch: win64_msvc2019_64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.20'
+
+    - name: Install Qt5 (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qt5-default qtbase5-dev qtbase5-dev-tools
+
+    - name: Install Qt5 (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install qt@5
+        echo "/opt/homebrew/opt/qt@5/bin" >> $GITHUB_PATH
+        echo "CMAKE_PREFIX_PATH=/opt/homebrew/opt/qt@5" >> $GITHUB_ENV
+
+    - name: Install Qt5 (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '5.15.2'
+        arch: ${{ matrix.qt_arch }}
+        cached: 'false'
+
+    - name: Configure CMake (Static Libraries)
+      run: |
+        cmake -B build-static -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+
+    - name: Build (Static Libraries)
+      run: cmake --build build-static --config ${{ matrix.build_type }}
+
+    - name: Configure CMake (Dynamic Libraries)
+      run: |
+        cmake -B build-shared -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+
+    - name: Build (Dynamic Libraries)
+      run: cmake --build build-shared --config ${{ matrix.build_type }}
+
+    - name: Run Tests (Static)
+      run: |
+        cd build-static
+        ctest --output-on-failure
+
+    - name: Run Tests (Dynamic)
+      run: |
+        cd build-shared
+        ctest --output-on-failure
+
+    - name: Create artifact directories
+      run: |
+        mkdir -p artifacts/${{ matrix.platform }}/include
+        mkdir -p artifacts/${{ matrix.platform }}/lib/static
+        mkdir -p artifacts/${{ matrix.platform }}/lib/shared
+        mkdir -p artifacts/${{ matrix.platform }}/bin
+
+    - name: Copy headers
+      run: |
+        cp -r include/* artifacts/${{ matrix.platform }}/include/
+
+    - name: Copy artifacts (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        # Static libraries
+        find build-static -name "*.a" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
+        # Dynamic libraries
+        find build-shared -name "*.so*" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
+        # Executables
+        find build-static -name "midicci-cui" -executable -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
+        find build-static -name "midicci-gui" -executable -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
+
+    - name: Copy artifacts (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Static libraries
+        find build-static -name "*.a" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
+        # Dynamic libraries
+        find build-shared -name "*.dylib" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
+        # Executables
+        find build-static -name "midicci-cui" -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
+        find build-static -name "midicci-gui" -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
+
+    - name: Copy artifacts (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        # Static libraries
+        find build-static -name "*.lib" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
+        # Dynamic libraries
+        find build-shared -name "*.dll" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
+        find build-shared -name "*.lib" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
+        # Executables
+        find build-static -name "*.exe" -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: midicci-${{ matrix.platform }}-${{ matrix.build_type }}
+        path: artifacts/${{ matrix.platform }}/
+        retention-days: 30
+
+  create-release-package:
+    name: Create Release Package
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: all-artifacts
+
+    - name: Create combined release package
+      run: |
+        mkdir -p release-package
+        cp -r all-artifacts/* release-package/
+        cd release-package
+        tar -czf ../midicci-cross-platform-release.tar.gz *
+
+    - name: Upload combined release package
+      uses: actions/upload-artifact@v4
+      with:
+        name: midicci-cross-platform-release
+        path: midicci-cross-platform-release.tar.gz
+        retention-days: 90

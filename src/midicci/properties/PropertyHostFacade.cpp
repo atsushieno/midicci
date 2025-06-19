@@ -2,6 +2,8 @@
 #include "midicci/properties/MidiCIServicePropertyRules.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
 #include "midicci/properties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/properties/PropertyCommonRules.hpp"
+#include "midicci/json_ish/Json.hpp"
 #include "midicci/core/MidiCIDevice.hpp"
 #include "midicci/messages/Message.hpp"
 #include <mutex>
@@ -93,7 +95,18 @@ messages::GetPropertyDataReply PropertyHostFacade::process_get_property_data(con
         return pimpl_->property_rules_->get_property_data(msg);
     }
     
-    return messages::GetPropertyDataReply(msg.get_common(), msg.get_request_id(), {}, {});
+    std::string property_id = "unknown";
+    
+    midicci::json_ish::JsonObject header_obj;
+    header_obj["resource"] = midicci::json_ish::JsonValue(property_id);
+    header_obj["status"] = midicci::json_ish::JsonValue(midicci::properties::property_common_rules::PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
+    header_obj["message"] = midicci::json_ish::JsonValue("No property rules configured");
+    
+    midicci::json_ish::JsonValue header(header_obj);
+    std::string json_str = header.serialize();
+    std::vector<uint8_t> reply_header(json_str.begin(), json_str.end());
+    
+    return messages::GetPropertyDataReply(msg.get_common(), msg.get_request_id(), reply_header, {});
 }
 
 messages::SetPropertyDataReply PropertyHostFacade::process_set_property_data(const messages::SetPropertyData& msg) {

@@ -52,6 +52,11 @@ public:
         const std::vector<uint8_t>& header, uint16_t num_chunks,
         uint16_t chunk_index, const std::vector<uint8_t>& chunk_data);
     
+    static std::vector<uint8_t> midiCIPropertyPacketCommon(
+        std::vector<uint8_t>& dst, uint8_t sub_id_2, uint32_t source_muid, uint32_t destination_muid,
+        uint8_t request_id, const std::vector<uint8_t>& header, uint16_t num_chunks,
+        uint16_t chunk_index, const std::vector<uint8_t>& data);
+    
     static std::vector<std::vector<uint8_t>> midiCIPropertyChunks(
         std::vector<uint8_t>& dst, uint32_t max_chunk_size, uint8_t sub_id_2,
         uint32_t source_muid, uint32_t destination_muid, uint8_t request_id,

@@ -5,6 +5,9 @@
 #include <vector>
 
 namespace midicci {
+namespace json_ish {
+    class JsonValue;
+}
 namespace properties {
 
 class CommonRulesPropertyMetadata : public PropertyMetadata {
@@ -38,6 +41,8 @@ public:
     void setData(const std::vector<uint8_t>& newData) { data = newData; }
     
     std::string getExtra(const std::string& key) const override;
+    
+    midicci::json_ish::JsonValue toJsonValue() const;
 
 private:
     static const std::string default_media_type;

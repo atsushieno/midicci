@@ -74,6 +74,25 @@ struct DeviceInfoPropertyNames {
     static constexpr const char* SERIAL_NUMBER = "serialNumber";
 };
 
+struct PropertyResourceFields {
+    static constexpr const char* RESOURCE = "resource";
+    static constexpr const char* CAN_GET = "canGet";
+    static constexpr const char* CAN_SET = "canSet";
+    static constexpr const char* CAN_SUBSCRIBE = "canSubscribe";
+    static constexpr const char* REQUIRE_RES_ID = "requireResId";
+    static constexpr const char* MEDIA_TYPE = "mediaTypes";
+    static constexpr const char* ENCODINGS = "encodings";
+    static constexpr const char* SCHEMA = "schema";
+    static constexpr const char* CAN_PAGINATE = "canPaginate";
+    static constexpr const char* COLUMNS = "columns";
+};
+
+struct PropertySetAccess {
+    static constexpr const char* NONE = "none";
+    static constexpr const char* FULL = "full";
+    static constexpr const char* PARTIAL = "partial";
+};
+
 struct MidiCISubscriptionCommand {
     static constexpr const char* START = "start";
     static constexpr const char* END = "end";
@@ -82,4 +101,4 @@ struct MidiCISubscriptionCommand {
 
 } // namespace property_common_rules
 } // namespace properties
-} // namespace midi_ci
+} // namespace midicci

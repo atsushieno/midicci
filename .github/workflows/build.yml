@@ -35,7 +35,7 @@ jobs:
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
-        cmake-version: '3.22'
+        cmake-version: '3.24'
 
     - name: Install Qt5 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'

@@ -37,5 +37,14 @@ namespace midicci {
             MidiCIProfile(const MidiCIProfileId& p, uint8_t g, uint8_t a, bool e, uint16_t n)
                     : profile(p), group(g), address(a), enabled(e), num_channels_requested(n) {}
         };
+
+        struct MidiCIProfileDetails {
+            MidiCIProfileId profile;
+            uint8_t target;
+            std::vector<uint8_t> data;
+
+            MidiCIProfileDetails(const MidiCIProfileId& p, uint8_t t, const std::vector<uint8_t>& d)
+                : profile(p), target(t), data(d) {}
+        };
     }
 }

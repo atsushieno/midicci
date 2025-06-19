@@ -6,6 +6,12 @@
 #include <functional>
 #include "../messages/Message.hpp"
 
+#ifdef _WIN32
+#define MIDICCI_API __declspec(dllexport)
+#else
+#define MIDICCI_API
+#endif
+
 namespace midicci {
 namespace core {
 class MidiCIDevice;
@@ -21,7 +27,7 @@ struct PropertySubscription {
     std::string subscription_id;
 };
 
-class PropertyHostFacade {
+class MIDICCI_API PropertyHostFacade {
 public:
     using PropertyUpdatedCallback = std::function<void(const std::string&)>;
     

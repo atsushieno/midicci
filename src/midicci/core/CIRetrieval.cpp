@@ -5,7 +5,7 @@ namespace midicci {
 namespace core {
 
 uint8_t CIRetrieval::get_addressing(const std::vector<uint8_t>& sysex) {
-    return sysex.size() > 4 ? sysex[4] : 0;
+    return sysex.size() > 1 ? sysex[1] : 0;
 }
 
 DeviceDetails CIRetrieval::get_device_details(const std::vector<uint8_t>& sysex) {

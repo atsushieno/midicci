@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(qt5-midi-ci-gui VERSION 1.0.0 LANGUAGES CXX)
+project(midicci-gui VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,22 +31,23 @@ set(HEADERS
     include/AppModel.hpp
 )
 
-add_executable(qt5-midi-ci-gui ${SOURCES} ${HEADERS})
+add_executable(midicci-gui ${SOURCES} ${HEADERS})
 
-target_include_directories(qt5-midi-ci-gui PRIVATE
+target_include_directories(midicci-gui PRIVATE
     include
     ../ci-tool/include
     ../../include
 )
 
-target_link_libraries(qt5-midi-ci-gui
+target_link_libraries(midicci-gui
     Qt::Core
     Qt::Widgets
-    midi-ci-tool-lib
+    midicci
+    midicci-tooling
 )
 
 if(WIN32)
-    set_target_properties(qt5-midi-ci-gui PROPERTIES
+    set_target_properties(midicci-gui PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
 endif()

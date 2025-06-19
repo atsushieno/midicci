@@ -64,8 +64,8 @@ struct MidiCIDeviceConfiguration {
                              int max_chunk = DEFAULT_MAX_PROPERTY_CHUNK_SIZE,
                              const std::string& prod_id = "cpp-midi-ci", 
                              uint8_t group = 0)
-        : receivable_max_sysex_size(max_sysex), max_property_chunk_size(max_chunk), 
-          product_instance_id(prod_id), group(group) {}
+        : receivable_max_sysex_size(max_sysex), max_property_chunk_size(max_chunk),
+          group(group), product_instance_id(prod_id) {}
 };
 
 } // namespace core

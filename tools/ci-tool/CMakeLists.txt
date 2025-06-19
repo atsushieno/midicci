@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(midi-ci-tool
+project(midicci-tooling
     VERSION 1.0.0
-    DESCRIPTION "MIDI-CI Tool - Proof of concept application"
+    DESCRIPTION "MIDICCI MIDI-CI Tool - Proof of concept application"
     LANGUAGES CXX
 )
 
@@ -15,7 +15,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../include
 )
 
-set(CI_TOOL_LIB_SOURCES
+set(MIDICCI_TOOLING_SOURCES
     src/CIDeviceManager.cpp
     src/MidiDeviceManager.cpp
     src/CIDeviceModel.cpp
@@ -24,34 +24,35 @@ set(CI_TOOL_LIB_SOURCES
     src/MidiCIProfileState.cpp
 )
 
-set(CI_TOOL_SOURCES
+set(MIDICCI_CUI_SOURCES
     src/main.cpp
 )
 
-add_library(midi-ci-tool-lib STATIC ${CI_TOOL_LIB_SOURCES})
-target_link_libraries(midi-ci-tool-lib 
+add_library(midicci-tooling STATIC ${MIDICCI_TOOLING_SOURCES})
+target_link_libraries(midicci-tooling 
     PUBLIC 
-        midi-ci
+        midicci
         libremidi
 )
 
-add_executable(midi-ci-tool ${CI_TOOL_SOURCES})
+add_executable(midicci-cui ${MIDICCI_CUI_SOURCES})
 
-target_link_libraries(midi-ci-tool 
-    PRIVATE 
-        midi-ci-tool-lib
+target_link_libraries(midicci-cui
+    PRIVATE
+        midicci
+        midicci-tooling
 )
 
-target_compile_features(midi-ci-tool PRIVATE cxx_std_20)
+target_compile_features(midicci-tooling PRIVATE cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(midi-ci-tool PRIVATE 
+    target_compile_options(midicci-tooling PRIVATE 
         -Wall -Wextra -Wpedantic
         $<$<CONFIG:Debug>:-g -O0>
         $<$<CONFIG:Release>:-O3 -DNDEBUG>
     )
 endif()
 
-install(TARGETS midi-ci-tool
+install(TARGETS midicci-tooling
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

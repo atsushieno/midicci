@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(midi-ci-cpp 
+project(midicci
     VERSION 1.0.0
     DESCRIPTION "Cross-platform MIDI 2.0 MIDI-CI session library"
     LANGUAGES CXX

@@ -1,4 +1,4 @@
-set(MIDI_CI_SOURCES
+set(MIDICCI_SOURCES
         midicci/core/MidiCIDevice.cpp
         midicci/core/ClientConnection.cpp
         midicci/core/MidiCIConstants.cpp
@@ -22,7 +22,7 @@ set(MIDI_CI_SOURCES
         midicci/ump/UmpRetriever.cpp
 )
 
-set(MIDI_CI_HEADERS
+set(MIDICCI_HEADERS
         ../include/midicci/core/MidiCIDevice.hpp
         ../include/midicci/core/ClientConnection.hpp
         ../include/midicci/core/MidiCIConstants.hpp
@@ -42,9 +42,11 @@ set(MIDI_CI_HEADERS
         ../include/midicci/ump/UmpRetriever.hpp
 )
 
-add_library(midi-ci ${MIDI_CI_SOURCES} ${MIDI_CI_HEADERS})
+set(MODULE_NAME midicci)
 
-target_include_directories(midi-ci
+add_library(${MODULE_NAME} ${MIDICCI_SOURCES} ${MIDICCI_HEADERS})
+
+target_include_directories(${MODULE_NAME}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -52,28 +54,28 @@ target_include_directories(midi-ci
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_compile_features(midi-ci PUBLIC cxx_std_20)
+target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
 
 if(WIN32)
-    target_compile_definitions(midi-ci PRIVATE WIN32_LEAN_AND_MEAN)
+    target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
 
-set_target_properties(midi-ci PROPERTIES
+set_target_properties(${MODULE_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "${MIDI_CI_HEADERS}"
+    PUBLIC_HEADER "${MIDICCI_HEADERS}"
 )
 
-install(TARGETS midi-ci
-    EXPORT midi-ci-targets
+install(TARGETS ${MODULE_NAME}
+    EXPORT midicci-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midi-ci
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midicci
 )
 
-install(EXPORT midi-ci-targets
-    FILE midi-ci-targets.cmake
-    NAMESPACE midi-ci::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/midi-ci
+install(EXPORT midicci-targets
+    FILE midicci-targets.cmake
+    NAMESPACE midicci::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/midicci
 )

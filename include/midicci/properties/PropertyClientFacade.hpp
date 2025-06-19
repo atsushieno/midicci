@@ -11,12 +11,12 @@
 namespace midicci {
 namespace core {
 class ClientConnection;
-class ClientSubscription;
+struct ClientSubscription;
 }
 
 namespace properties {
 class MidiCIClientPropertyRules;
-struct PropertyMetadata;
+class PropertyMetadata;
 struct PropertySubscription;
 class ClientObservablePropertyList;
 

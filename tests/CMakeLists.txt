@@ -18,19 +18,19 @@ set(GTEST_SOURCES
     TestPropertyRules.cpp
 )
 
-add_executable(midi-ci-gtest ${GTEST_SOURCES})
+add_executable(midicci-gtest ${GTEST_SOURCES})
 
-target_link_libraries(midi-ci-gtest 
+target_link_libraries(midicci-gtest
     PRIVATE 
-        midi-ci
+        midicci
         gtest_main
         gtest
         Threads::Threads
 )
 
-target_include_directories(midi-ci-gtest
+target_include_directories(midicci-gtest
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-target_compile_features(midi-ci-gtest PRIVATE cxx_std_20)
+target_compile_features(midicci-gtest PRIVATE cxx_std_20)

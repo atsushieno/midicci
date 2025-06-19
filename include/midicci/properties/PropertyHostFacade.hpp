@@ -31,8 +31,8 @@ public:
     PropertyHostFacade(const PropertyHostFacade&) = delete;
     PropertyHostFacade& operator=(const PropertyHostFacade&) = delete;
     
-    PropertyHostFacade(PropertyHostFacade&&) = default;
-    PropertyHostFacade& operator=(PropertyHostFacade&&) = default;
+    PropertyHostFacade(PropertyHostFacade&&);
+    PropertyHostFacade& operator=(PropertyHostFacade&&);
     
     void set_property_rules(std::unique_ptr<MidiCIServicePropertyRules> rules);
     MidiCIServicePropertyRules* get_property_rules();

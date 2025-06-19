@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <cstdint>
+#include <string>
 
 namespace midicci {
     namespace profiles {

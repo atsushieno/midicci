@@ -26,6 +26,10 @@ PropertyHostFacade::PropertyHostFacade(core::MidiCIDevice& device) : pimpl_(std:
 
 PropertyHostFacade::~PropertyHostFacade() = default;
 
+PropertyHostFacade::PropertyHostFacade(PropertyHostFacade&&) = default;
+
+PropertyHostFacade& PropertyHostFacade::operator=(PropertyHostFacade&&) = default;
+
 void PropertyHostFacade::set_property_rules(std::unique_ptr<MidiCIServicePropertyRules> rules) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->property_rules_ = std::move(rules);

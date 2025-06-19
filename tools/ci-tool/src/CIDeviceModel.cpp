@@ -166,6 +166,20 @@ void CIDeviceModel::setup_event_listeners() {
     
     observable_profiles.add_profiles_changed_callback([this](auto change, const auto& profile) {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        
+        if (change == midicci::profiles::ObservableProfileList::ProfilesChange::Added) {
+            auto profile_state = std::make_shared<MidiCIProfileState>(
+                profile.group, profile.address, profile.profile, 
+                profile.enabled, profile.num_channels_requested);
+            pimpl_->local_profile_states_.add(profile_state);
+        } else if (change == midicci::profiles::ObservableProfileList::ProfilesChange::Removed) {
+            pimpl_->local_profile_states_.remove_if([&profile](const auto& state) {
+                return state && state->get_profile().to_string() == profile.profile.to_string() &&
+                       state->group().get() == profile.group && 
+                       state->address().get() == profile.address;
+            });
+        }
+        
         for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
             callback();
         }
@@ -173,6 +187,18 @@ void CIDeviceModel::setup_event_listeners() {
     
     observable_profiles.add_profile_enabled_changed_callback([this](const auto& profile) {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        
+        auto states = pimpl_->local_profile_states_.to_vector();
+        for (auto& state : states) {
+            if (state && state->get_profile().to_string() == profile.profile.to_string() &&
+                state->group().get() == profile.group && 
+                state->address().get() == profile.address) {
+                state->enabled().set(profile.enabled);
+                state->num_channels_requested().set(profile.num_channels_requested);
+                break;
+            }
+        }
+        
         for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
             callback();
         }
@@ -180,6 +206,18 @@ void CIDeviceModel::setup_event_listeners() {
     
     observable_profiles.add_profile_updated_callback([this](const auto& profile_id, uint8_t old_address, bool enabled, uint8_t new_address, uint16_t num_channels) {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        
+        auto states = pimpl_->local_profile_states_.to_vector();
+        for (auto& state : states) {
+            if (state && state->get_profile().to_string() == profile_id.to_string() &&
+                state->address().get() == old_address) {
+                state->address().set(new_address);
+                state->enabled().set(enabled);
+                state->num_channels_requested().set(num_channels);
+                break;
+            }
+        }
+        
         for (const auto& callback : pimpl_->profiles_updated_callbacks_) {
             callback();
         }

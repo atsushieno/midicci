@@ -46,6 +46,8 @@ target_link_libraries(midicci-gui
     midicci-tooling
 )
 
+add_dependencies(midicci-gui midicci midicci-tooling)
+
 if(WIN32)
     set_target_properties(midicci-gui PROPERTIES
         WIN32_EXECUTABLE TRUE

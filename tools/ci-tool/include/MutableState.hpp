@@ -79,7 +79,7 @@ public:
     }
     
     void add(const T& item) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         items_.push_back(item);
         if (handler_) {
             handler_(StateChangeAction::ADDED, item);
@@ -87,7 +87,7 @@ public:
     }
     
     void remove(const T& item) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         auto it = std::find(items_.begin(), items_.end(), item);
         if (it != items_.end()) {
             items_.erase(it);
@@ -99,7 +99,7 @@ public:
     
     template<typename Predicate>
     void remove_if(Predicate pred) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         auto it = std::remove_if(items_.begin(), items_.end(), pred);
         for (auto removed_it = it; removed_it != items_.end(); ++removed_it) {
             if (handler_) {
@@ -110,7 +110,7 @@ public:
     }
     
     void clear() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& item : items_) {
             if (handler_) {
                 handler_(StateChangeAction::REMOVED, item);
@@ -120,59 +120,59 @@ public:
     }
     
     iterator begin() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.begin();
     }
     
     iterator end() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.end();
     }
     
     const_iterator begin() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.begin();
     }
     
     const_iterator end() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.end();
     }
     
     size_t size() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.size();
     }
     
     bool empty() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_.empty();
     }
     
     const T& operator[](size_t index) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_[index];
     }
     
     T& operator[](size_t index) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_[index];
     }
     
     std::vector<T> to_vector() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return items_;
     }
     
     void set_collection_changed_handler(CollectionChangedHandler handler) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         handler_ = handler;
     }
 
 private:
     std::vector<T> items_;
     CollectionChangedHandler handler_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
 };
 
 }

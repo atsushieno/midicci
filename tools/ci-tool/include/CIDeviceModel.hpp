@@ -46,7 +46,7 @@ public:
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
     
     const MutableStateList<std::shared_ptr<ClientConnectionModel>>& get_connections() const;
-    const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_local_profile_states() const;
+    MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_local_profile_states() const;
     
     void send_discovery();
     void send_profile_details_inquiry(uint8_t address, uint32_t muid,

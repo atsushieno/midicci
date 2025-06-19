@@ -20,7 +20,7 @@ public:
     midicci::core::MidiCIDeviceConfiguration& config_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
-    mutable std::mutex mutex_;
+    mutable std::recursive_mutex mutex_;
     
     std::vector<uint8_t> buffered_sysex7_;
     std::vector<uint8_t> buffered_sysex8_;
@@ -34,7 +34,7 @@ CIDeviceManager::CIDeviceManager(CIToolRepository& repository,
 CIDeviceManager::~CIDeviceManager() = default;
 
 void CIDeviceManager::initialize() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto ci_output_sender = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         std::vector<uint8_t> sysex_data;
@@ -89,7 +89,7 @@ void CIDeviceManager::initialize() {
 }
 
 void CIDeviceManager::shutdown() {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->device_model_) {
         pimpl_->device_model_->shutdown();
         pimpl_->device_model_.reset();
@@ -98,12 +98,12 @@ void CIDeviceManager::shutdown() {
 }
 
 std::shared_ptr<CIDeviceModel> CIDeviceManager::get_device_model() const {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->device_model_;
 }
 
 void CIDeviceManager::process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::string hex_str;
     for (size_t i = start; i < start + length && i < data.size(); ++i) {
@@ -144,7 +144,7 @@ void CIDeviceManager::process_midi1_input(const std::vector<uint8_t>& data, size
 }
 
 void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
-    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::string hex_str;
     for (size_t i = start; i < start + length && i < data.size(); ++i) {

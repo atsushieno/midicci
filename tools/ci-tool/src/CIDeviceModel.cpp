@@ -90,7 +90,7 @@ const MutableStateList<std::shared_ptr<ClientConnectionModel>>& CIDeviceModel::g
     return pimpl_->connections_;
 }
 
-const MutableStateList<std::shared_ptr<MidiCIProfileState>>& CIDeviceModel::get_local_profile_states() const {
+MutableStateList<std::shared_ptr<MidiCIProfileState>>& CIDeviceModel::get_local_profile_states() const {
     return pimpl_->local_profile_states_;
 }
 

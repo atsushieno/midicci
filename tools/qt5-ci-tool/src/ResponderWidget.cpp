@@ -403,6 +403,11 @@ void ResponderWidget::setupEventBridge()
     if (!deviceModel) {
         return;
     }
+
+    auto profileStates = &deviceModel->get_local_profile_states();
+    profileStates->set_collection_changed_handler([this](auto action, auto& item) {
+        updateProfileList();
+    });
     
     deviceModel->add_profiles_updated_callback([this]() {
         QMetaObject::invokeMethod(this, [this]() {

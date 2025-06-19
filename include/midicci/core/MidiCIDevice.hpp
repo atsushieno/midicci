@@ -53,10 +53,10 @@ public:
     void set_message_received_callback(MessageReceivedCallback callback);
     void set_connections_changed_callback(ConnectionsChangedCallback callback);
     
-    void store_connection(uint8_t destination_id, std::shared_ptr<ClientConnection> connection);
-    void remove_connection(uint8_t destination_id);
-    std::shared_ptr<ClientConnection> get_connection(uint8_t destination_id) const;
-    const std::unordered_map<uint8_t, std::shared_ptr<ClientConnection>>& get_connections() const;
+    void store_connection(uint32_t destination_muid, std::shared_ptr<ClientConnection> connection);
+    void remove_connection(uint32_t destination_muid);
+    std::shared_ptr<ClientConnection> get_connection(uint32_t destination_muid) const;
+    const std::unordered_map<uint32_t, std::shared_ptr<ClientConnection>>& get_connections() const;
     
     void processInput(uint8_t group, const std::vector<uint8_t>& sysex_data);
     

@@ -6,13 +6,10 @@
 #include <functional>
 #include <memory>
 #include "../messages/Message.hpp"
+#include "ObservablePropertyList.hpp"
 
 namespace midicci {
-
 namespace properties {
-
-class PropertyMetadata;
-struct SubscriptionEntry;
 
 class MidiCIServicePropertyRules {
 public:

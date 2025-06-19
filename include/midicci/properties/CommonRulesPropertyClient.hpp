@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../json_ish/Json.hpp"
+#include "../core/MidiCIDevice.hpp"
+#include "../core/ClientConnection.hpp"
 #include "midicci/properties/PropertyClientFacade.hpp"
 #include "midicci/properties/CommonRulesPropertyHelper.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
@@ -8,13 +11,6 @@
 #include <functional>
 
 namespace midicci {
-namespace json_ish {
-class JsonValue;
-}
-namespace core {
-class MidiCIDevice;
-class ClientConnection;
-}
 namespace properties {
 
 class CommonRulesPropertyClient : public MidiCIClientPropertyRules {

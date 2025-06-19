@@ -8,17 +8,8 @@
 #include "../core/MidiCIConstants.hpp"
 
 namespace midicci {
-namespace messages {
-
-class Message;
-
-} // namespace messages
-
 namespace core {
-
 class MidiCIDevice;
-class ClientConnection;
-
 } // namespace core
 
 namespace messages {

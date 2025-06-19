@@ -13,8 +13,6 @@ namespace midicci {
 
 namespace core {
 
-class MidiCIDevice;
-
 enum class SubscriptionActionState {
     Subscribing,
     Subscribed,

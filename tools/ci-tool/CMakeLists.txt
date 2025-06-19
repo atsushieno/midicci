@@ -30,7 +30,7 @@ set(MIDICCI_CUI_SOURCES
 
 add_library(midicci-tooling STATIC ${MIDICCI_TOOLING_SOURCES})
 target_link_libraries(midicci-tooling 
-    PUBLIC 
+    PRIVATE
         midicci
         libremidi
 )

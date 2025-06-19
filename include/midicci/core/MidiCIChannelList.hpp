@@ -20,7 +20,7 @@ struct MidiCIChannel {
     bool is_poly_mode;
     std::string cluster_type;
     
-    MidiCIChannel(const std::string& title = "", int channel = 1, 
+    explicit MidiCIChannel(const std::string& title = "", int channel = 1,
                  const std::string& program_title = "", uint8_t bank_msb = 0,
                  uint8_t bank_lsb = 0, uint8_t program = 0,
                  int cluster_channel_start = 1, int cluster_length = 1,

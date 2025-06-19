@@ -8,11 +8,6 @@
 #include "midicci/messages/Messenger.hpp"
 
 namespace midicci {
-
-namespace transport {
-class SysExTransport;
-}
-
 namespace profiles {
 class ProfileHostFacade;
 class ProfileClientFacade;
@@ -71,8 +66,7 @@ public:
     
     void set_sysex_sender(CIOutputSender sender);
     CIOutputSender get_ci_output_sender() const;
-    void set_sysex_transport(std::unique_ptr<transport::SysExTransport> transport);
-    
+
     void sendDiscovery();
     
     profiles::ProfileHostFacade& get_profile_host_facade();

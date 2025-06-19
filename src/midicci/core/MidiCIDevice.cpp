@@ -1,9 +1,6 @@
 #include "midicci/core/MidiCIDevice.hpp"
 #include "midicci/core/ClientConnection.hpp"
 #include "midicci/core/MidiCIDeviceConfiguration.hpp"
-#include "midicci/messages/Message.hpp"
-#include "midicci/messages/Messenger.hpp"
-#include "midicci/transport/SysExTransport.hpp"
 #include "midicci/profiles/ProfileHostFacade.hpp"
 #include "midicci/properties/PropertyHostFacade.hpp"
 #include <unordered_map>
@@ -147,10 +144,6 @@ void MidiCIDevice::set_sysex_sender(MidiCIDevice::CIOutputSender sender) {
 MidiCIDevice::CIOutputSender MidiCIDevice::get_ci_output_sender() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->ci_output_sender_;
-}
-
-void MidiCIDevice::set_sysex_transport(std::unique_ptr<midicci::transport::SysExTransport> transport) {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
 }
 
 void MidiCIDevice::sendDiscovery() {

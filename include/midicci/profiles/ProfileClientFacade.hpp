@@ -4,13 +4,9 @@
 #include <cstdint>
 #include "../messages/Message.hpp"
 #include "ObservableProfileList.hpp"
+#include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace core {
-class MidiCIDevice;
-class ClientConnection;
-}
-
 namespace profiles {
 
 class ProfileClientFacade {

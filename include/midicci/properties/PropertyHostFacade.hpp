@@ -5,15 +5,12 @@
 #include <string>
 #include <functional>
 #include "../messages/Message.hpp"
+#include "ObservablePropertyList.hpp"
+#include "MidiCIServicePropertyRules.hpp"
+#include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace core {
-class MidiCIDevice;
-}
-
 namespace properties {
-class MidiCIServicePropertyRules;
-struct PropertyMetadata;
 
 struct PropertySubscription {
     uint32_t subscriber_muid;
@@ -31,8 +28,8 @@ public:
     PropertyHostFacade(const PropertyHostFacade&) = delete;
     PropertyHostFacade& operator=(const PropertyHostFacade&) = delete;
     
-    PropertyHostFacade(PropertyHostFacade&&);
-    PropertyHostFacade& operator=(PropertyHostFacade&&);
+    PropertyHostFacade(PropertyHostFacade&&) noexcept;
+    PropertyHostFacade& operator=(PropertyHostFacade&&) noexcept;
     
     void set_property_rules(std::unique_ptr<MidiCIServicePropertyRules> rules);
     MidiCIServicePropertyRules* get_property_rules();

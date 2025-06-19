@@ -4,11 +4,9 @@
 #include <string>
 #include <map>
 #include <cstdint>
+#include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace core {
-class MidiCIDevice;
-}
 namespace properties {
 
 class CommonRulesPropertyHelper {

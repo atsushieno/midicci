@@ -2,16 +2,12 @@
 
 #include <memory>
 #include <functional>
+#include "MidiCIProfile.hpp"
+#include "ObservableProfileList.hpp"
+#include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace core {
-class MidiCIDevice;
-}
-
 namespace profiles {
-class ObservableProfileList;
-struct MidiCIProfile;
-struct MidiCIProfileId;
 
 class ProfileHostFacade {
 public:

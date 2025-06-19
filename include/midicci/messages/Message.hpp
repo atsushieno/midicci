@@ -83,11 +83,6 @@ public:
     std::vector<std::vector<uint8_t>> serialize_multi(const core::MidiCIDeviceConfiguration& config) const override;
 };
 
-class MultiPacketMessage : public Message {
-public:
-    MultiPacketMessage(MessageType type, const Common& common);
-};
-
 class PropertyMessage : public Message {
 public:
     PropertyMessage(MessageType type, const Common& common, uint8_t request_id, 
@@ -394,15 +389,6 @@ public:
     std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
-    
-    uint8_t get_request_id() const { return request_id_; }
-    const std::vector<uint8_t>& get_header() const { return header_; }
-    const std::vector<uint8_t>& get_body() const { return body_; }
-    
-private:
-    uint8_t request_id_;
-    std::vector<uint8_t> header_;
-    std::vector<uint8_t> body_;
 };
 
 class SetPropertyDataReply : public PropertyMessage {
@@ -412,13 +398,6 @@ public:
     std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
-    
-    uint8_t get_request_id() const { return request_id_; }
-    const std::vector<uint8_t>& get_header() const { return header_; }
-    
-private:
-    uint8_t request_id_;
-    std::vector<uint8_t> header_;
 };
 
 class SubscribePropertyReply : public PropertyMessage {
@@ -429,15 +408,6 @@ public:
     std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
-    
-    uint8_t get_request_id() const { return request_id_; }
-    const std::vector<uint8_t>& get_header() const { return header_; }
-    const std::vector<uint8_t>& get_body() const { return body_; }
-    
-private:
-    uint8_t request_id_;
-    std::vector<uint8_t> header_;
-    std::vector<uint8_t> body_;
 };
 
 class ProfileAdded : public SinglePacketMessage {

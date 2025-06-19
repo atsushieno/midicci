@@ -61,9 +61,6 @@ std::vector<std::vector<uint8_t>> SinglePacketMessage::serialize_multi(const cor
     return {single};
 }
 
-MultiPacketMessage::MultiPacketMessage(MessageType type, const Common& common)
-    : Message(type, common) {}
-
 PropertyMessage::PropertyMessage(MessageType type, const Common& common, uint8_t request_id,
                                const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)
     : Message(type, common), request_id_(request_id), header_(header), body_(body) {}
@@ -692,9 +689,9 @@ GetPropertyDataReply::GetPropertyDataReply(const Common& common, uint8_t request
     : PropertyMessage(MessageType::GetPropertyDataReply, common, request_id, header, body) {}
 
 std::vector<std::vector<uint8_t>> GetPropertyDataReply::serialize(const core::MidiCIDeviceConfiguration& config) const {
-    std::vector<uint8_t> dst(4096);
+    std::vector<uint8_t> dst(config.receivable_max_sysex_size);
     auto chunks = midicci::core::CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(midicci::core::constants::CISubId2::PROPERTY_GET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks;

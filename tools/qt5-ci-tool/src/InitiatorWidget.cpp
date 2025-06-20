@@ -771,25 +771,11 @@ void InitiatorWidget::setupPropertyCallbacks()
         if (connection && connection->get_connection()) {
             uint32_t connectionMuid = connection->get_connection()->get_target_muid();
             if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
-                auto conn = connection->get_connection();
-                if (conn) {
-                    auto& property_facade = conn->get_property_client_facade();
-                    auto* observable_properties = property_facade.get_properties();
-                    
-                    if (observable_properties) {
-                        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
-                            QMetaObject::invokeMethod(this, [this]() {
-                                updatePropertyList();
-                            }, Qt::QueuedConnection);
-                        });
-                        
-                        observable_properties->addPropertyCatalogUpdatedCallback([this]() {
-                            QMetaObject::invokeMethod(this, [this]() {
-                                updatePropertyList();
-                            }, Qt::QueuedConnection);
-                        });
-                    }
-                }
+                connection->add_properties_changed_callback([this]() {
+                    QMetaObject::invokeMethod(this, [this]() {
+                        updatePropertyList();
+                    }, Qt::QueuedConnection);
+                });
                 break;
             }
         }

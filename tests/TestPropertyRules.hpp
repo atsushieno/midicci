@@ -29,6 +29,7 @@ public:
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;
     std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) override;
     std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) override;
+    int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) override;
     std::vector<uint8_t> create_shutdown_subscription_header(const std::string& property_id) override;
     
     const std::vector<SubscriptionEntry>& get_subscriptions() const override;

@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_program(FLUTTER_EXECUTABLE flutter)
 
 if(NOT FLUTTER_EXECUTABLE)
-    message(STATUS "Flutter not found, skipping flutter-ci-tool")
+    message(STATUS "Flutter not found, skipping flutter_ci_tool")
     return()
 endif()
 

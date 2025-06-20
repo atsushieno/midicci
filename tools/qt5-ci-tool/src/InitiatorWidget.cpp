@@ -728,7 +728,8 @@ void InitiatorWidget::setupEventBridge()
                 updateConnectionInfo();
                 updateProfileList();
                 updatePropertyList();
-                setupPropertyCallbacks();
+                
+                registerPropertyValueCallbacks();
             }
             emit deviceConnected(m_selectedDeviceMUID);
         }, Qt::QueuedConnection);
@@ -753,7 +754,7 @@ void InitiatorWidget::setupEventBridge()
     });
 }
 
-void InitiatorWidget::setupPropertyCallbacks()
+void InitiatorWidget::registerPropertyValueCallbacks()
 {
     if (!m_repository || !m_repository->get_ci_device_manager()) {
         return;
@@ -774,8 +775,62 @@ void InitiatorWidget::setupPropertyCallbacks()
                 connection->add_properties_changed_callback([this]() {
                     QMetaObject::invokeMethod(this, [this]() {
                         updatePropertyList();
+                        
+                        if (!m_selectedProperty.isEmpty()) {
+                            updatePropertyValueDisplay();
+                        }
                     }, Qt::QueuedConnection);
                 });
+                break;
+            }
+        }
+    }
+}
+
+void InitiatorWidget::updatePropertyValueDisplay()
+{
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    const auto& connections = deviceModel->get_connections();
+    auto connections_vec = connections.to_vector();
+    
+    for (const auto& connection : connections_vec) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    auto* observable_properties = property_facade.get_properties();
+                    
+                    if (observable_properties) {
+                        auto values = observable_properties->getValues();
+                        for (const auto& value : values) {
+                            if (value.id == m_selectedProperty.toStdString()) {
+                                QString propertyText = QString::fromStdString(
+                                    std::string(value.body.begin(), value.body.end())
+                                );
+                                m_propertyValueText.set(propertyText);
+                                
+                                if (!m_propertyEditingMode.get()) {
+                                    m_propertyValueEdit->setPlainText(propertyText);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
                 break;
             }
         }

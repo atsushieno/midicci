@@ -97,6 +97,8 @@ struct MidiCISubscriptionCommand {
     static constexpr const char* START = "start";
     static constexpr const char* END = "end";
     static constexpr const char* NOTIFY = "notify";
+    static constexpr const char* FULL = "full";
+    static constexpr const char* PARTIAL = "partial";
 };
 
 } // namespace property_common_rules

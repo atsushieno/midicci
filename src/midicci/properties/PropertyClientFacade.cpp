@@ -3,6 +3,7 @@
 #include "midicci/properties/CommonRulesPropertyClient.hpp"
 #include "midicci/properties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/PropertyCommonRules.hpp"
 #include "midicci/core/MidiCIDevice.hpp"
 #include "midicci/core/ClientConnection.hpp"
 #include "midicci/messages/Message.hpp"
@@ -110,7 +111,7 @@ void PropertyClientFacade::send_subscribe_property(const std::string& resource, 
     if (!pimpl_->property_rules_) return;
     
     std::map<std::string, std::string> fields;
-    fields["command"] = "start";
+    fields["command"] = property_common_rules::MidiCISubscriptionCommand::START;
     if (!mutual_encoding.empty()) fields["mutualEncoding"] = mutual_encoding;
     
     auto header = pimpl_->property_rules_->create_subscription_header(resource, fields);
@@ -129,7 +130,7 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
     if (!pimpl_->property_rules_) return;
     
     std::map<std::string, std::string> fields;
-    fields["command"] = "end";
+    fields["command"] = property_common_rules::MidiCISubscriptionCommand::END;
     
     auto header = pimpl_->property_rules_->create_subscription_header(property_id, fields);
     
@@ -222,12 +223,30 @@ void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& ms
 void PropertyClientFacade::process_subscribe_property(const SubscribeProperty& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (pimpl_->property_rules_) {
-        auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
-        if (command == "notify") {
-            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
-            send_get_property_data(property_id);
+    if (!pimpl_->property_rules_) return;
+    
+    auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
+    auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+    
+    if (command == property_common_rules::MidiCISubscriptionCommand::END) {
+        return;
+    } else if (command == property_common_rules::MidiCISubscriptionCommand::NOTIFY) {
+        send_get_property_data(property_id);
+    } else if (command == property_common_rules::MidiCISubscriptionCommand::FULL || 
+               command == property_common_rules::MidiCISubscriptionCommand::PARTIAL) {
+        auto res_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "resId");
+        auto media_type = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "mediaType");
+        if (media_type.empty()) {
+            media_type = "application/json";
         }
+        
+        if (pimpl_->properties_) {
+            pimpl_->properties_->updateValue(property_id, msg.get_body());
+        }
+        
+        pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
+        
+        pimpl_->cached_properties_[property_id] = msg.get_body();
     }
 }
 

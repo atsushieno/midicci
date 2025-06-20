@@ -171,11 +171,21 @@ void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& ms
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
                 
                 if (pimpl_->property_rules_) {
-                    auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
-                    pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
-                    pimpl_->cached_properties_[property_id] = msg.get_body();
-                    if (pimpl_->properties_) {
-                        pimpl_->properties_->updateValue(property_id, msg.get_body());
+                    auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
+                    if (status == 200) {
+                        auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
+                        
+                        auto media_type = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "mediaType");
+                        if (media_type.empty()) {
+                            media_type = "application/json";
+                        }
+                        
+                        if (pimpl_->properties_) {
+                            pimpl_->properties_->updateValue(property_id, msg.get_body(), media_type);
+                        }
+                        
+                        pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
+                        pimpl_->cached_properties_[property_id] = msg.get_body();
                     }
                 }
                 
@@ -241,7 +251,7 @@ void PropertyClientFacade::process_subscribe_property(const SubscribeProperty& m
         }
         
         if (pimpl_->properties_) {
-            pimpl_->properties_->updateValue(property_id, msg.get_body());
+            pimpl_->properties_->updateValue(property_id, msg.get_body(), media_type);
         }
         
         pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());

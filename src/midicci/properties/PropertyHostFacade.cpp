@@ -105,7 +105,15 @@ SetPropertyDataReply PropertyHostFacade::process_set_property_data(const SetProp
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        return pimpl_->property_rules_->set_property_data(msg);
+        auto reply = pimpl_->property_rules_->set_property_data(msg);
+        
+        auto status = pimpl_->property_rules_->get_header_field_integer(reply.get_header(), "status");
+        if (status == 200) {
+            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+            update_property(property_id, msg.get_body());
+        }
+        
+        return reply;
     }
     
     return SetPropertyDataReply(msg.get_common(), msg.get_request_id(), {});
@@ -115,7 +123,29 @@ SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const Subs
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
-        return pimpl_->property_rules_->subscribe_property(msg);
+        auto reply = pimpl_->property_rules_->subscribe_property(msg);
+        
+        auto status = pimpl_->property_rules_->get_header_field_integer(reply.get_header(), "status");
+        if (status == 200) {
+            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+            auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
+            
+            if (command == "end") {
+                auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+                    [msg_source_muid = msg.get_source_muid(), &property_id](const PropertySubscription& sub) {
+                        return sub.subscriber_muid == msg_source_muid && sub.property_id == property_id;
+                    });
+                pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+            } else {
+                PropertySubscription subscription;
+                subscription.subscriber_muid = msg.get_source_muid();
+                subscription.property_id = property_id;
+                subscription.subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
+                pimpl_->subscriptions_.push_back(subscription);
+            }
+        }
+        
+        return reply;
     }
     
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});

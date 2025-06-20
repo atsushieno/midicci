@@ -194,6 +194,10 @@ std::string CommonRulesPropertyService::get_header_field_string(const std::vecto
     return helper_->get_header_field_string(header, field);
 }
 
+int CommonRulesPropertyService::get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) {
+    return helper_->get_header_field_integer(header, field);
+}
+
 std::vector<uint8_t> CommonRulesPropertyService::create_shutdown_subscription_header(const std::string& property_id) {
     std::map<std::string, std::string> fields;
     return helper_->create_request_header_bytes(property_id, fields);

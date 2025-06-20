@@ -3,6 +3,7 @@
 #include "CIDeviceModel.hpp"
 #include "AppModel.hpp"
 #include "midicci/properties/ObservablePropertyList.hpp"
+#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
 
 #include <QGridLayout>
 #include <QSplitter>
@@ -120,22 +121,63 @@ void InitiatorWidget::setupUI()
     m_propertyDetailsWidget = new QWidget(this);
     auto *propertyDetailsLayout = new QVBoxLayout(m_propertyDetailsWidget);
     
+    m_propertyMetadataLabel = new QLabel("No property selected", this);
+    m_propertyMetadataLabel->setWordWrap(true);
+    propertyDetailsLayout->addWidget(m_propertyMetadataLabel);
+    
+    auto *editModeLayout = new QHBoxLayout();
+    m_propertyEditCheckbox = new QCheckBox("Edit mode", this);
+    editModeLayout->addWidget(m_propertyEditCheckbox);
+    editModeLayout->addStretch();
+    propertyDetailsLayout->addLayout(editModeLayout);
+    
+    auto *resIdLayout = new QHBoxLayout();
+    resIdLayout->addWidget(new QLabel("Resource ID (if applicable):", this));
+    m_propertyResIdEdit = new QLineEdit(this);
+    resIdLayout->addWidget(m_propertyResIdEdit);
+    propertyDetailsLayout->addLayout(resIdLayout);
+    
+    m_propertyValueEdit = new QTextEdit(this);
+    m_propertyValueEdit->setMinimumHeight(100);
+    propertyDetailsLayout->addWidget(m_propertyValueEdit);
+    
+    m_propertyPartialEdit = new QTextEdit(this);
+    m_propertyPartialEdit->setPlaceholderText("RFC6901 JSON Pointer for partial updates (leave empty for full update)");
+    m_propertyPartialEdit->setMaximumHeight(60);
+    propertyDetailsLayout->addWidget(m_propertyPartialEdit);
+    
     auto *propertyButtonLayout = new QHBoxLayout();
     m_refreshPropertyButton = new QPushButton("Refresh", this);
     m_subscribePropertyButton = new QPushButton("Subscribe", this);
-    m_propertyEncodingSelector = new QComboBox(this);
+    m_propertyCommitButton = new QPushButton("Commit Changes", this);
     
     propertyButtonLayout->addWidget(m_refreshPropertyButton);
     propertyButtonLayout->addWidget(m_subscribePropertyButton);
+    propertyButtonLayout->addWidget(m_propertyCommitButton);
     propertyButtonLayout->addWidget(new QLabel("Encoding:", this));
+    
+    m_propertyEncodingSelector = new QComboBox(this);
+    m_propertyEncodingSelector->addItem("", "");
+    m_propertyEncodingSelector->addItem("ASCII", "ASCII");
+    m_propertyEncodingSelector->addItem("Mcoded7", "Mcoded7");
+    m_propertyEncodingSelector->addItem("zlib+Mcoded7", "zlib+Mcoded7");
     propertyButtonLayout->addWidget(m_propertyEncodingSelector);
     propertyButtonLayout->addStretch();
-    
     propertyDetailsLayout->addLayout(propertyButtonLayout);
     
-    m_propertyValueEdit = new QTextEdit(this);
-    m_propertyValueEdit->setReadOnly(true);
-    propertyDetailsLayout->addWidget(m_propertyValueEdit);
+    m_propertyPaginationGroup = new QGroupBox("Pagination", this);
+    auto *paginationLayout = new QHBoxLayout(m_propertyPaginationGroup);
+    paginationLayout->addWidget(new QLabel("Offset:", this));
+    m_propertyPaginateOffsetEdit = new QLineEdit("0", this);
+    m_propertyPaginateOffsetEdit->setMaximumWidth(80);
+    paginationLayout->addWidget(m_propertyPaginateOffsetEdit);
+    paginationLayout->addWidget(new QLabel("Limit:", this));
+    m_propertyPaginateLimitEdit = new QLineEdit("9999", this);
+    m_propertyPaginateLimitEdit->setMaximumWidth(80);
+    paginationLayout->addWidget(m_propertyPaginateLimitEdit);
+    paginationLayout->addStretch();
+    m_propertyPaginationGroup->setVisible(false);
+    propertyDetailsLayout->addWidget(m_propertyPaginationGroup);
     
     m_propertySplitter->addWidget(m_propertyDetailsWidget);
     propertyLayout->addWidget(m_propertySplitter);
@@ -170,6 +212,57 @@ void InitiatorWidget::setupConnections()
     connect(m_refreshPropertyButton, &QPushButton::clicked, this, &InitiatorWidget::onRefreshProperty);
     connect(m_subscribePropertyButton, &QPushButton::clicked, this, &InitiatorWidget::onSubscribeProperty);
     connect(m_requestMidiReportButton, &QPushButton::clicked, this, &InitiatorWidget::onRequestMidiMessageReport);
+    connect(m_propertyEditCheckbox, &QCheckBox::toggled, this, &InitiatorWidget::onPropertyEditModeChanged);
+    connect(m_propertyCommitButton, &QPushButton::clicked, this, &InitiatorWidget::onPropertyCommitChanges);
+    connect(m_propertyValueEdit, &QTextEdit::textChanged, this, &InitiatorWidget::onPropertyValueTextChanged);
+    
+    m_propertyEditingMode.set_value_changed_handler([this](bool editing) {
+        m_propertyEditCheckbox->setChecked(editing);
+        m_propertyValueEdit->setReadOnly(!editing);
+        m_propertyPartialEdit->setVisible(editing);
+        m_propertyResIdEdit->setVisible(editing);
+        m_propertyCommitButton->setVisible(editing);
+    });
+    
+    m_propertyValueText.set_value_changed_handler([this](const QString& text) {
+        if (m_propertyValueEdit->toPlainText() != text) {
+            m_propertyValueEdit->setPlainText(text);
+        }
+    });
+    connect(m_propertyEditCheckbox, &QCheckBox::toggled, this, &InitiatorWidget::onPropertyEditModeChanged);
+    connect(m_propertyCommitButton, &QPushButton::clicked, this, &InitiatorWidget::onPropertyCommitChanges);
+    connect(m_propertyValueEdit, &QTextEdit::textChanged, this, &InitiatorWidget::onPropertyValueTextChanged);
+    
+    m_propertyEditingMode.set_value_changed_handler([this](bool editing) {
+        m_propertyEditCheckbox->setChecked(editing);
+        m_propertyValueEdit->setReadOnly(!editing);
+        m_propertyPartialEdit->setVisible(editing);
+        m_propertyResIdEdit->setVisible(editing);
+        m_propertyCommitButton->setVisible(editing);
+    });
+    
+    m_propertyValueText.set_value_changed_handler([this](const QString& text) {
+        if (m_propertyValueEdit->toPlainText() != text) {
+            m_propertyValueEdit->setPlainText(text);
+        }
+    });
+    connect(m_propertyEditCheckbox, &QCheckBox::toggled, this, &InitiatorWidget::onPropertyEditModeChanged);
+    connect(m_propertyCommitButton, &QPushButton::clicked, this, &InitiatorWidget::onPropertyCommitChanges);
+    connect(m_propertyValueEdit, &QTextEdit::textChanged, this, &InitiatorWidget::onPropertyValueTextChanged);
+    
+    m_propertyEditingMode.set_value_changed_handler([this](bool editing) {
+        m_propertyEditCheckbox->setChecked(editing);
+        m_propertyValueEdit->setReadOnly(!editing);
+        m_propertyPartialEdit->setVisible(editing);
+        m_propertyResIdEdit->setVisible(editing);
+        m_propertyCommitButton->setVisible(editing);
+    });
+    
+    m_propertyValueText.set_value_changed_handler([this](const QString& text) {
+        if (m_propertyValueEdit->toPlainText() != text) {
+            m_propertyValueEdit->setPlainText(text);
+        }
+    });
     
 
     
@@ -248,30 +341,172 @@ void InitiatorWidget::onPropertySelectionChanged()
     auto *item = m_propertyList->currentItem();
     if (item) {
         m_selectedProperty = item->text();
-        m_propertyValueEdit->setText(QString("Selected property: %1").arg(m_selectedProperty));
+        
+        if (m_repository && m_repository->get_ci_device_manager()) {
+            auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+            if (deviceModel) {
+                auto& connections = deviceModel->get_connections();
+                for (const auto& connection : connections) {
+                    if (connection && connection->get_connection()) {
+                        uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+                        if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                            const auto& properties = connection->get_properties();
+                            auto properties_vec = properties.to_vector();
+                            
+                            for (const auto& property : properties_vec) {
+                                if (property.id == m_selectedProperty.toStdString()) {
+                                    QString propertyText = QString::fromStdString(
+                                        std::string(property.body.begin(), property.body.end()));
+                                    m_propertyValueText.set(propertyText);
+                                    
+                                    auto metadata = connection->get_metadata_list();
+                                    for (const auto& meta : metadata) {
+                                        if (meta->getResourceId() == property.id) {
+                                            QString metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
+                                                .arg(QString::fromStdString(property.id))
+                                                .arg(QString::fromStdString(property.mediaType))
+                                                .arg(QString::fromStdString("Unknown"))
+                                                .arg(QString::fromStdString("Unknown"))
+                                                .arg(QString::fromStdString("Unknown"));
+                                            
+                                            auto* commonMeta = dynamic_cast<const midicci::propertycommonrules::CommonRulesPropertyMetadata*>(meta.get());
+                                            if (commonMeta) {
+                                                metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
+                                                    .arg(QString::fromStdString(property.id))
+                                                    .arg(QString::fromStdString(property.mediaType))
+                                                    .arg(QString::fromStdString(commonMeta->canSet))
+                                                    .arg(commonMeta->canSubscribe ? "Yes" : "No")
+                                                    .arg(commonMeta->canPaginate ? "Yes" : "No");
+                                                
+                                                m_propertyPaginationGroup->setVisible(commonMeta->canPaginate);
+                                            } else {
+                                                m_propertyPaginationGroup->setVisible(false);
+                                            }
+                                            
+                                            m_propertyMetadataLabel->setText(metadataText);
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        m_propertyEditingMode.set(false);
+        m_propertyResId.set("");
+        m_propertySelectedEncoding.set("");
     } else {
         m_selectedProperty.clear();
-        m_propertyValueEdit->clear();
+        m_propertyValueText.set("");
+        m_propertyMetadataLabel->setText("No property selected");
+        m_propertyPaginationGroup->setVisible(false);
     }
 }
 
 void InitiatorWidget::onRefreshProperty()
 {
-    if (!m_selectedProperty.isEmpty()) {
-        m_repository->log(QString("Refreshing property: %1").arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto& connections = deviceModel->get_connections();
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    
+                    QString encoding = m_propertyEncodingSelector->currentData().toString();
+                    int offset = m_propertyPaginateOffsetEdit->text().toInt();
+                    int limit = m_propertyPaginateLimitEdit->text().toInt();
+                    
+                    if (m_propertyPaginationGroup->isVisible()) {
+                        property_facade.send_get_property_data(
+                            m_selectedProperty.toStdString(),
+                            encoding.toStdString(),
+                            offset,
+                            limit
+                        );
+                    } else {
+                        property_facade.send_get_property_data(
+                            m_selectedProperty.toStdString(),
+                            encoding.toStdString()
+                        );
+                    }
+                    
+                    m_repository->log(QString("Refreshing property: %1 with encoding: %2")
+                        .arg(m_selectedProperty)
+                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
+                        ci_tool::MessageDirection::Out);
+                }
+                break;
+            }
+        }
     }
 }
 
 void InitiatorWidget::onSubscribeProperty()
 {
-    if (!m_selectedProperty.isEmpty()) {
-        bool isSubscribed = m_subscribePropertyButton->text() == "Unsubscribe";
-        if (isSubscribed) {
-            m_subscribePropertyButton->setText("Subscribe");
-            m_repository->log(QString("Unsubscribing from property: %1").arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
-        } else {
-            m_subscribePropertyButton->setText("Unsubscribe");
-            m_repository->log(QString("Subscribing to property: %1").arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto& connections = deviceModel->get_connections();
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    
+                    bool isSubscribed = m_subscribePropertyButton->text() == "Unsubscribe";
+                    QString encoding = m_propertyEncodingSelector->currentData().toString();
+                    
+                    if (isSubscribed) {
+                        property_facade.send_unsubscribe_property(m_selectedProperty.toStdString());
+                        m_subscribePropertyButton->setText("Subscribe");
+                        m_repository->log(QString("Unsubscribing from property: %1")
+                            .arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+                    } else {
+                        property_facade.send_subscribe_property(
+                            m_selectedProperty.toStdString(),
+                            encoding.toStdString()
+                        );
+                        m_subscribePropertyButton->setText("Unsubscribe");
+                        m_repository->log(QString("Subscribing to property: %1 with encoding: %2")
+                            .arg(m_selectedProperty)
+                            .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
+                            ci_tool::MessageDirection::Out);
+                    }
+                }
+                break;
+            }
         }
     }
 }
@@ -554,6 +789,74 @@ void InitiatorWidget::setupPropertyCallbacks()
                             }, Qt::QueuedConnection);
                         });
                     }
+                }
+                break;
+            }
+        }
+    }
+}
+
+void InitiatorWidget::onPropertyEditModeChanged(bool editing)
+{
+    m_propertyEditingMode.set(editing);
+}
+
+void InitiatorWidget::onPropertyValueTextChanged()
+{
+    if (!m_propertyEditingMode.get()) {
+        return;
+    }
+    m_propertyValueText.set(m_propertyValueEdit->toPlainText());
+}
+
+void InitiatorWidget::onPropertyCommitChanges()
+{
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto& connections = deviceModel->get_connections();
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    
+                    QString propertyText = m_propertyValueEdit->toPlainText();
+                    QString resId = m_propertyResIdEdit->text();
+                    QString encoding = m_propertyEncodingSelector->currentData().toString();
+                    QString partialContent = m_propertyPartialEdit->toPlainText();
+                    bool isPartial = !partialContent.isEmpty();
+                    
+                    std::string textToSend = isPartial ? partialContent.toStdString() : propertyText.toStdString();
+                    std::vector<uint8_t> data(textToSend.begin(), textToSend.end());
+                    
+                    property_facade.send_set_property_data(
+                        m_selectedProperty.toStdString(),
+                        resId.toStdString(),
+                        data,
+                        encoding.toStdString(),
+                        isPartial
+                    );
+                    
+                    m_repository->log(QString("Committing changes to property: %1 (partial: %2, encoding: %3)")
+                        .arg(m_selectedProperty)
+                        .arg(isPartial ? "yes" : "no")
+                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
+                        ci_tool::MessageDirection::Out);
+                    
+                    m_propertyEditingMode.set(false);
                 }
                 break;
             }

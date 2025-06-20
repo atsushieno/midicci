@@ -16,6 +16,7 @@
 #include <QSpinBox>
 
 #include <memory>
+#include "../../ci-tool/include/MutableState.hpp"
 
 namespace ci_tool {
     class CIToolRepository;
@@ -45,6 +46,9 @@ private slots:
     void onRefreshProperty();
     void onSubscribeProperty();
     void onRequestMidiMessageReport();
+    void onPropertyEditModeChanged(bool editing);
+    void onPropertyCommitChanges();
+    void onPropertyValueTextChanged();
 
 
 private:
@@ -96,4 +100,21 @@ private:
     QString m_selectedProperty;
     
     size_t m_lastConnectionCount;
+    
+    ci_tool::MutableState<bool> m_propertyEditingMode;
+    ci_tool::MutableState<QString> m_propertyValueText;
+    ci_tool::MutableState<QString> m_propertyResId;
+    ci_tool::MutableState<QString> m_propertySelectedEncoding;
+    ci_tool::MutableState<QString> m_propertyPartialContent;
+    ci_tool::MutableState<int> m_propertyPaginateOffset;
+    ci_tool::MutableState<int> m_propertyPaginateLimit;
+    
+    QCheckBox *m_propertyEditCheckbox;
+    QLineEdit *m_propertyResIdEdit;
+    QTextEdit *m_propertyPartialEdit;
+    QLineEdit *m_propertyPaginateOffsetEdit;
+    QLineEdit *m_propertyPaginateLimitEdit;
+    QPushButton *m_propertyCommitButton;
+    QLabel *m_propertyMetadataLabel;
+    QGroupBox *m_propertyPaginationGroup;
 };

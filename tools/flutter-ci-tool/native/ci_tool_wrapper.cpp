@@ -33,9 +33,9 @@ struct MidiDeviceManagerHandle {
 };
 
 static std::mutex g_callback_mutex;
-static std::map<CIToolRepositoryHandle, LogCallback> g_log_callbacks;
+static std::map<CIToolRepository, LogCallback> g_log_callbacks;
 
-CIToolRepositoryHandle ci_tool_repository_create() {
+CIToolRepository ci_tool_repository_create() {
     try {
         auto handle = new CIToolRepositoryHandle();
         handle->repository = std::make_unique<CIToolRepository>();
@@ -45,7 +45,7 @@ CIToolRepositoryHandle ci_tool_repository_create() {
     }
 }
 
-void ci_tool_repository_destroy(CIToolRepositoryHandle handle) {
+void ci_tool_repository_destroy(CIToolRepository handle) {
     if (handle) {
         std::lock_guard<std::mutex> lock(g_callback_mutex);
         g_log_callbacks.erase(handle);
@@ -53,7 +53,7 @@ void ci_tool_repository_destroy(CIToolRepositoryHandle handle) {
     }
 }
 
-bool ci_tool_repository_initialize(CIToolRepositoryHandle handle) {
+bool ci_tool_repository_initialize(CIToolRepository handle) {
     if (!handle || !handle->repository) return false;
     
     try {
@@ -74,7 +74,7 @@ bool ci_tool_repository_initialize(CIToolRepositoryHandle handle) {
     }
 }
 
-void ci_tool_repository_shutdown(CIToolRepositoryHandle handle) {
+void ci_tool_repository_shutdown(CIToolRepository handle) {
     if (!handle || !handle->repository) return;
     
     try {
@@ -93,7 +93,7 @@ void ci_tool_repository_shutdown(CIToolRepositoryHandle handle) {
     }
 }
 
-void ci_tool_repository_load_config(CIToolRepositoryHandle handle, const char* filename) {
+void ci_tool_repository_load_config(CIToolRepository handle, const char* filename) {
     if (!handle || !handle->repository || !filename) return;
     
     try {
@@ -102,7 +102,7 @@ void ci_tool_repository_load_config(CIToolRepositoryHandle handle, const char* f
     }
 }
 
-void ci_tool_repository_save_config(CIToolRepositoryHandle handle, const char* filename) {
+void ci_tool_repository_save_config(CIToolRepository handle, const char* filename) {
     if (!handle || !handle->repository || !filename) return;
     
     try {
@@ -111,7 +111,7 @@ void ci_tool_repository_save_config(CIToolRepositoryHandle handle, const char* f
     }
 }
 
-void ci_tool_repository_load_default_config(CIToolRepositoryHandle handle) {
+void ci_tool_repository_load_default_config(CIToolRepository handle) {
     if (!handle || !handle->repository) return;
     
     try {
@@ -120,7 +120,7 @@ void ci_tool_repository_load_default_config(CIToolRepositoryHandle handle) {
     }
 }
 
-void ci_tool_repository_save_default_config(CIToolRepositoryHandle handle) {
+void ci_tool_repository_save_default_config(CIToolRepository handle) {
     if (!handle || !handle->repository) return;
     
     try {
@@ -129,7 +129,7 @@ void ci_tool_repository_save_default_config(CIToolRepositoryHandle handle) {
     }
 }
 
-void ci_tool_repository_log(CIToolRepositoryHandle handle, const char* message, bool is_outgoing) {
+void ci_tool_repository_log(CIToolRepository handle, const char* message, bool is_outgoing) {
     if (!handle || !handle->repository || !message) return;
     
     try {
@@ -139,7 +139,7 @@ void ci_tool_repository_log(CIToolRepositoryHandle handle, const char* message, 
     }
 }
 
-const char* ci_tool_repository_get_logs_json(CIToolRepositoryHandle handle) {
+const char* ci_tool_repository_get_logs_json(CIToolRepository handle) {
     if (!handle || !handle->repository) return nullptr;
     
     try {
@@ -150,7 +150,7 @@ const char* ci_tool_repository_get_logs_json(CIToolRepositoryHandle handle) {
     }
 }
 
-void ci_tool_repository_clear_logs(CIToolRepositoryHandle handle) {
+void ci_tool_repository_clear_logs(CIToolRepository handle) {
     if (!handle || !handle->repository) return;
     
     try {
@@ -159,7 +159,7 @@ void ci_tool_repository_clear_logs(CIToolRepositoryHandle handle) {
     }
 }
 
-uint32_t ci_tool_repository_get_muid(CIToolRepositoryHandle handle) {
+uint32_t ci_tool_repository_get_muid(CIToolRepository handle) {
     if (!handle || !handle->repository) return 0;
     
     try {
@@ -169,7 +169,7 @@ uint32_t ci_tool_repository_get_muid(CIToolRepositoryHandle handle) {
     }
 }
 
-CIDeviceManagerHandle ci_tool_repository_get_device_manager(CIToolRepositoryHandle handle) {
+CIDeviceManager ci_tool_repository_get_device_manager(CIToolRepository handle) {
     if (!handle || !handle->repository) return nullptr;
     
     try {
@@ -184,7 +184,7 @@ CIDeviceManagerHandle ci_tool_repository_get_device_manager(CIToolRepositoryHand
     }
 }
 
-bool ci_device_manager_initialize(CIDeviceManagerHandle handle) {
+bool ci_device_manager_initialize(CIDeviceManager handle) {
     if (!handle || !handle->manager) return false;
     
     try {
@@ -195,7 +195,7 @@ bool ci_device_manager_initialize(CIDeviceManagerHandle handle) {
     }
 }
 
-void ci_device_manager_shutdown(CIDeviceManagerHandle handle) {
+void ci_device_manager_shutdown(CIDeviceManager handle) {
     if (!handle || !handle->manager) return;
     
     try {
@@ -204,7 +204,7 @@ void ci_device_manager_shutdown(CIDeviceManagerHandle handle) {
     }
 }
 
-CIDeviceModelHandle ci_device_manager_get_device_model(CIDeviceManagerHandle handle) {
+CIDeviceModel ci_device_manager_get_device_model(CIDeviceManager handle) {
     if (!handle || !handle->manager) return nullptr;
     
     try {
@@ -219,7 +219,7 @@ CIDeviceModelHandle ci_device_manager_get_device_model(CIDeviceManagerHandle han
     }
 }
 
-void ci_device_model_send_discovery(CIDeviceModelHandle handle) {
+void ci_device_model_send_discovery(CIDeviceModel handle) {
     if (!handle || !handle->model) return;
     
     try {
@@ -228,7 +228,7 @@ void ci_device_model_send_discovery(CIDeviceModelHandle handle) {
     }
 }
 
-const char* ci_device_model_get_connections_json(CIDeviceModelHandle handle) {
+const char* ci_device_model_get_connections_json(CIDeviceModel handle) {
     if (!handle || !handle->model) return nullptr;
     
     try {
@@ -239,7 +239,7 @@ const char* ci_device_model_get_connections_json(CIDeviceModelHandle handle) {
     }
 }
 
-const char* ci_device_model_get_local_profiles_json(CIDeviceModelHandle handle) {
+const char* ci_device_model_get_local_profiles_json(CIDeviceModel handle) {
     if (!handle || !handle->model) return nullptr;
     
     try {
@@ -250,31 +250,31 @@ const char* ci_device_model_get_local_profiles_json(CIDeviceModelHandle handle) 
     }
 }
 
-bool ci_device_model_add_local_profile(CIDeviceModelHandle handle, const char* profile_json) {
+bool ci_device_model_add_local_profile(CIDeviceModel handle, const char* profile_json) {
     return false;
 }
 
-bool ci_device_model_remove_local_profile(CIDeviceModelHandle handle, uint8_t group, uint8_t address, const char* profile_id) {
+bool ci_device_model_remove_local_profile(CIDeviceModel handle, uint8_t group, uint8_t address, const char* profile_id) {
     return false;
 }
 
-bool ci_device_model_update_local_profile(CIDeviceModelHandle handle, const char* profile_state_json) {
+bool ci_device_model_update_local_profile(CIDeviceModel handle, const char* profile_state_json) {
     return false;
 }
 
-bool ci_device_model_add_local_property(CIDeviceModelHandle handle, const char* property_json) {
+bool ci_device_model_add_local_property(CIDeviceModel handle, const char* property_json) {
     return false;
 }
 
-bool ci_device_model_remove_local_property(CIDeviceModelHandle handle, const char* property_id) {
+bool ci_device_model_remove_local_property(CIDeviceModel handle, const char* property_id) {
     return false;
 }
 
-bool ci_device_model_update_property_value(CIDeviceModelHandle handle, const char* property_id, const char* res_id, const uint8_t* data, size_t data_length) {
+bool ci_device_model_update_property_value(CIDeviceModel handle, const char* property_id, const char* res_id, const uint8_t* data, size_t data_length) {
     return false;
 }
 
-MidiDeviceManagerHandle ci_tool_repository_get_midi_device_manager(CIToolRepositoryHandle handle) {
+MidiDeviceManager ci_tool_repository_get_midi_device_manager(CIToolRepository handle) {
     if (!handle || !handle->repository) return nullptr;
     
     try {
@@ -289,25 +289,25 @@ MidiDeviceManagerHandle ci_tool_repository_get_midi_device_manager(CIToolReposit
     }
 }
 
-const char* midi_device_manager_get_input_devices_json(MidiDeviceManagerHandle handle) {
+const char* midi_device_manager_get_input_devices_json(MidiDeviceManager handle) {
     static std::string json_devices = "[]";
     return json_devices.c_str();
 }
 
-const char* midi_device_manager_get_output_devices_json(MidiDeviceManagerHandle handle) {
+const char* midi_device_manager_get_output_devices_json(MidiDeviceManager handle) {
     static std::string json_devices = "[]";
     return json_devices.c_str();
 }
 
-bool midi_device_manager_set_input_device(MidiDeviceManagerHandle handle, const char* device_id) {
+bool midi_device_manager_set_input_device(MidiDeviceManager handle, const char* device_id) {
     return false;
 }
 
-bool midi_device_manager_set_output_device(MidiDeviceManagerHandle handle, const char* device_id) {
+bool midi_device_manager_set_output_device(MidiDeviceManager handle, const char* device_id) {
     return false;
 }
 
-void ci_tool_repository_set_log_callback(CIToolRepositoryHandle handle, LogCallback callback) {
+void ci_tool_repository_set_log_callback(CIToolRepository handle, LogCallback callback) {
     if (!handle) return;
     
     std::lock_guard<std::mutex> lock(g_callback_mutex);
@@ -315,17 +315,17 @@ void ci_tool_repository_set_log_callback(CIToolRepositoryHandle handle, LogCallb
     handle->log_callback = callback;
 }
 
-void ci_device_model_set_connections_changed_callback(CIDeviceModelHandle handle, ConnectionsChangedCallback callback) {
+void ci_device_model_set_connections_changed_callback(CIDeviceModel handle, ConnectionsChangedCallback callback) {
     if (!handle) return;
     handle->connections_callback = callback;
 }
 
-void ci_device_model_set_profiles_updated_callback(CIDeviceModelHandle handle, ProfilesUpdatedCallback callback) {
+void ci_device_model_set_profiles_updated_callback(CIDeviceModel handle, ProfilesUpdatedCallback callback) {
     if (!handle) return;
     handle->profiles_callback = callback;
 }
 
-void ci_device_model_set_properties_updated_callback(CIDeviceModelHandle handle, PropertiesUpdatedCallback callback) {
+void ci_device_model_set_properties_updated_callback(CIDeviceModel handle, PropertiesUpdatedCallback callback) {
     if (!handle) return;
     handle->properties_callback = callback;
 }

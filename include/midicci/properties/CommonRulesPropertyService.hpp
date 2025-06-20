@@ -13,7 +13,7 @@ namespace propertycommonrules {
 
 class CommonRulesPropertyService : public MidiCIServicePropertyRules {
 public:
-    explicit CommonRulesPropertyService(core::MidiCIDevice& device);
+    explicit CommonRulesPropertyService(MidiCIDevice& device);
     ~CommonRulesPropertyService() override = default;
     
     // MidiCIServicePropertyRules interface implementation
@@ -35,7 +35,7 @@ public:
     std::vector<std::string> get_property_ids() const;
     
 private:
-    core::MidiCIDevice& device_;
+    MidiCIDevice& device_;
     std::unique_ptr<CommonRulesPropertyHelper> helper_;
     std::map<std::string, std::vector<uint8_t>> property_values_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;

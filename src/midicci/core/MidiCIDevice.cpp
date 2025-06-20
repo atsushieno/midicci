@@ -7,7 +7,6 @@
 #include <mutex>
 
 namespace midicci {
-namespace core {
 
 class MidiCIDevice::Impl {
 public:
@@ -130,12 +129,12 @@ uint32_t MidiCIDevice::get_muid() const noexcept {
     return pimpl_->muid_;
 }
 
-midicci::core::DeviceInfo& MidiCIDevice::get_device_info() const {
+midicci::DeviceInfo& MidiCIDevice::get_device_info() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->config_.device_info;
 }
 
-midicci::core::MidiCIDeviceConfiguration& MidiCIDevice::get_config() const {
+midicci::MidiCIDeviceConfiguration& MidiCIDevice::get_config() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->config_;
 }
@@ -190,5 +189,4 @@ Messenger& MidiCIDevice::get_messenger() {
     return pimpl_->messenger_;
 }
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

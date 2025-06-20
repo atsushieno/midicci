@@ -9,7 +9,7 @@
 #include <vector>
 #include <cstdint>
 
-using namespace midicci::core;
+using namespace midicci;
 
 class TestPropertyRules;
 

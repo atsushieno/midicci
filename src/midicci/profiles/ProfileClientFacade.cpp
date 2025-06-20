@@ -10,16 +10,16 @@ namespace profilecommonrules {
 
 class ProfileClientFacade::Impl {
 public:
-    Impl(core::MidiCIDevice& device, core::ClientConnection& conn) 
+    Impl(MidiCIDevice& device, ClientConnection& conn) 
         : device_(device), conn_(conn), profiles_(std::make_unique<ObservableProfileList>()) {}
     
-    core::MidiCIDevice& device_;
-    core::ClientConnection& conn_;
+    MidiCIDevice& device_;
+    ClientConnection& conn_;
     std::unique_ptr<ObservableProfileList> profiles_;
     mutable std::recursive_mutex mutex_;
 };
 
-ProfileClientFacade::ProfileClientFacade(core::MidiCIDevice& device, core::ClientConnection& conn) 
+ProfileClientFacade::ProfileClientFacade(MidiCIDevice& device, ClientConnection& conn) 
     : pimpl_(std::make_unique<Impl>(device, conn)) {}
 
 ProfileClientFacade::~ProfileClientFacade() = default;

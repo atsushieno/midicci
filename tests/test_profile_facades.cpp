@@ -7,7 +7,6 @@
 #include "midicci/messages/Message.hpp"
 
 using namespace midicci::profilecommonrules;
-using namespace midicci::core;
 using namespace midicci;
 
 TEST(ProfileFacadesTest, configureProfiles) {

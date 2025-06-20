@@ -12,7 +12,7 @@ namespace profilecommonrules {
 
 class ProfileHostFacade {
 public:
-    explicit ProfileHostFacade(core::MidiCIDevice& device);
+    explicit ProfileHostFacade(MidiCIDevice& device);
     ~ProfileHostFacade();
     
     ProfileHostFacade(const ProfileHostFacade&) = delete;

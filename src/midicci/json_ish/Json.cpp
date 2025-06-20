@@ -48,7 +48,7 @@ const JsonValue& JsonValue::operator[](size_t index) const {
 
 std::vector<uint8_t> JsonValue::get_serialized_bytes() const {
     auto json_str = serialize();
-    auto ascii_encoded = midicci::core::MidiCIConverter::encodeStringToASCII(json_str);
+    auto ascii_encoded = midicci::MidiCIConverter::encodeStringToASCII(json_str);
     auto escaped = ascii_encoded;
     size_t pos = 0;
     while ((pos = escaped.find("\\", pos)) != std::string::npos) {

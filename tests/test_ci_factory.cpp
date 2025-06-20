@@ -6,9 +6,7 @@
 #include <vector>
 #include <cstdint>
 
-using namespace midicci::core;
 using namespace midicci;
-using namespace midicci::core::constants;
 using namespace midicci::profilecommonrules;
 
 TEST(CIFactoryTest, testDiscoveryMessages) {

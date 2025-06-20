@@ -9,6 +9,7 @@
 #include "midicci/properties/ObservablePropertyList.hpp"
 #include "MutableState.hpp"
 
+using namespace midicci;
 
 namespace ci_tool {
 
@@ -37,13 +38,13 @@ public:
     using DeviceInfoChangedCallback = std::function<void()>;
     
     explicit ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
-                                 std::shared_ptr<midicci::core::ClientConnection> connection);
+                                 std::shared_ptr<ClientConnection> connection);
     ~ClientConnectionModel();
     
     ClientConnectionModel(const ClientConnectionModel&) = delete;
     ClientConnectionModel& operator=(const ClientConnectionModel&) = delete;
     
-    std::shared_ptr<midicci::core::ClientConnection> get_connection() const;
+    std::shared_ptr<ClientConnection> get_connection() const;
     const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
     const MutableStateList<SubscriptionState>& get_subscriptions() const;
     const MutableStateList<midicci::propertycommonrules::PropertyValue>& get_properties() const;

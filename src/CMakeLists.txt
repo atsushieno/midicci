@@ -1,7 +1,6 @@
 set(MIDICCI_SOURCES
         midicci/core/MidiCIDevice.cpp
         midicci/core/ClientConnection.cpp
-        midicci/core/MidiCIConstants.cpp
         midicci/core/MidiCIConverter.cpp
         midicci/core/CIFactory.cpp
         midicci/core/CIRetrieval.cpp

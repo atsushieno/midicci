@@ -6,7 +6,6 @@
 #include "midicci/profiles/MidiCIProfile.hpp"
 
 namespace midicci {
-namespace core {
 
     using namespace midicci::profilecommonrules;
 
@@ -153,5 +152,4 @@ public:
         uint32_t source_muid, uint32_t destination_muid, uint8_t max_simultaneous_requests);
 };
 
-} // namespace core
 } // namespace midi_ci

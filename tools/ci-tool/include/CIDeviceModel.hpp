@@ -23,7 +23,7 @@ public:
     using ProfilesUpdatedCallback = std::function<void()>;
     using PropertiesUpdatedCallback = std::function<void()>;
     
-    explicit CIDeviceModel(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config,
+    explicit CIDeviceModel(CIDeviceManager& parent, MidiCIDeviceConfiguration& config,
                            uint32_t muid, CIOutputSender ci_output_sender,
                            MidiMessageReportSender midi_message_report_sender,
                            std::function<void(const std::string&, bool)> logger = {});
@@ -41,7 +41,7 @@ private:
 
 public:
     
-    std::shared_ptr<midicci::core::MidiCIDevice> get_device() const;
+    std::shared_ptr<MidiCIDevice> get_device() const;
     
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
     

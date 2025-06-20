@@ -64,7 +64,7 @@ public:
     uint32_t get_destination_muid() const noexcept;
     const Common& get_common() const noexcept { return common_; }
     
-    virtual std::vector<std::vector<uint8_t>> serialize_multi(const core::MidiCIDeviceConfiguration& config) const;
+    virtual std::vector<std::vector<uint8_t>> serialize_multi(const MidiCIDeviceConfiguration& config) const;
     virtual std::string get_label() const = 0;
     virtual std::string get_body_string() const = 0;
     virtual std::string get_log_message() const;
@@ -78,8 +78,8 @@ class SinglePacketMessage : public Message {
 public:
     SinglePacketMessage(MessageType type, const Common& common);
     
-    virtual std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const = 0;
-    std::vector<std::vector<uint8_t>> serialize_multi(const core::MidiCIDeviceConfiguration& config) const override;
+    virtual std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const = 0;
+    std::vector<std::vector<uint8_t>> serialize_multi(const MidiCIDeviceConfiguration& config) const override;
 };
 
 class PropertyMessage : public Message {
@@ -87,8 +87,8 @@ public:
     PropertyMessage(MessageType type, const Common& common, uint8_t request_id, 
                    const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     
-    virtual std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const = 0;
-    std::vector<std::vector<uint8_t>> serialize_multi(const core::MidiCIDeviceConfiguration& config) const override;
+    virtual std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const = 0;
+    std::vector<std::vector<uint8_t>> serialize_multi(const MidiCIDeviceConfiguration& config) const override;
     
     uint8_t get_request_id() const { return request_id_; }
     const std::vector<uint8_t>& get_header() const { return header_; }
@@ -102,15 +102,15 @@ protected:
 
 class DiscoveryInquiry : public SinglePacketMessage {
 public:
-    DiscoveryInquiry(const Common& common, const core::DeviceDetails& device_details,
+    DiscoveryInquiry(const Common& common, const DeviceDetails& device_details,
                     uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    core::DeviceDetails device_details_;
+    DeviceDetails device_details_;
     uint8_t supported_features_;
     uint32_t max_sysex_size_;
     uint8_t output_path_id_;
@@ -118,17 +118,17 @@ private:
 
 class DiscoveryReply : public SinglePacketMessage {
 public:
-    DiscoveryReply(const Common& common, const core::DeviceDetails& device_details,
+    DiscoveryReply(const Common& common, const DeviceDetails& device_details,
                   uint8_t supported_features, uint32_t max_sysex_size, uint8_t output_path_id, uint8_t function_block);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 
-    const core::DeviceDetails& get_device_details() const { return device_details_; }
+    const DeviceDetails& get_device_details() const { return device_details_; }
     
 private:
-    core::DeviceDetails device_details_;
+    DeviceDetails device_details_;
     uint8_t supported_features_;
     uint32_t max_sysex_size_;
     uint8_t output_path_id_;
@@ -139,7 +139,7 @@ class SetProfileOn : public SinglePacketMessage {
 public:
     SetProfileOn(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -152,7 +152,7 @@ class PropertyGetCapabilities : public SinglePacketMessage {
 public:
     PropertyGetCapabilities(const Common& common, uint8_t max_simultaneous_requests);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -167,7 +167,7 @@ public:
     GetPropertyData(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header);
     GetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, const std::string& res_id = "");
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -184,7 +184,7 @@ public:
     SetPropertyData(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
                    const std::vector<uint8_t>& body, const std::string& res_id = "", bool set_partial = false);
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -201,7 +201,7 @@ public:
     SubscribeProperty(const Common& common, uint8_t request_id, const std::string& resource_identifier, 
                      const std::string& command, const std::string& mutual_encoding = "");
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -215,7 +215,7 @@ class EndpointInquiry : public SinglePacketMessage {
 public:
     EndpointInquiry(const Common& common, uint8_t status);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -229,7 +229,7 @@ class EndpointReply : public SinglePacketMessage {
 public:
     EndpointReply(const Common& common, uint8_t status, const std::vector<uint8_t>& data);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -245,7 +245,7 @@ class InvalidateMUID : public SinglePacketMessage {
 public:
     InvalidateMUID(const Common& common, uint32_t target_muid);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -257,7 +257,7 @@ class ProfileInquiry : public SinglePacketMessage {
 public:
     ProfileInquiry(const Common& common);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -266,7 +266,7 @@ class SetProfileOff : public SinglePacketMessage {
 public:
     SetProfileOff(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -278,7 +278,7 @@ class ProfileEnabledReport : public SinglePacketMessage {
 public:
     ProfileEnabledReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -291,7 +291,7 @@ class ProfileDisabledReport : public SinglePacketMessage {
 public:
     ProfileDisabledReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -304,7 +304,7 @@ class ProfileAddedReport : public SinglePacketMessage {
 public:
     ProfileAddedReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -316,7 +316,7 @@ class ProfileRemovedReport : public SinglePacketMessage {
 public:
     ProfileRemovedReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -330,7 +330,7 @@ public:
                            uint8_t system_messages, uint8_t channel_controller_messages,
                            uint8_t note_data_messages);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -345,7 +345,7 @@ class ProcessInquiryCapabilities : public SinglePacketMessage {
 public:
     ProcessInquiryCapabilities(const Common& common);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -358,7 +358,7 @@ public:
     ProfileReply(const Common& common, const std::vector<midicci::profilecommonrules::MidiCIProfileId>& enabled_profiles,
                 const std::vector<midicci::profilecommonrules::MidiCIProfileId>& disabled_profiles);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 
@@ -370,7 +370,7 @@ class PropertyGetCapabilitiesReply : public SinglePacketMessage {
 public:
     PropertyGetCapabilitiesReply(const Common& common, uint8_t max_simultaneous_requests);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -385,7 +385,7 @@ public:
     GetPropertyDataReply(const Common& common, uint8_t request_id, 
                         const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -394,7 +394,7 @@ class SetPropertyDataReply : public PropertyMessage {
 public:
     SetPropertyDataReply(const Common& common, uint8_t request_id, const std::vector<uint8_t>& header);
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -404,7 +404,7 @@ public:
     SubscribePropertyReply(const Common& common, uint8_t request_id, 
                           const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     
-    std::vector<std::vector<uint8_t>> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<std::vector<uint8_t>> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -413,7 +413,7 @@ class ProfileAdded : public SinglePacketMessage {
 public:
     ProfileAdded(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -427,7 +427,7 @@ class ProfileRemoved : public SinglePacketMessage {
 public:
     ProfileRemoved(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -441,7 +441,7 @@ class ProfileEnabled : public SinglePacketMessage {
 public:
     ProfileEnabled(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -457,7 +457,7 @@ class ProfileDisabled : public SinglePacketMessage {
 public:
     ProfileDisabled(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -474,7 +474,7 @@ public:
     ProfileDetailsReply(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id,
                        uint8_t target, const std::vector<uint8_t>& data);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -492,7 +492,7 @@ class ProcessInquiryCapabilitiesReply : public SinglePacketMessage {
 public:
     ProcessInquiryCapabilitiesReply(const Common& common, uint8_t supported_features);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -506,7 +506,7 @@ class MidiMessageReportReply : public SinglePacketMessage {
 public:
     MidiMessageReportReply(const Common& common, uint8_t system_messages, uint8_t channel_controller_messages, uint8_t note_data_messages);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
@@ -524,7 +524,7 @@ class MidiMessageReportNotifyEnd : public SinglePacketMessage {
 public:
     MidiMessageReportNotifyEnd(const Common& common);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 };
@@ -533,7 +533,7 @@ class ProfileSpecificData : public SinglePacketMessage {
 public:
     ProfileSpecificData(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, const std::vector<uint8_t>& data);
     
-    std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
+    std::vector<uint8_t> serialize(const MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     

@@ -10,9 +10,6 @@
 #include "../properties/ObservablePropertyList.hpp"
 
 namespace midicci {
-namespace core {
-
-    using namespace midicci::core::constants;
 
 struct MidiCIDeviceConfiguration {
     // Device identification
@@ -68,5 +65,4 @@ struct MidiCIDeviceConfiguration {
           group(group), product_instance_id(prod_id) {}
 };
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

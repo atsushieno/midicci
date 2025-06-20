@@ -9,11 +9,11 @@ namespace ci_tool {
 class ClientConnectionModel::Impl {
 public:
     explicit Impl(std::shared_ptr<CIDeviceModel> parent,
-                  std::shared_ptr<midicci::core::ClientConnection> conn)
+                  std::shared_ptr<ClientConnection> conn)
         : parent_(parent), connection_(conn) {}
     
     std::shared_ptr<CIDeviceModel> parent_;
-    std::shared_ptr<midicci::core::ClientConnection> connection_;
+    std::shared_ptr<ClientConnection> connection_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> profiles_;
     MutableStateList<SubscriptionState> subscriptions_;
     MutableStateList<midicci::propertycommonrules::PropertyValue> properties_;
@@ -27,7 +27,7 @@ public:
 };
 
 ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> parent,
-                                           std::shared_ptr<midicci::core::ClientConnection> connection)
+                                           std::shared_ptr<ClientConnection> connection)
     : pimpl_(std::make_unique<Impl>(parent, connection)) {
     setup_profile_listeners();
     setup_property_listeners();
@@ -35,7 +35,7 @@ ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> pare
 
 ClientConnectionModel::~ClientConnectionModel() = default;
 
-std::shared_ptr<midicci::core::ClientConnection> ClientConnectionModel::get_connection() const {
+std::shared_ptr<ClientConnection> ClientConnectionModel::get_connection() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->connection_;
 }

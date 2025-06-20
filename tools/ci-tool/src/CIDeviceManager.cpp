@@ -13,11 +13,11 @@ namespace ci_tool {
 
 class CIDeviceManager::Impl {
 public:
-    explicit Impl(CIToolRepository& repo, midicci::core::MidiCIDeviceConfiguration& config, std::shared_ptr<MidiDeviceManager> midi_mgr)
+    explicit Impl(CIToolRepository& repo, MidiCIDeviceConfiguration& config, std::shared_ptr<MidiDeviceManager> midi_mgr)
         : repository_(repo), config_(config), midi_device_manager_(midi_mgr) {}
     
     CIToolRepository& repository_;
-    midicci::core::MidiCIDeviceConfiguration& config_;
+    MidiCIDeviceConfiguration& config_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
     mutable std::recursive_mutex mutex_;
@@ -27,7 +27,7 @@ public:
 };
 
 CIDeviceManager::CIDeviceManager(CIToolRepository& repository,
-                                 midicci::core::MidiCIDeviceConfiguration& config,
+                                 MidiCIDeviceConfiguration& config,
                                  std::shared_ptr<MidiDeviceManager> midi_manager)
     : pimpl_(std::make_unique<Impl>(repository, config, midi_manager)) {}
 

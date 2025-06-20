@@ -15,11 +15,11 @@ namespace propertycommonrules {
 
 class PropertyHostFacade::Impl {
 public:
-    explicit Impl(core::MidiCIDevice& device) : device_(device) {
+    explicit Impl(MidiCIDevice& device) : device_(device) {
         property_rules_ = std::make_unique<CommonRulesPropertyService>(device);
     }
     
-    core::MidiCIDevice& device_;
+    MidiCIDevice& device_;
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;
     std::vector<std::unique_ptr<PropertyMetadata>> properties_;
     PropertyHostFacade::PropertyUpdatedCallback property_updated_callback_;
@@ -27,7 +27,7 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-PropertyHostFacade::PropertyHostFacade(core::MidiCIDevice& device) : pimpl_(std::make_unique<Impl>(device)) {}
+PropertyHostFacade::PropertyHostFacade(MidiCIDevice& device) : pimpl_(std::make_unique<Impl>(device)) {}
 
 PropertyHostFacade::~PropertyHostFacade() = default;
 

@@ -11,7 +11,7 @@ namespace profilecommonrules {
 
 class ProfileClientFacade {
 public:
-    ProfileClientFacade(core::MidiCIDevice& device, core::ClientConnection& conn);
+    ProfileClientFacade(MidiCIDevice& device, ClientConnection& conn);
     ~ProfileClientFacade();
     
     ProfileClientFacade(const ProfileClientFacade&) = delete;

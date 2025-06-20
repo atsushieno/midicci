@@ -11,8 +11,6 @@
 
 namespace midicci {
 
-namespace core {
-
 enum class SubscriptionActionState {
     Subscribing,
     Subscribed,
@@ -71,5 +69,4 @@ private:
     std::unique_ptr<Impl> pimpl_;
 };
 
-} // namespace core
 } // namespace midi_ci

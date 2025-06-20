@@ -9,16 +9,16 @@ namespace profilecommonrules {
 
 class ProfileHostFacade::Impl {
 public:
-    explicit Impl(core::MidiCIDevice& device) : device_(device), profiles_(std::make_unique<ObservableProfileList>()) {}
+    explicit Impl(MidiCIDevice& device) : device_(device), profiles_(std::make_unique<ObservableProfileList>()) {}
     
-    core::MidiCIDevice& device_;
+    MidiCIDevice& device_;
     std::unique_ptr<ObservableProfileList> profiles_;
     std::vector<MidiCIProfileDetails> profile_details_entries_;
     std::vector<ProfileHostFacade::ProfileSetCallback> on_profile_set_callbacks_;
     mutable std::recursive_mutex mutex_;
 };
 
-ProfileHostFacade::ProfileHostFacade(core::MidiCIDevice& device) : pimpl_(std::make_unique<Impl>(device)) {}
+ProfileHostFacade::ProfileHostFacade(MidiCIDevice& device) : pimpl_(std::make_unique<Impl>(device)) {}
 
 ProfileHostFacade::~ProfileHostFacade() = default;
 

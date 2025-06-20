@@ -22,7 +22,7 @@ class PropertyHostFacade {
 public:
     using PropertyUpdatedCallback = std::function<void(const std::string&)>;
     
-    explicit PropertyHostFacade(core::MidiCIDevice& device);
+    explicit PropertyHostFacade(MidiCIDevice& device);
     ~PropertyHostFacade();
     
     PropertyHostFacade(const PropertyHostFacade&) = delete;

@@ -13,7 +13,7 @@ namespace propertycommonrules {
 
 using namespace property_common_rules;
 
-CommonRulesPropertyClient::CommonRulesPropertyClient(core::MidiCIDevice& device, core::ClientConnection& conn)
+CommonRulesPropertyClient::CommonRulesPropertyClient(MidiCIDevice& device, ClientConnection& conn)
     : device_(device), conn_(conn), helper_(std::make_unique<CommonRulesPropertyHelper>(device)) {}
 
 std::vector<uint8_t> CommonRulesPropertyClient::create_data_request_header(
@@ -119,7 +119,7 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
             std::string version = json_body[DeviceInfoPropertyNames::VERSION].is_string() ? json_body[DeviceInfoPropertyNames::VERSION].as_string() : "";
             std::string serial = json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].is_string() ? json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].as_string() : "";
 
-            core::DeviceInfo device_info(manufacturerId, familyId, modelId, versionId,
+            DeviceInfo device_info(manufacturerId, familyId, modelId, versionId,
                                          manufacturer, family, model, version, serial);
             conn_.set_device_info(device_info);
         } catch (...) {

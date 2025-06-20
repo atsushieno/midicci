@@ -9,10 +9,8 @@
 #include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace core {
 class ClientConnection;
 struct ClientSubscription;
-}
 
 namespace propertycommonrules {
 class MidiCIClientPropertyRules;
@@ -22,7 +20,7 @@ class ClientObservablePropertyList;
 
 class PropertyClientFacade {
 public:
-    PropertyClientFacade(core::MidiCIDevice& device, core::ClientConnection& conn);
+    PropertyClientFacade(MidiCIDevice& device, ClientConnection& conn);
     ~PropertyClientFacade();
     
     PropertyClientFacade(const PropertyClientFacade&) = delete;
@@ -49,7 +47,7 @@ public:
     void process_subscribe_property(const SubscribeProperty& msg);
     void process_subscribe_property_reply(const SubscribePropertyReply& msg);
     
-    std::vector<core::ClientSubscription> get_subscriptions() const;
+    std::vector<ClientSubscription> get_subscriptions() const;
     ClientObservablePropertyList* get_properties();
 
 private:

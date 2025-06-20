@@ -3,7 +3,6 @@
 #include <algorithm>
 
 namespace midicci {
-namespace core {
 
 void CIFactory::midiCiDirectInt16At(std::vector<uint8_t>& dst, size_t offset, uint16_t value) {
     if (offset + 1 < dst.size()) {
@@ -56,9 +55,9 @@ std::vector<uint8_t> CIFactory::midiCIMessageCommon(
     uint8_t version_and_format, uint32_t source_muid, uint32_t destination_muid) {
     
     dst.resize(std::max(dst.size(), size_t(13)));
-    dst[0] = constants::MIDI_CI_UNIVERSAL_SYSEX_ID;
+    dst[0] = MIDI_CI_UNIVERSAL_SYSEX_ID;
     dst[1] = address;
-    dst[2] = constants::MIDI_CI_SUB_ID_1;
+    dst[2] = MIDI_CI_SUB_ID_1;
     dst[3] = sub_id_2;
     dst[4] = version_and_format;
     midiCI7bitInt28At(dst, 5, midiCI32to28(source_muid));
@@ -95,8 +94,8 @@ std::vector<uint8_t> CIFactory::midiCIDiscovery(
     uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
     uint8_t initiatorOutputPathId) {
     
-    midiCIDiscoveryCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_INQUIRY),
-        constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F,
+    midiCIDiscoveryCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK, static_cast<uint8_t>(CISubId2::DISCOVERY_INQUIRY),
+        MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F,
         device_manufacturer_3bytes, device_family, device_model, software_revision,
         ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 30);
@@ -109,8 +108,8 @@ std::vector<uint8_t> CIFactory::midiCIDiscoveryReply(
     uint8_t ci_category_supported, uint32_t receivable_max_sysex_size,
     uint8_t initiatorOutputPathId, uint8_t functionBlock) {
     
-    midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::DISCOVERY_REPLY),
-        constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid,
+    midiCIDiscoveryCommon(dst, address, static_cast<uint8_t>(CISubId2::DISCOVERY_REPLY),
+        MIDI_CI_VERSION_1_2, source_muid, destination_muid,
         device_manufacturer_3bytes, device_family, device_model, software_revision,
         ci_category_supported, receivable_max_sysex_size, initiatorOutputPathId);
     dst[30] = functionBlock;
@@ -127,7 +126,7 @@ std::vector<uint8_t> CIFactory::midiCIPropertyCommon(
     size_t required_size = 21 + header.size() + chunk_data.size();
     dst.resize(std::max(dst.size(), required_size));
     
-    midiCIMessageCommon(dst, address, sub_id_2, constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, sub_id_2, MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     dst[13] = request_id;
     midiCI7bitInt14At(dst, 14, static_cast<uint16_t>(header.size()));
     
@@ -152,7 +151,7 @@ std::vector<uint8_t> CIFactory::midiCIPropertyPacketCommon(
     uint8_t request_id, const std::vector<uint8_t>& header, uint16_t num_chunks,
     uint16_t chunk_index, const std::vector<uint8_t>& data) {
     
-    midiCIPropertyCommon(dst, constants::WHOLE_FUNCTION_BLOCK, sub_id_2,
+    midiCIPropertyCommon(dst, WHOLE_FUNCTION_BLOCK, sub_id_2,
                         source_muid, destination_muid, request_id, header, num_chunks, chunk_index, data);
     
     size_t result_size = 16 + header.size() + 6 + data.size();
@@ -194,8 +193,8 @@ void CIFactory::midiCIProfile(std::vector<uint8_t>& dst, size_t offset, MidiCIPr
 std::vector<uint8_t> CIFactory::midiCIProfileInquiry(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid) {
     
-    return midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_INQUIRY),
-                              constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    return midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROFILE_INQUIRY),
+                              MIDI_CI_VERSION_1_2, source_muid, destination_muid);
 }
 
 std::vector<uint8_t> CIFactory::midiCIProfileInquiryReply(
@@ -206,8 +205,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileInquiryReply(
     size_t required_size = 17 + (enabled_profiles.size() * 5) + (disabled_profiles.size() * 5);
     dst.resize(std::max(dst.size(), required_size));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_INQUIRY_REPLY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROFILE_INQUIRY_REPLY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     midiCI7bitInt14At(dst, 13, static_cast<uint16_t>(enabled_profiles.size()));
     
@@ -234,10 +233,10 @@ std::vector<uint8_t> CIFactory::midiCIProfileSet(
     
     dst.resize(std::max(dst.size(), size_t(20)));
     
-    uint8_t sub_id = turnOn ? static_cast<uint8_t>(constants::CISubId2::PROFILE_SET_ON)
-                             : static_cast<uint8_t>(constants::CISubId2::PROFILE_SET_OFF);
+    uint8_t sub_id = turnOn ? static_cast<uint8_t>(CISubId2::PROFILE_SET_ON)
+                             : static_cast<uint8_t>(CISubId2::PROFILE_SET_OFF);
     
-    midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, sub_id, MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     midiCIProfile(dst, 13, profile_id);
 
@@ -253,8 +252,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileReport(
     dst.resize(std::max(dst.size(), size_t(20)));
     
     midiCIMessageCommon(dst, address,
-                        static_cast<uint8_t>(isEnabledReport ? constants::CISubId2::PROFILE_ENABLED_REPORT : constants::CISubId2::PROFILE_DISABLED_REPORT),
-                        constants::MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F);
+                        static_cast<uint8_t>(isEnabledReport ? CISubId2::PROFILE_ENABLED_REPORT : CISubId2::PROFILE_DISABLED_REPORT),
+                        MIDI_CI_VERSION_1_2, source_muid, 0x7F7F7F7F);
     
     midiCIProfile(dst, 13, profile_id);
 
@@ -269,8 +268,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileDetailsInquiry(
     
     dst.resize(std::max(dst.size(), size_t(19)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_DETAILS_INQUIRY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROFILE_DETAILS_INQUIRY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     midiCIProfile(dst, 13, profile_id);
 
@@ -287,8 +286,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileDetailsReply(
     size_t required_size = 19 + data.size();
     dst.resize(std::max(dst.size(), required_size));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_DETAILS_REPLY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROFILE_DETAILS_REPLY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     midiCIProfile(dst, 13, profile_id);
 
@@ -308,8 +307,8 @@ std::vector<uint8_t> CIFactory::midiCIProfileSpecificData(
     size_t required_size = 22 + data.size();
     dst.resize(std::max(dst.size(), required_size));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROFILE_SPECIFIC_DATA),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROFILE_SPECIFIC_DATA),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     midiCIProfile(dst, 13, profile_id);
 
@@ -328,8 +327,8 @@ std::vector<uint8_t> CIFactory::midiCIPropertyExchangeCapabilities(
     
     dst.resize(std::max(dst.size(), size_t(14)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = max_simultaneous_requests;
     
@@ -342,8 +341,8 @@ std::vector<uint8_t> CIFactory::midiCIPropertyExchangeCapabilitiesReply(
     
     dst.resize(std::max(dst.size(), size_t(14)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = max_simultaneous_requests;
     
@@ -353,9 +352,9 @@ std::vector<uint8_t> CIFactory::midiCIPropertyExchangeCapabilitiesReply(
 std::vector<uint8_t> CIFactory::midiCIProcessInquiryCapabilities(
     std::vector<uint8_t>& dst, uint32_t source_muid, uint32_t destination_muid) {
     
-    return midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK,
-                              static_cast<uint8_t>(constants::CISubId2::PROCESS_INQUIRY_CAPABILITIES),
-                              constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    return midiCIMessageCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK,
+                              static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_CAPABILITIES),
+                              MIDI_CI_VERSION_1_2, source_muid, destination_muid);
 }
 
 std::vector<uint8_t> CIFactory::midiCIProcessInquiryCapabilitiesReply(
@@ -364,9 +363,9 @@ std::vector<uint8_t> CIFactory::midiCIProcessInquiryCapabilitiesReply(
     
     dst.resize(std::max(dst.size(), size_t(14)));
     
-    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK,
-                       static_cast<uint8_t>(constants::CISubId2::PROCESS_INQUIRY_CAPABILITIES_REPLY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK,
+                       static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_CAPABILITIES_REPLY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = supported_features;
     
@@ -380,8 +379,8 @@ std::vector<uint8_t> CIFactory::midiCIMidiMessageReport(
     
     dst.resize(std::max(dst.size(), size_t(18)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = message_data_control;
     dst[14] = system_messages;
@@ -398,8 +397,8 @@ std::vector<uint8_t> CIFactory::midiCIMidiMessageReportReply(
     
     dst.resize(std::max(dst.size(), size_t(17)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT_REPLY),
-                       constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_MIDI_MESSAGE_REPORT_REPLY),
+                       MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = system_messages;
     dst[14] = 0;
@@ -412,8 +411,8 @@ std::vector<uint8_t> CIFactory::midiCIMidiMessageReportReply(
 std::vector<uint8_t> CIFactory::midiCIEndOfMidiMessage(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid) {
     
-    return midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::PROCESS_INQUIRY_END_OF_MIDI_MESSAGE),
-                              constants::MIDI_CI_VERSION_1_2, source_muid, destination_muid);
+    return midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROCESS_INQUIRY_END_OF_MIDI_MESSAGE),
+                              MIDI_CI_VERSION_1_2, source_muid, destination_muid);
 }
 
 std::vector<uint8_t> CIFactory::midiCIAckNak(
@@ -425,8 +424,8 @@ std::vector<uint8_t> CIFactory::midiCIAckNak(
     size_t required_size = 23 + message_text_data.size();
     dst.resize(std::max(dst.size(), required_size));
     
-    uint8_t sub_id = is_nak ? static_cast<uint8_t>(constants::CISubId2::NAK) 
-                            : static_cast<uint8_t>(constants::CISubId2::ACK);
+    uint8_t sub_id = is_nak ? static_cast<uint8_t>(CISubId2::NAK) 
+                            : static_cast<uint8_t>(CISubId2::ACK);
     
     midiCIMessageCommon(dst, address, sub_id, version_and_format, source_muid, destination_muid);
     
@@ -461,9 +460,9 @@ std::vector<uint8_t> CIFactory::midiCIInvalidateMuid(
     
     dst.resize(std::max(dst.size(), size_t(17)));
     
-    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
-                       static_cast<uint8_t>(constants::CISubId2::INVALIDATE_MUID),
-                       version_and_format, source_muid, constants::MIDI_CI_BROADCAST_MUID_32);
+    midiCIMessageCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(CISubId2::INVALIDATE_MUID),
+                       version_and_format, source_muid, MIDI_CI_BROADCAST_MUID_32);
     
     midiCI7bitInt28At(dst, 13, midiCI32to28(target_muid));
     
@@ -476,7 +475,7 @@ std::vector<uint8_t> CIFactory::midiCIDiscoveryNak(
     
     dst.resize(std::max(dst.size(), size_t(13)));
     
-    midiCIMessageCommon(dst, address, static_cast<uint8_t>(constants::CISubId2::NAK),
+    midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::NAK),
                        version_and_format, source_muid, destination_muid);
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 13);
@@ -488,10 +487,10 @@ std::vector<uint8_t> CIFactory::midiCIPropertyGetCapabilities(
     
     dst.resize(std::max(dst.size(), size_t(16)));
     
-    uint8_t sub_id = is_reply ? static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY)
-                              : static_cast<uint8_t>(constants::CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY);
+    uint8_t sub_id = is_reply ? static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY)
+                              : static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY);
     
-    midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, 
+    midiCIMessageCommon(dst, address, sub_id, MIDI_CI_VERSION_1_2, 
                        source_muid, destination_muid);
     
     dst[13] = max_simultaneous_requests;
@@ -507,8 +506,8 @@ std::vector<uint8_t> CIFactory::midiCIEndpointMessage(
     
     dst.resize(std::max(dst.size(), size_t(14)));
     
-    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
-                       static_cast<uint8_t>(constants::CISubId2::ENDPOINT_MESSAGE_INQUIRY),
+    midiCIMessageCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(CISubId2::ENDPOINT_MESSAGE_INQUIRY),
                        version_and_format, source_muid, destination_muid);
     
     dst[13] = status;
@@ -523,8 +522,8 @@ std::vector<uint8_t> CIFactory::midiCIEndpointMessageReply(
     size_t required_size = 16 + information_data.size();
     dst.resize(std::max(dst.size(), required_size));
     
-    midiCIMessageCommon(dst, constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
-                       static_cast<uint8_t>(constants::CISubId2::ENDPOINT_MESSAGE_REPLY),
+    midiCIMessageCommon(dst, MIDI_CI_ADDRESS_FUNCTION_BLOCK, 
+                       static_cast<uint8_t>(CISubId2::ENDPOINT_MESSAGE_REPLY),
                        version_and_format, source_muid, destination_muid);
     
     dst[13] = status;
@@ -543,16 +542,15 @@ std::vector<uint8_t> CIFactory::midiCIProfileAddedRemoved(
     
     dst.resize(std::max(dst.size(), size_t(18)));
     
-    uint8_t sub_id = is_removed ? static_cast<uint8_t>(constants::CISubId2::PROFILE_REMOVED_REPORT)
-                                : static_cast<uint8_t>(constants::CISubId2::PROFILE_ADDED_REPORT);
+    uint8_t sub_id = is_removed ? static_cast<uint8_t>(CISubId2::PROFILE_REMOVED_REPORT)
+                                : static_cast<uint8_t>(CISubId2::PROFILE_ADDED_REPORT);
     
-    midiCIMessageCommon(dst, address, sub_id, constants::MIDI_CI_VERSION_1_2, 
-                       source_muid, constants::MIDI_CI_BROADCAST_MUID_32);
+    midiCIMessageCommon(dst, address, sub_id, MIDI_CI_VERSION_1_2, 
+                       source_muid, MIDI_CI_BROADCAST_MUID_32);
     
     midiCIProfile(dst, 13, profile_id);
     
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 18);
 }
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

@@ -2,7 +2,6 @@
 #include <algorithm>
 
 namespace midicci {
-namespace core {
 
 uint8_t CIRetrieval::get_addressing(const std::vector<uint8_t>& sysex) {
     return sysex.size() > 1 ? sysex[1] : 0;
@@ -121,5 +120,4 @@ uint16_t CIRetrieval::get_property_chunk_index(const std::vector<uint8_t>& sysex
     return static_cast<uint16_t>(sysex[index] | (sysex[index + 1] << 7));
 }
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

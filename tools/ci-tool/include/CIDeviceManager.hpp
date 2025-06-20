@@ -7,10 +7,10 @@
 #include "midicci/core/MidiCIDeviceConfiguration.hpp"
 
 namespace midicci {
-namespace core {
 class MidiCIDevice;
 }
-}
+
+using namespace midicci;
 
 namespace ci_tool {
 
@@ -21,7 +21,7 @@ class CIDeviceModel;
 class CIDeviceManager {
 public:
     explicit CIDeviceManager(CIToolRepository& repository,
-                             midicci::core::MidiCIDeviceConfiguration& config,
+                             MidiCIDeviceConfiguration& config,
                              std::shared_ptr<MidiDeviceManager> midi_manager);
     ~CIDeviceManager();
     

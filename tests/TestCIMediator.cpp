@@ -3,7 +3,7 @@
 #include "midicci/core/MidiCIDevice.hpp"
 #include <memory>
 
-using namespace midicci::core;
+using namespace midicci;
 
 TestCIMediator::TestCIMediator() {
     config_.device_info = {0, 0, 0, 0, "TestDevice", "TestInitiatorFamily", "TestInitiatorModel", "0.0", "ABCDEFGH"};

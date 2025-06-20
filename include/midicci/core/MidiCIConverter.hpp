@@ -3,7 +3,6 @@
 #include <string>
 
 namespace midicci {
-namespace core {
 
 class MidiCIConverter {
 public:
@@ -14,5 +13,4 @@ private:
     MidiCIConverter() = delete;
 };
 
-} // namespace core
 } // namespace midi_ci

@@ -3,7 +3,6 @@
 #include <iomanip>
 
 namespace midicci {
-namespace core {
 
 std::string MidiCIConverter::encodeStringToASCII(const std::string& s) {
     bool needsEncoding = false;
@@ -66,5 +65,4 @@ std::string MidiCIConverter::decodeASCIIToString(const std::string& s) {
     return result;
 }
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

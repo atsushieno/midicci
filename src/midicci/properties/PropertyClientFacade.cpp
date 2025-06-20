@@ -16,24 +16,24 @@ namespace propertycommonrules {
 
 class PropertyClientFacade::Impl {
 public:
-    Impl(core::MidiCIDevice& device, core::ClientConnection& conn) : device_(device), conn_(conn), 
+    Impl(MidiCIDevice& device, ClientConnection& conn) : device_(device), conn_(conn), 
           property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {
         properties_ = std::make_unique<ClientObservablePropertyList>(
             device.get_logger(), property_rules_.get());
     }
     
-    core::MidiCIDevice& device_;
-    core::ClientConnection& conn_;
+    MidiCIDevice& device_;
+    ClientConnection& conn_;
     std::unique_ptr<MidiCIClientPropertyRules> property_rules_;
     std::unique_ptr<ClientObservablePropertyList> properties_;
     std::unordered_map<uint8_t, std::vector<uint8_t>> open_requests_;
     std::unordered_map<std::string, std::vector<uint8_t>> cached_properties_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
-    std::vector<core::ClientSubscription> subscriptions_;
+    std::vector<ClientSubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
 };
 
-PropertyClientFacade::PropertyClientFacade(core::MidiCIDevice& device, core::ClientConnection& conn) 
+PropertyClientFacade::PropertyClientFacade(MidiCIDevice& device, ClientConnection& conn) 
     : pimpl_(std::make_unique<Impl>(device, conn)) {}
 
 PropertyClientFacade::~PropertyClientFacade() = default;
@@ -242,7 +242,7 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
     }
 }
 
-std::vector<core::ClientSubscription> PropertyClientFacade::get_subscriptions() const {
+std::vector<ClientSubscription> PropertyClientFacade::get_subscriptions() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->subscriptions_;
 }

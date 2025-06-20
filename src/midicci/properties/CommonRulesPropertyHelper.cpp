@@ -9,7 +9,7 @@ namespace propertycommonrules {
 
 using namespace property_common_rules;
 
-CommonRulesPropertyHelper::CommonRulesPropertyHelper(core::MidiCIDevice& device) 
+CommonRulesPropertyHelper::CommonRulesPropertyHelper(MidiCIDevice& device) 
     : device_(device) {}
 
 std::vector<uint8_t> CommonRulesPropertyHelper::create_request_header_bytes(

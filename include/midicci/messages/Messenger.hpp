@@ -8,15 +8,13 @@
 #include "../core/MidiCIConstants.hpp"
 
 namespace midicci {
-namespace core {
 class MidiCIDevice;
-} // namespace core
 
 class Messenger {
 public:
     using MessageCallback = std::function<void(const Message&)>;
     
-    explicit Messenger(core::MidiCIDevice& device);
+    explicit Messenger(MidiCIDevice& device);
     ~Messenger();
     
     Messenger(const Messenger&) = delete;
@@ -26,7 +24,7 @@ public:
     Messenger& operator=(Messenger&&) = default;
     
     void send(const Message& message);
-    void send_discovery_inquiry(uint8_t ciCategorySupported = static_cast<uint8_t>(core::constants::MidiCISupportedCategories::THREE_P));
+    void send_discovery_inquiry(uint8_t ciCategorySupported = static_cast<uint8_t>(MidiCISupportedCategories::THREE_P));
     void send_discovery_reply(uint8_t group, uint32_t destination_muid);
     void send_endpoint_inquiry(uint8_t group, uint32_t destination_muid, uint8_t status);
     void send_invalidate_muid(uint8_t group, uint32_t destination_muid, uint32_t target_muid);
@@ -117,4 +115,4 @@ private:
     std::unique_ptr<Impl> pimpl_;
 };
 
-} // namespace midi_ci
+} // namespace

@@ -11,7 +11,7 @@ namespace propertycommonrules {
 
 class CommonRulesPropertyHelper {
 public:
-    explicit CommonRulesPropertyHelper(core::MidiCIDevice& device);
+    explicit CommonRulesPropertyHelper(MidiCIDevice& device);
     
     std::vector<uint8_t> create_request_header_bytes(const std::string& property_id, 
                                                     const std::map<std::string, std::string>& fields) const;
@@ -31,7 +31,7 @@ public:
     std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const;
 
 private:
-    core::MidiCIDevice& device_;
+    MidiCIDevice& device_;
 };
 
 } // namespace properties

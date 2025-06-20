@@ -9,7 +9,6 @@
 #include <mutex>
 
 namespace midicci {
-namespace core {
 
 class ClientConnection::Impl {
 public:
@@ -189,5 +188,4 @@ const JsonValue* ClientConnection::get_json_schema() const {
     return pimpl_->json_schema_.get();
 }
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

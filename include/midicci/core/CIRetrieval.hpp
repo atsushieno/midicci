@@ -7,7 +7,6 @@
 #include "midicci/profiles/MidiCIProfile.hpp"
 
 namespace midicci {
-namespace core {
 
 class CIRetrieval {
 public:
@@ -46,5 +45,4 @@ private:
     static midicci::profilecommonrules::MidiCIProfileId get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
 };
 
-} // namespace core
 } // namespace midi_ci

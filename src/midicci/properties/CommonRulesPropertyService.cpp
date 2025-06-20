@@ -12,7 +12,7 @@ namespace propertycommonrules {
 
 using namespace property_common_rules;
 
-CommonRulesPropertyService::CommonRulesPropertyService(core::MidiCIDevice& device)
+CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
     : device_(device), helper_(std::make_unique<CommonRulesPropertyHelper>(device)) {
 }
 

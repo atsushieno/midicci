@@ -15,7 +15,7 @@ namespace propertycommonrules {
 
 class CommonRulesPropertyClient : public MidiCIClientPropertyRules {
 public:
-    CommonRulesPropertyClient(core::MidiCIDevice& device, core::ClientConnection& conn);
+    CommonRulesPropertyClient(MidiCIDevice& device, ClientConnection& conn);
     ~CommonRulesPropertyClient() override = default;
     
     std::vector<uint8_t> create_data_request_header(const std::string& resource, 
@@ -45,8 +45,8 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;
 
 private:
-    core::MidiCIDevice& device_;
-    core::ClientConnection& conn_;
+    MidiCIDevice& device_;
+    ClientConnection& conn_;
     std::unique_ptr<CommonRulesPropertyHelper> helper_;
     std::vector<std::function<void()>> property_catalog_updated_callbacks_;
     std::vector<std::unique_ptr<PropertyMetadata>> resource_list_;

@@ -7,18 +7,17 @@
 #include <unordered_map>
 #include "midicci/messages/Messenger.hpp"
 
-namespace midicci {
-namespace profilecommonrules {
+namespace midicci::profilecommonrules {
 class ProfileHostFacade;
 class ProfileClientFacade;
 }
 
-namespace propertycommonrules {
+namespace midicci::propertycommonrules {
 class PropertyHostFacade;
 class PropertyClientFacade;
 }
 
-namespace core {
+namespace midicci {
 
 class ClientConnection;
 struct MidiCIDeviceConfiguration;
@@ -84,5 +83,4 @@ private:
     std::unique_ptr<Impl> pimpl_;
 };
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

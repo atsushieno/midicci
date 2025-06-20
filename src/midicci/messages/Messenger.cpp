@@ -21,10 +21,10 @@ namespace midicci {
 
 class Messenger::Impl {
 public:
-    explicit Impl(core::MidiCIDevice& device)
+    explicit Impl(MidiCIDevice& device)
         : device_(device), request_id_counter_(0) {}
 
-    core::MidiCIDevice& device_;
+    MidiCIDevice& device_;
     std::vector<MessageCallback> callbacks_;
     mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
@@ -44,7 +44,7 @@ public:
     }
 };
 
-Messenger::Messenger(core::MidiCIDevice& device)
+Messenger::Messenger(MidiCIDevice& device)
     : pimpl_(std::make_unique<Impl>(device)) {}
 
 Messenger::~Messenger() = default;
@@ -64,11 +64,9 @@ void Messenger::send(const Message& message) {
 }
 
 void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
-    using namespace midicci::core::constants;
-
     Common common(pimpl_->device_.get_muid(), BROADCAST_MUID, MIDI_CI_ADDRESS_FUNCTION_BLOCK, pimpl_->device_.get_config().group);
     auto deviceInfo = pimpl_->device_.get_device_info();
-    core::DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
+    DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
 
     DiscoveryInquiry inquiry(common, details, 0x7F, pimpl_->device_.get_config().receivable_max_sysex_size, false);
 
@@ -76,11 +74,9 @@ void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
 }
 
 void Messenger::send_discovery_reply(uint8_t group, uint32_t destination_muid) {
-    using namespace midicci::core::constants;
-
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
     auto deviceInfo = pimpl_->device_.get_device_info();
-    core::DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
+    DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
 
     DiscoveryReply reply(common, details, 0x7F, pimpl_->device_.get_config().receivable_max_sysex_size, 0, false);
 
@@ -88,8 +84,6 @@ void Messenger::send_discovery_reply(uint8_t group, uint32_t destination_muid) {
 }
 
 void Messenger::send_endpoint_inquiry(uint8_t group, uint32_t destination_muid, uint8_t status) {
-    using namespace midicci::core::constants;
-
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
     EndpointInquiry inquiry(common, status);
@@ -97,8 +91,6 @@ void Messenger::send_endpoint_inquiry(uint8_t group, uint32_t destination_muid, 
 }
 
 void Messenger::send_invalidate_muid(uint8_t group, uint32_t destination_muid, uint32_t target_muid) {
-    using namespace midicci::core::constants;
-
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
     InvalidateMUID invalidate(common, target_muid);
@@ -106,8 +98,6 @@ void Messenger::send_invalidate_muid(uint8_t group, uint32_t destination_muid, u
 }
 
 void Messenger::send_profile_inquiry(uint8_t group, uint32_t destination_muid) {
-    using namespace midicci::core::constants;
-
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
     ProfileInquiry inquiry(common);
@@ -132,7 +122,6 @@ void Messenger::send_set_profile_off(uint8_t group, uint8_t address, uint32_t de
 
 void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address,
                                             const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
 
@@ -142,7 +131,6 @@ void Messenger::send_profile_enabled_report(uint8_t group, uint8_t address,
 
 void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address,
                                              const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
 
@@ -152,7 +140,6 @@ void Messenger::send_profile_disabled_report(uint8_t group, uint8_t address,
 
 void Messenger::send_profile_added_report(uint8_t group, uint8_t address,
                                         const midicci::profilecommonrules::MidiCIProfileId& profile_id) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
 
@@ -162,7 +149,6 @@ void Messenger::send_profile_added_report(uint8_t group, uint8_t address,
 
 void Messenger::send_profile_removed_report(uint8_t group, uint8_t address,
                                           const midicci::profilecommonrules::MidiCIProfileId& profile_id) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), MIDI_CI_BROADCAST_MUID_32, address, group);
 
@@ -172,7 +158,6 @@ void Messenger::send_profile_removed_report(uint8_t group, uint8_t address,
 
 void Messenger::send_property_get_capabilities(uint8_t group, uint32_t destination_muid,
                                              uint8_t max_simultaneous_requests) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
@@ -182,7 +167,6 @@ void Messenger::send_property_get_capabilities(uint8_t group, uint32_t destinati
 
 void Messenger::send_property_get_data(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                      const std::vector<uint8_t>& header) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
@@ -192,7 +176,6 @@ void Messenger::send_property_get_data(uint8_t group, uint32_t destination_muid,
 
 void Messenger::send_property_set_data(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                      const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
@@ -202,7 +185,6 @@ void Messenger::send_property_set_data(uint8_t group, uint32_t destination_muid,
 
 void Messenger::send_property_subscribe(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                       const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
@@ -211,7 +193,6 @@ void Messenger::send_property_subscribe(uint8_t group, uint32_t destination_muid
 }
 
 void Messenger::send_process_inquiry_capabilities(uint8_t group, uint32_t destination_muid) {
-    using namespace midicci::core::constants;
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
 
@@ -230,7 +211,6 @@ void Messenger::send_midi_message_report_inquiry(uint8_t group, uint8_t address,
 }
 
 void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
-    using namespace midicci::core::constants;
 
     if (data.size() < 4 ||
         data[0] != MIDI_CI_UNIVERSAL_SYSEX_ID ||
@@ -242,9 +222,9 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         return;
     }
 
-    uint32_t source_muid = core::CIRetrieval::get_source_muid(data);
-    uint32_t dest_muid = core::CIRetrieval::get_destination_muid(data);
-    uint8_t address = core::CIRetrieval::get_addressing(data);
+    uint32_t source_muid = CIRetrieval::get_source_muid(data);
+    uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
+    uint8_t address = CIRetrieval::get_addressing(data);
 
     Common common(source_muid, dest_muid, address, group);
 
@@ -257,10 +237,10 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
     switch (message_type) {
         case CISubId2::DISCOVERY_REPLY: {
             if (data.size() >= 30) {
-                auto device_details = core::CIRetrieval::get_device_details(data);
+                auto device_details = CIRetrieval::get_device_details(data);
 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
+                uint32_t max_sysex = CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
                 uint8_t function_block = data.size() > 30 ? data[30] : 0;
 
@@ -272,7 +252,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::INVALIDATE_MUID: {
             if (data.size() >= 18) {
-                uint32_t target_muid = core::CIRetrieval::get_muid_to_invalidate(data);
+                uint32_t target_muid = CIRetrieval::get_muid_to_invalidate(data);
                 InvalidateMUID invalidate(common, target_muid);
                 pimpl_->log_message(invalidate, false);
                 processInvalidateMUID(invalidate);
@@ -281,7 +261,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_INQUIRY_REPLY: {
             if (data.size() >= 15) {
-                const auto [enabled_profiles, disabled_profiles] = core::CIRetrieval::get_profile_set(data);
+                const auto [enabled_profiles, disabled_profiles] = CIRetrieval::get_profile_set(data);
                 ProfileReply reply(common, enabled_profiles, disabled_profiles);
                 pimpl_->log_message(reply, false);
                 processProfileReply(reply);
@@ -290,7 +270,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ADDED_REPORT: {
             if (data.size() >= 18) {
-                auto profile_id = core::CIRetrieval::get_profile_id(data);
+                auto profile_id = CIRetrieval::get_profile_id(data);
                 ProfileAdded added(common, profile_id);
                 pimpl_->log_message(added, false);
                 processProfileAddedReport(added);
@@ -299,7 +279,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_REMOVED_REPORT: {
             if (data.size() >= 18) {
-                auto profile_id = core::CIRetrieval::get_profile_id(data);
+                auto profile_id = CIRetrieval::get_profile_id(data);
                 ProfileRemoved removed(common, profile_id);
                 pimpl_->log_message(removed, false);
                 processProfileRemovedReport(removed);
@@ -308,8 +288,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_ENABLED_REPORT: {
             if (data.size() >= 20) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
-                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
+                uint16_t channels = CIRetrieval::get_profile_enabled_channels(data);
                 ProfileEnabled enabled(common, profile_id, channels);
                 pimpl_->log_message(enabled, false);
                 processProfileEnabledReport(enabled);
@@ -318,8 +298,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DISABLED_REPORT: {
             if (data.size() >= 20) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
-                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
+                uint16_t channels = CIRetrieval::get_profile_enabled_channels(data);
                 ProfileDisabled disabled(common, profile_id, channels);
                 pimpl_->log_message(disabled, false);
                 processProfileDisabledReport(disabled);
@@ -328,7 +308,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY: {
             if (data.size() >= 14) {
-                uint8_t max_requests = core::CIRetrieval::get_max_property_requests(data);
+                uint8_t max_requests = CIRetrieval::get_max_property_requests(data);
                 PropertyGetCapabilitiesReply reply(common, max_requests);
                 pimpl_->log_message(reply, false);
                 processPropertyCapabilitiesReply(reply);
@@ -338,8 +318,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_GET_DATA_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
-                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 GetPropertyDataReply reply(common, request_id, header, body);
                 pimpl_->log_message(reply, false);
                 processGetDataReply(reply);
@@ -349,7 +329,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SET_DATA_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 SetPropertyDataReply reply(common, request_id, header);
                 pimpl_->log_message(reply, false);
                 processSetDataReply(reply);
@@ -359,8 +339,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SUBSCRIPTION_REPLY: {
             if (data.size() >= 21) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
-                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 SubscribePropertyReply reply(common, request_id, header, body);
                 pimpl_->log_message(reply, false);
                 processSubscribePropertyReply(reply);
@@ -370,8 +350,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_NOTIFY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
-                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 SubscribeProperty notify(common, request_id, header, body);
                 pimpl_->log_message(notify, false);
                 processPropertyNotify(notify);
@@ -380,10 +360,10 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::DISCOVERY_INQUIRY: {
             if (data.size() >= 30) {
-                auto device_details = core::CIRetrieval::get_device_details(data);
+                auto device_details = CIRetrieval::get_device_details(data);
 
                 uint8_t ci_supported = data[24];
-                uint32_t max_sysex = core::CIRetrieval::get_max_sysex_size(data);
+                uint32_t max_sysex = CIRetrieval::get_max_sysex_size(data);
                 uint8_t output_path = data.size() > 29 ? data[29] : 0;
 
                 DiscoveryInquiry inquiry(common, device_details, ci_supported, max_sysex, output_path);
@@ -400,8 +380,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_ON: {
             if (data.size() >= 20) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
-                uint16_t channels = core::CIRetrieval::get_profile_enabled_channels(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
+                uint16_t channels = CIRetrieval::get_profile_enabled_channels(data);
                 SetProfileOn set_on(common, profile_id, channels);
                 pimpl_->log_message(set_on, false);
                 processSetProfileOn(set_on);
@@ -410,7 +390,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SET_OFF: {
             if (data.size() >= 18) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
                 SetProfileOff set_off(common, profile_id);
                 pimpl_->log_message(set_off, false);
                 processSetProfileOff(set_off);
@@ -419,7 +399,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY: {
             if (data.size() >= 14) {
-                uint8_t max_requests = core::CIRetrieval::get_max_property_requests(data);
+                uint8_t max_requests = CIRetrieval::get_max_property_requests(data);
                 PropertyGetCapabilities inquiry(common, max_requests);
                 pimpl_->log_message(inquiry, false);
                 processPropertyCapabilitiesInquiry(inquiry);
@@ -429,7 +409,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_GET_DATA_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 GetPropertyData inquiry(common, request_id, header);
                 pimpl_->log_message(inquiry, false);
                 processGetPropertyData(inquiry);
@@ -439,8 +419,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SET_DATA_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
-                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 SetPropertyData inquiry(common, request_id, header, body);
                 pimpl_->log_message(inquiry, false);
                 processSetPropertyData(inquiry);
@@ -450,8 +430,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         case CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY: {
             if (data.size() >= 16) {
                 uint8_t request_id = data[13];
-                std::vector<uint8_t> header = core::CIRetrieval::get_property_header(data);
-                std::vector<uint8_t> body = core::CIRetrieval::get_property_body_in_this_chunk(data);
+                std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+                std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 SubscribeProperty inquiry(common, request_id, header, body);
                 pimpl_->log_message(inquiry, false);
                 processSubscribeProperty(inquiry);
@@ -495,7 +475,7 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_DETAILS_REPLY: {
             if (data.size() >= 22) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
                 uint8_t target = data[18];
                 uint16_t data_size = data[19] | (data[20] << 7);
                 std::vector<uint8_t> profile_data(data.begin() + 21, data.begin() + 21 + data_size);
@@ -507,8 +487,8 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
         }
         case CISubId2::PROFILE_SPECIFIC_DATA: {
             if (data.size() >= 22) {
-                midicci::profilecommonrules::MidiCIProfileId profile_id = core::CIRetrieval::get_profile_id(data);
-                uint16_t data_length = core::CIRetrieval::get_profile_specific_data_size(data);
+                midicci::profilecommonrules::MidiCIProfileId profile_id = CIRetrieval::get_profile_id(data);
+                uint16_t data_length = CIRetrieval::get_profile_specific_data_size(data);
                 std::vector<uint8_t> profile_data(data.begin() + 22, data.begin() + 22 + data_length);
                 ProfileSpecificData specific_data(common, profile_id, profile_data);
                 pimpl_->log_message(specific_data, false);
@@ -602,7 +582,7 @@ void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
         pimpl_->device_.remove_connection(msg.get_source_muid());
     }
 
-    auto connection = std::make_shared<core::ClientConnection>(pimpl_->device_, msg.get_source_muid(), msg.get_device_details());
+    auto connection = std::make_shared<ClientConnection>(pimpl_->device_, msg.get_source_muid(), msg.get_device_details());
     pimpl_->device_.store_connection(msg.get_source_muid(), connection);
 
     send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);
@@ -639,7 +619,7 @@ std::vector<ProfileReply> Messenger::getProfileRepliesForInquiry(const ProfileIn
     std::vector<ProfileReply> replies;
     
     std::vector<uint8_t> addresses;
-    if (msg.get_common().address == midicci::core::constants::MIDI_CI_ADDRESS_FUNCTION_BLOCK) {
+    if (msg.get_common().address == MIDI_CI_ADDRESS_FUNCTION_BLOCK) {
         auto& profile_host = pimpl_->device_.get_profile_host_facade();
         auto& profiles = profile_host.get_profiles();
         auto all_profiles = profiles.get_profiles();
@@ -706,7 +686,7 @@ void Messenger::processProfileReply(const ProfileReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_reply(msg);
     });
 }
@@ -715,7 +695,7 @@ void Messenger::processProfileAddedReport(const ProfileAdded& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_added_report(msg);
     });
 }
@@ -724,7 +704,7 @@ void Messenger::processProfileRemovedReport(const ProfileRemoved& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_removed_report(msg);
     });
 }
@@ -733,7 +713,7 @@ void Messenger::processProfileEnabledReport(const ProfileEnabled& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_enabled_report(msg);
     });
 }
@@ -742,7 +722,7 @@ void Messenger::processProfileDisabledReport(const ProfileDisabled& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_disabled_report(msg);
     });
 }
@@ -751,7 +731,7 @@ void Messenger::processProfileDetailsReply(const ProfileDetailsReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_details_reply(msg);
     });
 }
@@ -760,7 +740,7 @@ void Messenger::processPropertyCapabilitiesReply(const PropertyGetCapabilitiesRe
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_property_capabilities_reply(msg);
     });
 }
@@ -769,7 +749,7 @@ void Messenger::processGetDataReply(const GetPropertyDataReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_get_data_reply(msg);
     });
 }
@@ -778,7 +758,7 @@ void Messenger::processSetDataReply(const SetPropertyDataReply& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_set_data_reply(msg);
     });
 }
@@ -787,7 +767,7 @@ void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg)
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    onClient(msg, [&](std::shared_ptr<core::ClientConnection> conn) {
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_subscribe_property_reply(msg);
     });
 }

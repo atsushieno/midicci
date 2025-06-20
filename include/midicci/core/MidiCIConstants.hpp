@@ -6,7 +6,6 @@
 #include <vector>
 
 namespace midicci {
-namespace core {
 
 struct DeviceDetails {
     uint32_t manufacturer;
@@ -35,8 +34,6 @@ struct DeviceInfo {
             : manufacturer_id(manufacturer_id), family_id(family_id), model_id(model_id), version_id(version_id),
               manufacturer(mfg), family(fam), model(mod), version(ver), serial_number(serial_number) {}
 };
-
-namespace constants {
 
 constexpr uint8_t UNIVERSAL_SYSEX = 0x7E;
 constexpr uint8_t SYSEX_SUB_ID_MIDI_CI = 0x0D;
@@ -260,8 +257,4 @@ enum class MidiMessageReportNoteDataFlags : uint8_t {
     All = 31
 };
 
-
-} // namespace constants
-
-} // namespace core
 } // namespace midi_ci

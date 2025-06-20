@@ -9,7 +9,7 @@ namespace ci_tool {
 
 class CIDeviceModel::Impl {
 public:
-    explicit Impl(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config, uint32_t muid,
+    explicit Impl(CIDeviceManager& parent, MidiCIDeviceConfiguration& config, uint32_t muid,
                   CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
                   std::function<void(const std::string&, bool)> logger)
         : parent_(parent), config_(config), muid_(muid),
@@ -18,13 +18,13 @@ public:
           receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
     
     CIDeviceManager& parent_;
-    midicci::core::MidiCIDeviceConfiguration& config_;
+    MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
     CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
     std::function<void(const std::string&, bool)> logger_;
     
-    std::shared_ptr<midicci::core::MidiCIDevice> device_;
+    std::shared_ptr<MidiCIDevice> device_;
     MutableStateList<std::shared_ptr<ClientConnectionModel>> connections_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> local_profile_states_;
     
@@ -39,7 +39,7 @@ public:
     mutable std::recursive_mutex mutex_{};
 };
 
-CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, midicci::core::MidiCIDeviceConfiguration& config,
+CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, MidiCIDeviceConfiguration& config,
                              uint32_t muid, CIOutputSender ci_output_sender,
                              MidiMessageReportSender midi_message_report_sender,
                              std::function<void(const std::string&, bool)> logger)
@@ -54,7 +54,7 @@ CIDeviceModel::~CIDeviceModel() = default;
 void CIDeviceModel::initialize() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->device_ = std::make_shared<midicci::core::MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
+    pimpl_->device_ = std::make_shared<MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
     pimpl_->device_->initialize();
     
@@ -74,7 +74,7 @@ void CIDeviceModel::shutdown() {
     std::cout << "CIDeviceModel shutdown" << std::endl;
 }
 
-std::shared_ptr<midicci::core::MidiCIDevice> CIDeviceModel::get_device() const {
+std::shared_ptr<MidiCIDevice> CIDeviceModel::get_device() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->device_;
 }

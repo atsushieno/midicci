@@ -5,7 +5,7 @@
 #include <cstdint>
 
 namespace midicci {
-namespace core {
+// FIXME: should we set some specific namespace for specific MMA properties?
 
 struct MidiCIChannel {
     std::string title;
@@ -42,5 +42,4 @@ struct MidiCIChannelList {
     MidiCIChannelList() = default;
 };
 
-} // namespace core
-} // namespace midi_ci
+} // namespace

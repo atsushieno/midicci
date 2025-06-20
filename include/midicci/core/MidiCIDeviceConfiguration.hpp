@@ -46,7 +46,7 @@ struct MidiCIDeviceConfiguration {
     bool auto_send_get_device_info = true;
     
     // Profile configuration
-    std::vector<profiles::MidiCIProfile> local_profiles;
+    std::vector<profilecommonrules::MidiCIProfile> local_profiles;
     
     // Process inquiry configuration
     uint8_t process_inquiry_supported_features = static_cast<uint8_t>(MidiCIProcessInquiryFeatures::MIDI_MESSAGE_REPORT);
@@ -56,8 +56,8 @@ struct MidiCIDeviceConfiguration {
     uint8_t midi_message_report_note_data_messages = static_cast<uint8_t>(MidiMessageReportNoteDataFlags::All);
     
     // Property exchange
-    std::vector<properties::PropertyValue> property_values;
-    std::vector<std::unique_ptr<properties::PropertyMetadata>> property_metadata_list;
+    std::vector<propertycommonrules::PropertyValue> property_values;
+    std::vector<std::unique_ptr<propertycommonrules::PropertyMetadata>> property_metadata_list;
     
     // Constructor with backward compatibility for existing usage
     MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE,

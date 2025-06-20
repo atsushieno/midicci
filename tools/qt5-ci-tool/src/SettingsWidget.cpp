@@ -43,7 +43,7 @@ void SettingsWidget::setupUI()
     m_configGroup = new QGroupBox("Load and Save", this);
     auto *configLayout = new QVBoxLayout(m_configGroup);
     
-    m_configFileLabel = new QLabel("Configuration file is 'ktmidi-ci-tool.settings.json_ish'", this);
+    m_configFileLabel = new QLabel("Configuration file is 'midicci.settings.json'", this);
     configLayout->addWidget(m_configFileLabel);
     
     auto *configButtonLayout = new QHBoxLayout();
@@ -185,7 +185,7 @@ void SettingsWidget::onLoadConfiguration()
 
 void SettingsWidget::onSaveConfiguration()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, "Save Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ktmidi-ci-tool.settings.json_ish", "JSON Files (*.json_ish)");
+    QString fileName = QFileDialog::getSaveFileName(this, "Save Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/midicci.settings.json", "JSON Files (*.json)");
     if (!fileName.isEmpty() && m_repository) {
         m_repository->log(QString("Saving configuration to: %1").arg(fileName).toStdString(), ci_tool::MessageDirection::Out);
     }
@@ -257,7 +257,7 @@ void SettingsWidget::updateDeviceConfiguration()
     m_serialNumberEdit->setText("12345");
     m_maxConnectionsSpin->setValue(8);
     
-    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"properties\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
+    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"propertycommonrules\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
     
     m_workaroundJUCESubscriptionCheck->setChecked(false);
     m_workaroundJUCEProfileChannelsCheck->setChecked(false);

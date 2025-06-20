@@ -9,7 +9,7 @@
 #include <map>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class CommonRulesPropertyService : public MidiCIServicePropertyRules {
 public:
@@ -20,9 +20,9 @@ public:
     std::string get_property_id_for_header(const std::vector<uint8_t>& header) override;
     std::vector<uint8_t> create_update_notification_header(const std::string& property_id, const std::map<std::string, std::string>& fields) override;
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() override;
-    messages::GetPropertyDataReply get_property_data(const messages::GetPropertyData& msg) override;
-    messages::SetPropertyDataReply set_property_data(const messages::SetPropertyData& msg) override;
-    messages::SubscribePropertyReply subscribe_property(const messages::SubscribeProperty& msg) override;
+    GetPropertyDataReply get_property_data(const GetPropertyData& msg) override;
+    SetPropertyDataReply set_property_data(const SetPropertyData& msg) override;
+    SubscribePropertyReply subscribe_property(const SubscribeProperty& msg) override;
     void add_metadata(std::unique_ptr<PropertyMetadata> property) override;
     void remove_metadata(const std::string& property_id) override;
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;

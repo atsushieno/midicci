@@ -7,7 +7,7 @@
 #include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 
 class ProfileClientFacade {
 public:
@@ -25,12 +25,12 @@ public:
     
     void set_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile, bool enabled, uint16_t num_channels_requested);
     
-    void process_profile_reply(const messages::ProfileReply& msg);
-    void process_profile_added_report(const messages::ProfileAdded& msg);
-    void process_profile_removed_report(const messages::ProfileRemoved& msg);
-    void process_profile_enabled_report(const messages::ProfileEnabled& msg);
-    void process_profile_disabled_report(const messages::ProfileDisabled& msg);
-    void process_profile_details_reply(const messages::ProfileDetailsReply& msg);
+    void process_profile_reply(const ProfileReply& msg);
+    void process_profile_added_report(const ProfileAdded& msg);
+    void process_profile_removed_report(const ProfileRemoved& msg);
+    void process_profile_enabled_report(const ProfileEnabled& msg);
+    void process_profile_disabled_report(const ProfileDisabled& msg);
+    void process_profile_details_reply(const ProfileDetailsReply& msg);
     
 private:
     class Impl;

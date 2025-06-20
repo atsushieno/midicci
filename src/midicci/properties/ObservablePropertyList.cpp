@@ -7,7 +7,7 @@
 #include <algorithm>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 void ObservablePropertyList::addPropertyUpdatedCallback(PropertyUpdatedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);

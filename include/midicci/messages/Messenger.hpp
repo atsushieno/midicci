@@ -12,8 +12,6 @@ namespace core {
 class MidiCIDevice;
 } // namespace core
 
-namespace messages {
-
 class Messenger {
 public:
     using MessageCallback = std::function<void(const Message&)>;
@@ -35,17 +33,17 @@ public:
     
     void send_profile_inquiry(uint8_t group, uint32_t destination_muid);
     void send_set_profile_on(uint8_t group, uint8_t address, uint32_t destination_muid,
-                             const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+                             const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     void send_set_profile_off(uint8_t group, uint8_t address, uint32_t destination_muid, 
-                             const midicci::profiles::MidiCIProfileId& profile_id);
+                             const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     void send_profile_enabled_report(uint8_t group, uint8_t address,
-                                     const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+                                     const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     void send_profile_disabled_report(uint8_t group, uint8_t address,
-                                      const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+                                      const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     void send_profile_added_report(uint8_t group, uint8_t address, 
-                                 const midicci::profiles::MidiCIProfileId& profile_id);
+                                 const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     void send_profile_removed_report(uint8_t group, uint8_t address, 
-                                   const midicci::profiles::MidiCIProfileId& profile_id);
+                                   const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     void send_property_get_capabilities(uint8_t group, uint32_t destination_muid, 
                                       uint8_t max_simultaneous_requests);
@@ -119,5 +117,4 @@ private:
     std::unique_ptr<Impl> pimpl_;
 };
 
-} // namespace messages
 } // namespace midi_ci

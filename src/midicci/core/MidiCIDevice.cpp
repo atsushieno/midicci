@@ -12,8 +12,8 @@ namespace core {
 class MidiCIDevice::Impl {
 public:
     Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid), initialized_(false),
-        profile_host_facade_(std::make_unique<profiles::ProfileHostFacade>(device)),
-        property_host_facade_(std::make_unique<properties::PropertyHostFacade>(device)),
+        profile_host_facade_(std::make_unique<profilecommonrules::ProfileHostFacade>(device)),
+        property_host_facade_(std::make_unique<propertycommonrules::PropertyHostFacade>(device)),
         messenger_(device) {}
     
     uint8_t device_id_;
@@ -25,11 +25,11 @@ public:
     ConnectionsChangedCallback connections_changed_callback_;
     MidiCIDevice::CIOutputSender ci_output_sender_;
     std::unordered_map<uint32_t, std::shared_ptr<ClientConnection>> connections_;
-    std::unique_ptr<profiles::ProfileHostFacade> profile_host_facade_;
-    std::unique_ptr<properties::PropertyHostFacade> property_host_facade_;
+    std::unique_ptr<profilecommonrules::ProfileHostFacade> profile_host_facade_;
+    std::unique_ptr<propertycommonrules::PropertyHostFacade> property_host_facade_;
     mutable std::recursive_mutex mutex_;
     LoggerFunction logger_;
-    messages::Messenger messenger_;
+    Messenger messenger_;
 };
 
 MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, config, muid)) {
@@ -155,22 +155,22 @@ void MidiCIDevice::sendDiscovery() {
     this->pimpl_->messenger_.send_discovery_inquiry();
 }
 
-profiles::ProfileHostFacade& MidiCIDevice::get_profile_host_facade() {
+profilecommonrules::ProfileHostFacade& MidiCIDevice::get_profile_host_facade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_host_facade_;
 }
 
-const profiles::ProfileHostFacade& MidiCIDevice::get_profile_host_facade() const {
+const profilecommonrules::ProfileHostFacade& MidiCIDevice::get_profile_host_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_host_facade_;
 }
 
-properties::PropertyHostFacade& MidiCIDevice::get_property_host_facade() {
+propertycommonrules::PropertyHostFacade& MidiCIDevice::get_property_host_facade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_host_facade_;
 }
 
-const properties::PropertyHostFacade& MidiCIDevice::get_property_host_facade() const {
+const propertycommonrules::PropertyHostFacade& MidiCIDevice::get_property_host_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_host_facade_;
 }
@@ -185,7 +185,7 @@ MidiCIDevice::LoggerFunction MidiCIDevice::get_logger() const {
     return pimpl_->logger_;
 }
 
-messages::Messenger& MidiCIDevice::get_messenger() {
+Messenger& MidiCIDevice::get_messenger() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->messenger_;
 }

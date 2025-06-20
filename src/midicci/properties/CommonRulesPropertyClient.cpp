@@ -9,7 +9,7 @@
 #include <algorithm>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 using namespace property_common_rules;
 
@@ -34,10 +34,10 @@ std::vector<uint8_t> CommonRulesPropertyClient::create_subscription_header(
 }
 
 std::vector<uint8_t> CommonRulesPropertyClient::create_status_header(int status) {
-    json_ish::JsonObject status_obj;
-    status_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(status);
+    JsonObject status_obj;
+    status_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(status);
     
-    json_ish::JsonValue status_header(status_obj);
+    JsonValue status_header(status_obj);
     auto json_str = status_header.serialize();
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
@@ -58,7 +58,7 @@ int CommonRulesPropertyClient::get_header_field_integer(const std::vector<uint8_
     return helper_->get_header_field_integer(header, field);
 }
 
-void CommonRulesPropertyClient::process_property_subscription_result(void* sub, const messages::SubscribePropertyReply& msg) {
+void CommonRulesPropertyClient::process_property_subscription_result(void* sub, const SubscribePropertyReply& msg) {
     if (!sub) return;
     
     int status = get_header_field_integer(msg.get_header(), PropertyCommonHeaderKeys::STATUS);
@@ -106,7 +106,7 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
         }
     } else if (property_id == PropertyResourceNames::DEVICE_INFO) {
         try {
-            json_ish::JsonValue json_body;
+            JsonValue json_body;
             convert_application_json_bytes_to_json(body, json_body);
 
             auto manufacturerId = json_body[DeviceInfoPropertyNames::MANUFACTURER_ID].as_int();
@@ -126,14 +126,14 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
         }
     } else if (property_id == PropertyResourceNames::CHANNEL_LIST) {
         try {
-            json_ish::JsonValue json_body;
+            JsonValue json_body;
             convert_application_json_bytes_to_json(body, json_body);
             conn_.set_channel_list(json_body);
         } catch (...) {
         }
     } else if (property_id == PropertyResourceNames::JSON_SCHEMA) {
         try {
-            json_ish::JsonValue json_body;
+            JsonValue json_body;
             convert_application_json_bytes_to_json(body, json_body);
             conn_.set_json_schema(json_body);
         } catch (...) {
@@ -144,8 +144,8 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
 void CommonRulesPropertyClient::request_property_list(uint8_t group) {
     auto request_bytes = helper_->get_resource_list_request_bytes();
     
-    messages::GetPropertyData msg(
-        messages::Common(device_.get_muid(), conn_.get_target_muid(), 0x7F, group),
+    GetPropertyData msg(
+        Common(device_.get_muid(), conn_.get_target_muid(), 0x7F, group),
         0,
         request_bytes
     );
@@ -180,7 +180,7 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_me
 
 std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_metadata_list_for_body(const std::vector<uint8_t>& body) {
     try {
-        json_ish::JsonValue json_body;
+        JsonValue json_body;
         convert_application_json_bytes_to_json(body, json_body);
         
         std::vector<std::unique_ptr<PropertyMetadata>> result;
@@ -227,9 +227,9 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_me
     }
 }
 
-void CommonRulesPropertyClient::convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, json_ish::JsonValue& result) {
+void CommonRulesPropertyClient::convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, JsonValue& result) {
     std::string data_str(data.begin(), data.end());
-    result = json_ish::JsonValue::parse(data_str);
+    result = JsonValue::parse(data_str);
 }
 
 } // namespace properties

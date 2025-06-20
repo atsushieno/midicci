@@ -12,7 +12,7 @@
 #include <algorithm>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class PropertyClientFacade::Impl {
 public:
@@ -61,15 +61,15 @@ void PropertyClientFacade::send_get_property_data(const std::string& resource, c
     
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     
-    messages::GetPropertyData msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
+    GetPropertyData msg(
+        Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header
     );
     
     send_get_property_data(msg);
 }
 
-void PropertyClientFacade::send_get_property_data(const messages::GetPropertyData& msg) {
+void PropertyClientFacade::send_get_property_data(const GetPropertyData& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     pimpl_->open_requests_[msg.get_request_id()] = msg.serialize(pimpl_->device_.get_config())[0];
@@ -89,15 +89,15 @@ void PropertyClientFacade::send_set_property_data(const std::string& resource, c
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     auto encoded_body = pimpl_->property_rules_->encode_body(data, encoding);
     
-    messages::SetPropertyData msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
+    SetPropertyData msg(
+        Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, encoded_body
     );
     
     send_set_property_data(msg);
 }
 
-void PropertyClientFacade::send_set_property_data(const messages::SetPropertyData& msg) {
+void PropertyClientFacade::send_set_property_data(const SetPropertyData& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     pimpl_->open_requests_[msg.get_request_id()] = msg.serialize(pimpl_->device_.get_config())[0];
@@ -115,8 +115,8 @@ void PropertyClientFacade::send_subscribe_property(const std::string& resource, 
     
     auto header = pimpl_->property_rules_->create_subscription_header(resource, fields);
     
-    messages::SubscribeProperty msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
+    SubscribeProperty msg(
+        Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, {}
     );
     
@@ -133,15 +133,15 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
     
     auto header = pimpl_->property_rules_->create_subscription_header(property_id, fields);
     
-    messages::SubscribeProperty msg(
-        messages::Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
+    SubscribeProperty msg(
+        Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header, {}
     );
     
     pimpl_->device_.get_messenger().send(msg);
 }
 
-void PropertyClientFacade::process_property_capabilities_reply(const messages::PropertyGetCapabilitiesReply& msg) {
+void PropertyClientFacade::process_property_capabilities_reply(const PropertyGetCapabilitiesReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
@@ -149,7 +149,7 @@ void PropertyClientFacade::process_property_capabilities_reply(const messages::P
     }
 }
 
-void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDataReply& msg) {
+void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
@@ -163,8 +163,8 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
             uint16_t header_size = data[14] | (data[15] << 7);
             std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
             
-            messages::Common common(source_muid, dest_muid, 0x7F, 0);
-            messages::GetPropertyData stored_request(common, request_id, header);
+            Common common(source_muid, dest_muid, 0x7F, 0);
+            GetPropertyData stored_request(common, request_id, header);
             
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
@@ -184,7 +184,7 @@ void PropertyClientFacade::process_get_data_reply(const messages::GetPropertyDat
     }
 }
 
-void PropertyClientFacade::process_set_data_reply(const messages::SetPropertyDataReply& msg) {
+void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
@@ -199,8 +199,8 @@ void PropertyClientFacade::process_set_data_reply(const messages::SetPropertyDat
             std::vector<uint8_t> header(data.begin() + 18, data.begin() + 18 + header_size);
             std::vector<uint8_t> body(data.begin() + 18 + header_size, data.begin() + 18 + header_size + body_size);
             
-            messages::Common common(source_muid, dest_muid, 0x7F, 0);
-            messages::SetPropertyData stored_request(common, request_id, header, body);
+            Common common(source_muid, dest_muid, 0x7F, 0);
+            SetPropertyData stored_request(common, request_id, header, body);
             
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
@@ -219,7 +219,7 @@ void PropertyClientFacade::process_set_data_reply(const messages::SetPropertyDat
     }
 }
 
-void PropertyClientFacade::process_subscribe_property(const messages::SubscribeProperty& msg) {
+void PropertyClientFacade::process_subscribe_property(const SubscribeProperty& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {
@@ -231,7 +231,7 @@ void PropertyClientFacade::process_subscribe_property(const messages::SubscribeP
     }
 }
 
-void PropertyClientFacade::process_subscribe_property_reply(const messages::SubscribePropertyReply& msg) {
+void PropertyClientFacade::process_subscribe_property_reply(const SubscribePropertyReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (pimpl_->property_rules_) {

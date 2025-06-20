@@ -7,10 +7,9 @@
 #include "midicci/messages/Message.hpp"
 #include <unordered_map>
 
-using namespace midicci::properties;
-using namespace midicci::json_ish;
-using namespace midicci::messages;
-using namespace midicci::properties::property_common_rules;
+using namespace midicci::propertycommonrules;
+using namespace midicci;
+using namespace midicci::propertycommonrules::property_common_rules;
 
 class TestPropertyRules : public MidiCIServicePropertyRules {
 public:

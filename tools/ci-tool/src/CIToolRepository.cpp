@@ -103,7 +103,7 @@ void CIToolRepository::load_config(const std::string& filename) {
                            std::istreambuf_iterator<char>());
         file.close();
         
-        auto json_val = midicci::json_ish::JsonValue::parse_or_null(content);
+        auto json_val = midicci::JsonValue::parse_or_null(content);
         if (json_val.is_null()) {
             log("Failed to parse config file: " + filename, MessageDirection::In);
             return;
@@ -117,8 +117,8 @@ void CIToolRepository::load_config(const std::string& filename) {
 
 void CIToolRepository::save_config(const std::string& filename) {
     try {
-        midicci::json_ish::JsonValue config = midicci::json_ish::JsonValue::empty_object();
-        config["muid"] = midicci::json_ish::JsonValue(static_cast<int>(pimpl_->muid_));
+        midicci::JsonValue config = midicci::JsonValue::empty_object();
+        config["muid"] = midicci::JsonValue(static_cast<int>(pimpl_->muid_));
         
         std::ofstream file(filename);
         if (!file.is_open()) {

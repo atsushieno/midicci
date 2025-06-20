@@ -35,10 +35,10 @@ uint32_t CIRetrieval::get_max_sysex_size(const std::vector<uint8_t>& sysex) {
     return sysex[25] | (sysex[26] << 8) | (sysex[27] << 16) | (sysex[28] << 24);
 }
 
-std::pair<std::vector<midicci::profiles::MidiCIProfileId>, std::vector<midicci::profiles::MidiCIProfileId>>
+std::pair<std::vector<midicci::profilecommonrules::MidiCIProfileId>, std::vector<midicci::profilecommonrules::MidiCIProfileId>>
 CIRetrieval::get_profile_set(const std::vector<uint8_t>& sysex) {
-    std::vector<midicci::profiles::MidiCIProfileId> enabled_profiles;
-    std::vector<midicci::profiles::MidiCIProfileId> disabled_profiles;
+    std::vector<midicci::profilecommonrules::MidiCIProfileId> enabled_profiles;
+    std::vector<midicci::profilecommonrules::MidiCIProfileId> disabled_profiles;
 
     if (sysex.size() < 15) {
         return {enabled_profiles, disabled_profiles};
@@ -65,7 +65,7 @@ CIRetrieval::get_profile_set(const std::vector<uint8_t>& sysex) {
     return {enabled_profiles, disabled_profiles};
 }
 
-midicci::profiles::MidiCIProfileId CIRetrieval::get_profile_id(const std::vector<uint8_t>& sysex) {
+midicci::profilecommonrules::MidiCIProfileId CIRetrieval::get_profile_id(const std::vector<uint8_t>& sysex) {
     return get_profile_id_entry(sysex, 13);
 }
 
@@ -73,9 +73,9 @@ uint16_t CIRetrieval::get_profile_enabled_channels(const std::vector<uint8_t>& s
     return static_cast<uint16_t>(sysex[18] | (sysex[19] << 7));
 }
 
-midicci::profiles::MidiCIProfileId CIRetrieval::get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset) {
+midicci::profilecommonrules::MidiCIProfileId CIRetrieval::get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset) {
     std::vector<uint8_t> d{sysex.begin() + offset, sysex.begin() + offset + 5};
-    return midicci::profiles::MidiCIProfileId{d};
+    return midicci::profilecommonrules::MidiCIProfileId{d};
 }
 
 uint16_t CIRetrieval::get_profile_specific_data_size(const std::vector<uint8_t>& sysex) {

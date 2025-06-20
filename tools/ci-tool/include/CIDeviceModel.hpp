@@ -50,14 +50,14 @@ public:
     
     void send_discovery();
     void send_profile_details_inquiry(uint8_t address, uint32_t muid,
-                                      const midicci::profiles::MidiCIProfileId& profile, uint8_t target);
+                                      const midicci::profilecommonrules::MidiCIProfileId& profile, uint8_t target);
     
     void update_local_profile_target(const std::shared_ptr<MidiCIProfileState>& profile_state,
                                    uint8_t new_address, bool enabled, uint16_t num_channels_requested);
-    void add_local_profile(const midicci::profiles::MidiCIProfile& profile);
-    void remove_local_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile_id);
+    void add_local_profile(const midicci::profilecommonrules::MidiCIProfile& profile);
+    void remove_local_profile(uint8_t group, uint8_t address, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
 
-    void add_local_property(const midicci::properties::PropertyMetadata& property);
+    void add_local_property(const midicci::propertycommonrules::PropertyMetadata& property);
     void remove_local_property(const std::string& property_id);
     void update_property_value(const std::string& property_id, const std::string& res_id, 
                              const std::vector<uint8_t>& data);

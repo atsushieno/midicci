@@ -4,7 +4,7 @@
 #include <algorithm>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 struct Chunk {
     uint64_t timestamp;

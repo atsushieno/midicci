@@ -8,7 +8,7 @@
 namespace midicci {
 namespace core {
 
-    using namespace midicci::profiles;
+    using namespace midicci::profilecommonrules;
 
 class CIFactory {
 public:

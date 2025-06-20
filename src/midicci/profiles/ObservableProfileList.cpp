@@ -3,7 +3,7 @@
 #include <mutex>
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 
 class ObservableProfileList::Impl {
 public:

@@ -9,7 +9,6 @@
 #include "../profiles/MidiCIProfile.hpp"
 
 namespace midicci {
-namespace messages {
 
 enum class MessageType : uint8_t {
     DiscoveryInquiry = 0x70,
@@ -138,14 +137,14 @@ private:
 
 class SetProfileOn : public SinglePacketMessage {
 public:
-    SetProfileOn(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+    SetProfileOn(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint16_t num_channels_;
 };
 
@@ -265,64 +264,64 @@ public:
 
 class SetProfileOff : public SinglePacketMessage {
 public:
-    SetProfileOff(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id);
+    SetProfileOff(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
 };
 
 class ProfileEnabledReport : public SinglePacketMessage {
 public:
-    ProfileEnabledReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+    ProfileEnabledReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint16_t num_channels_;
 };
 
 class ProfileDisabledReport : public SinglePacketMessage {
 public:
-    ProfileDisabledReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+    ProfileDisabledReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint16_t num_channels_;
 };
 
 class ProfileAddedReport : public SinglePacketMessage {
 public:
-    ProfileAddedReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id);
+    ProfileAddedReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
 };
 
 class ProfileRemovedReport : public SinglePacketMessage {
 public:
-    ProfileRemovedReport(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id);
+    ProfileRemovedReport(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
 };
 
 class MidiMessageReportInquiry : public SinglePacketMessage {
@@ -352,19 +351,19 @@ public:
 };
 
 class ProfileReply : public SinglePacketMessage {
-    const std::vector<midicci::profiles::MidiCIProfileId> enabled_profiles_;
-    const std::vector<midicci::profiles::MidiCIProfileId> disabled_profiles_;
+    const std::vector<midicci::profilecommonrules::MidiCIProfileId> enabled_profiles_;
+    const std::vector<midicci::profilecommonrules::MidiCIProfileId> disabled_profiles_;
 
 public:
-    ProfileReply(const Common& common, const std::vector<midicci::profiles::MidiCIProfileId>& enabled_profiles,
-                const std::vector<midicci::profiles::MidiCIProfileId>& disabled_profiles);
+    ProfileReply(const Common& common, const std::vector<midicci::profilecommonrules::MidiCIProfileId>& enabled_profiles,
+                const std::vector<midicci::profilecommonrules::MidiCIProfileId>& disabled_profiles);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
 
-    const std::vector<profiles::MidiCIProfileId>& get_enabled_profiles() const { return enabled_profiles_; }
-    const std::vector<profiles::MidiCIProfileId>& get_disabled_profiles() const { return disabled_profiles_; }
+    const std::vector<profilecommonrules::MidiCIProfileId>& get_enabled_profiles() const { return enabled_profiles_; }
+    const std::vector<profilecommonrules::MidiCIProfileId>& get_disabled_profiles() const { return disabled_profiles_; }
 };
 
 class PropertyGetCapabilitiesReply : public SinglePacketMessage {
@@ -412,79 +411,79 @@ public:
 
 class ProfileAdded : public SinglePacketMessage {
 public:
-    ProfileAdded(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id);
+    ProfileAdded(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
 };
 
 class ProfileRemoved : public SinglePacketMessage {
 public:
-    ProfileRemoved(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id);
+    ProfileRemoved(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
 };
 
 class ProfileEnabled : public SinglePacketMessage {
 public:
-    ProfileEnabled(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+    ProfileEnabled(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     uint16_t get_num_channels() const { return num_channels_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint16_t num_channels_;
 };
 
 class ProfileDisabled : public SinglePacketMessage {
 public:
-    ProfileDisabled(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, uint16_t num_channels);
+    ProfileDisabled(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, uint16_t num_channels);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     uint16_t get_num_channels() const { return num_channels_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint16_t num_channels_;
 };
 
 class ProfileDetailsReply : public SinglePacketMessage {
 public:
-    ProfileDetailsReply(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id,
+    ProfileDetailsReply(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id,
                        uint8_t target, const std::vector<uint8_t>& data);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     uint8_t get_target() const { return target_; }
     const std::vector<uint8_t>& get_data() const { return data_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     uint8_t target_;
     std::vector<uint8_t> data_;
 };
@@ -532,19 +531,18 @@ public:
 
 class ProfileSpecificData : public SinglePacketMessage {
 public:
-    ProfileSpecificData(const Common& common, const midicci::profiles::MidiCIProfileId& profile_id, const std::vector<uint8_t>& data);
+    ProfileSpecificData(const Common& common, const midicci::profilecommonrules::MidiCIProfileId& profile_id, const std::vector<uint8_t>& data);
     
     std::vector<uint8_t> serialize(const core::MidiCIDeviceConfiguration& config) const override;
     std::string get_label() const override;
     std::string get_body_string() const override;
     
-    const midicci::profiles::MidiCIProfileId& get_profile_id() const { return profile_id_; }
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile_id() const { return profile_id_; }
     const std::vector<uint8_t>& get_data() const { return data_; }
     
 private:
-    midicci::profiles::MidiCIProfileId profile_id_;
+    midicci::profilecommonrules::MidiCIProfileId profile_id_;
     std::vector<uint8_t> data_;
 };
 
-} // namespace messages
-} // namespace midi_ci
+} // namespace midi_ci::messages

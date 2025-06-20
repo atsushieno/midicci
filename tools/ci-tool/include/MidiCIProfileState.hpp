@@ -13,7 +13,7 @@ public:
     using StateChangedCallback = std::function<void()>;
     
     explicit MidiCIProfileState(uint8_t grp, uint8_t addr, 
-                               const midicci::profiles::MidiCIProfileId& prof,
+                               const midicci::profilecommonrules::MidiCIProfileId& prof,
                                bool en, uint16_t channels);
     ~MidiCIProfileState();
     
@@ -29,7 +29,7 @@ public:
     MutableState<uint8_t>& address();
     const MutableState<uint8_t>& address() const;
     
-    const midicci::profiles::MidiCIProfileId& get_profile() const noexcept;
+    const midicci::profilecommonrules::MidiCIProfileId& get_profile() const noexcept;
     
     MutableState<bool>& enabled();
     const MutableState<bool>& enabled() const;

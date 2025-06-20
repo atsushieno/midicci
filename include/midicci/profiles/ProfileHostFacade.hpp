@@ -8,7 +8,7 @@
 #include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 
 class ProfileHostFacade {
 public:

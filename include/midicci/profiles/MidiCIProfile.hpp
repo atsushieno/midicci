@@ -7,7 +7,7 @@
 #include <string>
 
 namespace midicci {
-    namespace profiles {
+    namespace profilecommonrules {
 
         struct MidiCIProfileId {
             std::vector<uint8_t> data;

@@ -5,9 +5,9 @@
 #include "midicci/json_ish/Json.hpp"
 #include "midicci/properties/PropertyCommonRules.hpp"
 
-using namespace midicci::properties;
-using namespace midicci::json_ish;
-using namespace midicci::properties::property_common_rules;
+using namespace midicci::propertycommonrules;
+using namespace midicci;
+using namespace midicci::propertycommonrules::property_common_rules;
 
 TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;

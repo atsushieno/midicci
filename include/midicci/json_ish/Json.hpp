@@ -8,7 +8,6 @@
 #include <cstdint>
 
 namespace midicci {
-namespace json_ish {
 
 class JsonValue;
 
@@ -106,5 +105,4 @@ private:
 std::string escape_string(const std::string& str);
 std::string unescape_string(const std::string& str);
 
-} // namespace json
 } // namespace midi_ci

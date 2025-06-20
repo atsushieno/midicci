@@ -1,14 +1,12 @@
 #pragma once
 
 #include "midicci/properties/ObservablePropertyList.hpp"
+#include "midicci/json_ish/Json.hpp"
 #include <string>
 #include <vector>
 
 namespace midicci {
-namespace json_ish {
-    class JsonValue;
-}
-namespace properties {
+namespace propertycommonrules {
 
 class CommonRulesPropertyMetadata : public PropertyMetadata {
 public:
@@ -42,7 +40,7 @@ public:
     
     std::string getExtra(const std::string& key) const override;
     
-    midicci::json_ish::JsonValue toJsonValue() const;
+    midicci::JsonValue toJsonValue() const;
 
 private:
     static const std::string default_media_type;

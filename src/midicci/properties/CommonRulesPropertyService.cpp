@@ -8,7 +8,7 @@
 #include <algorithm>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 using namespace property_common_rules;
 
@@ -42,59 +42,59 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyService::get_m
     return result;
 }
 
-messages::GetPropertyDataReply CommonRulesPropertyService::get_property_data(const messages::GetPropertyData& msg) {
+GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetPropertyData& msg) {
     std::string property_id = helper_->get_property_identifier_internal(msg.get_header());
     
-    json_ish::JsonObject header_obj;
-    header_obj[PropertyCommonHeaderKeys::RESOURCE] = json_ish::JsonValue(property_id);
+    JsonObject header_obj;
+    header_obj[PropertyCommonHeaderKeys::RESOURCE] = JsonValue(property_id);
     
     std::vector<uint8_t> body_data;
     
     if (property_id == PropertyResourceNames::DEVICE_INFO) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_device_info_json();
     } else if (property_id == PropertyResourceNames::CHANNEL_LIST) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_channel_list_json();
     } else if (property_id == PropertyResourceNames::JSON_SCHEMA) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_json_schema_json();
     } else if (property_id == PropertyResourceNames::RESOURCE_LIST) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = json_ish::JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_resource_list_json();
     } else {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = json_ish::JsonValue(PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
-        header_obj[PropertyCommonHeaderKeys::MESSAGE] = json_ish::JsonValue("Property not found: " + property_id);
+        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
+        header_obj[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Property not found: " + property_id);
     }
     
-    json_ish::JsonValue header(header_obj);
+    JsonValue header(header_obj);
     std::string json_str = header.serialize();
     std::vector<uint8_t> reply_header(json_str.begin(), json_str.end());
 
     auto& srcCommon = msg.get_common();
-    messages::Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
-    return messages::GetPropertyDataReply(common, msg.get_request_id(), reply_header, body_data);
+    Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
+    return GetPropertyDataReply(common, msg.get_request_id(), reply_header, body_data);
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::create_device_info_json() const {
     const auto& device_info = device_.get_device_info();
     
-    json_ish::JsonObject device_obj;
-    device_obj[DeviceInfoPropertyNames::MANUFACTURER_ID] = json_ish::JsonValue(static_cast<int>(device_info.manufacturer_id));
-    device_obj[DeviceInfoPropertyNames::FAMILY_ID] = json_ish::JsonValue(static_cast<int>(device_info.family_id));
-    device_obj[DeviceInfoPropertyNames::MODEL_ID] = json_ish::JsonValue(static_cast<int>(device_info.model_id));
-    device_obj["versionId"] = json_ish::JsonValue(static_cast<int>(device_info.version_id));
-    device_obj["manufacturer"] = json_ish::JsonValue(device_info.manufacturer);
-    device_obj["family"] = json_ish::JsonValue(device_info.family);
-    device_obj["model"] = json_ish::JsonValue(device_info.model);
-    device_obj["version"] = json_ish::JsonValue(device_info.version);
-    device_obj["serialNumber"] = json_ish::JsonValue(device_info.serial_number);
+    JsonObject device_obj;
+    device_obj[DeviceInfoPropertyNames::MANUFACTURER_ID] = JsonValue(static_cast<int>(device_info.manufacturer_id));
+    device_obj[DeviceInfoPropertyNames::FAMILY_ID] = JsonValue(static_cast<int>(device_info.family_id));
+    device_obj[DeviceInfoPropertyNames::MODEL_ID] = JsonValue(static_cast<int>(device_info.model_id));
+    device_obj["versionId"] = JsonValue(static_cast<int>(device_info.version_id));
+    device_obj["manufacturer"] = JsonValue(device_info.manufacturer);
+    device_obj["family"] = JsonValue(device_info.family);
+    device_obj["model"] = JsonValue(device_info.model);
+    device_obj["version"] = JsonValue(device_info.version);
+    device_obj["serialNumber"] = JsonValue(device_info.serial_number);
     
-    json_ish::JsonValue device_json(device_obj);
+    JsonValue device_json(device_obj);
     std::string json_str = device_json.serialize();
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
@@ -102,24 +102,24 @@ std::vector<uint8_t> CommonRulesPropertyService::create_device_info_json() const
 std::vector<uint8_t> CommonRulesPropertyService::create_channel_list_json() const {
     const auto& channel_list = device_.get_config().channel_list;
     
-    json_ish::JsonArray channels_array;
+    JsonArray channels_array;
     for (const auto& channel : channel_list.channels) {
-        json_ish::JsonObject channel_obj;
-        channel_obj["title"] = json_ish::JsonValue(channel.title);
-        channel_obj["channel"] = json_ish::JsonValue(channel.channel);
-        channel_obj["programTitle"] = json_ish::JsonValue(channel.program_title);
-        channel_obj["bankMSB"] = json_ish::JsonValue(static_cast<int>(channel.bank_msb));
-        channel_obj["bankLSB"] = json_ish::JsonValue(static_cast<int>(channel.bank_lsb));
-        channel_obj["program"] = json_ish::JsonValue(static_cast<int>(channel.program));
-        channel_obj["clusterChannelStart"] = json_ish::JsonValue(channel.cluster_channel_start);
-        channel_obj["clusterLength"] = json_ish::JsonValue(channel.cluster_length);
-        channel_obj["isOmniOn"] = json_ish::JsonValue(channel.is_omni_on);
-        channel_obj["isPolyMode"] = json_ish::JsonValue(channel.is_poly_mode);
-        channel_obj["clusterType"] = json_ish::JsonValue(channel.cluster_type);
-        channels_array.push_back(json_ish::JsonValue(channel_obj));
+        JsonObject channel_obj;
+        channel_obj["title"] = JsonValue(channel.title);
+        channel_obj["channel"] = JsonValue(channel.channel);
+        channel_obj["programTitle"] = JsonValue(channel.program_title);
+        channel_obj["bankMSB"] = JsonValue(static_cast<int>(channel.bank_msb));
+        channel_obj["bankLSB"] = JsonValue(static_cast<int>(channel.bank_lsb));
+        channel_obj["program"] = JsonValue(static_cast<int>(channel.program));
+        channel_obj["clusterChannelStart"] = JsonValue(channel.cluster_channel_start);
+        channel_obj["clusterLength"] = JsonValue(channel.cluster_length);
+        channel_obj["isOmniOn"] = JsonValue(channel.is_omni_on);
+        channel_obj["isPolyMode"] = JsonValue(channel.is_poly_mode);
+        channel_obj["clusterType"] = JsonValue(channel.cluster_type);
+        channels_array.push_back(JsonValue(channel_obj));
     }
     
-    json_ish::JsonValue channels_json(channels_array);
+    JsonValue channels_json(channels_array);
     std::string json_str = channels_json.serialize();
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
@@ -136,7 +136,7 @@ std::vector<uint8_t> CommonRulesPropertyService::create_json_schema_json() const
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() const {
-    json_ish::JsonArray resources_array;
+    JsonArray resources_array;
     
     for (const auto& property_id : get_property_ids()) {
         CommonRulesPropertyMetadata metadata(property_id);
@@ -155,13 +155,13 @@ std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() con
         }
     }
     
-    json_ish::JsonValue resources_json(resources_array);
+    JsonValue resources_json(resources_array);
     std::string json_str = resources_json.serialize();
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-messages::SetPropertyDataReply CommonRulesPropertyService::set_property_data(const messages::SetPropertyData& msg) {
-    return messages::SetPropertyDataReply(msg.get_common(), msg.get_request_id(), {});
+SetPropertyDataReply CommonRulesPropertyService::set_property_data(const SetPropertyData& msg) {
+    return SetPropertyDataReply(msg.get_common(), msg.get_request_id(), {});
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::encode_body(const std::vector<uint8_t>& data, const std::string& encoding) {
@@ -186,8 +186,8 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
     property_values_.erase(property_id);
 }
 
-messages::SubscribePropertyReply CommonRulesPropertyService::subscribe_property(const messages::SubscribeProperty& msg) {
-    return messages::SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
+SubscribePropertyReply CommonRulesPropertyService::subscribe_property(const SubscribeProperty& msg) {
+    return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
 std::string CommonRulesPropertyService::get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) {

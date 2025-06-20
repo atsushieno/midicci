@@ -7,7 +7,7 @@
 #include "MidiCIProfile.hpp"
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 
 class ObservableProfileList {
 public:

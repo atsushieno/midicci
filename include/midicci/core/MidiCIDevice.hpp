@@ -8,12 +8,12 @@
 #include "midicci/messages/Messenger.hpp"
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 class ProfileHostFacade;
 class ProfileClientFacade;
 }
 
-namespace properties {
+namespace propertycommonrules {
 class PropertyHostFacade;
 class PropertyClientFacade;
 }
@@ -21,13 +21,12 @@ class PropertyClientFacade;
 namespace core {
 
 class ClientConnection;
-class Message;
 struct MidiCIDeviceConfiguration;
 
 class MidiCIDevice {
 public:
     using MessageCallback = std::function<void(const Message&)>;
-    using MessageReceivedCallback = std::function<void(const messages::Message&)>;
+    using MessageReceivedCallback = std::function<void(const Message&)>;
     using ConnectionsChangedCallback = std::function<void()>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using LoggerFunction = std::function<void(const std::string&, bool)>;
@@ -69,16 +68,16 @@ public:
 
     void sendDiscovery();
     
-    profiles::ProfileHostFacade& get_profile_host_facade();
-    const profiles::ProfileHostFacade& get_profile_host_facade() const;
+    profilecommonrules::ProfileHostFacade& get_profile_host_facade();
+    const profilecommonrules::ProfileHostFacade& get_profile_host_facade() const;
     
-    properties::PropertyHostFacade& get_property_host_facade();
-    const properties::PropertyHostFacade& get_property_host_facade() const;
+    propertycommonrules::PropertyHostFacade& get_property_host_facade();
+    const propertycommonrules::PropertyHostFacade& get_property_host_facade() const;
     
     void set_logger(LoggerFunction logger);
     LoggerFunction get_logger() const;
     
-    messages::Messenger& get_messenger();
+    Messenger& get_messenger();
     
 private:
     class Impl;

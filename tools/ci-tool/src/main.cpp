@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Device model initialized successfully" << std::endl;
             
             const auto& profiles = device_model->get_local_profile_states();
-            std::cout << "Local profiles: " << profiles.size() << std::endl;
+            std::cout << "Local profilecommonrules: " << profiles.size() << std::endl;
             
             auto profiles_vec = profiles.to_vector();
             for (const auto& profile : profiles_vec) {

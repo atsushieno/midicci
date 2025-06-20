@@ -70,7 +70,7 @@ endif()
 
 add_subdirectory(tools)
 
-set(CPACK_PACKAGE_NAME "midi-ci-cpp")
+set(CPACK_PACKAGE_NAME "midicci")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
 include(CPack)

@@ -29,7 +29,7 @@ struct ClientSubscription {
 
 class ClientConnection {
 public:
-    using MessageCallback = std::function<void(const messages::Message&)>;
+    using MessageCallback = std::function<void(const Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
     explicit ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails target_device_details);
@@ -51,20 +51,20 @@ public:
     bool is_connected() const noexcept;
     void disconnect();
     
-    profiles::ProfileClientFacade& get_profile_client_facade();
-    const profiles::ProfileClientFacade& get_profile_client_facade() const;
+    profilecommonrules::ProfileClientFacade& get_profile_client_facade();
+    const profilecommonrules::ProfileClientFacade& get_profile_client_facade() const;
     
-    properties::PropertyClientFacade& get_property_client_facade();
-    const properties::PropertyClientFacade& get_property_client_facade() const;
+    propertycommonrules::PropertyClientFacade& get_property_client_facade();
+    const propertycommonrules::PropertyClientFacade& get_property_client_facade() const;
     
     void set_device_info(const DeviceInfo& device_info);
     const DeviceInfo* get_device_info() const;
     
-    void set_channel_list(const json_ish::JsonValue& channel_list);
-    const json_ish::JsonValue* get_channel_list() const;
+    void set_channel_list(const JsonValue& channel_list);
+    const JsonValue* get_channel_list() const;
     
-    void set_json_schema(const json_ish::JsonValue& json_schema);
-    const json_ish::JsonValue* get_json_schema() const;
+    void set_json_schema(const JsonValue& json_schema);
+    const JsonValue* get_json_schema() const;
     
 private:
     class Impl;

@@ -9,7 +9,7 @@
 #include "ObservablePropertyList.hpp"
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class MidiCIServicePropertyRules {
 public:
@@ -19,9 +19,9 @@ public:
     virtual std::vector<uint8_t> create_update_notification_header(const std::string& property_id, const std::map<std::string, std::string>& fields) = 0;
     virtual std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() = 0;
     
-    virtual messages::GetPropertyDataReply get_property_data(const messages::GetPropertyData& msg) = 0;
-    virtual messages::SetPropertyDataReply set_property_data(const messages::SetPropertyData& msg) = 0;
-    virtual messages::SubscribePropertyReply subscribe_property(const messages::SubscribeProperty& msg) = 0;
+    virtual GetPropertyDataReply get_property_data(const GetPropertyData& msg) = 0;
+    virtual SetPropertyDataReply set_property_data(const SetPropertyData& msg) = 0;
+    virtual SubscribePropertyReply subscribe_property(const SubscribeProperty& msg) = 0;
     
     virtual void add_metadata(std::unique_ptr<PropertyMetadata> property) = 0;
     virtual void remove_metadata(const std::string& property_id) = 0;

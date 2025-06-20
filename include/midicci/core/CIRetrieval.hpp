@@ -23,10 +23,10 @@ public:
     
     static uint32_t get_max_sysex_size(const std::vector<uint8_t>& sysex);
     
-    static std::pair<std::vector<midicci::profiles::MidiCIProfileId>, std::vector<midicci::profiles::MidiCIProfileId>>
+    static std::pair<std::vector<midicci::profilecommonrules::MidiCIProfileId>, std::vector<midicci::profilecommonrules::MidiCIProfileId>>
     get_profile_set(const std::vector<uint8_t>& sysex);
     
-    static midicci::profiles::MidiCIProfileId get_profile_id(const std::vector<uint8_t>& sysex);
+    static midicci::profilecommonrules::MidiCIProfileId get_profile_id(const std::vector<uint8_t>& sysex);
     
     static uint16_t get_profile_enabled_channels(const std::vector<uint8_t>& sysex);
     
@@ -43,7 +43,7 @@ public:
     static uint16_t get_property_chunk_index(const std::vector<uint8_t>& sysex);
 
 private:
-    static midicci::profiles::MidiCIProfileId get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
+    static midicci::profilecommonrules::MidiCIProfileId get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
 };
 
 } // namespace core

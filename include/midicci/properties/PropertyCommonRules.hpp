@@ -3,7 +3,7 @@
 #include <string>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 namespace property_common_rules {
 
 struct PropertyCommonHeaderKeys {

@@ -9,7 +9,7 @@
 #include <mutex>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class MidiCIClientPropertyRules;
 

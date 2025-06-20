@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "midicci/json_ish/Json.hpp"
 
-using namespace midicci::json_ish;
+using namespace midicci;
 
 class JsonSerializationTest : public ::testing::Test {
 protected:

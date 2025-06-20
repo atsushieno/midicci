@@ -7,9 +7,9 @@
 #include <cstdint>
 
 using namespace midicci::core;
-using namespace midicci::messages;
+using namespace midicci;
 using namespace midicci::core::constants;
-using namespace midicci::profiles;
+using namespace midicci::profilecommonrules;
 
 TEST(CIFactoryTest, testDiscoveryMessages) {
     uint8_t all_supported = 0x1C;

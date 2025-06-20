@@ -6,7 +6,6 @@
 #include <iomanip>
 
 namespace midicci {
-namespace json_ish {
 
 JsonValue& JsonValue::operator[](const std::string& key) {
     if (!is_object()) {
@@ -459,5 +458,4 @@ std::string unescape_string(const std::string& str) {
     return result;
 }
 
-} // namespace json
 } // namespace midi_ci

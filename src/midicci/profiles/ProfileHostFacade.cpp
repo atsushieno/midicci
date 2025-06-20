@@ -5,7 +5,7 @@
 #include <mutex>
 
 namespace midicci {
-namespace profiles {
+namespace profilecommonrules {
 
 class ProfileHostFacade::Impl {
 public:

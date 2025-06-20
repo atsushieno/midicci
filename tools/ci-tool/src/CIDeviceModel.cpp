@@ -103,7 +103,7 @@ void CIDeviceModel::send_discovery() {
 }
 
 void CIDeviceModel::send_profile_details_inquiry(uint8_t address, uint32_t muid,
-                                                 const midicci::profiles::MidiCIProfileId& profile, uint8_t target) {
+                                                 const midicci::profilecommonrules::MidiCIProfileId& profile, uint8_t target) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Sending profile details inquiry to MUID: 0x" << std::hex << muid << std::dec << std::endl;
 }
@@ -118,15 +118,15 @@ void CIDeviceModel::update_local_profile_target(const std::shared_ptr<MidiCIProf
     }
 }
 
-void CIDeviceModel::add_local_profile(const midicci::profiles::MidiCIProfile& profile) {
+void CIDeviceModel::add_local_profile(const midicci::profilecommonrules::MidiCIProfile& profile) {
     get_device()->get_profile_host_facade().add_profile(profile);
 }
 
-void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile_id) {
+void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const midicci::profilecommonrules::MidiCIProfileId& profile_id) {
     get_device()->get_profile_host_facade().remove_profile(group, address, profile_id);
 }
 
-void CIDeviceModel::add_local_property(const midicci::properties::PropertyMetadata& property) {
+void CIDeviceModel::add_local_property(const midicci::propertycommonrules::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
 
@@ -167,12 +167,12 @@ void CIDeviceModel::setup_event_listeners() {
     observable_profiles.add_profiles_changed_callback([this](auto change, const auto& profile) {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
         
-        if (change == midicci::profiles::ObservableProfileList::ProfilesChange::Added) {
+        if (change == midicci::profilecommonrules::ObservableProfileList::ProfilesChange::Added) {
             auto profile_state = std::make_shared<MidiCIProfileState>(
                 profile.group, profile.address, profile.profile, 
                 profile.enabled, profile.num_channels_requested);
             pimpl_->local_profile_states_.add(profile_state);
-        } else if (change == midicci::profiles::ObservableProfileList::ProfilesChange::Removed) {
+        } else if (change == midicci::profilecommonrules::ObservableProfileList::ProfilesChange::Removed) {
             pimpl_->local_profile_states_.remove_if([&profile](const auto& state) {
                 return state && state->get_profile().to_string() == profile.profile.to_string() &&
                        state->group().get() == profile.group && 
@@ -266,8 +266,8 @@ void CIDeviceModel::on_connections_changed() {
 
 void CIDeviceModel::add_test_profile_items() {
     std::vector<uint8_t> id1{0x7E, 0x00, 0x01, 0x02, 0x03}, id2{0x7E, 0x05, 0x06, 0x07, 0x08};
-    midicci::profiles::MidiCIProfile profile1{midicci::profiles::MidiCIProfileId{id1}, 0, 0x7E, true, 0};
-    midicci::profiles::MidiCIProfile profile2{midicci::profiles::MidiCIProfileId{id2}, 0, 0x7F, true, 0};
+    midicci::profilecommonrules::MidiCIProfile profile1{midicci::profilecommonrules::MidiCIProfileId{id1}, 0, 0x7E, true, 0};
+    midicci::profilecommonrules::MidiCIProfile profile2{midicci::profilecommonrules::MidiCIProfileId{id2}, 0, 0x7F, true, 0};
     get_device()->get_profile_host_facade().add_profile(profile1);
     get_device()->get_profile_host_facade().add_profile(profile2);
 }

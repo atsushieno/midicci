@@ -15,8 +15,8 @@ class ClientConnection::Impl {
 public:
     explicit Impl(uint32_t target_muid, MidiCIDevice& device, DeviceDetails& device_details, ClientConnection& conn)
         : target_muid_(target_muid), connected_(true),
-          profile_client_facade_(std::make_unique<profiles::ProfileClientFacade>(device, conn)),
-          property_client_facade_(std::make_unique<properties::PropertyClientFacade>(device, conn)),
+          profile_client_facade_(std::make_unique<profilecommonrules::ProfileClientFacade>(device, conn)),
+          property_client_facade_(std::make_unique<propertycommonrules::PropertyClientFacade>(device, conn)),
           channel_list_(nullptr), json_schema_(nullptr) {
         // those string fields are unknown at DiscoveryReply.
         device_info_ = std::make_unique<DeviceInfo>(device_details.manufacturer,
@@ -30,11 +30,11 @@ public:
     bool connected_;
     MessageCallback message_callback_;
     CIOutputSender ci_output_sender_;
-    std::unique_ptr<profiles::ProfileClientFacade> profile_client_facade_;
-    std::unique_ptr<properties::PropertyClientFacade> property_client_facade_;
+    std::unique_ptr<profilecommonrules::ProfileClientFacade> profile_client_facade_;
+    std::unique_ptr<propertycommonrules::PropertyClientFacade> property_client_facade_;
     std::unique_ptr<DeviceInfo> device_info_;
-    std::unique_ptr<json_ish::JsonValue> channel_list_;
-    std::unique_ptr<json_ish::JsonValue> json_schema_;
+    std::unique_ptr<JsonValue> channel_list_;
+    std::unique_ptr<JsonValue> json_schema_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -71,10 +71,10 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
             std::vector<uint8_t> midi_ci_data(sysex_data.begin() + 1, sysex_data.end() - 1);
             
             if (midi_ci_data.size() >= 6) {
-                midicci::messages::MessageType msg_type = static_cast<midicci::messages::MessageType>(midi_ci_data[4]);
+                midicci::MessageType msg_type = static_cast<midicci::MessageType>(midi_ci_data[4]);
                 
                 switch (msg_type) {
-                    case midicci::messages::MessageType::GetPropertyData: {
+                    case midicci::MessageType::GetPropertyData: {
                         if (midi_ci_data.size() >= 21) {
                             uint32_t source_muid = (midi_ci_data[5]) | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
                             uint32_t dest_muid = (midi_ci_data[9]) | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
@@ -88,14 +88,14 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
                                 uint16_t chunk_index = midi_ci_data[chunk_info_offset + 2] | (midi_ci_data[chunk_info_offset + 3] << 7);
                                 uint16_t chunk_data_size = midi_ci_data[chunk_info_offset + 4] | (midi_ci_data[chunk_info_offset + 5] << 7);
                                 
-                                midicci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
-                                midicci::messages::GetPropertyData msg(common, request_id, header);
+                                midicci::Common common(source_muid, dest_muid, 0x7F, 0);
+                                midicci::GetPropertyData msg(common, request_id, header);
                                 pimpl_->message_callback_(msg);
                             }
                         }
                         break;
                     }
-                    case midicci::messages::MessageType::SetPropertyData: {
+                    case midicci::MessageType::SetPropertyData: {
                         if (midi_ci_data.size() >= 21) {
                             uint32_t source_muid = (midi_ci_data[5]) | (midi_ci_data[6] << 7) | (midi_ci_data[7] << 14) | (midi_ci_data[8] << 21);
                             uint32_t dest_muid = (midi_ci_data[9]) | (midi_ci_data[10] << 7) | (midi_ci_data[11] << 14) | (midi_ci_data[12] << 21);
@@ -113,8 +113,8 @@ void ClientConnection::process_incoming_sysex(uint8_t group, const std::vector<u
                                     std::vector<uint8_t> body(midi_ci_data.begin() + chunk_info_offset + 6, 
                                                             midi_ci_data.begin() + chunk_info_offset + 6 + chunk_data_size);
                                     
-                                    midicci::messages::Common common(source_muid, dest_muid, 0x7F, 0);
-                                    midicci::messages::SetPropertyData msg(common, request_id, header, body);
+                                    midicci::Common common(source_muid, dest_muid, 0x7F, 0);
+                                    midicci::SetPropertyData msg(common, request_id, header, body);
                                     pimpl_->message_callback_(msg);
                                 }
                             }
@@ -139,22 +139,22 @@ void ClientConnection::disconnect() {
     pimpl_->connected_ = false;
 }
 
-profiles::ProfileClientFacade& ClientConnection::get_profile_client_facade() {
+profilecommonrules::ProfileClientFacade& ClientConnection::get_profile_client_facade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_client_facade_;
 }
 
-const profiles::ProfileClientFacade& ClientConnection::get_profile_client_facade() const {
+const profilecommonrules::ProfileClientFacade& ClientConnection::get_profile_client_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_client_facade_;
 }
 
-properties::PropertyClientFacade& ClientConnection::get_property_client_facade() {
+propertycommonrules::PropertyClientFacade& ClientConnection::get_property_client_facade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_client_facade_;
 }
 
-const properties::PropertyClientFacade& ClientConnection::get_property_client_facade() const {
+const propertycommonrules::PropertyClientFacade& ClientConnection::get_property_client_facade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_client_facade_;
 }
@@ -169,22 +169,22 @@ const DeviceInfo* ClientConnection::get_device_info() const {
     return pimpl_->device_info_.get();
 }
 
-void ClientConnection::set_channel_list(const json_ish::JsonValue& channel_list) {
+void ClientConnection::set_channel_list(const JsonValue& channel_list) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->channel_list_ = std::make_unique<json_ish::JsonValue>(channel_list);
+    pimpl_->channel_list_ = std::make_unique<JsonValue>(channel_list);
 }
 
-const json_ish::JsonValue* ClientConnection::get_channel_list() const {
+const JsonValue* ClientConnection::get_channel_list() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->channel_list_.get();
 }
 
-void ClientConnection::set_json_schema(const json_ish::JsonValue& json_schema) {
+void ClientConnection::set_json_schema(const JsonValue& json_schema) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->json_schema_ = std::make_unique<json_ish::JsonValue>(json_schema);
+    pimpl_->json_schema_ = std::make_unique<JsonValue>(json_schema);
 }
 
-const json_ish::JsonValue* ClientConnection::get_json_schema() const {
+const JsonValue* ClientConnection::get_json_schema() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->json_schema_.get();
 }

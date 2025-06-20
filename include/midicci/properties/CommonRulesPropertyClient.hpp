@@ -11,7 +11,7 @@
 #include <functional>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class CommonRulesPropertyClient : public MidiCIClientPropertyRules {
 public:
@@ -34,7 +34,7 @@ public:
     
     int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) override;
     
-    void process_property_subscription_result(void* sub, const messages::SubscribePropertyReply& msg) override;
+    void process_property_subscription_result(void* sub, const SubscribePropertyReply& msg) override;
     
     void property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) override;
     
@@ -53,7 +53,7 @@ private:
     std::vector<SubscriptionEntry> subscriptions_;
     
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list_for_body(const std::vector<uint8_t>& body);
-    void convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, json_ish::JsonValue& result);
+    void convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, JsonValue& result);
 };
 
 } // namespace properties

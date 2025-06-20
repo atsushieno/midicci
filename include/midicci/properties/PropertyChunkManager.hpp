@@ -6,7 +6,7 @@
 #include <utility>
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 class PropertyChunkManager {
 public:

@@ -10,7 +10,7 @@
 #include "../core/MidiCIDevice.hpp"
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 struct PropertySubscription {
     uint32_t subscriber_muid;
@@ -38,9 +38,9 @@ public:
     void remove_property(const std::string& property_id);
     void update_property(const std::string& property_id, const std::vector<uint8_t>& data);
     
-    messages::GetPropertyDataReply process_get_property_data(const messages::GetPropertyData& msg);
-    messages::SetPropertyDataReply process_set_property_data(const messages::SetPropertyData& msg);
-    messages::SubscribePropertyReply process_subscribe_property(const messages::SubscribeProperty& msg);
+    GetPropertyDataReply process_get_property_data(const GetPropertyData& msg);
+    SetPropertyDataReply process_set_property_data(const SetPropertyData& msg);
+    SubscribePropertyReply process_subscribe_property(const SubscribeProperty& msg);
     
     void notify_property_updated(const std::string& property_id);
     

@@ -46,15 +46,15 @@ public:
     std::shared_ptr<midicci::core::ClientConnection> get_connection() const;
     const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
     const MutableStateList<SubscriptionState>& get_subscriptions() const;
-    const MutableStateList<midicci::properties::PropertyValue>& get_properties() const;
+    const MutableStateList<midicci::propertycommonrules::PropertyValue>& get_properties() const;
     
     std::string get_device_info_value() const;
     const MutableState<std::string>& get_device_info() const;
     
-    void set_profile(uint8_t group, uint8_t address, const midicci::profiles::MidiCIProfileId& profile,
+    void set_profile(uint8_t group, uint8_t address, const midicci::profilecommonrules::MidiCIProfileId& profile,
                     bool new_enabled, uint16_t new_num_channels_requested);
     
-    std::vector<std::unique_ptr<midicci::properties::PropertyMetadata>> get_metadata_list() const;
+    std::vector<std::unique_ptr<midicci::propertycommonrules::PropertyMetadata>> get_metadata_list() const;
     
     void get_property_data(const std::string& resource, const std::string& encoding = "",
                           int paginate_offset = -1, int paginate_limit = -1);

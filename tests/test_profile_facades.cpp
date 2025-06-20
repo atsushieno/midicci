@@ -6,9 +6,9 @@
 #include "midicci/core/ClientConnection.hpp"
 #include "midicci/messages/Message.hpp"
 
-using namespace midicci::profiles;
+using namespace midicci::profilecommonrules;
 using namespace midicci::core;
-using namespace midicci::messages;
+using namespace midicci;
 
 TEST(ProfileFacadesTest, configureProfiles) {
     TestCIMediator mediator;
@@ -27,7 +27,7 @@ TEST(ProfileFacadesTest, configureProfiles) {
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
 
-    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size after addProfile";
+    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profilecommonrules.size after addProfile";
 
     auto& remoteProfiles = conn->get_profile_client_facade().get_profiles().get_profiles();
     ASSERT_GT(remoteProfiles.size(), 0) << "No entry in remoteProfiles";
@@ -91,5 +91,5 @@ TEST(ProfileFacadesTest, configureProfiles3) {
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
-    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profiles.size after requesting";
+    EXPECT_EQ(1, conn->get_profile_client_facade().get_profiles().get_profiles().size()) << "profilecommonrules.size after requesting";
 }

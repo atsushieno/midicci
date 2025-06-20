@@ -1,7 +1,7 @@
-#include "midicci/properties/MidiCIServicePropertyRules.hpp"
+#include "midicci/propertycommonrules/MidiCIServicePropertyRules.hpp"
 
 namespace midicci {
-namespace properties {
+namespace propertycommonrules {
 
 void MidiCIServicePropertyRules::add_property_catalog_updated_callback(std::function<void()> callback) {
     property_catalog_updated_callbacks_.push_back(callback);

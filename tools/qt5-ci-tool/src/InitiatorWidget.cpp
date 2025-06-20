@@ -471,12 +471,6 @@ void InitiatorWidget::updatePropertyList()
             for (const auto& meta : metadata) {
                 m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
             }
-            
-            if (metadata.empty()) {
-                m_propertyList->addItem("DeviceInfo");
-                m_propertyList->addItem("ChannelList");
-                m_propertyList->addItem("JSONSchema");
-            }
         }
     }
 }

@@ -88,6 +88,16 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const mi
 
 std::vector<std::unique_ptr<midicci::propertycommonrules::PropertyMetadata>> ClientConnectionModel::get_metadata_list() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->connection_) {
+        return {};
+    }
+    
+    auto& property_facade = pimpl_->connection_->get_property_client_facade();
+    auto* observable_properties = property_facade.get_properties();
+    if (observable_properties) {
+        return observable_properties->getMetadataList();
+    }
+    
     return {};
 }
 

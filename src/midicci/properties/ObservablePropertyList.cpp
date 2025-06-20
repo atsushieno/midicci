@@ -42,7 +42,38 @@ void ObservablePropertyList::notifyPropertyCatalogUpdated() {
 }
 
 ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
-    : logger_(std::move(logger)), property_client_(property_client) {}
+    : logger_(std::move(logger)), property_client_(property_client) {
+    
+    auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
+    if (common_rules_client) {
+        common_rules_client->add_property_catalog_updated_callback([this]() {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
+            
+            auto metadata_list = getMetadataList();
+            
+            std::map<std::string, PropertyValue> new_values;
+            
+            for (const auto& metadata : metadata_list) {
+                const std::string& property_id = metadata->getPropertyId();
+                
+                auto existing_it = values_.find(property_id);
+                if (existing_it != values_.end()) {
+                    new_values.emplace(property_id, existing_it->second);
+                } else {
+                    std::string media_type = metadata->getMediaType();
+                    if (media_type.empty()) {
+                        media_type = "application/json";
+                    }
+                    new_values.emplace(property_id, PropertyValue(property_id, media_type, std::vector<uint8_t>()));
+                }
+            }
+            
+            values_ = std::move(new_values);
+            
+            notifyPropertyCatalogUpdated();
+        });
+    }
+}
 
 std::vector<std::unique_ptr<PropertyMetadata>> ClientObservablePropertyList::getMetadataList() const {
     std::lock_guard<std::recursive_mutex> lock(mutex_);

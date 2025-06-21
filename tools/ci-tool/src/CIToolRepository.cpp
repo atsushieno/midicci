@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace ci_tool {
+namespace tooling {
 
 LogEntry::LogEntry(MessageDirection dir, const std::string& msg)
     : timestamp(std::chrono::system_clock::now()), direction(dir), message(msg) {}

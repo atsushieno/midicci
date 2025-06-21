@@ -11,7 +11,7 @@
 #include <QHeaderView>
 
 
-InitiatorWidget::InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
+InitiatorWidget::InitiatorWidget(tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
     , m_selectedDeviceMUID(0)
@@ -302,7 +302,7 @@ void InitiatorWidget::onSendDiscovery()
         auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
         if (deviceModel) {
             deviceModel->send_discovery();
-            m_repository->log("Sending discovery inquiry", ci_tool::MessageDirection::Out);
+            m_repository->log("Sending discovery inquiry", tooling::MessageDirection::Out);
         }
     }
 }
@@ -452,8 +452,8 @@ void InitiatorWidget::onRefreshProperty()
                     
                     m_repository->log(QString("Refreshing property: %1 with encoding: %2")
                         .arg(m_selectedProperty)
-                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
-                        ci_tool::MessageDirection::Out);
+                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
+                                      tooling::MessageDirection::Out);
                 }
                 break;
             }
@@ -492,7 +492,7 @@ void InitiatorWidget::onSubscribeProperty()
                         property_facade.send_unsubscribe_property(m_selectedProperty.toStdString());
                         m_subscribePropertyButton->setText("Subscribe");
                         m_repository->log(QString("Unsubscribing from property: %1")
-                            .arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+                            .arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
                     } else {
                         property_facade.send_subscribe_property(
                             m_selectedProperty.toStdString(),
@@ -501,8 +501,8 @@ void InitiatorWidget::onSubscribeProperty()
                         m_subscribePropertyButton->setText("Unsubscribe");
                         m_repository->log(QString("Subscribing to property: %1 with encoding: %2")
                             .arg(m_selectedProperty)
-                            .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
-                            ci_tool::MessageDirection::Out);
+                            .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
+                                          tooling::MessageDirection::Out);
                     }
                 }
                 break;
@@ -515,7 +515,7 @@ void InitiatorWidget::onRequestMidiMessageReport()
 {
     if (m_selectedDeviceMUID != 0) {
         uint8_t address = m_midiReportAddressSelector->currentData().toUInt();
-        m_repository->log(QString("Requesting MIDI Message Report for address %1").arg(address).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Requesting MIDI Message Report for address %1").arg(address).toStdString(), tooling::MessageDirection::Out);
     }
 }
 
@@ -578,7 +578,7 @@ void InitiatorWidget::updateConnectionInfo()
     
     const auto& connections = deviceModel->get_connections();
     auto connections_vec = connections.to_vector();
-    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    std::shared_ptr<tooling::ClientConnectionModel> targetConnection = nullptr;
     
     for (const auto& connection : connections_vec) {
         if (connection && connection->get_connection()) {
@@ -635,7 +635,7 @@ void InitiatorWidget::updateProfileList()
     
     const auto& connections = deviceModel->get_connections();
     auto connections_vec = connections.to_vector();
-    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    std::shared_ptr<tooling::ClientConnectionModel> targetConnection = nullptr;
     
     for (const auto& connection : connections_vec) {
         if (connection && connection->get_connection()) {
@@ -681,7 +681,7 @@ void InitiatorWidget::updatePropertyList()
     }
     
     auto& connections = deviceModel->get_connections();
-    std::shared_ptr<ci_tool::ClientConnectionModel> targetConnection = nullptr;
+    std::shared_ptr<tooling::ClientConnectionModel> targetConnection = nullptr;
     
     for (const auto& connection : connections) {
         if (connection && connection->get_connection()) {
@@ -853,8 +853,8 @@ void InitiatorWidget::onPropertyCommitChanges()
                     m_repository->log(QString("Committing changes to property: %1 (partial: %2, encoding: %3)")
                         .arg(m_selectedProperty)
                         .arg(isPartial ? "yes" : "no")
-                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(), 
-                        ci_tool::MessageDirection::Out);
+                        .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
+                                      tooling::MessageDirection::Out);
                     
                     m_propertyEditingMode.set(false);
                 }

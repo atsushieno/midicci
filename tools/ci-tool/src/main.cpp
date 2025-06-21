@@ -27,12 +27,12 @@ int main(int argc, char* argv[]) {
     std::signal(SIGTERM, signal_handler);
     
     try {
-        ci_tool::CIToolRepository repository;
+        tooling::CIToolRepository repository;
         
-        repository.add_log_callback([](const ci_tool::LogEntry& entry) {
+        repository.add_log_callback([](const tooling::LogEntry& entry) {
             auto time_t = std::chrono::system_clock::to_time_t(entry.timestamp);
             std::cout << "[" << std::put_time(std::localtime(&time_t), "%H:%M:%S") << "] ";
-            std::cout << (entry.direction == ci_tool::MessageDirection::In ? "IN " : "OUT") << " ";
+            std::cout << (entry.direction == tooling::MessageDirection::In ? "IN " : "OUT") << " ";
             std::cout << entry.message << std::endl;
         });
         
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        repository.log("MIDI-CI Tool started", ci_tool::MessageDirection::Out);
+        repository.log("MIDI-CI Tool started", tooling::MessageDirection::Out);
         
         std::cout << "\nMIDI-CI Tool is running. Press Ctrl+C to exit." << std::endl;
         std::cout << "Available commands:" << std::endl;
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
                     case 'd':
                         if (device_model) {
                             device_model->send_discovery();
-                            repository.log("Discovery inquiry sent", ci_tool::MessageDirection::Out);
+                            repository.log("Discovery inquiry sent", tooling::MessageDirection::Out);
                         }
                         break;
                     case 's':
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        repository.log("MIDI-CI Tool shutting down", ci_tool::MessageDirection::Out);
+        repository.log("MIDI-CI Tool shutting down", tooling::MessageDirection::Out);
         
         ci_manager->shutdown();
         midi_manager->shutdown();

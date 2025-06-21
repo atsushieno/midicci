@@ -4,7 +4,7 @@
 #include <vector>
 #include <mutex>
 
-namespace ci_tool {
+namespace tooling {
 
 template<typename CallbackType>
 class ObservableModel {

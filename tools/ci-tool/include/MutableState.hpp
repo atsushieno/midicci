@@ -3,7 +3,7 @@
 #include <functional>
 #include <mutex>
 
-namespace ci_tool {
+namespace tooling {
 
 template<typename T>
 class MutableState {

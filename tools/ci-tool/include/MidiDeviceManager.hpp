@@ -6,7 +6,7 @@
 #include <string>
 #include <cstdint>
 
-namespace ci_tool {
+namespace tooling {
 
 class MidiDeviceManager {
 public:

@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace ci_tool {
+namespace tooling {
 
 class MidiCIProfileState::Impl {
 public:

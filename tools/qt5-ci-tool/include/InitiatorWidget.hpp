@@ -18,7 +18,7 @@
 #include <memory>
 #include "../../ci-tool/include/MutableState.hpp"
 
-namespace ci_tool {
+namespace tooling {
     class CIToolRepository;
     class CIDeviceManager;
     class CIDeviceModel;
@@ -29,7 +29,7 @@ class InitiatorWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit InitiatorWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit InitiatorWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 signals:
     void deviceConnected(int muid);
@@ -61,7 +61,7 @@ private:
     void updateProfileList();
     void updatePropertyList();
 
-    ci_tool::CIToolRepository* m_repository;
+    tooling::CIToolRepository* m_repository;
     
     QPushButton *m_sendDiscoveryButton;
     QComboBox *m_deviceSelector;
@@ -101,13 +101,13 @@ private:
     
     size_t m_lastConnectionCount;
     
-    ci_tool::MutableState<bool> m_propertyEditingMode;
-    ci_tool::MutableState<QString> m_propertyValueText;
-    ci_tool::MutableState<QString> m_propertyResId;
-    ci_tool::MutableState<QString> m_propertySelectedEncoding;
-    ci_tool::MutableState<QString> m_propertyPartialContent;
-    ci_tool::MutableState<int> m_propertyPaginateOffset;
-    ci_tool::MutableState<int> m_propertyPaginateLimit;
+    tooling::MutableState<bool> m_propertyEditingMode;
+    tooling::MutableState<QString> m_propertyValueText;
+    tooling::MutableState<QString> m_propertyResId;
+    tooling::MutableState<QString> m_propertySelectedEncoding;
+    tooling::MutableState<QString> m_propertyPartialContent;
+    tooling::MutableState<int> m_propertyPaginateOffset;
+    tooling::MutableState<int> m_propertyPaginateLimit;
     
     QCheckBox *m_propertyEditCheckbox;
     QLineEdit *m_propertyResIdEdit;

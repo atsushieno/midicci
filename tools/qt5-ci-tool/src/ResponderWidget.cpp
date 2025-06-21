@@ -14,7 +14,7 @@
 #include <QInputDialog>
 
 
-ResponderWidget::ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
+ResponderWidget::ResponderWidget(tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
     , m_lastProfileCount(0)
@@ -219,7 +219,7 @@ void ResponderWidget::onAddProfile()
     QString profileId = QInputDialog::getText(this, "Add Profile", "Profile ID (format: XX:XX:XX:XX:XX):", QLineEdit::Normal, "00:00:00:00:00", &ok);
     if (ok && !profileId.isEmpty()) {
         m_profileList->addItem(profileId);
-        m_repository->log(QString("Added profile: %1").arg(profileId).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Added profile: %1").arg(profileId).toStdString(), tooling::MessageDirection::Out);
     }
 }
 
@@ -231,7 +231,7 @@ void ResponderWidget::onEditProfile()
         QString newProfileId = QInputDialog::getText(this, "Edit Profile", "Profile ID:", QLineEdit::Normal, item->text(), &ok);
         if (ok && !newProfileId.isEmpty()) {
             item->setText(newProfileId);
-            m_repository->log(QString("Updated profile to: %1").arg(newProfileId).toStdString(), ci_tool::MessageDirection::Out);
+            m_repository->log(QString("Updated profile to: %1").arg(newProfileId).toStdString(), tooling::MessageDirection::Out);
         }
     }
 }
@@ -242,7 +242,7 @@ void ResponderWidget::onDeleteProfile()
     if (item) {
         int ret = QMessageBox::question(this, "Delete Profile", QString("Delete profile '%1'?").arg(item->text()));
         if (ret == QMessageBox::Yes) {
-            m_repository->log(QString("Deleted profile: %1").arg(item->text()).toStdString(), ci_tool::MessageDirection::Out);
+            m_repository->log(QString("Deleted profile: %1").arg(item->text()).toStdString(), tooling::MessageDirection::Out);
             delete item;
         }
     }
@@ -260,7 +260,7 @@ void ResponderWidget::onAddTestProfiles()
     }
     
     deviceModel->add_test_profile_items();
-    m_repository->log("Added test profile items", ci_tool::MessageDirection::Out);
+    m_repository->log("Added test profile items", tooling::MessageDirection::Out);
 }
 
 void ResponderWidget::onPropertySelectionChanged()
@@ -280,7 +280,7 @@ void ResponderWidget::onAddProperty()
     QString propertyId = QInputDialog::getText(this, "Add Property", "Property ID:", QLineEdit::Normal, QString("X-%1").arg(rand() % 10000), &ok);
     if (ok && !propertyId.isEmpty()) {
         m_propertyList->addItem(propertyId);
-        m_repository->log(QString("Added property: %1").arg(propertyId).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Added property: %1").arg(propertyId).toStdString(), tooling::MessageDirection::Out);
     }
 }
 
@@ -290,7 +290,7 @@ void ResponderWidget::onDeleteProperty()
     if (item) {
         int ret = QMessageBox::question(this, "Delete Property", QString("Delete property '%1'?").arg(item->text()));
         if (ret == QMessageBox::Yes) {
-            m_repository->log(QString("Deleted property: %1").arg(item->text()).toStdString(), ci_tool::MessageDirection::Out);
+            m_repository->log(QString("Deleted property: %1").arg(item->text()).toStdString(), tooling::MessageDirection::Out);
             delete item;
         }
     }
@@ -300,14 +300,14 @@ void ResponderWidget::onUpdatePropertyValue()
 {
     if (!m_selectedProperty.isEmpty()) {
         QString value = m_propertyValueEdit->toPlainText();
-        m_repository->log(QString("Updated property value for: %1").arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Updated property value for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
     }
 }
 
 void ResponderWidget::onUpdatePropertyMetadata()
 {
     if (!m_selectedProperty.isEmpty()) {
-        m_repository->log(QString("Updated property metadata for: %1").arg(m_selectedProperty).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Updated property metadata for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
     }
 }
 

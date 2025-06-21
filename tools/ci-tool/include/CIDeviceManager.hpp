@@ -12,7 +12,7 @@ class MidiCIDevice;
 
 using namespace midicci;
 
-namespace ci_tool {
+namespace tooling {
 
 class CIToolRepository;
 class MidiDeviceManager;

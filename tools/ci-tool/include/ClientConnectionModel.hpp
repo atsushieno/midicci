@@ -11,7 +11,7 @@
 
 using namespace midicci;
 
-namespace ci_tool {
+namespace tooling {
 
 class CIDeviceModel;
 class MidiCIProfileState;

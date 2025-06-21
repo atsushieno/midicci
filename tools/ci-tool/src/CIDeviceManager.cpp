@@ -9,7 +9,7 @@
 #include <mutex>
 #include <iostream>
 
-namespace ci_tool {
+namespace tooling {
 
 class CIDeviceManager::Impl {
 public:

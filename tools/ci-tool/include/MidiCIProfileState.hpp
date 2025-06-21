@@ -6,7 +6,7 @@
 #include <midicci/profiles/MidiCIProfile.hpp>
 #include "MutableState.hpp"
 
-namespace ci_tool {
+namespace tooling {
 
 class MidiCIProfileState {
 public:

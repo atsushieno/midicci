@@ -9,7 +9,7 @@
 #include "ClientConnectionModel.hpp"
 #include "MutableState.hpp"
 
-namespace ci_tool {
+namespace tooling {
 
 class CIDeviceManager;
 

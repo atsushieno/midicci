@@ -9,7 +9,7 @@ class ResponderWidget;
 class LogWidget;
 class SettingsWidget;
 
-namespace ci_tool {
+namespace tooling {
     class CIToolRepository;
 }
 

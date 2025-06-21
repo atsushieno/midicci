@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace ci_tool {
+namespace tooling {
     class CIToolRepository;
 }
 
@@ -12,6 +12,6 @@ void initializeAppModel();
 
 void shutdownAppModel();
 
-ci_tool::CIToolRepository& getAppModel();
+tooling::CIToolRepository& getAppModel();
 
 } // namespace qt5_ci_tool

@@ -9,7 +9,7 @@
 #include <QHeaderView>
 #include <memory>
 
-namespace ci_tool {
+namespace tooling {
     class CIToolRepository;
 }
 
@@ -18,7 +18,7 @@ class LogWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit LogWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit LogWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 private slots:
     void onClearLogs();
@@ -29,7 +29,7 @@ private:
     void setupConnections();
     void updateLogDisplay();
 
-    ci_tool::CIToolRepository* m_repository;
+    tooling::CIToolRepository* m_repository;
     
     QPushButton *m_clearButton;
     QTableWidget *m_logTable;

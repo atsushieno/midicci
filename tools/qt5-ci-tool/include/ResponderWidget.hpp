@@ -16,7 +16,7 @@
 #include <QSpinBox>
 #include <memory>
 
-namespace ci_tool {
+namespace tooling {
     class CIToolRepository;
     class CIDeviceModel;
 }
@@ -26,7 +26,7 @@ class ResponderWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit ResponderWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit ResponderWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 signals:
     void localProfilesChanged();
@@ -55,7 +55,7 @@ private:
     void updatePropertyList();
     void updatePropertyDetails();
 
-    ci_tool::CIToolRepository* m_repository;
+    tooling::CIToolRepository* m_repository;
     
     QSplitter *m_profileSplitter;
     QListWidget *m_profileList;

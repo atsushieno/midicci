@@ -21,7 +21,7 @@ class SettingsWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit SettingsWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit SettingsWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 private slots:
     void onInputDeviceChanged(int index);
@@ -39,7 +39,7 @@ private:
     void updateDeviceLists();
     void updateDeviceConfiguration();
 
-    ci_tool::CIToolRepository* m_repository;
+    tooling::CIToolRepository* m_repository;
     
     QGroupBox *m_midiTransportGroup;
     QComboBox *m_inputDeviceCombo;

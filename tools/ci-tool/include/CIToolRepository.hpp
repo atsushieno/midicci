@@ -15,7 +15,7 @@ class Message;
 }
 }
 
-namespace ci_tool {
+namespace tooling {
 
 enum class MessageDirection {
     In,

@@ -1,15 +1,14 @@
 #pragma once
 
-#include "midicci/properties/ObservablePropertyList.hpp"
-#include "midicci/properties/MidiCIServicePropertyRules.hpp"
-#include "midicci/properties/PropertyCommonRules.hpp"
-#include "midicci/json_ish/Json.hpp"
-#include "midicci/messages/Message.hpp"
+#include "midicci/ObservablePropertyList.hpp"
+#include "midicci/commonproperties/MidiCIServicePropertyRules.hpp"
+#include "midicci/PropertyCommonRules.hpp"
+#include "midicci/Json.hpp"
+#include "midicci/Message.hpp"
 #include <unordered_map>
 
-using namespace midicci::propertycommonrules;
+using namespace midicci::commonproperties;
 using namespace midicci;
-using namespace midicci::propertycommonrules::property_common_rules;
 
 class TestPropertyRules : public MidiCIServicePropertyRules {
 public:

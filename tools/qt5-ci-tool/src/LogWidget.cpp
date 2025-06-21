@@ -1,5 +1,5 @@
 #include "LogWidget.hpp"
-#include "CIToolRepository.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
 #include "AppModel.hpp"
 
 #include <QVBoxLayout>
@@ -9,7 +9,9 @@
 #include <QMetaObject>
 #include <ctime>
 
-LogWidget::LogWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
+namespace midicci::tooling::qt5 {
+
+LogWidget::LogWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
 {
@@ -43,7 +45,7 @@ void LogWidget::setupConnections()
     connect(m_clearButton, &QPushButton::clicked, this, &LogWidget::onClearLogs);
     
     if (m_repository) {
-        m_repository->add_log_callback([this](const ci_tool::LogEntry& entry) {
+        m_repository->add_log_callback([this](const midicci::tooling::LogEntry& entry) {
             QMetaObject::invokeMethod(this, "onNewLogEntry", Qt::QueuedConnection);
         });
     }
@@ -79,10 +81,11 @@ void LogWidget::updateLogDisplay()
         
         m_logTable->setItem(i, 0, new QTableWidgetItem(QString::fromStdString(time_str)));
         m_logTable->setItem(i, 1, new QTableWidgetItem(
-            entry.direction == ci_tool::MessageDirection::In ? "In" : "Out"));
+                entry.direction == midicci::tooling::MessageDirection::In ? "In" : "Out"));
         m_logTable->setItem(i, 2, new QTableWidgetItem("MIDI"));
         m_logTable->setItem(i, 3, new QTableWidgetItem(QString::fromStdString(entry.message)));
     }
     
     m_logTable->scrollToBottom();
+}
 }

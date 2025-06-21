@@ -2,16 +2,15 @@
 
 #include <memory>
 
-namespace ci_tool {
-    class CIToolRepository;
-}
+#include "midicci/tooling/CIToolRepository.hpp"
 
-namespace qt5_ci_tool {
+
+namespace midicci::tooling::qt5 {
 
 void initializeAppModel();
 
 void shutdownAppModel();
 
-ci_tool::CIToolRepository& getAppModel();
+midicci::tooling::CIToolRepository& getAppModel();
 
 } // namespace qt5_ci_tool

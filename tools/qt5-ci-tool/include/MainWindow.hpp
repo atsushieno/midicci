@@ -3,15 +3,12 @@
 #include <QMainWindow>
 #include <QTabWidget>
 #include <memory>
+#include "InitiatorWidget.hpp"
+#include "ResponderWidget.hpp"
+#include "LogWidget.hpp"
+#include "SettingsWidget.hpp"
 
-class InitiatorWidget;
-class ResponderWidget;
-class LogWidget;
-class SettingsWidget;
-
-namespace ci_tool {
-    class CIToolRepository;
-}
+namespace midicci::tooling::qt5 {
 
 class MainWindow : public QMainWindow
 {
@@ -33,6 +30,5 @@ private:
     ResponderWidget *m_responderWidget;
     LogWidget *m_logWidget;
     SettingsWidget *m_settingsWidget;
-    
-
 };
+}

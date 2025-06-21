@@ -4,6 +4,8 @@
 #include "MainWindow.hpp"
 #include "AppModel.hpp"
 
+using namespace midicci::tooling::qt5;
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -12,14 +14,14 @@ int main(int argc, char *argv[])
     app.setApplicationVersion("1.0.0");
     app.setOrganizationName("MIDI-CI Tools");
     
-    qt5_ci_tool::initializeAppModel();
+    initializeAppModel();
     
     MainWindow window;
     window.show();
     
     int result = app.exec();
     
-    qt5_ci_tool::shutdownAppModel();
+    shutdownAppModel();
     
     return result;
 }

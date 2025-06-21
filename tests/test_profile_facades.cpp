@@ -1,12 +1,11 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include "midicci/profiles/ProfileClientFacade.hpp"
-#include "midicci/profiles/ProfileHostFacade.hpp"
-#include "midicci/profiles/MidiCIProfile.hpp"
-#include "midicci/core/ClientConnection.hpp"
-#include "midicci/messages/Message.hpp"
+#include "midicci/ProfileClientFacade.hpp"
+#include "midicci/ProfileHostFacade.hpp"
+#include "midicci/MidiCIProfile.hpp"
+#include "midicci/ClientConnection.hpp"
+#include "midicci/Message.hpp"
 
-using namespace midicci::profilecommonrules;
 using namespace midicci;
 
 TEST(ProfileFacadesTest, configureProfiles) {

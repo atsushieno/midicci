@@ -35,7 +35,7 @@ add_executable(midicci-gui ${SOURCES} ${HEADERS})
 
 target_include_directories(midicci-gui PRIVATE
     include
-    ../ci-tool/include
+    ../tooling/include
     ../../include
 )
 

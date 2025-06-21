@@ -1,5 +1,5 @@
 #include "SettingsWidget.hpp"
-#include "CIToolRepository.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
 #include "AppModel.hpp"
 
 #include <QVBoxLayout>
@@ -10,7 +10,9 @@
 #include <QMessageBox>
 #include <QStandardPaths>
 
-SettingsWidget::SettingsWidget(ci_tool::CIToolRepository* repository, QWidget *parent)
+namespace midicci::tooling::qt5 {
+
+SettingsWidget::SettingsWidget(tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
 {
@@ -158,7 +160,7 @@ void SettingsWidget::onInputDeviceChanged(int index)
         QString deviceName = m_inputDeviceCombo->itemText(index);
         auto midiManager = m_repository->get_midi_device_manager();
         if (midiManager && midiManager->set_input_device(deviceName.toStdString())) {
-            m_repository->log(QString("Selected input device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+            m_repository->log(QString("Selected input device: %1").arg(deviceName).toStdString(), tooling::MessageDirection::Out);
         }
     }
 }
@@ -169,7 +171,7 @@ void SettingsWidget::onOutputDeviceChanged(int index)
         QString deviceName = m_outputDeviceCombo->itemText(index);
         auto midiManager = m_repository->get_midi_device_manager();
         if (midiManager && midiManager->set_output_device(deviceName.toStdString())) {
-            m_repository->log(QString("Selected output device: %1").arg(deviceName).toStdString(), ci_tool::MessageDirection::Out);
+            m_repository->log(QString("Selected output device: %1").arg(deviceName).toStdString(), tooling::MessageDirection::Out);
         }
     }
 }
@@ -178,7 +180,7 @@ void SettingsWidget::onLoadConfiguration()
 {
     QString fileName = QFileDialog::getOpenFileName(this, "Load Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), "JSON Files (*.json_ish)");
     if (!fileName.isEmpty() && m_repository) {
-        m_repository->log(QString("Loading configuration from: %1").arg(fileName).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Loading configuration from: %1").arg(fileName).toStdString(), tooling::MessageDirection::Out);
         updateDeviceConfiguration();
     }
 }
@@ -187,14 +189,14 @@ void SettingsWidget::onSaveConfiguration()
 {
     QString fileName = QFileDialog::getSaveFileName(this, "Save Configuration", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/midicci.settings.json", "JSON Files (*.json)");
     if (!fileName.isEmpty() && m_repository) {
-        m_repository->log(QString("Saving configuration to: %1").arg(fileName).toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("Saving configuration to: %1").arg(fileName).toStdString(), tooling::MessageDirection::Out);
     }
 }
 
 void SettingsWidget::onUpdateDeviceInfo()
 {
     if (m_repository) {
-        m_repository->log("Updated device information", ci_tool::MessageDirection::Out);
+        m_repository->log("Updated device information", tooling::MessageDirection::Out);
     }
 }
 
@@ -202,21 +204,21 @@ void SettingsWidget::onUpdateJsonSchema()
 {
     if (m_repository) {
         QString schema = m_jsonSchemaEdit->toPlainText();
-        m_repository->log("Updated JSON schema", ci_tool::MessageDirection::Out);
+        m_repository->log("Updated JSON schema", tooling::MessageDirection::Out);
     }
 }
 
 void SettingsWidget::onWorkaroundJUCESubscriptionChanged(bool enabled)
 {
     if (m_repository) {
-        m_repository->log(QString("JUCE subscription workaround: %1").arg(enabled ? "enabled" : "disabled").toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("JUCE subscription workaround: %1").arg(enabled ? "enabled" : "disabled").toStdString(), tooling::MessageDirection::Out);
     }
 }
 
 void SettingsWidget::onWorkaroundJUCEProfileChannelsChanged(bool enabled)
 {
     if (m_repository) {
-        m_repository->log(QString("JUCE profile channels workaround: %1").arg(enabled ? "enabled" : "disabled").toStdString(), ci_tool::MessageDirection::Out);
+        m_repository->log(QString("JUCE profile channels workaround: %1").arg(enabled ? "enabled" : "disabled").toStdString(), tooling::MessageDirection::Out);
     }
 }
 
@@ -257,8 +259,9 @@ void SettingsWidget::updateDeviceConfiguration()
     m_serialNumberEdit->setText("12345");
     m_maxConnectionsSpin->setValue(8);
     
-    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"propertycommonrules\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
+    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"commonproperties\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
     
     m_workaroundJUCESubscriptionCheck->setChecked(false);
     m_workaroundJUCEProfileChannelsCheck->setChecked(false);
+}
 }

@@ -1,13 +1,12 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
 #include "TestPropertyRules.hpp"
-#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/json_ish/Json.hpp"
-#include "midicci/properties/PropertyCommonRules.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/Json.hpp"
+#include "midicci/PropertyCommonRules.hpp"
 
-using namespace midicci::propertycommonrules;
+using namespace midicci::commonproperties;
 using namespace midicci;
-using namespace midicci::propertycommonrules::property_common_rules;
 
 TEST(PropertyFacadesTest, propertyExchange1) {
     TestCIMediator mediator;

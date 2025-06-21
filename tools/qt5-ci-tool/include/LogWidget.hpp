@@ -8,17 +8,16 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <memory>
+#include <midicci/tooling/CIToolRepository.hpp>
 
-namespace ci_tool {
-    class CIToolRepository;
-}
+namespace midicci::tooling::qt5 {
 
 class LogWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit LogWidget(ci_tool::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit LogWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 private slots:
     void onClearLogs();
@@ -29,8 +28,9 @@ private:
     void setupConnections();
     void updateLogDisplay();
 
-    ci_tool::CIToolRepository* m_repository;
-    
+    midicci::tooling::CIToolRepository* m_repository;
+
     QPushButton *m_clearButton;
     QTableWidget *m_logTable;
 };
+}

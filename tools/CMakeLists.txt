@@ -1,4 +1,4 @@
-add_subdirectory(ci-tool)
+add_subdirectory(tooling)
 
 # Make Qt5 tool optional - use Qt detection from top-level
 if(Qt6_FOUND OR Qt5_FOUND)

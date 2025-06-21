@@ -14,8 +14,8 @@
         "../../../include"
       ],
       "libraries": [
-        "/home/ubuntu/repos/midicci/build/tools/ci-tool/libmidicci-tooling.a",
-        "/home/ubuntu/repos/midicci/build/src/libmidicci.so"
+        "/home/ubuntu/repos/midicci/tools/ci-tool/libmidicci-tooling.a",
+        "/home/ubuntu/repos/midicci/src/libmidicci.so"
       ],
       "dependencies": [
         "<!(node -p \"require('node-addon-api').gyp\")"

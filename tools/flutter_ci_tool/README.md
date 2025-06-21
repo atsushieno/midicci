@@ -56,15 +56,23 @@ The application uses Flutter for the UI with FFI (Foreign Function Interface) to
   - `CIToolProvider`: Main application state and native bridge
   - `CIDeviceProvider`: MIDI device and connection management
 
-- **FFI Bridge**: Direct communication with C++ library
+- **FFI Bridge**: Direct communication with C++ library (`midicci::tooling` namespace)
   - `MidiCCIBindings`: Native function bindings
   - `MidiCIBridge`: High-level interface
+  - `ci_tool_wrapper.cpp`: C++ wrapper for FFI
 
 - **Screens**: Tab-based interface
   - Initiator: Device discovery and communication
   - Responder: Local profile and property management  
   - Log: Message logging and debugging
   - Settings: Configuration and device selection
+
+### Latest Updates (Post-Merge)
+
+- ✅ **Merged with main branch**: Updated to latest midicci structure
+- ✅ **Namespace updates**: Uses `midicci::tooling` namespace
+- ✅ **Include path fixes**: Updated for flattened header structure
+- ✅ **CMake integration**: Links with `midicci-tooling` library
 
 ## Integration with CMake Build
 

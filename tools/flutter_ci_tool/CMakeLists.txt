@@ -26,7 +26,7 @@ add_library(midicci-flutter-wrapper SHARED ${WRAPPER_SOURCES} ${WRAPPER_HEADERS}
 
 target_include_directories(midicci-flutter-wrapper PRIVATE
     native
-    ../ci-tool/include
+    ../tooling/include
     ../../include
 )
 

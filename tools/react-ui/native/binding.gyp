@@ -10,12 +10,12 @@
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "../ci-tool/include",
-        "../../src"
+        "../../ci-tool/include",
+        "../../../include"
       ],
       "libraries": [
-        "../build/tools/ci-tool/libmidicci-tooling.a",
-        "../build/src/libmidicci.a"
+        "/home/ubuntu/repos/midicci/build/tools/ci-tool/libmidicci-tooling.a",
+        "/home/ubuntu/repos/midicci/build/src/libmidicci.so"
       ],
       "dependencies": [
         "<!(node -p \"require('node-addon-api').gyp\")"

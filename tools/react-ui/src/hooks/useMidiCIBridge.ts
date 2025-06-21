@@ -9,9 +9,17 @@ import {
   MidiCIProfileId,
   PropertyMetadata
 } from '../types/midi';
+import { NativeMidiCIBridge } from '../bridge/NativeMidiCIBridge';
 
 export function useMidiCIBridge() {
-  const [bridge] = useState<MidiCINativeBridge>(() => new MockMidiCINativeBridge());
+  const [bridge] = useState<MidiCINativeBridge>(() => {
+    try {
+      return new NativeMidiCIBridge();
+    } catch (error) {
+      console.warn('Failed to load native bridge, falling back to mock:', error);
+      return new MockMidiCINativeBridge();
+    }
+  });
   const [isInitialized, setIsInitialized] = useState(false);
   const [connections, setConnections] = useState<ClientConnectionModel[]>([]);
   const [profiles, setProfiles] = useState<MidiCIProfileState[]>([]);

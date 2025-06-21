@@ -1,0 +1,16 @@
+{
+  "name": "midicci-native-bridge",
+  "version": "1.0.0",
+  "description": "Native bridge for MIDICCI React UI",
+  "main": "build/Release/midicci_bridge.node",
+  "scripts": {
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean"
+  },
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.0.1"
+  }
+}

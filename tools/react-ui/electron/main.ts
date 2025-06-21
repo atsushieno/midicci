@@ -3,10 +3,17 @@ import { join } from 'path';
 
 const isDev = process.env.IS_DEV === 'true';
 
+const libPath = '/home/ubuntu/repos/midicci/src';
+const currentPath = process.env.LD_LIBRARY_PATH || '';
+if (!currentPath.includes(libPath)) {
+  process.env.LD_LIBRARY_PATH = libPath + ':' + currentPath;
+}
+
 let nativeBridge: any = null;
 
 try {
   nativeBridge = require('../../native/build/Release/midicci_bridge.node');
+  console.log('✅ Native bridge loaded successfully in main process');
 } catch (error) {
   console.warn('Failed to load native bridge in main process:', error);
 }

@@ -41,8 +41,8 @@ export class NativeMidiCIBridge implements MidiCINativeBridge {
   async initialize(): Promise<void> {
     try {
       await this.repository.initialize();
-      this.deviceManager = new nativeBridge.CIDeviceManager(this.repository);
-      this.midiManager = new nativeBridge.MidiDeviceManager();
+      this.deviceManager = await this.repository.getCIDeviceManager();
+      this.midiManager = await this.repository.getMidiDeviceManager();
       
       if (this.midiManager) {
         await this.midiManager.initialize();

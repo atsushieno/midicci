@@ -298,37 +298,25 @@ export class MockMidiCINativeBridge implements MidiCINativeBridge {
   }
 
   async getAvailableDevices(): Promise<{ inputs: MidiDevice[], outputs: MidiDevice[] }> {
-    const mockInputDevices: MidiDevice[] = [
-      { id: 'mock-input-1', name: 'System MIDI Input', type: 'input' },
-      { id: 'mock-input-2', name: 'Virtual MIDI Device 1', type: 'input' },
-      { id: 'mock-input-3', name: 'USB MIDI Interface', type: 'input' }
-    ];
-    
-    const mockOutputDevices: MidiDevice[] = [
-      { id: 'mock-output-1', name: 'System MIDI Output', type: 'output' },
-      { id: 'mock-output-2', name: 'Virtual MIDI Device 1', type: 'output' },
-      { id: 'mock-output-3', name: 'USB MIDI Interface', type: 'output' }
-    ];
-    
-    return { inputs: mockInputDevices, outputs: mockOutputDevices };
+    return { inputs: [], outputs: [] };
   }
 
   async setInputDevice(deviceId: string): Promise<boolean> {
     this.addLog(`Setting input device: ${deviceId}`, MessageDirection.Out);
-    return true;
+    return false;
   }
 
   async setOutputDevice(deviceId: string): Promise<boolean> {
     this.addLog(`Setting output device: ${deviceId}`, MessageDirection.Out);
-    return true;
+    return false;
   }
 
   async getCurrentInputDevice(): Promise<string> {
-    return 'mock-input-1';
+    return '';
   }
 
   async getCurrentOutputDevice(): Promise<string> {
-    return 'mock-output-1';
+    return '';
   }
 
   onConnectionsChanged(callback: (connections: ClientConnectionModel[]) => void): void {

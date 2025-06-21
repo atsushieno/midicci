@@ -17,6 +17,14 @@ function loadNativeBridge() {
   
   try {
     if (typeof require !== 'undefined') {
+      if (typeof process !== 'undefined' && process.env) {
+        const libPath = '/home/ubuntu/repos/midicci/src';
+        const currentPath = process.env.LD_LIBRARY_PATH || '';
+        if (!currentPath.includes(libPath)) {
+          process.env.LD_LIBRARY_PATH = libPath + ':' + currentPath;
+        }
+      }
+      
       nativeBridge = require('../../native/build/Release/midicci_bridge.node');
     } else {
       console.warn('Native bridge not available: require is not defined (browser/renderer context)');

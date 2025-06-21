@@ -3,6 +3,34 @@ import { join } from 'path';
 
 const isDev = process.env.IS_DEV === 'true';
 
+let nativeBridge: any = null;
+
+try {
+  nativeBridge = require('../native/build/Release/midicci_bridge.node');
+} catch (error) {
+  console.warn('Failed to load native bridge in main process:', error);
+}
+
+let repository: any = null;
+let midiManager: any = null;
+
+async function initializeNativeBridge() {
+  if (!nativeBridge) return false;
+  
+  try {
+    repository = new nativeBridge.CIToolRepository();
+    await repository.initialize();
+    midiManager = await repository.getMidiDeviceManager();
+    if (midiManager) {
+      await midiManager.initialize();
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize native bridge:', error);
+    return false;
+  }
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -22,7 +50,8 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await initializeNativeBridge();
   createWindow();
 
   app.on('activate', function () {
@@ -36,4 +65,43 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+ipcMain.handle('midi-get-available-devices', async () => {
+  if (!midiManager) {
+    return { inputs: [], outputs: [] };
+  }
+  
+  try {
+    const devices = await midiManager.getDevices();
+    return {
+      inputs: devices.inputs || [],
+      outputs: devices.outputs || []
+    };
+  } catch (error) {
+    console.error('Failed to get available devices:', error);
+    return { inputs: [], outputs: [] };
+  }
+});
+
+ipcMain.handle('midi-set-input-device', async (event, deviceId: string) => {
+  if (!midiManager) return false;
+  
+  try {
+    return await midiManager.openDevice(deviceId, 'input');
+  } catch (error) {
+    console.error('Failed to set input device:', error);
+    return false;
+  }
+});
+
+ipcMain.handle('midi-set-output-device', async (event, deviceId: string) => {
+  if (!midiManager) return false;
+  
+  try {
+    return await midiManager.openDevice(deviceId, 'output');
+  } catch (error) {
+    console.error('Failed to set output device:', error);
+    return false;
+  }
 });

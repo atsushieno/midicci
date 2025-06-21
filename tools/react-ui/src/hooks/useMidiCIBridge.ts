@@ -11,9 +11,19 @@ import {
   MidiDevice
 } from '../types/midi';
 import { NativeMidiCIBridge } from '../bridge/NativeMidiCIBridge';
+import { ElectronMidiCIBridge } from '../bridge/ElectronMidiCIBridge';
 
 export function useMidiCIBridge() {
   const [bridge] = useState<MidiCINativeBridge>(() => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      try {
+        return new ElectronMidiCIBridge();
+      } catch (error) {
+        console.warn('Failed to load Electron bridge, falling back to mock:', error);
+        return new MockMidiCINativeBridge();
+      }
+    }
+    
     try {
       return new NativeMidiCIBridge();
     } catch (error) {

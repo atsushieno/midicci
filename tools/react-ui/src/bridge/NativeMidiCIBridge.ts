@@ -12,10 +12,22 @@ import {
 
 let nativeBridge: any = null;
 
-try {
-  nativeBridge = require('../../native/build/Release/midicci_bridge.node');
-} catch (error) {
-  console.warn('Failed to load native bridge:', error);
+function loadNativeBridge() {
+  if (nativeBridge !== null) return nativeBridge;
+  
+  try {
+    if (typeof require !== 'undefined') {
+      nativeBridge = require('../../native/build/Release/midicci_bridge.node');
+    } else {
+      console.warn('Native bridge not available: require is not defined (browser/renderer context)');
+      nativeBridge = false;
+    }
+  } catch (error) {
+    console.warn('Failed to load native bridge:', error);
+    nativeBridge = false;
+  }
+  
+  return nativeBridge;
 }
 
 export class NativeMidiCIBridge implements MidiCINativeBridge {
@@ -29,11 +41,12 @@ export class NativeMidiCIBridge implements MidiCINativeBridge {
   private logCallbacks: ((entry: LogEntry) => void)[] = [];
 
   constructor() {
-    if (!nativeBridge) {
+    const bridge = loadNativeBridge();
+    if (!bridge) {
       throw new Error('Native bridge not available');
     }
     
-    this.repository = new nativeBridge.CIToolRepository();
+    this.repository = new bridge.CIToolRepository();
     this.deviceManager = null;
     this.midiManager = null;
   }

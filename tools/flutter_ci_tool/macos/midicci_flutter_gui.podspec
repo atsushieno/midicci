@@ -8,7 +8,7 @@ Pod::Spec.new do |spec|
   spec.description   = 'A Flutter plugin that provides GUI interface for MIDI-CI operations using the midicci C++ library'
 
   spec.source        = { :path => '.' }
-  spec.source_files  = 'macos/Classes/**/*', 'native/*.{h,cpp}'
+  spec.source_files  = 'Classes/**/*', '../native/*.{h,cpp}'
   spec.dependency 'FlutterMacOS'
 
   spec.platform = :osx, '10.14'

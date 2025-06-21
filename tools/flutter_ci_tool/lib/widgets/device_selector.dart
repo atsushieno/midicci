@@ -19,8 +19,8 @@ class DeviceSelector extends StatelessWidget {
                   child: _buildDeviceDropdown(
                     context,
                     'Input Device',
-                    provider.inputDevices,
-                    provider.selectedInputDevice,
+                    provider.inputDevices.items,
+                    provider.selectedInputDevice.get(),
                     (deviceId) => provider.setInputDevice(deviceId),
                     Icons.input,
                   ),
@@ -30,8 +30,8 @@ class DeviceSelector extends StatelessWidget {
                   child: _buildDeviceDropdown(
                     context,
                     'Output Device',
-                    provider.outputDevices,
-                    provider.selectedOutputDevice,
+                    provider.outputDevices.items,
+                    provider.selectedOutputDevice.get(),
                     (deviceId) => provider.setOutputDevice(deviceId),
                     Icons.output,
                   ),

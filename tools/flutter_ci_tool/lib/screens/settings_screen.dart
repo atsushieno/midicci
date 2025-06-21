@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildDeviceSection(deviceProvider),
               const SizedBox(height: 24),
               _buildApplicationSection(toolProvider),
-              if (toolProvider.lastError != null || deviceProvider.lastError != null)
+              if (toolProvider.lastError != null || deviceProvider.lastError.get() != null)
                 Container(
                   margin: const EdgeInsets.only(top: 16),
                   padding: const EdgeInsets.all(12),
@@ -48,7 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          toolProvider.lastError ?? deviceProvider.lastError ?? '',
+                          toolProvider.lastError ?? deviceProvider.lastError.get() ?? '',
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                       ),
@@ -165,9 +165,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             Text('Output devices: ${provider.outputDevices.length}'),
             const SizedBox(height: 8),
-            Text('Selected input: ${provider.selectedInputDevice ?? "None"}'),
+            Text('Selected input: ${provider.selectedInputDevice.get() ?? "None"}'),
             const SizedBox(height: 8),
-            Text('Selected output: ${provider.selectedOutputDevice ?? "None"}'),
+            Text('Selected output: ${provider.selectedOutputDevice.get() ?? "None"}'),
           ],
         ),
       ),

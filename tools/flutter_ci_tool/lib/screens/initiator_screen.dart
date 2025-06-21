@@ -107,21 +107,27 @@ class InitiatorScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Expanded(
-                          child: deviceProvider.connections.isEmpty
-                              ? const Center(
-                                  child: Text('No devices found. Try sending discovery.'),
-                                )
-                              : ListView.builder(
-                                  itemCount: deviceProvider.connections.length,
-                                  itemBuilder: (context, index) {
-                                    final connection = deviceProvider.connections[index];
-                                    return ListTile(
-                                      leading: const Icon(Icons.device_hub),
-                                      title: Text('Device ${connection.targetMuid}'),
-                                      subtitle: Text('MUID: 0x${connection.targetMuid.toRadixString(16).toUpperCase()}'),
+                          child: ValueListenableBuilder(
+                            valueListenable: deviceProvider.connections,
+                            builder: (context, connections, child) {
+                              return connections.isEmpty
+                                  ? const Center(
+                                      child: Text('No devices found. Try sending discovery.'),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: connections.length,
+                                      itemBuilder: (context, index) {
+                                        final connectionModel = connections[index];
+                                        final connection = connectionModel.connection;
+                                        return ListTile(
+                                          leading: const Icon(Icons.device_hub),
+                                          title: Text('Device ${connection.targetMuid}'),
+                                          subtitle: Text('MUID: 0x${connection.targetMuid.toRadixString(16).toUpperCase()}'),
+                                        );
+                                      },
                                     );
-                                  },
-                                ),
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -135,4 +141,5 @@ class InitiatorScreen extends StatelessWidget {
       },
     );
   }
+
 }

@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:convert';
 import '../ffi/midicci_bindings.dart';
 
 class MidiCIBridge {
@@ -86,5 +87,82 @@ class MidiCIBridge {
       }
     }
     return 0;
+  }
+
+  /// Send discovery message
+  Future<void> sendDiscovery() async {
+    if (_repositoryHandle != null) {
+      try {
+        _bindings.sendDiscovery(_repositoryHandle!);
+      } catch (e) {
+        // Handle error
+      }
+    }
+  }
+
+  /// Get connections as JSON list
+  Future<List<Map<String, dynamic>>> getConnections() async {
+    if (_repositoryHandle != null) {
+      try {
+        final jsonString = _bindings.getConnectionsJson(_repositoryHandle!);
+        final List<dynamic> jsonList = json.decode(jsonString);
+        return jsonList.cast<Map<String, dynamic>>();
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  /// Get input devices as JSON list
+  Future<List<Map<String, dynamic>>> getInputDevices() async {
+    if (_repositoryHandle != null) {
+      try {
+        final jsonString = _bindings.getInputDevicesJson(_repositoryHandle!);
+        final List<dynamic> jsonList = json.decode(jsonString);
+        return jsonList.cast<Map<String, dynamic>>();
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  /// Get output devices as JSON list  
+  Future<List<Map<String, dynamic>>> getOutputDevices() async {
+    if (_repositoryHandle != null) {
+      try {
+        final jsonString = _bindings.getOutputDevicesJson(_repositoryHandle!);
+        final List<dynamic> jsonList = json.decode(jsonString);
+        return jsonList.cast<Map<String, dynamic>>();
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  /// Set input device
+  Future<bool> setInputDevice(String deviceId) async {
+    if (_repositoryHandle != null) {
+      try {
+        return _bindings.setInputDevice(_repositoryHandle!, deviceId);
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /// Set output device
+  Future<bool> setOutputDevice(String deviceId) async {
+    if (_repositoryHandle != null) {
+      try {
+        return _bindings.setOutputDevice(_repositoryHandle!, deviceId);
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
   }
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogEntry, MessageDirection } from '../types/midi';
 
 interface LogScreenProps {

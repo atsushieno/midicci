@@ -9,7 +9,7 @@
 #include <map>
 
 namespace midicci {
-namespace propertycommonrules {
+namespace commonproperties {
 
 class CommonRulesPropertyService : public MidiCIServicePropertyRules {
 public:

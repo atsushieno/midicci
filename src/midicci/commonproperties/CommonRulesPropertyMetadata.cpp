@@ -1,9 +1,9 @@
-#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 #include "midicci/Json.hpp"
 #include <algorithm>
 
-namespace midicci::propertycommonrules {
+namespace midicci::commonproperties {
 
 const std::string CommonRulesPropertyMetadata::default_media_type = "application/json";
 const std::string CommonRulesPropertyMetadata::default_encoding = "ASCII";
@@ -38,7 +38,7 @@ std::string CommonRulesPropertyMetadata::getExtra(const std::string& key) const 
 }
 
 midicci::JsonValue CommonRulesPropertyMetadata::toJsonValue() const {
-    using namespace midicci::propertycommonrules;
+    using namespace midicci::commonproperties;
     
     JsonObject obj;
     

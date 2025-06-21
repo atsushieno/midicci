@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 
-using namespace midicci::propertycommonrules;
+using namespace midicci::commonproperties;
 
 TEST(PropertyCommonConverterTest, encodeToMcoded7) {
     std::string input_str = "{\"foo\": [1,2,3,4,5], \"bar\": [6,7,8,9,0]}\n";

@@ -1,5 +1,5 @@
-#include "midicci/propertycommonrules/CommonRulesPropertyService.hpp"
-#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyService.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 #include "midicci/Json.hpp"
 #include "midicci/MidiCIConstants.hpp"
@@ -7,7 +7,7 @@
 #include <sstream>
 #include <algorithm>
 
-namespace midicci::propertycommonrules {
+namespace midicci::commonproperties {
 
 CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
     : device_(device), helper_(std::make_unique<CommonRulesPropertyHelper>(device)) {

@@ -10,7 +10,7 @@
 
 namespace midicci {
 
-namespace propertycommonrules {
+namespace commonproperties {
 
 class PropertyMetadata {
 public:
@@ -26,7 +26,7 @@ public:
 };
 }
 
-    using namespace midicci::propertycommonrules;
+    using namespace midicci::commonproperties;
 
 class MidiCIClientPropertyRules;
 

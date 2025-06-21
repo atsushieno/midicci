@@ -9,7 +9,7 @@
 #include "../ObservablePropertyList.hpp"
 
 namespace midicci {
-namespace propertycommonrules {
+namespace commonproperties {
 
 class MidiCIServicePropertyRules {
 public:

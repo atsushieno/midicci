@@ -13,7 +13,7 @@ class ClientConnection;
 struct ClientSubscription;
 class MidiCIClientPropertyRules;
 
-namespace propertycommonrules {
+namespace commonproperties {
 class PropertyMetadata;
 }
 

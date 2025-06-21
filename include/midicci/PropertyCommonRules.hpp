@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace midicci::propertycommonrules {
+namespace midicci::commonproperties {
 
 struct PropertyCommonHeaderKeys {
     static constexpr const char* RESOURCE = "resource";

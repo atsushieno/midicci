@@ -11,7 +11,7 @@
 #include <functional>
 
 namespace midicci {
-namespace propertycommonrules {
+namespace commonproperties {
 
 class CommonRulesPropertyClient : public MidiCIClientPropertyRules {
 public:

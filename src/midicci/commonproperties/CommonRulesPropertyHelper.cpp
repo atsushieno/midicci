@@ -1,11 +1,11 @@
-#include "midicci/propertycommonrules/CommonRulesPropertyHelper.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyHelper.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 #include "midicci/MidiCIDevice.hpp"
 #include "midicci/Json.hpp"
 #include <sstream>
 
 namespace midicci {
-namespace propertycommonrules {
+namespace commonproperties {
 
 CommonRulesPropertyHelper::CommonRulesPropertyHelper(MidiCIDevice& device) 
     : device_(device) {}

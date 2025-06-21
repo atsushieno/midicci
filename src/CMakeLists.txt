@@ -10,14 +10,14 @@ set(MIDICCI_SOURCES
         midicci/ObservableProfileList.cpp
         midicci/ProfileClientFacade.cpp
         midicci/ProfileHostFacade.cpp
-        midicci/propertycommonrules/PropertyChunkManager.cpp
-        midicci/propertycommonrules/PropertyClientFacade.cpp
-        midicci/propertycommonrules/PropertyHostFacade.cpp
-        midicci/propertycommonrules/ObservablePropertyList.cpp
-        midicci/propertycommonrules/CommonRulesPropertyHelper.cpp
-        midicci/propertycommonrules/CommonRulesPropertyService.cpp
-        midicci/propertycommonrules/CommonRulesPropertyClient.cpp
-        midicci/propertycommonrules/CommonRulesPropertyMetadata.cpp
+        midicci/commonproperties/PropertyChunkManager.cpp
+        midicci/commonproperties/PropertyClientFacade.cpp
+        midicci/commonproperties/PropertyHostFacade.cpp
+        midicci/commonproperties/ObservablePropertyList.cpp
+        midicci/commonproperties/CommonRulesPropertyHelper.cpp
+        midicci/commonproperties/CommonRulesPropertyService.cpp
+        midicci/commonproperties/CommonRulesPropertyClient.cpp
+        midicci/commonproperties/CommonRulesPropertyMetadata.cpp
         midicci/ump/Ump.cpp
         midicci/ump/UmpRetriever.cpp
 )

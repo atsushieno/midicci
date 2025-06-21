@@ -1,5 +1,5 @@
 #include "TestPropertyRules.hpp"
-#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/Message.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 

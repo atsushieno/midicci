@@ -7,7 +7,7 @@
 #include "../MidiCIDevice.hpp"
 
 namespace midicci {
-namespace propertycommonrules {
+namespace commonproperties {
 
 class CommonRulesPropertyHelper {
 public:

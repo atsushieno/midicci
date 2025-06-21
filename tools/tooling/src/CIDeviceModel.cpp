@@ -126,7 +126,7 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const M
     get_device()->get_profile_host_facade().remove_profile(group, address, profile_id);
 }
 
-void CIDeviceModel::add_local_property(const midicci::propertycommonrules::PropertyMetadata& property) {
+void CIDeviceModel::add_local_property(const midicci::commonproperties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
 

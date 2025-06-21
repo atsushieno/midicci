@@ -57,7 +57,7 @@ public:
     void add_local_profile(const MidiCIProfile& profile);
     void remove_local_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id);
 
-    void add_local_property(const midicci::propertycommonrules::PropertyMetadata& property);
+    void add_local_property(const midicci::commonproperties::PropertyMetadata& property);
     void remove_local_property(const std::string& property_id);
     void update_property_value(const std::string& property_id, const std::string& res_id, 
                              const std::vector<uint8_t>& data);

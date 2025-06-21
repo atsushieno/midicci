@@ -6,11 +6,11 @@
 #include <functional>
 #include "Message.hpp"
 #include "ObservablePropertyList.hpp"
-#include "propertycommonrules/MidiCIServicePropertyRules.hpp"
+#include "commonproperties/MidiCIServicePropertyRules.hpp"
 #include "MidiCIDevice.hpp"
 
 namespace midicci {
-    using namespace midicci::propertycommonrules;
+    using namespace midicci::commonproperties;
 
 struct PropertySubscription {
     uint32_t subscriber_muid;

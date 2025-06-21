@@ -259,7 +259,7 @@ void SettingsWidget::updateDeviceConfiguration()
     m_serialNumberEdit->setText("12345");
     m_maxConnectionsSpin->setValue(8);
     
-    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"propertycommonrules\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
+    m_jsonSchemaEdit->setText("{\n  \"type\": \"object\",\n  \"commonproperties\": {\n    \"example\": {\n      \"type\": \"string\"\n    }\n  }\n}");
     
     m_workaroundJUCESubscriptionCheck->setChecked(false);
     m_workaroundJUCEProfileChannelsCheck->setChecked(false);

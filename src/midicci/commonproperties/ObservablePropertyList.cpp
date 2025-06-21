@@ -1,7 +1,7 @@
 #include "midicci/ObservablePropertyList.hpp"
 #include "midicci/PropertyClientFacade.hpp"
-#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
-#include "midicci/propertycommonrules/CommonRulesPropertyClient.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyClient.hpp"
 #include <mutex>
 #include <vector>
 #include <algorithm>

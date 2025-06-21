@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace midicci::propertycommonrules {
+namespace midicci::commonproperties {
 
 class CommonRulesPropertyMetadata : public PropertyMetadata {
 public:

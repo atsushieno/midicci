@@ -3,7 +3,7 @@
 #include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
 #include "midicci/ObservablePropertyList.hpp"
-#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 
 #include <QGridLayout>
 #include <QSplitter>
@@ -370,7 +370,7 @@ void InitiatorWidget::onPropertySelectionChanged()
                                                 .arg(QString::fromStdString("Unknown"))
                                                 .arg(QString::fromStdString("Unknown"));
                                             
-                                            auto* commonMeta = dynamic_cast<const midicci::propertycommonrules::CommonRulesPropertyMetadata*>(meta.get());
+                                            auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
                                             if (commonMeta) {
                                                 metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
                                                     .arg(QString::fromStdString(property.id))

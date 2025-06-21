@@ -1,0 +1,4 @@
+module MidiCIFlutterPlugin {
+    header "ci_tool_wrapper_bridge.h"
+    export *
+}

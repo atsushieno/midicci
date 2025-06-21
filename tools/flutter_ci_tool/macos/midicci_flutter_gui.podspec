@@ -9,6 +9,7 @@ Pod::Spec.new do |spec|
 
   spec.source        = { :path => '.' }
   spec.source_files  = 'Classes/**/*', '../native/*.{h,cpp}'
+  spec.public_header_files = 'Classes/**/*.h'
   spec.dependency 'FlutterMacOS'
 
   spec.platform = :osx, '10.14'

@@ -13,15 +13,17 @@
 #include <QSpinBox>
 #include <QFileDialog>
 #include <memory>
-#include "MidiDeviceManager.hpp"
-#include "CIToolRepository.hpp"
+#include <midicci/tooling/MidiDeviceManager.hpp>
+#include <midicci/tooling/CIToolRepository.hpp>
+
+namespace midicci::tooling::qt5 {
 
 class SettingsWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit SettingsWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit SettingsWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 private slots:
     void onInputDeviceChanged(int index);
@@ -39,7 +41,7 @@ private:
     void updateDeviceLists();
     void updateDeviceConfiguration();
 
-    tooling::CIToolRepository* m_repository;
+    midicci::tooling::CIToolRepository* m_repository;
     
     QGroupBox *m_midiTransportGroup;
     QComboBox *m_inputDeviceCombo;
@@ -71,3 +73,4 @@ private:
     QCheckBox *m_workaroundJUCESubscriptionCheck;
     QCheckBox *m_workaroundJUCEProfileChannelsCheck;
 };
+}

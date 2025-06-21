@@ -1,8 +1,9 @@
 #include "AppModel.hpp"
-#include "CIToolRepository.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
 #include <stdexcept>
 
-namespace qt5_ci_tool {
+namespace midicci::tooling::qt5 {
+    using namespace midicci::tooling;
 
 static std::unique_ptr<tooling::CIToolRepository> g_appModel;
 static bool g_appInitialized = false;

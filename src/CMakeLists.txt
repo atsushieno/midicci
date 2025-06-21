@@ -1,45 +1,25 @@
 set(MIDICCI_SOURCES
-        midicci/core/MidiCIDevice.cpp
-        midicci/core/ClientConnection.cpp
-        midicci/core/MidiCIConverter.cpp
-        midicci/core/CIFactory.cpp
-        midicci/core/CIRetrieval.cpp
-        midicci/json_ish/Json.cpp
-        midicci/messages/Message.cpp
-        midicci/messages/Messenger.cpp
-        midicci/profiles/ObservableProfileList.cpp
-        midicci/profiles/ProfileClientFacade.cpp
-        midicci/profiles/ProfileHostFacade.cpp
-        midicci/properties/PropertyChunkManager.cpp
-        midicci/properties/PropertyClientFacade.cpp
-        midicci/properties/PropertyHostFacade.cpp
-        midicci/properties/ObservablePropertyList.cpp
-        midicci/properties/CommonRulesPropertyHelper.cpp
-        midicci/properties/CommonRulesPropertyService.cpp
-        midicci/properties/CommonRulesPropertyClient.cpp
-        midicci/properties/CommonRulesPropertyMetadata.cpp
+        midicci/MidiCIDevice.cpp
+        midicci/ClientConnection.cpp
+        midicci/MidiCIConverter.cpp
+        midicci/CIFactory.cpp
+        midicci/CIRetrieval.cpp
+        midicci/Json.cpp
+        midicci/Message.cpp
+        midicci/Messenger.cpp
+        midicci/ObservableProfileList.cpp
+        midicci/ProfileClientFacade.cpp
+        midicci/ProfileHostFacade.cpp
+        midicci/propertycommonrules/PropertyChunkManager.cpp
+        midicci/propertycommonrules/PropertyClientFacade.cpp
+        midicci/propertycommonrules/PropertyHostFacade.cpp
+        midicci/propertycommonrules/ObservablePropertyList.cpp
+        midicci/propertycommonrules/CommonRulesPropertyHelper.cpp
+        midicci/propertycommonrules/CommonRulesPropertyService.cpp
+        midicci/propertycommonrules/CommonRulesPropertyClient.cpp
+        midicci/propertycommonrules/CommonRulesPropertyMetadata.cpp
         midicci/ump/Ump.cpp
         midicci/ump/UmpRetriever.cpp
-)
-
-set(MIDICCI_HEADERS
-        ../include/midicci/core/MidiCIDevice.hpp
-        ../include/midicci/core/ClientConnection.hpp
-        ../include/midicci/core/MidiCIConstants.hpp
-        ../include/midicci/core/CIFactory.hpp
-        ../include/midicci/core/MidiCIDeviceConfiguration.hpp
-        ../include/midicci/core/MidiCIChannelList.hpp
-        ../include/midicci/messages/Message.hpp
-        ../include/midicci/messages/Messenger.hpp
-        ../include/midicci/properties/ObservablePropertyList.hpp
-        ../include/midicci/properties/PropertyChunkManager.hpp
-        ../include/midicci/properties/PropertyCommonRules.hpp
-        ../include/midicci/properties/CommonRulesPropertyHelper.hpp
-        ../include/midicci/properties/CommonRulesPropertyService.hpp
-        ../include/midicci/properties/CommonRulesPropertyClient.hpp
-        ../include/midicci/json_ish/Json.hpp
-        ../include/midicci/ump/Ump.hpp
-        ../include/midicci/ump/UmpRetriever.hpp
 )
 
 set(MODULE_NAME midicci)

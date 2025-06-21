@@ -1,5 +1,5 @@
 #include "SettingsWidget.hpp"
-#include "CIToolRepository.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
 #include "AppModel.hpp"
 
 #include <QVBoxLayout>
@@ -9,6 +9,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStandardPaths>
+
+namespace midicci::tooling::qt5 {
 
 SettingsWidget::SettingsWidget(tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
@@ -261,4 +263,5 @@ void SettingsWidget::updateDeviceConfiguration()
     
     m_workaroundJUCESubscriptionCheck->setChecked(false);
     m_workaroundJUCEProfileChannelsCheck->setChecked(false);
+}
 }

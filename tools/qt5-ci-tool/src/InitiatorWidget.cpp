@@ -1,15 +1,16 @@
 #include "InitiatorWidget.hpp"
-#include "CIToolRepository.hpp"
-#include "CIDeviceModel.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
+#include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
-#include "midicci/properties/ObservablePropertyList.hpp"
-#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/ObservablePropertyList.hpp"
+#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
 
 #include <QGridLayout>
 #include <QSplitter>
 #include <QGroupBox>
 #include <QHeaderView>
 
+namespace midicci::tooling::qt5 {
 
 InitiatorWidget::InitiatorWidget(tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
@@ -862,4 +863,5 @@ void InitiatorWidget::onPropertyCommitChanges()
             }
         }
     }
+}
 }

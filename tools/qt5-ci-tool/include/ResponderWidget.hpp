@@ -15,18 +15,16 @@
 #include <QCheckBox>
 #include <QSpinBox>
 #include <memory>
+#include <midicci/tooling/CIToolRepository.hpp>
 
-namespace tooling {
-    class CIToolRepository;
-    class CIDeviceModel;
-}
+namespace midicci::tooling::qt5 {
 
 class ResponderWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit ResponderWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit ResponderWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 signals:
     void localProfilesChanged();
@@ -55,7 +53,7 @@ private:
     void updatePropertyList();
     void updatePropertyDetails();
 
-    tooling::CIToolRepository* m_repository;
+    midicci::tooling::CIToolRepository* m_repository;
     
     QSplitter *m_profileSplitter;
     QListWidget *m_profileList;
@@ -99,3 +97,4 @@ private:
     size_t m_lastProfileCount;
     size_t m_lastPropertyCount;
 };
+}

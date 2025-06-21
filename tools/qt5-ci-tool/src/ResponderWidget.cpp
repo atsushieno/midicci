@@ -1,8 +1,8 @@
 #include "ResponderWidget.hpp"
-#include "CIToolRepository.hpp"
-#include "CIDeviceModel.hpp"
+#include <midicci/tooling/CIToolRepository.hpp>
+#include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
-#include "midicci/properties/ObservablePropertyList.hpp"
+#include <midicci/ObservablePropertyList.hpp>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -13,8 +13,9 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+namespace midicci::tooling::qt5 {
 
-ResponderWidget::ResponderWidget(tooling::CIToolRepository* repository, QWidget *parent)
+ResponderWidget::ResponderWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent)
     : QWidget(parent)
     , m_repository(repository)
     , m_lastProfileCount(0)
@@ -427,4 +428,5 @@ void ResponderWidget::setupEventBridge()
         updateProfileList();
         updatePropertyList();
     }, Qt::QueuedConnection);
+}
 }

@@ -12,6 +12,8 @@
 #include <QApplication>
 #include <QIcon>
 
+namespace midicci::tooling::qt5 {
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_tabWidget(nullptr)
@@ -35,7 +37,7 @@ void MainWindow::setupUI()
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
     
-    auto& repository = qt5_ci_tool::getAppModel();
+    auto& repository = getAppModel();
     
     m_initiatorWidget = new InitiatorWidget(&repository, this);
     m_responderWidget = new ResponderWidget(&repository, this);
@@ -59,4 +61,6 @@ void MainWindow::onTabChanged(int index)
 {
     QString tabName = m_tabWidget->tabText(index);
     statusBar()->showMessage(QString("Switched to %1 tab").arg(tabName));
+}
+
 }

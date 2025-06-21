@@ -1,7 +1,7 @@
 #include "TestPropertyRules.hpp"
-#include "midicci/properties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/messages/Message.hpp"
-#include "midicci/properties/PropertyCommonRules.hpp"
+#include "midicci/propertycommonrules/CommonRulesPropertyMetadata.hpp"
+#include "midicci/Message.hpp"
+#include "midicci/PropertyCommonRules.hpp"
 
 TestPropertyRules::TestPropertyRules() {
     initialize_default_properties();

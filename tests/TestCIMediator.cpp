@@ -1,6 +1,6 @@
 #include "TestCIMediator.hpp"
 #include "TestPropertyRules.hpp"
-#include "midicci/core/MidiCIDevice.hpp"
+#include <midicci/MidiCIDevice.hpp>
 #include <memory>
 
 using namespace midicci;

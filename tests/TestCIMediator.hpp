@@ -1,10 +1,10 @@
 #pragma once
 
-#include "midicci/core/MidiCIDevice.hpp"
-#include "midicci/core/ClientConnection.hpp"
-#include "midicci/properties/PropertyHostFacade.hpp"
-#include "midicci/profiles/ProfileHostFacade.hpp"
-#include "midicci/core/MidiCIDeviceConfiguration.hpp"
+#include "midicci/MidiCIDevice.hpp"
+#include "midicci/ClientConnection.hpp"
+#include "midicci/PropertyHostFacade.hpp"
+#include "midicci/ProfileHostFacade.hpp"
+#include "midicci/MidiCIDeviceConfiguration.hpp"
 #include <memory>
 #include <vector>
 #include <cstdint>

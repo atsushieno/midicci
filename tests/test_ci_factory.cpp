@@ -1,13 +1,12 @@
 #include <gtest/gtest.h>
-#include "midicci/core/MidiCIConstants.hpp"
-#include "midicci/core/CIFactory.hpp"
-#include "midicci/messages/Message.hpp"
-#include "midicci/profiles/MidiCIProfile.hpp"
+#include "midicci/MidiCIConstants.hpp"
+#include "midicci/CIFactory.hpp"
+#include "midicci/Message.hpp"
+#include "midicci/MidiCIProfile.hpp"
 #include <vector>
 #include <cstdint>
 
 using namespace midicci;
-using namespace midicci::profilecommonrules;
 
 TEST(CIFactoryTest, testDiscoveryMessages) {
     uint8_t all_supported = 0x1C;

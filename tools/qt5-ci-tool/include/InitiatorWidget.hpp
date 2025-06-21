@@ -16,20 +16,18 @@
 #include <QSpinBox>
 
 #include <memory>
-#include "../../ci-tool/include/MutableState.hpp"
+#include <midicci/tooling/MutableState.hpp>
+#include <midicci/tooling/CIToolRepository.hpp>
 
-namespace tooling {
-    class CIToolRepository;
-    class CIDeviceManager;
-    class CIDeviceModel;
-}
+using namespace midicci::tooling;
+namespace midicci::tooling::qt5 {
 
 class InitiatorWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit InitiatorWidget(tooling::CIToolRepository* repository, QWidget *parent = nullptr);
+    explicit InitiatorWidget(midicci::tooling::CIToolRepository* repository, QWidget *parent = nullptr);
 
 signals:
     void deviceConnected(int muid);
@@ -61,7 +59,7 @@ private:
     void updateProfileList();
     void updatePropertyList();
 
-    tooling::CIToolRepository* m_repository;
+    midicci::tooling::CIToolRepository* m_repository;
     
     QPushButton *m_sendDiscoveryButton;
     QComboBox *m_deviceSelector;
@@ -101,13 +99,13 @@ private:
     
     size_t m_lastConnectionCount;
     
-    tooling::MutableState<bool> m_propertyEditingMode;
-    tooling::MutableState<QString> m_propertyValueText;
-    tooling::MutableState<QString> m_propertyResId;
-    tooling::MutableState<QString> m_propertySelectedEncoding;
-    tooling::MutableState<QString> m_propertyPartialContent;
-    tooling::MutableState<int> m_propertyPaginateOffset;
-    tooling::MutableState<int> m_propertyPaginateLimit;
+    MutableState<bool> m_propertyEditingMode;
+    MutableState<QString> m_propertyValueText;
+    MutableState<QString> m_propertyResId;
+    MutableState<QString> m_propertySelectedEncoding;
+    MutableState<QString> m_propertyPartialContent;
+    MutableState<int> m_propertyPaginateOffset;
+    MutableState<int> m_propertyPaginateLimit;
     
     QCheckBox *m_propertyEditCheckbox;
     QLineEdit *m_propertyResIdEdit;
@@ -118,3 +116,5 @@ private:
     QLabel *m_propertyMetadataLabel;
     QGroupBox *m_propertyPaginationGroup;
 };
+
+} // namespace

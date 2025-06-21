@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MidiCIProfileId, MidiCIProfileState } from '../types/midi';
+import { useState } from 'react';
+import { MidiCIProfileId, MidiCIProfileState, PropertyMetadata, PropertySetAccess } from '../types/midi';
+import { PropertyListEntry, PropertyMetadataEditor } from './PropertyViews';
 
 interface ResponderScreenProps {
   isInitialized: boolean;
@@ -61,7 +62,7 @@ export function ResponderScreen({
       { bytes: [0x7E, 0x00, 0x03, 0x00, 0x00] }
     ];
     
-    testProfiles.forEach((profile, index) => {
+    testProfiles.forEach((profile) => {
       setProfile(0, 0x7F, profile, false, 0);
     });
   };
@@ -184,15 +185,114 @@ export function ResponderScreen({
 
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Local Property Configuration</h2>
-        <div className="text-gray-600">
-          <p>Property configuration will be implemented in a future update.</p>
-          <p className="mt-2">This section will allow you to:</p>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Create and manage local properties</li>
-            <li>Set property metadata and values</li>
-            <li>Handle property subscriptions from clients</li>
-            <li>Configure property access permissions</li>
-          </ul>
+        <PropertyConfigurationSection />
+      </div>
+    </div>
+  );
+}
+
+function PropertyConfigurationSection() {
+  const [properties, setProperties] = useState<PropertyMetadata[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [newPropertyId, setNewPropertyId] = useState('');
+
+  const createNewProperty = () => {
+    if (!newPropertyId.trim()) return;
+    
+    const newProperty: PropertyMetadata = {
+      propertyId: newPropertyId,
+      resource: newPropertyId,
+      canGet: true,
+      canSet: PropertySetAccess.FULL,
+      canSubscribe: false,
+      requireResId: false,
+      mediaTypes: ['application/json'],
+      encodings: ['ASCII'],
+      schema: '',
+      canPaginate: false,
+      columns: []
+    };
+    
+    setProperties(prev => [...prev, newProperty]);
+    setSelectedProperty(newPropertyId);
+    setNewPropertyId('');
+  };
+
+  const updatePropertyMetadata = (updatedMetadata: PropertyMetadata) => {
+    setProperties(prev => prev.map(prop => 
+      prop.propertyId === selectedProperty ? updatedMetadata : prop
+    ));
+    setSelectedProperty(updatedMetadata.propertyId);
+  };
+
+  const removeSelectedProperty = () => {
+    if (!selectedProperty) return;
+    setProperties(prev => prev.filter(prop => prop.propertyId !== selectedProperty));
+    setSelectedProperty('');
+  };
+
+  const selectedPropertyMetadata = properties.find(prop => prop.propertyId === selectedProperty);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <input
+          type="text"
+          value={newPropertyId}
+          onChange={(e) => setNewPropertyId(e.target.value)}
+          placeholder="Enter property ID"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          onClick={createNewProperty}
+          disabled={!newPropertyId.trim()}
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md"
+        >
+          Create Property
+        </button>
+        {selectedProperty && (
+          <button
+            onClick={removeSelectedProperty}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+          >
+            Remove Selected
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Properties</h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {properties.length === 0 ? (
+              <div className="text-gray-500 text-center py-8">
+                No properties created yet. Create a new property to get started.
+              </div>
+            ) : (
+              properties.map((property) => (
+                <PropertyListEntry
+                  key={property.propertyId}
+                  propertyId={property.propertyId}
+                  isSelected={selectedProperty === property.propertyId}
+                  onSelect={setSelectedProperty}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          {selectedPropertyMetadata ? (
+            <PropertyMetadataEditor
+              metadata={selectedPropertyMetadata}
+              onUpdate={updatePropertyMetadata}
+              readOnly={false}
+            />
+          ) : (
+            <div className="text-gray-500 text-center py-8">
+              Select a property to edit its metadata
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -16,6 +16,32 @@ export interface PropertyValue {
   body: Uint8Array;
 }
 
+export interface PropertyMetadata {
+  propertyId: string;
+  resource: string;
+  canGet: boolean;
+  canSet: PropertySetAccess;
+  canSubscribe: boolean;
+  requireResId: boolean;
+  mediaTypes: string[];
+  encodings: string[];
+  schema?: string;
+  canPaginate: boolean;
+  columns: PropertyColumn[];
+}
+
+export interface PropertyColumn {
+  title: string;
+  link?: string;
+  property?: string;
+}
+
+export enum PropertySetAccess {
+  NONE = 'none',
+  FULL = 'full',
+  PARTIAL = 'partial'
+}
+
 export enum SubscriptionStateType {
   Subscribing = 'Subscribing',
   Subscribed = 'Subscribed',
@@ -75,6 +101,10 @@ export interface MidiCINativeBridge {
   subscribeProperty(propertyId: string, encoding?: string): Promise<void>;
   unsubscribeProperty(propertyId: string): Promise<void>;
   refreshPropertyValue(propertyId: string, encoding?: string, offset?: number, limit?: number): Promise<void>;
+  createProperty(metadata: PropertyMetadata): Promise<void>;
+  updatePropertyMetadata(propertyId: string, metadata: PropertyMetadata): Promise<void>;
+  updatePropertyValue(propertyId: string, resId: string | undefined, data: Uint8Array): Promise<void>;
+  removeProperty(propertyId: string): Promise<void>;
   
   getLogs(): Promise<LogEntry[]>;
   clearLogs(): Promise<void>;
@@ -200,13 +230,45 @@ export class MockMidiCINativeBridge implements MidiCINativeBridge {
     });
   }
 
-  async refreshPropertyValue(propertyId: string, encoding?: string, offset?: number, limit?: number): Promise<void> {
+  async refreshPropertyValue(propertyId: string, _encoding?: string, _offset?: number, _limit?: number): Promise<void> {
     this.addLog(`Refreshing property value: ${propertyId}`, MessageDirection.Out);
     
     setTimeout(() => {
       this.addLog(`Property value refreshed: ${propertyId}`, MessageDirection.In);
       const allProperties = this.connections.flatMap(conn => conn.properties);
       this.propertiesCallbacks.forEach(cb => cb(allProperties));
+    }, 500);
+  }
+
+  async createProperty(metadata: PropertyMetadata): Promise<void> {
+    this.addLog(`Creating property: ${metadata.propertyId}`, MessageDirection.Out);
+    
+    setTimeout(() => {
+      this.addLog(`Property created: ${metadata.propertyId}`, MessageDirection.In);
+    }, 500);
+  }
+
+  async updatePropertyMetadata(propertyId: string, _metadata: PropertyMetadata): Promise<void> {
+    this.addLog(`Updating property metadata: ${propertyId}`, MessageDirection.Out);
+    
+    setTimeout(() => {
+      this.addLog(`Property metadata updated: ${propertyId}`, MessageDirection.In);
+    }, 500);
+  }
+
+  async updatePropertyValue(propertyId: string, resId: string | undefined, data: Uint8Array): Promise<void> {
+    this.addLog(`Updating property value: ${propertyId}${resId ? ` (resId: ${resId})` : ''}`, MessageDirection.Out);
+    
+    setTimeout(() => {
+      this.addLog(`Property value updated: ${propertyId} (${data.length} bytes)`, MessageDirection.In);
+    }, 500);
+  }
+
+  async removeProperty(propertyId: string): Promise<void> {
+    this.addLog(`Removing property: ${propertyId}`, MessageDirection.Out);
+    
+    setTimeout(() => {
+      this.addLog(`Property removed: ${propertyId}`, MessageDirection.In);
     }, 500);
   }
 

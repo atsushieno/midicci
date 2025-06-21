@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { InitiatorScreen } from './components/InitiatorScreen'
 import { ResponderScreen } from './components/ResponderScreen'
 import { LogScreen } from './components/LogScreen'

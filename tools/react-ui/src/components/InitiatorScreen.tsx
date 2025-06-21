@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MidiCIProfileId, ClientConnectionModel } from '../types/midi';
+import { useState } from 'react';
+import { MidiCIProfileId, ClientConnectionModel, PropertyMetadata, PropertySetAccess } from '../types/midi';
+import { PropertyValueEditor } from './PropertyViews';
 
 interface InitiatorScreenProps {
   isInitialized: boolean;
@@ -197,8 +198,74 @@ export function InitiatorScreen({
               ))}
             </div>
           </div>
+
+          {selectedProperty && (
+            <PropertyValueSection 
+              propertyId={selectedProperty}
+              connection={selectedConnection}
+              onRefreshValue={refreshPropertyValue}
+              onSubscriptionChange={(subscribing: boolean, encoding?: string) => {
+                if (subscribing) {
+                  subscribeProperty(selectedProperty, encoding);
+                } else {
+                  unsubscribeProperty(selectedProperty);
+                }
+              }}
+            />
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+interface PropertyValueSectionProps {
+  propertyId: string;
+  connection: ClientConnectionModel;
+  onRefreshValue: (propertyId: string, encoding?: string, offset?: number, limit?: number) => Promise<void>;
+  onSubscriptionChange: (subscribing: boolean, encoding?: string) => void;
+}
+
+function PropertyValueSection({ propertyId, connection, onRefreshValue, onSubscriptionChange }: PropertyValueSectionProps) {
+  const property = connection.properties.find(p => p.id === propertyId);
+  
+  if (!property) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Property Value</h2>
+        <p className="text-gray-500">Property not found</p>
+      </div>
+    );
+  }
+
+  const mockMetadata: PropertyMetadata = {
+    propertyId: property.id,
+    resource: property.id,
+    canGet: true,
+    canSet: PropertySetAccess.FULL,
+    canSubscribe: true,
+    requireResId: false,
+    mediaTypes: [property.mediaType],
+    encodings: ['ASCII'],
+    schema: '',
+    canPaginate: false,
+    columns: []
+  };
+
+  return (
+    <div className="bg-white shadow rounded-lg p-6">
+      <PropertyValueEditor
+        isLocalEditor={false}
+        mediaType={property.mediaType}
+        metadata={mockMetadata}
+        body={property.body}
+        isSubscribing={false}
+        onRefreshValue={(encoding, offset, limit) => onRefreshValue(propertyId, encoding, offset, limit)}
+        onSubscriptionChange={onSubscriptionChange}
+        onCommitChange={(data, resId, encoding, isPartial) => {
+          console.log('Commit property change:', { propertyId, resId, encoding, isPartial, dataLength: data.length });
+        }}
+      />
     </div>
   );
 }

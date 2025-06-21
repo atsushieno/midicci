@@ -6,7 +6,8 @@ import {
   MidiCIProfileState, 
   PropertyValue, 
   LogEntry,
-  MidiCIProfileId
+  MidiCIProfileId,
+  PropertyMetadata
 } from '../types/midi';
 
 export function useMidiCIBridge() {
@@ -26,8 +27,8 @@ export function useMidiCIBridge() {
         bridge.onConnectionsChanged(setConnections);
         bridge.onProfilesChanged(setProfiles);
         bridge.onPropertiesChanged(setProperties);
-        bridge.onLogAdded((entry) => {
-          setLogs(prev => [...prev, entry]);
+        bridge.onLogAdded((entry: LogEntry) => {
+          setLogs((prev: LogEntry[]) => [...prev, entry]);
         });
 
         const initialLogs = await bridge.getLogs();
@@ -112,7 +113,47 @@ export function useMidiCIBridge() {
     }
   }, [bridge, isInitialized]);
 
-  const selectedConnection = connections.find(conn => conn.connection.targetMUID === selectedConnectionMUID);
+  const selectedConnection = connections.find((conn: ClientConnectionModel) => conn.connection.targetMUID === selectedConnectionMUID);
+
+  async function createProperty(metadata: PropertyMetadata): Promise<void> {
+    if (!bridge || !isInitialized) return;
+    
+    try {
+      await bridge.createProperty(metadata);
+    } catch (error) {
+      console.error('Failed to create property:', error);
+    }
+  }
+
+  async function updatePropertyMetadata(propertyId: string, metadata: PropertyMetadata): Promise<void> {
+    if (!bridge || !isInitialized) return;
+    
+    try {
+      await bridge.updatePropertyMetadata(propertyId, metadata);
+    } catch (error) {
+      console.error('Failed to update property metadata:', error);
+    }
+  }
+
+  async function updatePropertyValue(propertyId: string, resId: string | undefined, data: Uint8Array): Promise<void> {
+    if (!bridge || !isInitialized) return;
+    
+    try {
+      await bridge.updatePropertyValue(propertyId, resId, data);
+    } catch (error) {
+      console.error('Failed to update property value:', error);
+    }
+  }
+
+  async function removeProperty(propertyId: string): Promise<void> {
+    if (!bridge || !isInitialized) return;
+    
+    try {
+      await bridge.removeProperty(propertyId);
+    } catch (error) {
+      console.error('Failed to remove property:', error);
+    }
+  }
 
   return {
     isInitialized,
@@ -128,6 +169,10 @@ export function useMidiCIBridge() {
     subscribeProperty,
     unsubscribeProperty,
     refreshPropertyValue,
-    clearLogs
+    clearLogs,
+    createProperty,
+    updatePropertyMetadata,
+    updatePropertyValue,
+    removeProperty
   };
 }

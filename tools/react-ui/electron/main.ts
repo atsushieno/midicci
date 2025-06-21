@@ -6,7 +6,7 @@ const isDev = process.env.IS_DEV === 'true';
 let nativeBridge: any = null;
 
 try {
-  nativeBridge = require('../native/build/Release/midicci_bridge.node');
+  nativeBridge = require('../../native/build/Release/midicci_bridge.node');
 } catch (error) {
   console.warn('Failed to load native bridge in main process:', error);
 }

@@ -10,26 +10,24 @@
 #include <mutex>
 #include <map>
 
-using namespace ci_tool;
-
 struct CIToolRepositoryHandle {
-    std::unique_ptr<CIToolRepository> repository;
+    std::unique_ptr<ci_tool::CIToolRepository> repository;
     LogCallback log_callback = nullptr;
 };
 
 struct CIDeviceManagerHandle {
-    std::shared_ptr<CIDeviceManager> manager;
+    std::shared_ptr<ci_tool::CIDeviceManager> manager;
 };
 
 struct CIDeviceModelHandle {
-    std::shared_ptr<CIDeviceModel> model;
+    std::shared_ptr<ci_tool::CIDeviceModel> model;
     ConnectionsChangedCallback connections_callback = nullptr;
     ProfilesUpdatedCallback profiles_callback = nullptr;
     PropertiesUpdatedCallback properties_callback = nullptr;
 };
 
 struct MidiDeviceManagerHandle {
-    std::shared_ptr<MidiDeviceManager> manager;
+    std::shared_ptr<ci_tool::MidiDeviceManager> manager;
 };
 
 static std::mutex g_callback_mutex;
@@ -38,7 +36,7 @@ static std::map<CIToolRepository, LogCallback> g_log_callbacks;
 CIToolRepository ci_tool_repository_create() {
     try {
         auto handle = new CIToolRepositoryHandle();
-        handle->repository = std::make_unique<CIToolRepository>();
+        handle->repository = std::make_unique<ci_tool::CIToolRepository>();
         return handle;
     } catch (...) {
         return nullptr;
@@ -67,7 +65,7 @@ bool ci_tool_repository_initialize(CIToolRepository handle) {
             ci_manager->initialize();
         }
         
-        handle->repository->log("Flutter MIDI-CI Tool initialized", MessageDirection::Out);
+        handle->repository->log("Flutter MIDI-CI Tool initialized", ci_tool::MessageDirection::Out);
         return true;
     } catch (...) {
         return false;
@@ -78,7 +76,7 @@ void ci_tool_repository_shutdown(CIToolRepository handle) {
     if (!handle || !handle->repository) return;
     
     try {
-        handle->repository->log("Flutter MIDI-CI Tool shutting down", MessageDirection::Out);
+        handle->repository->log("Flutter MIDI-CI Tool shutting down", ci_tool::MessageDirection::Out);
         
         auto ci_manager = handle->repository->get_ci_device_manager();
         auto midi_manager = handle->repository->get_midi_device_manager();
@@ -133,7 +131,7 @@ void ci_tool_repository_log(CIToolRepository handle, const char* message, bool i
     if (!handle || !handle->repository || !message) return;
     
     try {
-        MessageDirection direction = is_outgoing ? MessageDirection::Out : MessageDirection::In;
+        ci_tool::MessageDirection direction = is_outgoing ? ci_tool::MessageDirection::Out : ci_tool::MessageDirection::In;
         handle->repository->log(std::string(message), direction);
     } catch (...) {
     }

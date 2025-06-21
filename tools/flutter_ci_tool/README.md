@@ -1,52 +1,92 @@
-# Flutter MIDI-CI Tool
+# MIDI-CI Flutter Tool
 
-A Flutter GUI for the MIDI-CI Tool using the midicci C++ library.
+A Flutter desktop application for MIDI-CI (Capability Inquiry) communication, built on top of the midicci C++ library.
 
-## Overview
+## Features
 
-This Flutter application provides a cross-platform GUI for the MIDI-CI protocol implementation in the midicci library. It integrates with the existing C++ business logic through platform channels and FFI.
+- **Initiator Mode**: Send discovery requests and communicate with remote MIDI-CI devices
+- **Responder Mode**: Respond to incoming MIDI-CI requests (TODO)
+- **Real-time Logging**: View MIDI-CI message traffic
+- **Settings**: Configure devices and application preferences
+
+## Prerequisites
+
+- Flutter SDK (>=3.10.0) 
+- Dart SDK (>=3.0.0)
+- CMake (>=3.18)
+- C++ compiler with C++20 support
+- macOS: Xcode 16+ (for macOS builds)
+- Linux: Build tools and development libraries
+- Windows: Visual Studio 2019+ (for Windows builds)
+
+## Quick Start
+
+### 1. Get Dependencies
+
+```bash
+flutter pub get
+```
+
+### 2. Run on macOS
+
+```bash
+flutter run -d macos
+```
+
+### 3. Build for Release
+
+```bash
+flutter build macos --release
+```
 
 ## Architecture
 
-The Flutter app connects to the C++ midicci library through:
-- **CIToolRepository** - Main repository for configuration and logging
-- **CIDeviceModel** - Device state management and MIDI-CI operations  
-- **CIDeviceManager** - MIDI device enumeration and connection management
+The application uses Flutter for the UI with FFI (Foreign Function Interface) to communicate with the underlying midicci C++ library:
 
-## Building
-
-### Prerequisites
-- Flutter SDK (3.10.0 or later)
-- CMake 3.18+
-- C++ compiler
-- midicci library built
-
-### Build Commands
-
-From the midicci repository root:
-
-```bash
-# Configure CMake (Flutter will be detected automatically)
-cmake -B build
-
-# Build everything including Flutter app
-cmake --build build
-
-# Or build just the Flutter app
-cmake --build build --target flutter-build
+```
+┌─────────────────┐    FFI    ┌─────────────────┐
+│   Flutter UI    │ ◄─────────► │  midicci C++    │
+│   (Dart)        │           │  Library        │
+└─────────────────┘           └─────────────────┘
 ```
 
-### Development
+### Key Components
+
+- **Providers**: State management using the Provider package
+  - `CIToolProvider`: Main application state and native bridge
+  - `CIDeviceProvider`: MIDI device and connection management
+
+- **FFI Bridge**: Direct communication with C++ library
+  - `MidiCCIBindings`: Native function bindings
+  - `MidiCIBridge`: High-level interface
+
+- **Screens**: Tab-based interface
+  - Initiator: Device discovery and communication
+  - Responder: Local profile and property management  
+  - Log: Message logging and debugging
+  - Settings: Configuration and device selection
+
+## Integration with CMake Build
+
+The Flutter app can be built as part of the top-level CMake build:
 
 ```bash
-# Install Flutter dependencies
-flutter pub get
+# From the project root
+mkdir build && cd build
+cmake ..
+make flutter-build  # Builds the Flutter app
+make flutter-run    # Runs the Flutter app
+```
 
-# Run the app in development mode
-flutter run -d linux
+## Development
 
-# Or use CMake target
-cmake --build build --target flutter-run
+### Hot Reload
+
+During development, use Flutter's hot reload for rapid iteration:
+
+```bash
+flutter run -d macos
+# Then press 'r' for hot reload or 'R' for hot restart
 ```
 
 ## Platform Support

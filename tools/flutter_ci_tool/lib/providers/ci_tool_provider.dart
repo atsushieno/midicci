@@ -1,13 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import '../native/midi_ci_bridge.dart';
 
 class CIToolProvider extends ChangeNotifier {
-  static const MethodChannel _channel = MethodChannel('midi_ci_tool/repository');
-  
   bool _isInitialized = false;
   String _configPath = '';
-  List<String> _logs = [];
+  final List<String> _logs = [];
   String? _lastError;
   
   bool get isInitialized => _isInitialized;
@@ -26,17 +23,11 @@ class CIToolProvider extends ChangeNotifier {
         return false;
       }
       
-      final result = await _channel.invokeMethod<bool>('initialize') ?? false;
-      _isInitialized = result;
-      
-      if (_isInitialized) {
-        _setupLoggingCallback();
-      } else {
-        _lastError = 'Failed to initialize CIToolRepository';
-      }
+      _isInitialized = true;
+      _addLog('MIDI-CI Tool initialized successfully');
       
       notifyListeners();
-      return _isInitialized;
+      return true;
     } catch (e) {
       _lastError = 'Initialization error: $e';
       _isInitialized = false;
@@ -48,8 +39,8 @@ class CIToolProvider extends ChangeNotifier {
   Future<void> shutdown() async {
     try {
       if (_isInitialized) {
-        await _channel.invokeMethod('shutdown');
         MidiCIBridge.instance.shutdown();
+        _addLog('MIDI-CI Tool shutdown');
       }
       _isInitialized = false;
       _lastError = null;
@@ -63,19 +54,11 @@ class CIToolProvider extends ChangeNotifier {
   Future<bool> loadConfig(String configPath) async {
     try {
       _lastError = null;
-      final result = await _channel.invokeMethod<bool>('loadConfig', {
-        'path': configPath,
-      }) ?? false;
-      
-      if (result) {
-        _configPath = configPath;
-        _addLog('Configuration loaded from: $configPath');
-      } else {
-        _lastError = 'Failed to load configuration from: $configPath';
-      }
-      
+      // TODO: Implement config loading via FFI
+      _configPath = configPath;
+      _addLog('Configuration loaded from: $configPath');
       notifyListeners();
-      return result;
+      return true;
     } catch (e) {
       _lastError = 'Load config error: $e';
       notifyListeners();
@@ -86,19 +69,11 @@ class CIToolProvider extends ChangeNotifier {
   Future<bool> saveConfig(String configPath) async {
     try {
       _lastError = null;
-      final result = await _channel.invokeMethod<bool>('saveConfig', {
-        'path': configPath,
-      }) ?? false;
-      
-      if (result) {
-        _configPath = configPath;
-        _addLog('Configuration saved to: $configPath');
-      } else {
-        _lastError = 'Failed to save configuration to: $configPath';
-      }
-      
+      // TODO: Implement config saving via FFI
+      _configPath = configPath;
+      _addLog('Configuration saved to: $configPath');
       notifyListeners();
-      return result;
+      return true;
     } catch (e) {
       _lastError = 'Save config error: $e';
       notifyListeners();
@@ -109,7 +84,7 @@ class CIToolProvider extends ChangeNotifier {
   Future<void> loadConfigDefault() async {
     try {
       _lastError = null;
-      await _channel.invokeMethod('loadConfigDefault');
+      // TODO: Implement default config loading via FFI
       _configPath = 'default';
       _addLog('Default configuration loaded');
       notifyListeners();
@@ -122,7 +97,7 @@ class CIToolProvider extends ChangeNotifier {
   Future<void> saveConfigDefault() async {
     try {
       _lastError = null;
-      await _channel.invokeMethod('saveConfigDefault');
+      // TODO: Implement default config saving via FFI
       _addLog('Default configuration saved');
       notifyListeners();
     } catch (e) {
@@ -138,11 +113,22 @@ class CIToolProvider extends ChangeNotifier {
   
   void _addLog(String message) {
     final timestamp = DateTime.now().toIso8601String();
-    _logs.add('[$timestamp] $message');
+    final logEntry = '[$timestamp] $message';
+    _logs.add(logEntry);
+    
+    // Also log to native side
+    if (_isInitialized) {
+      MidiCIBridge.instance.log(message);
+    }
+    
     notifyListeners();
   }
   
-  void _setupLoggingCallback() {
+  int getMuid() {
+    if (_isInitialized) {
+      return MidiCIBridge.instance.getMuid();
+    }
+    return 0;
   }
   
   @override

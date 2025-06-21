@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/ci_tool_provider.dart';
 import '../providers/ci_device_provider.dart';
-import '../widgets/device_selector.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -162,7 +161,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            const DeviceSelector(),
+            Text('Input devices: ${provider.inputDevices.length}'),
+            const SizedBox(height: 8),
+            Text('Output devices: ${provider.outputDevices.length}'),
+            const SizedBox(height: 8),
+            Text('Selected input: ${provider.selectedInputDevice ?? "None"}'),
+            const SizedBox(height: 8),
+            Text('Selected output: ${provider.selectedOutputDevice ?? "None"}'),
           ],
         ),
       ),

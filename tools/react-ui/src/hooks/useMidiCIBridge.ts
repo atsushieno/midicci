@@ -46,6 +46,13 @@ export function useMidiCIBridge() {
         const initialLogs = await bridge.getLogs();
         setLogs(initialLogs);
         
+        try {
+          const devices = await bridge.getAvailableDevices();
+          setAvailableDevices(devices);
+        } catch (error) {
+          console.error('Failed to load initial devices:', error);
+        }
+        
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize MIDI-CI bridge:', error);

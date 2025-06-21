@@ -59,6 +59,12 @@ export interface ClientConnection {
   maxSimultaneousPropertyRequests: number;
 }
 
+export interface MidiDevice {
+  id: string;
+  name: string;
+  type: 'input' | 'output';
+}
+
 export interface DeviceInfo {
   manufacturer: string;
   manufacturerId: number;
@@ -110,6 +116,12 @@ export interface MidiCINativeBridge {
   clearLogs(): Promise<void>;
   
   getMUID(): Promise<number>;
+  
+  getAvailableDevices(): Promise<{ inputs: MidiDevice[], outputs: MidiDevice[] }>;
+  setInputDevice(deviceId: string): Promise<boolean>;
+  setOutputDevice(deviceId: string): Promise<boolean>;
+  getCurrentInputDevice(): Promise<string>;
+  getCurrentOutputDevice(): Promise<string>;
   
   onConnectionsChanged(callback: (connections: ClientConnectionModel[]) => void): void;
   onProfilesChanged(callback: (profiles: MidiCIProfileState[]) => void): void;
@@ -283,6 +295,40 @@ export class MockMidiCINativeBridge implements MidiCINativeBridge {
 
   async getMUID(): Promise<number> {
     return this.muid;
+  }
+
+  async getAvailableDevices(): Promise<{ inputs: MidiDevice[], outputs: MidiDevice[] }> {
+    const mockInputDevices: MidiDevice[] = [
+      { id: 'mock-input-1', name: 'System MIDI Input', type: 'input' },
+      { id: 'mock-input-2', name: 'Virtual MIDI Device 1', type: 'input' },
+      { id: 'mock-input-3', name: 'USB MIDI Interface', type: 'input' }
+    ];
+    
+    const mockOutputDevices: MidiDevice[] = [
+      { id: 'mock-output-1', name: 'System MIDI Output', type: 'output' },
+      { id: 'mock-output-2', name: 'Virtual MIDI Device 1', type: 'output' },
+      { id: 'mock-output-3', name: 'USB MIDI Interface', type: 'output' }
+    ];
+    
+    return { inputs: mockInputDevices, outputs: mockOutputDevices };
+  }
+
+  async setInputDevice(deviceId: string): Promise<boolean> {
+    this.addLog(`Setting input device: ${deviceId}`, MessageDirection.Out);
+    return true;
+  }
+
+  async setOutputDevice(deviceId: string): Promise<boolean> {
+    this.addLog(`Setting output device: ${deviceId}`, MessageDirection.Out);
+    return true;
+  }
+
+  async getCurrentInputDevice(): Promise<string> {
+    return 'mock-input-1';
+  }
+
+  async getCurrentOutputDevice(): Promise<string> {
+    return 'mock-output-1';
   }
 
   onConnectionsChanged(callback: (connections: ClientConnectionModel[]) => void): void {

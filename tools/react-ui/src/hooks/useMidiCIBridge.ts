@@ -7,7 +7,8 @@ import {
   PropertyValue, 
   LogEntry,
   MidiCIProfileId,
-  PropertyMetadata
+  PropertyMetadata,
+  MidiDevice
 } from '../types/midi';
 import { NativeMidiCIBridge } from '../bridge/NativeMidiCIBridge';
 
@@ -26,6 +27,9 @@ export function useMidiCIBridge() {
   const [properties, setProperties] = useState<PropertyValue[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [selectedConnectionMUID, setSelectedConnectionMUID] = useState<number>(0);
+  const [availableDevices, setAvailableDevices] = useState<{ inputs: MidiDevice[], outputs: MidiDevice[] }>({ inputs: [], outputs: [] });
+  const [selectedInputDevice, setSelectedInputDevice] = useState<string>('');
+  const [selectedOutputDevice, setSelectedOutputDevice] = useState<string>('');
 
   useEffect(() => {
     const initializeBridge = async () => {
@@ -163,6 +167,40 @@ export function useMidiCIBridge() {
     }
   }
 
+  const refreshDevices = useCallback(async () => {
+    if (!isInitialized) return;
+    try {
+      const devices = await bridge.getAvailableDevices();
+      setAvailableDevices(devices);
+    } catch (error) {
+      console.error('Failed to refresh devices:', error);
+    }
+  }, [bridge, isInitialized]);
+
+  const selectInputDevice = useCallback(async (deviceId: string) => {
+    if (!isInitialized) return;
+    try {
+      const success = await bridge.setInputDevice(deviceId);
+      if (success) {
+        setSelectedInputDevice(deviceId);
+      }
+    } catch (error) {
+      console.error('Failed to select input device:', error);
+    }
+  }, [bridge, isInitialized]);
+
+  const selectOutputDevice = useCallback(async (deviceId: string) => {
+    if (!isInitialized) return;
+    try {
+      const success = await bridge.setOutputDevice(deviceId);
+      if (success) {
+        setSelectedOutputDevice(deviceId);
+      }
+    } catch (error) {
+      console.error('Failed to select output device:', error);
+    }
+  }, [bridge, isInitialized]);
+
   return {
     isInitialized,
     connections,
@@ -181,6 +219,12 @@ export function useMidiCIBridge() {
     createProperty,
     updatePropertyMetadata,
     updatePropertyValue,
-    removeProperty
+    removeProperty,
+    availableDevices,
+    selectedInputDevice,
+    selectedOutputDevice,
+    refreshDevices,
+    selectInputDevice,
+    selectOutputDevice
   };
 }

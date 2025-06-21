@@ -1,20 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMidiCIBridge } from '../hooks/useMidiCIBridge';
 
 interface SettingsScreenProps {
   isInitialized: boolean;
 }
 
 export function SettingsScreen({ isInitialized }: SettingsScreenProps) {
-  const [selectedInputDevice, setSelectedInputDevice] = useState('');
-  const [selectedOutputDevice, setSelectedOutputDevice] = useState('');
   const [configFile, setConfigFile] = useState('');
+  const {
+    availableDevices,
+    selectedInputDevice,
+    selectedOutputDevice,
+    refreshDevices,
+    selectInputDevice,
+    selectOutputDevice
+  } = useMidiCIBridge();
 
-  const mockDevices = [
-    'System MIDI Input',
-    'Virtual MIDI Device 1',
-    'Virtual MIDI Device 2',
-    'USB MIDI Interface'
-  ];
+  useEffect(() => {
+    if (isInitialized) {
+      refreshDevices();
+    }
+  }, [isInitialized, refreshDevices]);
 
   const loadConfiguration = () => {
     console.log('Loading configuration from:', configFile);
@@ -22,6 +28,18 @@ export function SettingsScreen({ isInitialized }: SettingsScreenProps) {
 
   const saveConfiguration = () => {
     console.log('Saving configuration to:', configFile);
+  };
+
+  const handleInputDeviceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    selectInputDevice(e.target.value);
+  };
+
+  const handleOutputDeviceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    selectOutputDevice(e.target.value);
+  };
+
+  const handleRefreshDevices = () => {
+    refreshDevices();
   };
 
   return (
@@ -36,13 +54,13 @@ export function SettingsScreen({ isInitialized }: SettingsScreenProps) {
             </label>
             <select
               value={selectedInputDevice}
-              onChange={(e) => setSelectedInputDevice(e.target.value)}
+              onChange={handleInputDeviceChange}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">-- Select Input Device --</option>
-              {mockDevices.map((device) => (
-                <option key={device} value={device}>
-                  {device}
+              {availableDevices.inputs.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.name}
                 </option>
               ))}
             </select>
@@ -54,13 +72,13 @@ export function SettingsScreen({ isInitialized }: SettingsScreenProps) {
             </label>
             <select
               value={selectedOutputDevice}
-              onChange={(e) => setSelectedOutputDevice(e.target.value)}
+              onChange={handleOutputDeviceChange}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">-- Select Output Device --</option>
-              {mockDevices.map((device) => (
-                <option key={device} value={device}>
-                  {device}
+              {availableDevices.outputs.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.name}
                 </option>
               ))}
             </select>
@@ -68,12 +86,14 @@ export function SettingsScreen({ isInitialized }: SettingsScreenProps) {
 
           <div className="flex space-x-4">
             <button
+              onClick={handleRefreshDevices}
               disabled={!isInitialized}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md"
             >
               Refresh Devices
             </button>
             <button
+              onClick={handleRefreshDevices}
               disabled={!isInitialized}
               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md"
             >

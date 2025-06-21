@@ -6,7 +6,8 @@ import {
   LogEntry, 
   MidiCIProfileId, 
   PropertyMetadata, 
-  MessageDirection 
+  MessageDirection,
+  MidiDevice
 } from '../types/midi';
 
 let nativeBridge: any = null;
@@ -209,6 +210,62 @@ export class NativeMidiCIBridge implements MidiCINativeBridge {
     } catch (error) {
       console.error('Failed to get MUID:', error);
       return 0;
+    }
+  }
+
+  async getAvailableDevices(): Promise<{ inputs: MidiDevice[], outputs: MidiDevice[] }> {
+    try {
+      if (!this.midiManager) {
+        return { inputs: [], outputs: [] };
+      }
+      const devices = await this.midiManager.getDevices();
+      return {
+        inputs: devices.inputs || [],
+        outputs: devices.outputs || []
+      };
+    } catch (error) {
+      console.error('Failed to get available devices:', error);
+      return { inputs: [], outputs: [] };
+    }
+  }
+
+  async setInputDevice(deviceId: string): Promise<boolean> {
+    try {
+      if (!this.midiManager) return false;
+      return await this.midiManager.openDevice(deviceId, 'input');
+    } catch (error) {
+      console.error('Failed to set input device:', error);
+      return false;
+    }
+  }
+
+  async setOutputDevice(deviceId: string): Promise<boolean> {
+    try {
+      if (!this.midiManager) return false;
+      return await this.midiManager.openDevice(deviceId, 'output');
+    } catch (error) {
+      console.error('Failed to set output device:', error);
+      return false;
+    }
+  }
+
+  async getCurrentInputDevice(): Promise<string> {
+    try {
+      if (!this.midiManager) return '';
+      return '';
+    } catch (error) {
+      console.error('Failed to get current input device:', error);
+      return '';
+    }
+  }
+
+  async getCurrentOutputDevice(): Promise<string> {
+    try {
+      if (!this.midiManager) return '';
+      return '';
+    } catch (error) {
+      console.error('Failed to get current output device:', error);
+      return '';
     }
   }
 

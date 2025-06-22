@@ -242,6 +242,15 @@ void CIDeviceModel::on_connections_changed() {
             auto device_conn = pimpl_->device_->get_connection(muid);
             if (device_conn) {
                 auto conn_model = std::make_shared<ClientConnectionModel>(shared_from_this(), device_conn);
+                
+                // Set up property update propagation from this connection
+                conn_model->add_properties_changed_callback([this]() {
+                    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+                    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+                        callback();
+                    }
+                });
+                
                 pimpl_->connections_.add(conn_model);
                 std::cout << "Added connection for MUID: 0x" << std::hex << static_cast<uint32_t>(muid) << std::dec << std::endl;
             }

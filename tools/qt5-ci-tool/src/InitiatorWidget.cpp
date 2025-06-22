@@ -722,13 +722,19 @@ void InitiatorWidget::updatePropertyList()
         auto properties_vec = properties.to_vector();
         
         for (const auto& property : properties_vec) {
-            m_propertyList->addItem(QString::fromStdString(property.id));
+            // Filter out ResourceList - it's a meta-property that shouldn't be user-visible
+            if (property.id != "ResourceList") {
+                m_propertyList->addItem(QString::fromStdString(property.id));
+            }
         }
         
         if (properties_vec.empty()) {
             auto metadata = targetConnection->get_metadata_list();
             for (const auto& meta : metadata) {
-                m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
+                // Filter out ResourceList from metadata as well
+                if (meta->getResourceId() != "ResourceList") {
+                    m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
+                }
             }
         }
     }
@@ -783,14 +789,9 @@ void InitiatorWidget::setupEventBridge()
         }, Qt::QueuedConnection);
     });
     
-    deviceModel->add_properties_updated_callback([this]() {
-        QMetaObject::invokeMethod(this, [this]() {
-            if (m_selectedDeviceMUID != 0) {
-                updatePropertyList();
-            }
-            emit propertiesUpdated(m_selectedDeviceMUID);
-        }, Qt::QueuedConnection);
-    });
+    // Note: Device-level properties callback removed to prevent unnecessary property list rebuilds
+    // Individual property updates are handled by the property-specific callbacks in setupPropertyCallbacks()
+    // Only catalog-level changes (like ResourceList updates) should trigger full property list rebuilds
 }
 
 void InitiatorWidget::setupPropertyCallbacks()
@@ -827,17 +828,18 @@ void InitiatorWidget::setupPropertyCallbacks()
                             tooling::MessageDirection::In);
                         
                         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
-                            m_repository->log(QString("Property updated callback triggered for property: %1")
-                                .arg(QString::fromStdString(propertyId)).toStdString(), 
+                            m_repository->log(QString("Property updated callback triggered for property: %1 (currently selected: %2)")
+                                .arg(QString::fromStdString(propertyId))
+                                .arg(m_selectedProperty).toStdString(), 
                                 tooling::MessageDirection::In);
                             
                             QMetaObject::invokeMethod(this, [this, propertyId]() {
-                                // Only update the property list if it's the ResourceList property that changed
-                                // (which contains the catalog of available properties)
+                                // Handle ResourceList updates (meta-property containing available properties catalog)
                                 if (propertyId == "ResourceList") {
                                     m_repository->log("ResourceList property updated, refreshing property list", 
                                         tooling::MessageDirection::In);
                                     updatePropertyList();
+                                    return; // ResourceList is not user-visible, so no need to update display
                                 }
                                 
                                 // Update property value display if the updated property is currently selected
@@ -846,6 +848,11 @@ void InitiatorWidget::setupPropertyCallbacks()
                                         .arg(QString::fromStdString(propertyId)).toStdString(), 
                                         tooling::MessageDirection::In);
                                     updateCurrentPropertyValue();
+                                } else {
+                                    m_repository->log(QString("Property %1 updated but not currently selected (%2), skipping UI update")
+                                        .arg(QString::fromStdString(propertyId))
+                                        .arg(m_selectedProperty).toStdString(), 
+                                        tooling::MessageDirection::In);
                                 }
                             }, Qt::QueuedConnection);
                         });
@@ -982,6 +989,10 @@ void InitiatorWidget::updateCurrentPropertyValue()
                                     .toStdString(), tooling::MessageDirection::In);
                                 
                                 m_propertyValueText.set(propertyText);
+                                
+                                m_repository->log(QString("updateCurrentPropertyValue: Successfully updated UI for property '%1'")
+                                    .arg(QString::fromStdString(property.id))
+                                    .toStdString(), tooling::MessageDirection::In);
                                 return; // Found and updated, exit the method
                             }
                         }

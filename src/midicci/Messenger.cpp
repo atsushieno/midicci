@@ -776,6 +776,9 @@ void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
+        conn->get_property_client_facade().process_subscribe_property(msg);
+    });
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {

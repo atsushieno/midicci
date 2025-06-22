@@ -58,6 +58,7 @@ private:
     void updateConnectionInfo();
     void updateProfileList();
     void updatePropertyList();
+    void updateCurrentPropertyValue();
 
     midicci::tooling::CIToolRepository* m_repository;
     

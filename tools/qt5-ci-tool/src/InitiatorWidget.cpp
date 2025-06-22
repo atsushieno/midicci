@@ -315,6 +315,7 @@ void InitiatorWidget::onDeviceSelectionChanged(int index)
         updateConnectionInfo();
         updateProfileList();
         updatePropertyList();
+        setupPropertyCallbacks();
     } else {
         m_selectedDeviceMUID = 0;
         m_muidLabel->setText("--");
@@ -779,8 +780,12 @@ void InitiatorWidget::setupPropertyCallbacks()
                     
                     if (observable_properties) {
                         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
-                            QMetaObject::invokeMethod(this, [this]() {
+                            QMetaObject::invokeMethod(this, [this, propertyId]() {
                                 updatePropertyList();
+                                // Update property value display if the updated property is currently selected
+                                if (m_selectedProperty.toStdString() == propertyId) {
+                                    updateCurrentPropertyValue();
+                                }
                             }, Qt::QueuedConnection);
                         });
                         
@@ -858,6 +863,43 @@ void InitiatorWidget::onPropertyCommitChanges()
                                       tooling::MessageDirection::Out);
                     
                     m_propertyEditingMode.set(false);
+                }
+                break;
+            }
+        }
+    }
+}
+
+void InitiatorWidget::updateCurrentPropertyValue()
+{
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    const auto& connections = deviceModel->get_connections();
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                const auto& properties = connection->get_properties();
+                auto properties_vec = properties.to_vector();
+                
+                for (const auto& property : properties_vec) {
+                    if (property.id == m_selectedProperty.toStdString()) {
+                        QString propertyText = QString::fromStdString(
+                            std::string(property.body.begin(), property.body.end()));
+                        m_propertyValueText.set(propertyText);
+                        break;
+                    }
                 }
                 break;
             }

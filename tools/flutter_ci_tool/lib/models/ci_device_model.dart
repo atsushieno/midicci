@@ -92,4 +92,14 @@ class LogEntry {
 
   factory LogEntry.fromJson(Map<String, dynamic> json) => _$LogEntryFromJson(json);
   Map<String, dynamic> toJson() => _$LogEntryToJson(this);
+  
+  /// Format the log entry for display in the UI
+  String toDisplayString() {
+    final direction = isOutgoing ? 'OUT' : 'IN';
+    final time = DateTime.parse(timestamp);
+    final timeStr = '${time.hour.toString().padLeft(2, '0')}:'
+                   '${time.minute.toString().padLeft(2, '0')}:'
+                   '${time.second.toString().padLeft(2, '0')}';
+    return '[$timeStr] $direction: $message';
+  }
 }

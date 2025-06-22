@@ -8,6 +8,9 @@ class MidiCIBridge {
 
   late final MidiCCIBindings _bindings;
   Pointer<Void>? _repositoryHandle;
+  Pointer<Void>? _deviceManagerHandle;
+  Pointer<Void>? _deviceModelHandle;
+  Pointer<Void>? _midiManagerHandle;
 
   MidiCIBridge._() {
     _bindings = MidiCCIBindings.instance;
@@ -91,9 +94,10 @@ class MidiCIBridge {
 
   /// Send discovery message
   Future<void> sendDiscovery() async {
-    if (_repositoryHandle != null) {
+    await _ensureDeviceModel();
+    if (_deviceModelHandle != null) {
       try {
-        _bindings.sendDiscovery(_repositoryHandle!);
+        _bindings.sendDiscovery(_deviceModelHandle!);
       } catch (e) {
         // Handle error
       }
@@ -102,9 +106,10 @@ class MidiCIBridge {
 
   /// Get connections as JSON list
   Future<List<Map<String, dynamic>>> getConnections() async {
-    if (_repositoryHandle != null) {
+    await _ensureDeviceModel();
+    if (_deviceModelHandle != null) {
       try {
-        final jsonString = _bindings.getConnectionsJson(_repositoryHandle!);
+        final jsonString = _bindings.getConnectionsJson(_deviceModelHandle!);
         final List<dynamic> jsonList = json.decode(jsonString);
         return jsonList.cast<Map<String, dynamic>>();
       } catch (e) {
@@ -116,9 +121,10 @@ class MidiCIBridge {
 
   /// Get input devices as JSON list
   Future<List<Map<String, dynamic>>> getInputDevices() async {
-    if (_repositoryHandle != null) {
+    await _ensureMidiManager();
+    if (_midiManagerHandle != null) {
       try {
-        final jsonString = _bindings.getInputDevicesJson(_repositoryHandle!);
+        final jsonString = _bindings.getInputDevicesJson(_midiManagerHandle!);
         final List<dynamic> jsonList = json.decode(jsonString);
         return jsonList.cast<Map<String, dynamic>>();
       } catch (e) {
@@ -130,9 +136,10 @@ class MidiCIBridge {
 
   /// Get output devices as JSON list  
   Future<List<Map<String, dynamic>>> getOutputDevices() async {
-    if (_repositoryHandle != null) {
+    await _ensureMidiManager();
+    if (_midiManagerHandle != null) {
       try {
-        final jsonString = _bindings.getOutputDevicesJson(_repositoryHandle!);
+        final jsonString = _bindings.getOutputDevicesJson(_midiManagerHandle!);
         final List<dynamic> jsonList = json.decode(jsonString);
         return jsonList.cast<Map<String, dynamic>>();
       } catch (e) {
@@ -144,9 +151,10 @@ class MidiCIBridge {
 
   /// Set input device
   Future<bool> setInputDevice(String deviceId) async {
-    if (_repositoryHandle != null) {
+    await _ensureMidiManager();
+    if (_midiManagerHandle != null) {
       try {
-        return _bindings.setInputDevice(_repositoryHandle!, deviceId);
+        return _bindings.setInputDevice(_midiManagerHandle!, deviceId);
       } catch (e) {
         return false;
       }
@@ -156,13 +164,31 @@ class MidiCIBridge {
 
   /// Set output device
   Future<bool> setOutputDevice(String deviceId) async {
-    if (_repositoryHandle != null) {
+    await _ensureMidiManager();
+    if (_midiManagerHandle != null) {
       try {
-        return _bindings.setOutputDevice(_repositoryHandle!, deviceId);
+        return _bindings.setOutputDevice(_midiManagerHandle!, deviceId);
       } catch (e) {
         return false;
       }
     }
     return false;
+  }
+
+  /// Ensure device manager and model handles are initialized
+  Future<void> _ensureDeviceModel() async {
+    if (_deviceManagerHandle == null && _repositoryHandle != null) {
+      _deviceManagerHandle = _bindings.getDeviceManager(_repositoryHandle!);
+    }
+    if (_deviceModelHandle == null && _deviceManagerHandle != null) {
+      _deviceModelHandle = _bindings.getDeviceModel(_deviceManagerHandle!);
+    }
+  }
+
+  /// Ensure MIDI manager handle is initialized
+  Future<void> _ensureMidiManager() async {
+    if (_midiManagerHandle == null && _repositoryHandle != null) {
+      _midiManagerHandle = _bindings.getMidiDeviceManager(_repositoryHandle!);
+    }
   }
 }

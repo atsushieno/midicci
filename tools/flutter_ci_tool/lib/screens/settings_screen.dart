@@ -14,6 +14,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _configPathController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh MIDI devices when the screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CIDeviceProvider>().refreshDevices();
+    });
+  }
+
+  @override
   void dispose() {
     _configPathController.dispose();
     super.dispose();
@@ -25,9 +34,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, toolProvider, deviceProvider, child) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               _buildConfigurationSection(toolProvider),
               const SizedBox(height: 24),
               _buildDeviceSection(deviceProvider),
@@ -55,7 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -141,34 +152,160 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.devices, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'MIDI Devices',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: () => provider.refreshDevices(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Input devices: ${provider.inputDevices.length}'),
-            const SizedBox(height: 8),
-            Text('Output devices: ${provider.outputDevices.length}'),
-            const SizedBox(height: 8),
-            Text('Selected input: ${provider.selectedInputDevice.get() ?? "None"}'),
-            const SizedBox(height: 8),
-            Text('Selected output: ${provider.selectedOutputDevice.get() ?? "None"}'),
-          ],
+        child: ValueListenableBuilder(
+          valueListenable: provider.inputDevices,
+          builder: (context, inputDevices, _) {
+            return ValueListenableBuilder(
+              valueListenable: provider.outputDevices,
+              builder: (context, outputDevices, _) {
+                return ValueListenableBuilder(
+                  valueListenable: provider.selectedInputDevice,
+                  builder: (context, selectedInput, _) {
+                    return ValueListenableBuilder(
+                      valueListenable: provider.selectedOutputDevice,
+                      builder: (context, selectedOutput, _) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.devices, size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'MIDI Devices',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const Spacer(),
+                                ElevatedButton.icon(
+                                  onPressed: () => provider.refreshDevices(),
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Refresh'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Input Devices Section
+                            Row(
+                              children: [
+                                const Icon(Icons.input, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Input Devices (${inputDevices.length})',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  isExpanded: true,
+                                  hint: const Text('Select input device...'),
+                                  value: selectedInput,
+                                  items: [
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text('None'),
+                                    ),
+                                    ...inputDevices.map((device) => DropdownMenuItem<String>(
+                                      value: device.deviceId,
+                                      child: Text(device.name.isNotEmpty ? device.name : device.deviceId),
+                                    )),
+                                  ],
+                                  onChanged: (String? deviceId) {
+                                    if (deviceId != null) {
+                                      provider.setInputDevice(deviceId);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Output Devices Section
+                            Row(
+                              children: [
+                                const Icon(Icons.output, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Output Devices (${outputDevices.length})',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  isExpanded: true,
+                                  hint: const Text('Select output device...'),
+                                  value: selectedOutput,
+                                  items: [
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text('None'),
+                                    ),
+                                    ...outputDevices.map((device) => DropdownMenuItem<String>(
+                                      value: device.deviceId,
+                                      child: Text(device.name.isNotEmpty ? device.name : device.deviceId),
+                                    )),
+                                  ],
+                                  onChanged: (String? deviceId) {
+                                    if (deviceId != null) {
+                                      provider.setOutputDevice(deviceId);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            
+                            if (inputDevices.isEmpty && outputDevices.isEmpty) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange.shade300),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.warning, color: Colors.orange.shade700),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'No MIDI devices found. Click "Refresh" to scan for devices.',
+                                        style: TextStyle(color: Colors.orange.shade700),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
         ),
       ),
     );

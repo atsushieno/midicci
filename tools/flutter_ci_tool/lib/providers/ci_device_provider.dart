@@ -23,6 +23,9 @@ class CIDeviceProvider extends ChangeNotifier {
   final List<VoidCallback> _profilesUpdatedCallbacks = [];
   final List<VoidCallback> _propertiesUpdatedCallbacks = [];
   
+  // Callback to refresh logs after MIDI-CI operations
+  VoidCallback? _logRefreshCallback;
+  
   CIDeviceProvider() {
     _setupEventListeners();
   }
@@ -58,6 +61,10 @@ class CIDeviceProvider extends ChangeNotifier {
       _lastError.set(null);
       // Call native implementation via FFI
       await MidiCIBridge.instance.sendDiscovery();
+      
+      // Trigger log refresh to capture MIDI-CI messages
+      _refreshLogsAfterOperation();
+      
       notifyListeners();
     } catch (e) {
       _lastError.set('Send discovery error: $e');
@@ -92,9 +99,18 @@ class CIDeviceProvider extends ChangeNotifier {
     try {
       _lastError.set(null);
       
+      if (kDebugMode) {
+        debugPrint('🔍 Starting MIDI device refresh...');
+      }
+      
       // Get devices from native side via FFI
       final inputDevicesJson = await MidiCIBridge.instance.getInputDevices();
       final outputDevicesJson = await MidiCIBridge.instance.getOutputDevices();
+      
+      if (kDebugMode) {
+        debugPrint('🎹 Input devices JSON: $inputDevicesJson');
+        debugPrint('🎹 Output devices JSON: $outputDevicesJson');
+      }
       
       // Update reactive state
       _inputDevices.clear();
@@ -103,16 +119,29 @@ class CIDeviceProvider extends ChangeNotifier {
       for (final deviceData in inputDevicesJson) {
         final device = MidiDevice.fromJson(deviceData);
         _inputDevices.add(device);
+        if (kDebugMode) {
+          debugPrint('➕ Added input device: ${device.name} (${device.deviceId})');
+        }
       }
       
       for (final deviceData in outputDevicesJson) {
         final device = MidiDevice.fromJson(deviceData);
         _outputDevices.add(device);
+        if (kDebugMode) {
+          debugPrint('➕ Added output device: ${device.name} (${device.deviceId})');
+        }
+      }
+      
+      if (kDebugMode) {
+        debugPrint('✅ Device refresh complete. Input: ${_inputDevices.items.length}, Output: ${_outputDevices.items.length}');
       }
       
       notifyListeners();
     } catch (e) {
       _lastError.set('Refresh devices error: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Device refresh error: $e');
+      }
       notifyListeners();
     }
   }
@@ -212,6 +241,19 @@ class CIDeviceProvider extends ChangeNotifier {
   
   void removePropertiesUpdatedCallback(VoidCallback callback) {
     _propertiesUpdatedCallbacks.remove(callback);
+  }
+  
+  /// Set callback to refresh logs after MIDI-CI operations
+  void setLogRefreshCallback(VoidCallback? callback) {
+    _logRefreshCallback = callback;
+  }
+  
+  /// Trigger log refresh after MIDI-CI operations
+  void _refreshLogsAfterOperation() {
+    // Add a small delay to allow native messages to be processed
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _logRefreshCallback?.call();
+    });
   }
   
   void _onConnectionsChanged() {

@@ -1,6 +1,7 @@
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 
 // Native function signatures
 typedef CIToolRepositoryCreateNative = Pointer<Void> Function();
@@ -44,6 +45,26 @@ typedef MidiDeviceManagerSetInputDeviceDart = bool Function(Pointer<Void>, Point
 typedef MidiDeviceManagerSetOutputDeviceNative = Bool Function(Pointer<Void>, Pointer<Utf8>);
 typedef MidiDeviceManagerSetOutputDeviceDart = bool Function(Pointer<Void>, Pointer<Utf8>);
 
+// Repository to Manager Functions
+typedef CIToolRepositoryGetDeviceManagerNative = Pointer<Void> Function(Pointer<Void>);
+typedef CIToolRepositoryGetDeviceManagerDart = Pointer<Void> Function(Pointer<Void>);
+
+typedef CIToolRepositoryGetMidiDeviceManagerNative = Pointer<Void> Function(Pointer<Void>);
+typedef CIToolRepositoryGetMidiDeviceManagerDart = Pointer<Void> Function(Pointer<Void>);
+
+typedef CIDeviceManagerGetDeviceModelNative = Pointer<Void> Function(Pointer<Void>);
+typedef CIDeviceManagerGetDeviceModelDart = Pointer<Void> Function(Pointer<Void>);
+
+// Log Callback Functions
+typedef LogCallbackNative = Void Function(Pointer<Utf8>, Bool, Pointer<Utf8>);
+typedef LogCallbackDart = void Function(Pointer<Utf8>, bool, Pointer<Utf8>);
+
+typedef CIToolRepositorySetLogCallbackNative = Void Function(Pointer<Void>, Pointer<NativeFunction<LogCallbackNative>>);
+typedef CIToolRepositorySetLogCallbackDart = void Function(Pointer<Void>, Pointer<NativeFunction<LogCallbackNative>>);
+
+typedef CIToolRepositoryClearLogsNative = Void Function(Pointer<Void>);
+typedef CIToolRepositoryClearLogsDart = void Function(Pointer<Void>);
+
 class MidiCCIBindings {
   static MidiCCIBindings? _instance;
   static MidiCCIBindings get instance => _instance ??= MidiCCIBindings._();
@@ -66,6 +87,15 @@ class MidiCCIBindings {
   late final MidiDeviceManagerGetOutputDevicesJsonDart _getOutputDevicesJson;
   late final MidiDeviceManagerSetInputDeviceDart _setInputDevice;
   late final MidiDeviceManagerSetOutputDeviceDart _setOutputDevice;
+  
+  // Repository to Manager Functions
+  late final CIToolRepositoryGetDeviceManagerDart _getDeviceManager;
+  late final CIToolRepositoryGetMidiDeviceManagerDart _getMidiDeviceManager;
+  late final CIDeviceManagerGetDeviceModelDart _getDeviceModel;
+  
+  // Log Callback Functions
+  late final CIToolRepositorySetLogCallbackDart _setLogCallback;
+  late final CIToolRepositoryClearLogsDart _clearLogs;
 
   MidiCCIBindings._() {
     _loadLibrary();
@@ -73,14 +103,42 @@ class MidiCCIBindings {
   }
 
   void _loadLibrary() {
+    String libraryName;
     if (Platform.isMacOS) {
-      _dylib = DynamicLibrary.open('libmidicci-flutter-wrapper.dylib');
+      libraryName = 'libmidicci-flutter-wrapper.dylib';
     } else if (Platform.isLinux) {
-      _dylib = DynamicLibrary.open('libmidicci-flutter-wrapper.so');
+      libraryName = 'libmidicci-flutter-wrapper.so';
     } else if (Platform.isWindows) {
-      _dylib = DynamicLibrary.open('midicci-flutter-wrapper.dll');
+      libraryName = 'midicci-flutter-wrapper.dll';
     } else {
-      throw UnsupportedError('Unsupported platform');
+      throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
+    }
+    
+    try {
+      _dylib = DynamicLibrary.open(libraryName);
+      if (kDebugMode) {
+        debugPrint('✅ Successfully loaded native library: $libraryName');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load native library: $libraryName');
+        debugPrint('Error details: $e');
+        debugPrint('Current working directory: ${Directory.current.path}');
+        debugPrint('Platform: ${Platform.operatingSystem}');
+        
+        // List files in current directory to help debug
+        try {
+          final files = Directory.current.listSync()
+              .where((f) => f.path.contains('.dylib') || f.path.contains('.so') || f.path.contains('.dll'))
+              .map((f) => f.path)
+              .toList();
+          debugPrint('Native libraries found in current directory: $files');
+        } catch (_) {
+          debugPrint('Could not list current directory contents');
+        }
+      }
+      
+      rethrow;
     }
   }
 
@@ -137,6 +195,28 @@ class MidiCCIBindings {
 
     _setOutputDevice = _dylib
         .lookup<NativeFunction<MidiDeviceManagerSetOutputDeviceNative>>('midi_device_manager_set_output_device')
+        .asFunction();
+
+    // Bind repository to manager functions
+    _getDeviceManager = _dylib
+        .lookup<NativeFunction<CIToolRepositoryGetDeviceManagerNative>>('ci_tool_repository_get_device_manager')
+        .asFunction();
+
+    _getMidiDeviceManager = _dylib
+        .lookup<NativeFunction<CIToolRepositoryGetMidiDeviceManagerNative>>('ci_tool_repository_get_midi_device_manager')
+        .asFunction();
+
+    _getDeviceModel = _dylib
+        .lookup<NativeFunction<CIDeviceManagerGetDeviceModelNative>>('ci_device_manager_get_device_model')
+        .asFunction();
+
+    // Bind log callback functions
+    _setLogCallback = _dylib
+        .lookup<NativeFunction<CIToolRepositorySetLogCallbackNative>>('ci_tool_repository_set_log_callback')
+        .asFunction();
+
+    _clearLogs = _dylib
+        .lookup<NativeFunction<CIToolRepositoryClearLogsNative>>('ci_tool_repository_clear_logs')
         .asFunction();
   }
 
@@ -219,5 +299,27 @@ class MidiCCIBindings {
     } finally {
       malloc.free(deviceIdPtr);
     }
+  }
+  
+  // Repository to Manager Methods
+  Pointer<Void> getDeviceManager(Pointer<Void> repositoryHandle) {
+    return _getDeviceManager(repositoryHandle);
+  }
+  
+  Pointer<Void> getMidiDeviceManager(Pointer<Void> repositoryHandle) {
+    return _getMidiDeviceManager(repositoryHandle);
+  }
+  
+  Pointer<Void> getDeviceModel(Pointer<Void> deviceManagerHandle) {
+    return _getDeviceModel(deviceManagerHandle);
+  }
+  
+  // Log Callback Methods
+  void setLogCallback(Pointer<Void> handle, Pointer<NativeFunction<LogCallbackNative>> callback) {
+    _setLogCallback(handle, callback);
+  }
+  
+  void clearLogs(Pointer<Void> handle) {
+    _clearLogs(handle);
   }
 }

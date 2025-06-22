@@ -23,6 +23,23 @@ fi
 echo -e "${YELLOW}📋 Checking Flutter...${NC}"
 flutter --version
 
+# Build native library
+echo -e "${YELLOW}🔨 Building native library...${NC}"
+cd ../../
+if [ ! -d "build" ]; then
+    mkdir build
+fi
+cd build
+cmake ..
+make midicci-flutter-wrapper
+
+# Copy library to Flutter directory
+echo -e "${YELLOW}📋 Setting up native library...${NC}"
+cp tools/flutter_ci_tool/libmidicci-flutter-wrapper.dylib ../tools/flutter_ci_tool/
+
+# Return to Flutter directory
+cd ../tools/flutter_ci_tool
+
 # Get dependencies
 echo -e "${YELLOW}📦 Getting dependencies...${NC}"
 flutter pub get

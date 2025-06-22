@@ -58,6 +58,7 @@ add_custom_target(flutter-pub-get
 )
 
 add_custom_target(flutter-build
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:midicci-flutter-wrapper> ${CMAKE_CURRENT_SOURCE_DIR}/
     COMMAND ${FLUTTER_EXECUTABLE} build ${FLUTTER_BUILD_TARGET} --release
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS flutter-pub-get midicci-flutter-wrapper
@@ -65,10 +66,20 @@ add_custom_target(flutter-build
 )
 
 add_custom_target(flutter-run
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:midicci-flutter-wrapper> ${CMAKE_CURRENT_SOURCE_DIR}/
     COMMAND ${FLUTTER_EXECUTABLE} run -d ${FLUTTER_BUILD_TARGET}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS flutter-pub-get midicci-flutter-wrapper
     COMMENT "Running Flutter app on ${FLUTTER_BUILD_TARGET}"
+)
+
+# Custom target to copy all required libraries to Flutter app bundle
+add_custom_target(flutter-bundle-libs
+    COMMAND ${CMAKE_COMMAND} -E make_directory \"${CMAKE_CURRENT_SOURCE_DIR}/build/${FLUTTER_BUILD_TARGET}/Build/Products/Debug/midicci_flutter_gui.app/Contents/Frameworks/\"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:midicci-flutter-wrapper> \"${CMAKE_CURRENT_SOURCE_DIR}/build/${FLUTTER_BUILD_TARGET}/Build/Products/Debug/midicci_flutter_gui.app/Contents/Frameworks/\"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:midicci> \"${CMAKE_CURRENT_SOURCE_DIR}/build/${FLUTTER_BUILD_TARGET}/Build/Products/Debug/midicci_flutter_gui.app/Contents/Frameworks/\"
+    DEPENDS midicci-flutter-wrapper midicci
+    COMMENT "Copying native libraries to Flutter app bundle"
 )
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${FLUTTER_OUTPUT_DIR}")

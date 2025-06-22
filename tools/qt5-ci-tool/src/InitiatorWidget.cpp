@@ -17,6 +17,8 @@ InitiatorWidget::InitiatorWidget(tooling::CIToolRepository* repository, QWidget 
     , m_repository(repository)
     , m_selectedDeviceMUID(0)
     , m_lastConnectionCount(0)
+    , m_propertyCallbacksSetup(false)
+    , m_lastRequestedProperty("")
 {
     setupUI();
     setupConnections();
@@ -312,6 +314,8 @@ void InitiatorWidget::onDeviceSelectionChanged(int index)
 {
     if (index > 0) {
         m_selectedDeviceMUID = m_deviceSelector->itemData(index).toInt();
+        m_propertyCallbacksSetup = false; // Reset callback setup flag for new device
+        m_lastRequestedProperty = ""; // Reset last requested property for new device
         updateConnectionInfo();
         updateProfileList();
         updatePropertyList();
@@ -344,6 +348,10 @@ void InitiatorWidget::onPropertySelectionChanged()
     if (item) {
         m_selectedProperty = item->text();
         
+        // Send GetPropertyData request to fetch current value
+        sendGetPropertyDataRequest();
+        
+        // Display cached property data and metadata while waiting for the response
         if (m_repository && m_repository->get_ci_device_manager()) {
             auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
             if (deviceModel) {
@@ -352,43 +360,52 @@ void InitiatorWidget::onPropertySelectionChanged()
                     if (connection && connection->get_connection()) {
                         uint32_t connectionMuid = connection->get_connection()->get_target_muid();
                         if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                            // Display cached property value (if any)
                             const auto& properties = connection->get_properties();
                             auto properties_vec = properties.to_vector();
                             
+                            bool foundCachedValue = false;
                             for (const auto& property : properties_vec) {
                                 if (property.id == m_selectedProperty.toStdString()) {
                                     QString propertyText = QString::fromStdString(
                                         std::string(property.body.begin(), property.body.end()));
                                     m_propertyValueText.set(propertyText);
+                                    foundCachedValue = true;
+                                    break;
+                                }
+                            }
+                            
+                            // If no cached value, show loading indicator
+                            if (!foundCachedValue) {
+                                m_propertyValueText.set("Loading property value...");
+                            }
+                            
+                            // Display property metadata
+                            auto metadata = connection->get_metadata_list();
+                            for (const auto& meta : metadata) {
+                                if (meta->getResourceId() == m_selectedProperty.toStdString()) {
+                                    QString metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
+                                        .arg(QString::fromStdString(meta->getResourceId()))
+                                        .arg(QString::fromStdString(meta->getMediaType()))
+                                        .arg(QString::fromStdString("Unknown"))
+                                        .arg(QString::fromStdString("Unknown"))
+                                        .arg(QString::fromStdString("Unknown"));
                                     
-                                    auto metadata = connection->get_metadata_list();
-                                    for (const auto& meta : metadata) {
-                                        if (meta->getResourceId() == property.id) {
-                                            QString metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
-                                                .arg(QString::fromStdString(property.id))
-                                                .arg(QString::fromStdString(property.mediaType))
-                                                .arg(QString::fromStdString("Unknown"))
-                                                .arg(QString::fromStdString("Unknown"))
-                                                .arg(QString::fromStdString("Unknown"));
-                                            
-                                            auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
-                                            if (commonMeta) {
-                                                metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
-                                                    .arg(QString::fromStdString(property.id))
-                                                    .arg(QString::fromStdString(property.mediaType))
-                                                    .arg(QString::fromStdString(commonMeta->canSet))
-                                                    .arg(commonMeta->canSubscribe ? "Yes" : "No")
-                                                    .arg(commonMeta->canPaginate ? "Yes" : "No");
-                                                
-                                                m_propertyPaginationGroup->setVisible(commonMeta->canPaginate);
-                                            } else {
-                                                m_propertyPaginationGroup->setVisible(false);
-                                            }
-                                            
-                                            m_propertyMetadataLabel->setText(metadataText);
-                                            break;
-                                        }
+                                    auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
+                                    if (commonMeta) {
+                                        metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
+                                            .arg(QString::fromStdString(meta->getResourceId()))
+                                            .arg(QString::fromStdString(meta->getMediaType()))
+                                            .arg(QString::fromStdString(commonMeta->canSet))
+                                            .arg(commonMeta->canSubscribe ? "Yes" : "No")
+                                            .arg(commonMeta->canPaginate ? "Yes" : "No");
+                                        
+                                        m_propertyPaginationGroup->setVisible(commonMeta->canPaginate);
+                                    } else {
+                                        m_propertyPaginationGroup->setVisible(false);
                                     }
+                                    
+                                    m_propertyMetadataLabel->setText(metadataText);
                                     break;
                                 }
                             }
@@ -456,6 +473,8 @@ void InitiatorWidget::onRefreshProperty()
                         .arg(m_selectedProperty)
                         .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
                                       tooling::MessageDirection::Out);
+                    
+                    // Note: The property value will be updated via the callback when GetPropertyDataReply arrives
                 }
                 break;
             }
@@ -668,6 +687,9 @@ void InitiatorWidget::updateProfileList()
 
 void InitiatorWidget::updatePropertyList()
 {
+    // Save the currently selected property to restore it after updating the list
+    QString previouslySelectedProperty = m_selectedProperty;
+    
     m_propertyList->clear();
     if (m_selectedDeviceMUID == 0) {
         return;
@@ -710,6 +732,21 @@ void InitiatorWidget::updatePropertyList()
             }
         }
     }
+    
+    // Restore the previously selected property if it still exists in the updated list
+    if (!previouslySelectedProperty.isEmpty()) {
+        for (int i = 0; i < m_propertyList->count(); ++i) {
+            if (m_propertyList->item(i)->text() == previouslySelectedProperty) {
+                // Temporarily disconnect the selection change signal to prevent recursive calls
+                disconnect(m_propertyList, &QListWidget::currentRowChanged, this, &InitiatorWidget::onPropertySelectionChanged);
+                m_propertyList->setCurrentRow(i);
+                m_selectedProperty = previouslySelectedProperty;
+                // Reconnect the signal
+                connect(m_propertyList, &QListWidget::currentRowChanged, this, &InitiatorWidget::onPropertySelectionChanged);
+                break;
+            }
+        }
+    }
 }
 
 void InitiatorWidget::setupEventBridge()
@@ -727,6 +764,7 @@ void InitiatorWidget::setupEventBridge()
         QMetaObject::invokeMethod(this, [this]() {
             updateDeviceList();
             if (m_selectedDeviceMUID != 0) {
+                m_propertyCallbacksSetup = false; // Reset callback setup flag when connections change
                 updateConnectionInfo();
                 updateProfileList();
                 updatePropertyList();
@@ -766,6 +804,11 @@ void InitiatorWidget::setupPropertyCallbacks()
         return;
     }
     
+    // Only set up callbacks once per device selection to avoid duplicates
+    if (m_propertyCallbacksSetup) {
+        return;
+    }
+    
     const auto& connections = deviceModel->get_connections();
     auto connections_vec = connections.to_vector();
     
@@ -779,21 +822,44 @@ void InitiatorWidget::setupPropertyCallbacks()
                     auto* observable_properties = property_facade.get_properties();
                     
                     if (observable_properties) {
+                        m_repository->log(QString("Setting up property callbacks for device MUID 0x%1")
+                            .arg(m_selectedDeviceMUID, 8, 16, QChar('0')).toStdString(), 
+                            tooling::MessageDirection::In);
+                        
                         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
+                            m_repository->log(QString("Property updated callback triggered for property: %1")
+                                .arg(QString::fromStdString(propertyId)).toStdString(), 
+                                tooling::MessageDirection::In);
+                            
                             QMetaObject::invokeMethod(this, [this, propertyId]() {
-                                updatePropertyList();
+                                // Only update the property list if it's the ResourceList property that changed
+                                // (which contains the catalog of available properties)
+                                if (propertyId == "ResourceList") {
+                                    m_repository->log("ResourceList property updated, refreshing property list", 
+                                        tooling::MessageDirection::In);
+                                    updatePropertyList();
+                                }
+                                
                                 // Update property value display if the updated property is currently selected
                                 if (m_selectedProperty.toStdString() == propertyId) {
+                                    m_repository->log(QString("Updating display for selected property: %1")
+                                        .arg(QString::fromStdString(propertyId)).toStdString(), 
+                                        tooling::MessageDirection::In);
                                     updateCurrentPropertyValue();
                                 }
                             }, Qt::QueuedConnection);
                         });
                         
                         observable_properties->addPropertyCatalogUpdatedCallback([this]() {
+                            m_repository->log("Property catalog updated callback triggered", 
+                                tooling::MessageDirection::In);
+                            
                             QMetaObject::invokeMethod(this, [this]() {
                                 updatePropertyList();
                             }, Qt::QueuedConnection);
                         });
+                        
+                        m_propertyCallbacksSetup = true;
                     }
                 }
                 break;
@@ -890,15 +956,134 @@ void InitiatorWidget::updateCurrentPropertyValue()
         if (connection && connection->get_connection()) {
             uint32_t connectionMuid = connection->get_connection()->get_target_muid();
             if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                // Try to get properties directly from the PropertyClientFacade first
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    auto* observable_properties = property_facade.get_properties();
+                    
+                    if (observable_properties) {
+                        auto properties_vec = observable_properties->getValues();
+                        
+                        m_repository->log(QString("updateCurrentPropertyValue: Found %1 properties from PropertyClientFacade for device 0x%2, looking for '%3'")
+                            .arg(properties_vec.size())
+                            .arg(m_selectedDeviceMUID, 8, 16, QChar('0'))
+                            .arg(m_selectedProperty)
+                            .toStdString(), tooling::MessageDirection::In);
+                        
+                        for (const auto& property : properties_vec) {
+                            if (property.id == m_selectedProperty.toStdString()) {
+                                QString propertyText = QString::fromStdString(
+                                    std::string(property.body.begin(), property.body.end()));
+                                
+                                m_repository->log(QString("updateCurrentPropertyValue: Found property '%1' via PropertyClientFacade, updating display with %2 bytes")
+                                    .arg(QString::fromStdString(property.id))
+                                    .arg(property.body.size())
+                                    .toStdString(), tooling::MessageDirection::In);
+                                
+                                m_propertyValueText.set(propertyText);
+                                return; // Found and updated, exit the method
+                            }
+                        }
+                    }
+                }
+                
+                // Fallback: try getting properties from connection (original method)
                 const auto& properties = connection->get_properties();
                 auto properties_vec = properties.to_vector();
+                
+                m_repository->log(QString("updateCurrentPropertyValue: Fallback - Found %1 properties from connection for device 0x%2, looking for '%3'")
+                    .arg(properties_vec.size())
+                    .arg(m_selectedDeviceMUID, 8, 16, QChar('0'))
+                    .arg(m_selectedProperty)
+                    .toStdString(), tooling::MessageDirection::In);
                 
                 for (const auto& property : properties_vec) {
                     if (property.id == m_selectedProperty.toStdString()) {
                         QString propertyText = QString::fromStdString(
                             std::string(property.body.begin(), property.body.end()));
+                        
+                        m_repository->log(QString("updateCurrentPropertyValue: Found property '%1' via connection fallback, updating display with %2 bytes")
+                            .arg(QString::fromStdString(property.id))
+                            .arg(property.body.size())
+                            .toStdString(), tooling::MessageDirection::In);
+                        
                         m_propertyValueText.set(propertyText);
                         break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+
+void InitiatorWidget::sendGetPropertyDataRequest()
+{
+    if (m_selectedProperty.isEmpty() || m_selectedDeviceMUID == 0) {
+        return;
+    }
+    
+    // Avoid sending duplicate requests for the same property
+    if (m_lastRequestedProperty == m_selectedProperty) {
+        m_repository->log(QString("Skipping duplicate request for property: %1")
+            .arg(m_selectedProperty).toStdString(), tooling::MessageDirection::In);
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    auto& connections = deviceModel->get_connections();
+    for (const auto& connection : connections) {
+        if (connection && connection->get_connection()) {
+            uint32_t connectionMuid = connection->get_connection()->get_target_muid();
+            if (static_cast<int>(connectionMuid) == m_selectedDeviceMUID) {
+                auto conn = connection->get_connection();
+                if (conn) {
+                    auto& property_facade = conn->get_property_client_facade();
+                    
+                    // Use the current encoding selection (if any) or default to empty
+                    QString encoding = m_propertyEncodingSelector->currentData().toString();
+                    
+                    // Check if pagination is supported and visible
+                    if (m_propertyPaginationGroup->isVisible()) {
+                        int offset = m_propertyPaginateOffsetEdit->text().toInt();
+                        int limit = m_propertyPaginateLimitEdit->text().toInt();
+                        
+                        property_facade.send_get_property_data(
+                            m_selectedProperty.toStdString(),
+                            encoding.toStdString(),
+                            offset,
+                            limit
+                        );
+                        
+                        m_repository->log(QString("Auto-requesting property data for: %1 (paginated: offset=%2, limit=%3, encoding=%4)")
+                            .arg(m_selectedProperty)
+                            .arg(offset)
+                            .arg(limit)
+                            .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
+                                          tooling::MessageDirection::Out);
+                        
+                        m_lastRequestedProperty = m_selectedProperty;
+                    } else {
+                        property_facade.send_get_property_data(
+                            m_selectedProperty.toStdString(),
+                            encoding.toStdString()
+                        );
+                        
+                        m_repository->log(QString("Auto-requesting property data for: %1 (encoding=%2)")
+                            .arg(m_selectedProperty)
+                            .arg(encoding.isEmpty() ? "default" : encoding).toStdString(),
+                                          tooling::MessageDirection::Out);
+                        
+                        m_lastRequestedProperty = m_selectedProperty;
                     }
                 }
                 break;

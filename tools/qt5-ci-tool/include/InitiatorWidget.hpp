@@ -59,6 +59,7 @@ private:
     void updateProfileList();
     void updatePropertyList();
     void updateCurrentPropertyValue();
+    void sendGetPropertyDataRequest();
 
     midicci::tooling::CIToolRepository* m_repository;
     
@@ -99,6 +100,8 @@ private:
     QString m_selectedProperty;
     
     size_t m_lastConnectionCount;
+    bool m_propertyCallbacksSetup;
+    QString m_lastRequestedProperty;
     
     MutableState<bool> m_propertyEditingMode;
     MutableState<QString> m_propertyValueText;

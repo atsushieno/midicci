@@ -209,4 +209,16 @@ class MidiCIBridge {
       _midiManagerHandle = _bindings.getMidiDeviceManager(_repositoryHandle!);
     }
   }
+
+  /// Set up log callback to receive real-time logging events
+  /// Since we can't safely call Dart from native threads, we'll disable the callback
+  /// and rely on frequent polling for now
+  void setupLogCallback(Function(String message, bool isOutgoing, String timestamp) callback) {
+    // For now, we just acknowledge the callback but don't store it
+    // since we're using polling mode due to thread safety issues
+    
+    if (kDebugMode) {
+      debugPrint('📝 Log callback acknowledged (using polling mode due to thread safety)');
+    }
+  }
 }

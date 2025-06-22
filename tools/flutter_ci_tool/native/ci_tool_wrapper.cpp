@@ -228,26 +228,34 @@ const char* ci_tool_repository_get_logs_json(CIToolRepository handle) {
             // Convert direction to boolean
             bool is_outgoing = (entry.direction == midicci::tooling::MessageDirection::Out);
             
-            // Escape message content for JSON
+            // Escape message content for JSON - IMPORTANT: backslashes must be escaped FIRST
             std::string escaped_message = entry.message;
             size_t pos = 0;
+            
+            // 1. Escape backslashes first
+            while ((pos = escaped_message.find('\\', pos)) != std::string::npos) {
+                escaped_message.replace(pos, 1, "\\\\");
+                pos += 2;
+            }
+            
+            // 2. Then escape quotes
+            pos = 0;
             while ((pos = escaped_message.find('"', pos)) != std::string::npos) {
                 escaped_message.replace(pos, 1, "\\\"");
                 pos += 2;
             }
+            
+            // 3. Then escape newlines
             pos = 0;
             while ((pos = escaped_message.find('\n', pos)) != std::string::npos) {
                 escaped_message.replace(pos, 1, "\\n");
                 pos += 2;
             }
+            
+            // 4. Finally escape carriage returns
             pos = 0;
             while ((pos = escaped_message.find('\r', pos)) != std::string::npos) {
                 escaped_message.replace(pos, 1, "\\r");
-                pos += 2;
-            }
-            pos = 0;
-            while ((pos = escaped_message.find('\\', pos)) != std::string::npos) {
-                escaped_message.replace(pos, 1, "\\\\");
                 pos += 2;
             }
             
@@ -619,11 +627,39 @@ bool midi_device_manager_set_output_device(MidiDeviceManager handle, const char*
 }
 
 void ci_tool_repository_set_log_callback(CIToolRepository handle, LogCallback callback) {
-    if (!handle) return;
+    if (!handle || !handle->repository) return;
     
     std::lock_guard<std::mutex> lock(g_callback_mutex);
     g_log_callbacks[handle] = callback;
     handle->log_callback = callback;
+    
+    // Connect the callback to the actual C++ repository logging system
+    if (callback) {
+        handle->repository->add_log_callback([callback](const midicci::tooling::LogEntry& entry) {
+            // Convert C++ LogEntry to format expected by Dart callback
+            auto time_t = std::chrono::system_clock::to_time_t(entry.timestamp);
+            auto tm = *std::localtime(&time_t);
+            char time_str[32];
+            std::strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", &tm);
+            
+            bool is_outgoing = (entry.direction == midicci::tooling::MessageDirection::Out);
+            
+            // Convert strings to C-style for the callback
+            auto message_cstr = entry.message.c_str();
+            auto timestamp_cstr = time_str;
+            
+            // Create native UTF8 strings for the callback
+            auto message_ptr = const_cast<char*>(message_cstr);
+            auto timestamp_ptr = const_cast<char*>(timestamp_cstr);
+            
+            fprintf(stderr, "CALLBACK DEBUG: Invoking Dart callback with message: %s\n", message_cstr);
+            
+            // Call the Dart callback
+            callback(reinterpret_cast<const char*>(message_ptr), is_outgoing, reinterpret_cast<const char*>(timestamp_ptr));
+        });
+        
+        fprintf(stderr, "LOG CALLBACK DEBUG: Successfully connected C++ callback to repository\n");
+    }
 }
 
 void ci_device_model_set_connections_changed_callback(CIDeviceModel handle, ConnectionsChangedCallback callback) {

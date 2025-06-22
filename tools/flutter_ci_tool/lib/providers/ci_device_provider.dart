@@ -287,12 +287,12 @@ class CIDeviceProvider extends ChangeNotifier {
   /// Trigger log refresh after MIDI-CI operations
   void _refreshLogsAfterOperation() {
     if (kDebugMode) {
-      debugPrint('⏰ Scheduling log refresh callback in 100ms...');
+      debugPrint('⏰ Scheduling log refresh callback in 200ms...');
       debugPrint('📞 Callback available: ${_logRefreshCallback != null}');
     }
     
     // Add a small delay to allow native messages to be processed
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       try {
         if (kDebugMode) {
           debugPrint('📞 Calling log refresh callback now...');
@@ -303,7 +303,7 @@ class CIDeviceProvider extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('❌ Log refresh callback error: $e');
+          debugPrint('❌ Error in log refresh callback: $e');
         }
       }
     });

@@ -63,6 +63,8 @@ class CIToolProvider extends ChangeNotifier {
       _isInitialized = true;
       _addLog('✅ MIDI-CI Tool initialized successfully');
       
+      // Note: Using simple log refresh after operations instead of real-time callbacks due to thread safety
+      
       // Initial refresh of any existing logs
       await _refreshNativeLogs();
       
@@ -190,7 +192,8 @@ class CIToolProvider extends ChangeNotifier {
     
     await _refreshNativeLogs();
   }
-  
+
+
   /// Refresh logs from native side and merge with local logs
   Future<void> _refreshNativeLogs() async {
     if (!_isInitialized) {

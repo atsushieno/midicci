@@ -118,7 +118,23 @@ class MidiCCIBindings {
       _dylib = DynamicLibrary.open(libraryName);
       if (kDebugMode) {
         debugPrint('✅ Successfully loaded native library: $libraryName');
+        
+        // Try to verify which functions are actually loaded
+        try {
+          final createPtr = _dylib.lookup('ci_tool_repository_create');
+          debugPrint('🔍 ci_tool_repository_create found at: ${createPtr.address.toRadixString(16)}');
+        } catch (e) {
+          debugPrint('❌ ci_tool_repository_create lookup failed: $e');
+        }
+        
+        try {
+          final logPtr = _dylib.lookup('ci_tool_repository_log');
+          debugPrint('🔍 ci_tool_repository_log found at: ${logPtr.address.toRadixString(16)}');
+        } catch (e) {
+          debugPrint('❌ ci_tool_repository_log lookup failed: $e');
+        }
       }
+      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Failed to load native library: $libraryName');

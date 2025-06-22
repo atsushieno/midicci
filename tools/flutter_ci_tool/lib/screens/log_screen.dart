@@ -28,6 +28,61 @@ class _LogScreenState extends State<LogScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Debug information card
+              if (provider.lastLogRefreshStatus != null || provider.logRefreshCallCount > 0)
+                Card(
+                  color: Colors.blue.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.bug_report, size: 20, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Logging Debug Info',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Refresh calls: ${provider.logRefreshCallCount}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (provider.lastLogRefreshStatus != null)
+                          Text(
+                            'Last refresh: ${provider.lastLogRefreshStatus}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        if (provider.lastNativeLogsJson != null)
+                          Text(
+                            'Native JSON: ${provider.lastNativeLogsJson!.length > 100 ? "${provider.lastNativeLogsJson!.substring(0, 100)}..." : provider.lastNativeLogsJson}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'monospace',
+                              color: Colors.blue.shade600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -40,19 +95,29 @@ class _LogScreenState extends State<LogScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const Spacer(),
-                      Row(
+                      Wrap(
+                        spacing: 8,
                         children: [
-                          Switch(
-                            value: _autoScroll,
-                            onChanged: (value) {
-                              setState(() {
-                                _autoScroll = value;
-                              });
-                            },
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Switch(
+                                value: _autoScroll,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _autoScroll = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Auto-scroll'),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          const Text('Auto-scroll'),
-                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => provider.refreshLogs(),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh'),
+                          ),
                           ElevatedButton.icon(
                             onPressed: () => provider.clearLogs(),
                             icon: const Icon(Icons.clear),

@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../ffi/midicci_bindings.dart';
 
 class MidiCIBridge {
@@ -61,11 +62,28 @@ class MidiCIBridge {
   }
 
   void log(String message, {bool isOutgoing = false}) {
+    if (kDebugMode) {
+      debugPrint('🔍 MidiCIBridge.log() called with: "$message" (outgoing: $isOutgoing)');
+      debugPrint('🔍 Repository handle: ${_repositoryHandle != null ? "not null" : "null"}');
+    }
+    
     if (_repositoryHandle != null) {
       try {
+        if (kDebugMode) {
+          debugPrint('🔍 Calling _bindings.logRepository()...');
+        }
         _bindings.logRepository(_repositoryHandle!, message, isOutgoing);
+        if (kDebugMode) {
+          debugPrint('✅ _bindings.logRepository() completed');
+        }
       } catch (e) {
-        // Ignore logging errors
+        if (kDebugMode) {
+          debugPrint('❌ Exception in _bindings.logRepository(): $e');
+        }
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint('⚠️ Repository handle is null, skipping log');
       }
     }
   }

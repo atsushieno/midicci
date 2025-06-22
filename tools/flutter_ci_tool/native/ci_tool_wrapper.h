@@ -25,6 +25,9 @@ void ci_tool_repository_log(CIToolRepository handle, const char* message, bool i
 const char* ci_tool_repository_get_logs_json(CIToolRepository handle);
 void ci_tool_repository_clear_logs(CIToolRepository handle);
 
+// Test function to verify FFI is working
+void ci_tool_test_ffi();
+
 uint32_t ci_tool_repository_get_muid(CIToolRepository handle);
 
 typedef struct CIDeviceManagerHandle* CIDeviceManager;

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/ci_tool_provider.dart';
@@ -18,7 +19,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     // Refresh MIDI devices when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CIDeviceProvider>().refreshDevices();
+      if (mounted) {
+        try {
+          context.read<CIDeviceProvider>().refreshDevices();
+        } catch (e) {
+          // Handle potential context issues gracefully
+          if (kDebugMode) {
+            debugPrint('❌ Error refreshing devices in Settings: $e');
+          }
+        }
+      }
     });
   }
 

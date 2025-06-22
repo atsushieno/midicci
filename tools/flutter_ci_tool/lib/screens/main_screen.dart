@@ -16,27 +16,42 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+  CIToolProvider? _toolProvider;
+  CIDeviceProvider? _deviceProvider;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     
+    // Save references to providers to avoid context lookups during disposal
+    _toolProvider = context.read<CIToolProvider>();
+    _deviceProvider = context.read<CIDeviceProvider>();
+    
+    // Set up log refresh callback from device provider to tool provider
+    _deviceProvider?.setLogRefreshCallback(() {
+      if (mounted) {
+        _toolProvider?.refreshLogs();
+      }
+    });
+    
+    // Initialize the tool provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final toolProvider = context.read<CIToolProvider>();
-      final deviceProvider = context.read<CIDeviceProvider>();
-      
-      // Set up log refresh callback from device provider to tool provider
-      deviceProvider.setLogRefreshCallback(() {
-        toolProvider.refreshLogs();
-      });
-      
-      toolProvider.initialize();
+      if (mounted) {
+        _toolProvider?.initialize();
+      }
     });
   }
 
   @override
   void dispose() {
+    // Clean up using saved references instead of context lookups
+    _deviceProvider?.setLogRefreshCallback(null);
     _tabController.dispose();
     super.dispose();
   }

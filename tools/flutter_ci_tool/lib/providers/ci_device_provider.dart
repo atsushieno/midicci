@@ -59,8 +59,21 @@ class CIDeviceProvider extends ChangeNotifier {
   Future<void> sendDiscovery() async {
     try {
       _lastError.set(null);
+      
+      if (kDebugMode) {
+        debugPrint('🚀 Sending MIDI-CI discovery...');
+        debugPrint('🎹 Input device: ${_selectedInputDevice.get()}');
+        debugPrint('🎹 Output device: ${_selectedOutputDevice.get()}');
+        debugPrint('🔗 Bridge initialized: ${MidiCIBridge.instance.isInitialized}');
+      }
+      
       // Call native implementation via FFI
       await MidiCIBridge.instance.sendDiscovery();
+      
+      if (kDebugMode) {
+        debugPrint('✅ Discovery command sent to native bridge');
+        debugPrint('🔄 Triggering log refresh in 100ms...');
+      }
       
       // Trigger log refresh to capture MIDI-CI messages
       _refreshLogsAfterOperation();
@@ -68,6 +81,9 @@ class CIDeviceProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _lastError.set('Send discovery error: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Send discovery error: $e');
+      }
       notifyListeners();
     }
   }
@@ -153,11 +169,21 @@ class CIDeviceProvider extends ChangeNotifier {
       final success = await MidiCIBridge.instance.setInputDevice(deviceId);
       if (success) {
         _selectedInputDevice.set(deviceId);
+        if (kDebugMode) {
+          debugPrint('✅ Selected input device: $deviceId');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('❌ Failed to select input device: $deviceId');
+        }
       }
       notifyListeners();
       return success;
     } catch (e) {
       _lastError.set('Set input device error: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error selecting input device $deviceId: $e');
+      }
       notifyListeners();
       return false;
     }
@@ -170,11 +196,21 @@ class CIDeviceProvider extends ChangeNotifier {
       final success = await MidiCIBridge.instance.setOutputDevice(deviceId);
       if (success) {
         _selectedOutputDevice.set(deviceId);
+        if (kDebugMode) {
+          debugPrint('✅ Selected output device: $deviceId');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('❌ Failed to select output device: $deviceId');
+        }
       }
       notifyListeners();
       return success;
     } catch (e) {
       _lastError.set('Set output device error: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error selecting output device $deviceId: $e');
+      }
       notifyListeners();
       return false;
     }
@@ -250,9 +286,26 @@ class CIDeviceProvider extends ChangeNotifier {
   
   /// Trigger log refresh after MIDI-CI operations
   void _refreshLogsAfterOperation() {
+    if (kDebugMode) {
+      debugPrint('⏰ Scheduling log refresh callback in 100ms...');
+      debugPrint('📞 Callback available: ${_logRefreshCallback != null}');
+    }
+    
     // Add a small delay to allow native messages to be processed
     Future.delayed(const Duration(milliseconds: 100), () {
-      _logRefreshCallback?.call();
+      try {
+        if (kDebugMode) {
+          debugPrint('📞 Calling log refresh callback now...');
+        }
+        _logRefreshCallback?.call();
+        if (kDebugMode) {
+          debugPrint('✅ Log refresh callback completed');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Log refresh callback error: $e');
+        }
+      }
     });
   }
   
@@ -276,6 +329,15 @@ class CIDeviceProvider extends ChangeNotifier {
   
   @override
   void dispose() {
+    // Clear the log refresh callback first to prevent calls after disposal
+    _logRefreshCallback = null;
+    
+    // Clear all callbacks
+    _connectionsChangedCallbacks.clear();
+    _profilesUpdatedCallbacks.clear();
+    _propertiesUpdatedCallbacks.clear();
+    
+    // Dispose reactive state objects
     _connections.dispose();
     _localProfiles.dispose();
     _localProperties.dispose();
@@ -284,9 +346,7 @@ class CIDeviceProvider extends ChangeNotifier {
     _selectedInputDevice.dispose();
     _selectedOutputDevice.dispose();
     _lastError.dispose();
-    _connectionsChangedCallbacks.clear();
-    _profilesUpdatedCallbacks.clear();
-    _propertiesUpdatedCallbacks.clear();
+    
     super.dispose();
   }
 }

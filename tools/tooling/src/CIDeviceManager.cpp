@@ -36,7 +36,7 @@ CIDeviceManager::~CIDeviceManager() = default;
 
 void CIDeviceManager::initialize() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     auto ci_output_sender = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         std::vector<uint8_t> sysex_data;
         sysex_data.push_back(0xF0);

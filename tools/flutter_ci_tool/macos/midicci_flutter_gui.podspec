@@ -8,9 +8,12 @@ Pod::Spec.new do |spec|
   spec.description   = 'A Flutter plugin that provides GUI interface for MIDI-CI operations using the midicci C++ library'
 
   spec.source        = { :path => '.' }
-  spec.source_files  = 'Classes/**/*', '../native/*.{h,cpp}'
+  spec.source_files = 'Classes/**/*'
   spec.public_header_files = 'Classes/**/*.h'
   spec.dependency 'FlutterMacOS'
+
+  # Use only the pre-built library - no source compilation
+  spec.vendored_libraries = ['../libmidicci-flutter-wrapper.dylib', '../build/src/libmidicci.1.dylib']
 
   spec.platform = :osx, '10.14'
   spec.pod_target_xcconfig = {

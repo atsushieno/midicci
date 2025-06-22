@@ -12,6 +12,7 @@
 #include <mutex>
 #include <map>
 #include <sstream>
+#include <iostream>
 #include <iomanip>
 
 struct CIToolRepositoryHandle {
@@ -21,10 +22,12 @@ struct CIToolRepositoryHandle {
 
 struct CIDeviceManagerHandle {
     std::shared_ptr<midicci::tooling::CIDeviceManager> manager;
+    midicci::tooling::CIToolRepository* repository;
 };
 
 struct CIDeviceModelHandle {
     std::shared_ptr<midicci::tooling::CIDeviceModel> model;
+    midicci::tooling::CIToolRepository* repository;
     ConnectionsChangedCallback connections_callback = nullptr;
     ProfilesUpdatedCallback profiles_callback = nullptr;
     PropertiesUpdatedCallback properties_callback = nullptr;
@@ -38,11 +41,30 @@ static std::mutex g_callback_mutex;
 static std::map<CIToolRepository, LogCallback> g_log_callbacks;
 
 CIToolRepository ci_tool_repository_create() {
+    // File-based debugging since Flutter swallows stderr/stdout
+    FILE* debug_file = fopen("/tmp/midicci_cpp_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "C++ DEBUG: ci_tool_repository_create called\n");
+        fclose(debug_file);
+    }
+    
     try {
         auto handle = new CIToolRepositoryHandle();
         handle->repository = std::make_unique<midicci::tooling::CIToolRepository>();
+        
+        // Test again after repository creation
+        debug_file = fopen("/tmp/midicci_cpp_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "C++ DEBUG: Repository created successfully\n");
+            fclose(debug_file);
+        }
         return handle;
     } catch (...) {
+        debug_file = fopen("/tmp/midicci_cpp_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "C++ DEBUG: Exception in repository create\n");
+            fclose(debug_file);
+        }
         return nullptr;
     }
 }
@@ -131,22 +153,64 @@ void ci_tool_repository_save_default_config(CIToolRepository handle) {
     }
 }
 
+// Test function to verify FFI is working  
+void ci_tool_test_ffi() {
+    fprintf(stderr, "FFI TEST: ci_tool_test_ffi called successfully!\n");
+    fflush(stderr);
+}
+
 void ci_tool_repository_log(CIToolRepository handle, const char* message, bool is_outgoing) {
-    if (!handle || !handle->repository || !message) return;
+    // Try multiple ways to ensure we can see debug output
+    fprintf(stderr, "LOG DEBUG: ci_tool_repository_log called!\n");
+    fprintf(stdout, "LOG DEBUG: ci_tool_repository_log called!\n");
+    fflush(stderr);
+    fflush(stdout);
+    
+    // Also try to write to a file to verify the function is called
+    FILE* debug_file = fopen("/tmp/midicci_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "LOG DEBUG: ci_tool_repository_log called with message: %s\n", message ? message : "NULL");
+        fclose(debug_file);
+    }
+    
+    if (!handle) {
+        fprintf(stderr, "LOG ERROR: handle is null\n");
+        return;
+    }
+    if (!handle->repository) {
+        fprintf(stderr, "LOG ERROR: repository is null\n");
+        return;
+    }
+    if (!message) {
+        fprintf(stderr, "LOG ERROR: message is null\n");
+        return;
+    }
+    
+    fprintf(stderr, "LOG DEBUG: Logging message: %s (outgoing: %s)\n", message, is_outgoing ? "true" : "false");
     
     try {
         midicci::tooling::MessageDirection direction = is_outgoing ? 
             midicci::tooling::MessageDirection::Out : midicci::tooling::MessageDirection::In;
         handle->repository->log(std::string(message), direction);
+        fprintf(stderr, "LOG DEBUG: Successfully logged to repository\n");
     } catch (...) {
+        fprintf(stderr, "LOG ERROR: Exception while logging to repository\n");
     }
 }
 
 const char* ci_tool_repository_get_logs_json(CIToolRepository handle) {
-    if (!handle || !handle->repository) return nullptr;
+    if (!handle) {
+        fprintf(stderr, "GET_LOGS ERROR: handle is null\n");
+        return nullptr;
+    }
+    if (!handle->repository) {
+        fprintf(stderr, "GET_LOGS ERROR: repository is null\n");
+        return nullptr;
+    }
     
     try {
         auto logs = handle->repository->get_logs();
+        fprintf(stderr, "GET_LOGS DEBUG: Retrieved %lu logs from repository\n", logs.size());
         
         // Use thread-local storage to avoid static issues with concurrent access
         thread_local std::string json_result;
@@ -235,6 +299,7 @@ CIDeviceManager ci_tool_repository_get_device_manager(CIToolRepository handle) {
         
         auto device_handle = new CIDeviceManagerHandle();
         device_handle->manager = manager;
+        device_handle->repository = handle->repository.get();
         return device_handle;
     } catch (...) {
         return nullptr;
@@ -270,6 +335,7 @@ CIDeviceModel ci_device_manager_get_device_model(CIDeviceManager handle) {
         
         auto model_handle = new CIDeviceModelHandle();
         model_handle->model = model;
+        model_handle->repository = handle->repository;
         return model_handle;
     } catch (...) {
         return nullptr;
@@ -280,8 +346,33 @@ void ci_device_model_send_discovery(CIDeviceModel handle) {
     if (!handle || !handle->model) return;
     
     try {
+        // Check repository connection and log status
+        if (handle->repository) {
+            handle->repository->log("WRAPPER: Starting discovery operation", midicci::tooling::MessageDirection::Out);
+            handle->repository->log("WRAPPER: Repository handle connected", midicci::tooling::MessageDirection::Out);
+        } else {
+            // Log to stderr since repository is not available
+            fprintf(stderr, "ERROR: Repository handle is null in send_discovery\n");
+            return;
+        }
+        
+        // Log the discovery operation before sending
+        handle->repository->log("WRAPPER: Calling model->send_discovery()", midicci::tooling::MessageDirection::Out);
+        
         handle->model->send_discovery();
+        
+        // Log completion
+        handle->repository->log("WRAPPER: Discovery command completed", midicci::tooling::MessageDirection::Out);
+        
+        // Force a log entry to verify logging is working
+        handle->repository->log("TEST: This is a test log entry after discovery", midicci::tooling::MessageDirection::In);
+        
     } catch (...) {
+        if (handle->repository) {
+            handle->repository->log("WRAPPER: Exception during discovery operation", midicci::tooling::MessageDirection::Out);
+        } else {
+            fprintf(stderr, "ERROR: Exception in send_discovery with null repository\n");
+        }
     }
 }
 

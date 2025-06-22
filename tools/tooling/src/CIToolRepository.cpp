@@ -47,7 +47,7 @@ void CIToolRepository::log(const std::string& message, MessageDirection directio
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     LogEntry entry(direction, message);
     pimpl_->logs_.push_back(entry);
-    
+
     for (const auto& callback : pimpl_->log_callbacks_) {
         callback(entry);
     }

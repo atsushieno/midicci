@@ -13,12 +13,22 @@ class CIToolProvider extends ChangeNotifier {
   String? _libraryLoadError;
   int _lastNativeLogCount = 0;
   
+  // Debug information for logging system
+  String? _lastLogRefreshStatus;
+  String? _lastNativeLogsJson;
+  int _logRefreshCallCount = 0;
+  
   bool get isInitialized => _isInitialized;
   String get configPath => _configPath;
   List<String> get logs => List.unmodifiable(_logs);
   String? get lastError => _lastError;
   bool get libraryLoaded => _libraryLoaded;
   String? get libraryLoadError => _libraryLoadError;
+  
+  // Debug getters for logging system
+  String? get lastLogRefreshStatus => _lastLogRefreshStatus;
+  String? get lastNativeLogsJson => _lastNativeLogsJson;
+  int get logRefreshCallCount => _logRefreshCallCount;
   
   Future<bool> initialize() async {
     try {
@@ -54,6 +64,11 @@ class CIToolProvider extends ChangeNotifier {
       _addLog('✅ MIDI-CI Tool initialized successfully');
       
       // Initial refresh of any existing logs
+      await _refreshNativeLogs();
+      
+      // DEBUG: Automatically test logging by adding a test log
+      MidiCIBridge.instance.log("DEBUG: Test log from Flutter initialization", isOutgoing: true);
+      await Future.delayed(const Duration(milliseconds: 200));
       await _refreshNativeLogs();
       
       notifyListeners();
@@ -166,22 +181,54 @@ class CIToolProvider extends ChangeNotifier {
   
   /// Manually refresh logs from native side (call after MIDI-CI operations)
   Future<void> refreshLogs() async {
+    _logRefreshCallCount++;
+    _lastLogRefreshStatus = 'refreshLogs() called #$_logRefreshCallCount';
+    
+    if (kDebugMode) {
+      debugPrint('🔄 Manual log refresh called (#$_logRefreshCallCount)');
+    }
+    
     await _refreshNativeLogs();
   }
   
   /// Refresh logs from native side and merge with local logs
   Future<void> _refreshNativeLogs() async {
-    if (!_isInitialized) return;
+    if (!_isInitialized) {
+      _lastLogRefreshStatus = 'Skipped: not initialized';
+      if (kDebugMode) {
+        debugPrint('⚠️ Refresh logs skipped - not initialized');
+      }
+      return;
+    }
     
     try {
+      if (kDebugMode) {
+        debugPrint('🔍 Calling native getLogsJson()...');
+      }
       final nativeLogsJson = MidiCIBridge.instance.getLogsJson();
+      _lastNativeLogsJson = nativeLogsJson;
+      
+      if (kDebugMode) {
+        debugPrint('📥 Native logs JSON length: ${nativeLogsJson.length}');
+        debugPrint('📥 Native logs JSON content: $nativeLogsJson');
+        debugPrint('📊 Current Flutter logs: ${_logs.length}, Last native count: $_lastNativeLogCount');
+      }
       
       if (nativeLogsJson.isNotEmpty && nativeLogsJson != '[]') {
         final List<dynamic> jsonList = json.decode(nativeLogsJson);
         
+        if (kDebugMode) {
+          debugPrint('📋 Parsed ${jsonList.length} native log entries');
+        }
+        
         // Only process new logs to avoid duplicates
         if (jsonList.length > _lastNativeLogCount) {
           final newLogs = jsonList.skip(_lastNativeLogCount).toList();
+          _lastLogRefreshStatus = 'Added ${newLogs.length} new logs (${jsonList.length} total)';
+          
+          if (kDebugMode) {
+            debugPrint('🆕 Processing ${newLogs.length} new logs');
+          }
           
           for (final logData in newLogs) {
             try {
@@ -192,20 +239,33 @@ class CIToolProvider extends ChangeNotifier {
               _logs.add(displayLog);
               
               if (kDebugMode) {
-                debugPrint('📋 Native log: ${logEntry.message}');
+                debugPrint('📋 Added native log: ${logEntry.message}');
               }
             } catch (e) {
+              _lastLogRefreshStatus = 'Error parsing log entry: $e';
               if (kDebugMode) {
                 debugPrint('❌ Failed to parse log entry: $e');
+                debugPrint('❌ Raw log data: $logData');
               }
             }
           }
           
           _lastNativeLogCount = jsonList.length;
           notifyListeners();
+        } else {
+          _lastLogRefreshStatus = 'No new logs (${jsonList.length} total, last processed: $_lastNativeLogCount)';
+          if (kDebugMode) {
+            debugPrint('📋 No new logs to process');
+          }
+        }
+      } else {
+        _lastLogRefreshStatus = 'Native logs empty or "[]"';
+        if (kDebugMode) {
+          debugPrint('📋 Native logs are empty or return "[]"');
         }
       }
     } catch (e) {
+      _lastLogRefreshStatus = 'Error: $e';
       if (kDebugMode) {
         debugPrint('❌ Failed to refresh native logs: $e');
       }
@@ -214,7 +274,20 @@ class CIToolProvider extends ChangeNotifier {
   
   @override
   void dispose() {
-    shutdown();
+    // Avoid calling async shutdown() during disposal as it can cause issues
+    try {
+      if (_isInitialized) {
+        _isInitialized = false;
+        // Let the native bridge cleanup in its own time
+        if (kDebugMode) {
+          debugPrint('🔄 CIToolProvider disposed, marked as not initialized');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error during CIToolProvider disposal: $e');
+      }
+    }
     super.dispose();
   }
 }

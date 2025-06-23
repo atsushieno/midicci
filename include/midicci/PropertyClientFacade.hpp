@@ -22,6 +22,8 @@ class ClientObservablePropertyList;
 
 class PropertyClientFacade {
 public:
+    using SubscriptionUpdateCallback = std::function<void(const ClientSubscription&)>;
+    
     PropertyClientFacade(MidiCIDevice& device, ClientConnection& conn);
     ~PropertyClientFacade();
     
@@ -51,11 +53,16 @@ public:
     
     std::vector<ClientSubscription> get_subscriptions() const;
     ClientObservablePropertyList* get_properties();
+    
+    void add_subscription_update_callback(SubscriptionUpdateCallback callback);
+    void remove_subscription_update_callback(const SubscriptionUpdateCallback& callback);
 
 private:
     SubscribePropertyReply handle_unsubscription_notification(const SubscribeProperty& msg);
     std::pair<std::string, SubscribePropertyReply> update_property_by_subscribe(const SubscribeProperty& msg);
     void add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id);
+    void promote_subscription_as_unsubscribing(const std::string& property_id, uint8_t new_request_id);
+    void notify_subscription_updated(const ClientSubscription& subscription);
     
     class Impl;
     std::unique_ptr<Impl> pimpl_;

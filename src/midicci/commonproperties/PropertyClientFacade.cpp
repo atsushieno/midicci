@@ -30,6 +30,7 @@ public:
     std::unordered_map<std::string, std::vector<uint8_t>> cached_properties_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<ClientSubscription> subscriptions_;
+    std::vector<PropertyClientFacade::SubscriptionUpdateCallback> subscription_update_callbacks_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -133,15 +134,43 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
     
     if (!pimpl_->property_rules_) return;
     
+    // Find existing subscription for this property
+    auto sub_it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [&](const ClientSubscription& sub) {
+            return sub.propertyId == property_id;
+        });
+    
+    if (sub_it == pimpl_->subscriptions_.end()) {
+        pimpl_->device_.get_logger()("Cannot unsubscribe property as not found: " + property_id, false);
+        return;
+    }
+    
+    if (sub_it->state == SubscriptionActionState::Unsubscribing) {
+        pimpl_->device_.get_logger()(
+            "Unsubscription for the property is already underway (property: " + sub_it->propertyId + 
+            ", state: " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
+        return;
+    }
+    
+    auto new_request_id = pimpl_->device_.get_messenger().get_next_request_id();
+    
     std::map<std::string, std::string> fields;
     fields["command"] = MidiCISubscriptionCommand::END;
+    
+    // Include subscription ID if available (critical for host to identify which subscription to end)
+    if (sub_it->subscriptionId && !sub_it->subscriptionId->empty()) {
+        fields["subscribeId"] = *sub_it->subscriptionId;
+    }
     
     auto header = pimpl_->property_rules_->create_subscription_header(property_id, fields);
     
     SubscribeProperty msg(
         Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
-        pimpl_->device_.get_messenger().get_next_request_id(), header, {}
+        new_request_id, header, {}
     );
+    
+    // Update subscription state to Unsubscribing before sending (like Kotlin implementation)
+    promote_subscription_as_unsubscribing(property_id, new_request_id);
     
     pimpl_->device_.get_messenger().send(msg);
 }
@@ -286,6 +315,8 @@ SubscribePropertyReply PropertyClientFacade::handle_unsubscription_notification(
         });
     
     if (it != pimpl_->subscriptions_.end()) {
+        // Notify UI before removing the subscription
+        notify_subscription_updated(*it);
         pimpl_->subscriptions_.erase(it);
     }
     
@@ -398,16 +429,21 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
     if (sub_it->state == SubscriptionActionState::Unsubscribing) {
         // Unsubscribe: set state and remove from list
         sub_it->state = SubscriptionActionState::Unsubscribed;
-        pimpl_->subscriptions_.erase(sub_it);
         pimpl_->device_.get_logger()("Subscription unsubscribed and removed for property: " + sub_it->propertyId, false);
+        
+        // Notify UI before removing the subscription
+        notify_subscription_updated(*sub_it);
+        
+        pimpl_->subscriptions_.erase(sub_it);
     } else {
         // Subscribe: set state to Subscribed
         sub_it->state = SubscriptionActionState::Subscribed;
         pimpl_->device_.get_logger()("Subscription registered: property=" + sub_it->propertyId + 
                                    ", subscribeId=" + subscription_id, false);
+        
+        // Notify UI of successful subscription
+        notify_subscription_updated(*sub_it);
     }
-    
-    // TODO: Add subscription update callbacks similar to Kotlin subscriptionUpdated.forEach { it(sub) }
 }
 
 void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id) {
@@ -427,7 +463,39 @@ void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const st
                                ", requestId=" + std::to_string(request_id) + 
                                (subscription_id.empty() ? "" : ", subscriptionId=" + subscription_id), false);
     
-    // TODO: Add subscription update callbacks similar to Kotlin subscriptionUpdated.forEach { it(sub) }
+    // Notify UI of subscription state change
+    notify_subscription_updated(sub);
+}
+
+void PropertyClientFacade::promote_subscription_as_unsubscribing(const std::string& property_id, uint8_t new_request_id) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    auto sub_it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [&](ClientSubscription& sub) {
+            return sub.propertyId == property_id;
+        });
+    
+    if (sub_it == pimpl_->subscriptions_.end()) {
+        pimpl_->device_.get_logger()("Cannot unsubscribe property as not found: " + property_id, false);
+        return;
+    }
+    
+    if (sub_it->state == SubscriptionActionState::Unsubscribing) {
+        pimpl_->device_.get_logger()(
+            "Unsubscription for the property is already underway (property: " + sub_it->propertyId + 
+            ", subscriptionId: " + (sub_it->subscriptionId ? *sub_it->subscriptionId : "none") + 
+            ", state: " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
+        return;
+    }
+    
+    sub_it->pendingRequestId = new_request_id;
+    sub_it->state = SubscriptionActionState::Unsubscribing;
+    
+    pimpl_->device_.get_logger()("Promoted subscription to Unsubscribing: property=" + property_id + 
+                               ", requestId=" + std::to_string(new_request_id), false);
+    
+    // Notify UI of subscription state change
+    notify_subscription_updated(*sub_it);
 }
 
 std::vector<ClientSubscription> PropertyClientFacade::get_subscriptions() const {
@@ -438,6 +506,25 @@ std::vector<ClientSubscription> PropertyClientFacade::get_subscriptions() const 
 ClientObservablePropertyList* PropertyClientFacade::get_properties() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->properties_.get();
+}
+
+void PropertyClientFacade::add_subscription_update_callback(SubscriptionUpdateCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->subscription_update_callbacks_.push_back(std::move(callback));
+}
+
+void PropertyClientFacade::remove_subscription_update_callback(const SubscriptionUpdateCallback& callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    // Note: Removing std::function by comparison is tricky, typically done by storing ID or using a registry
+    // For now, we'll leave this as a placeholder
+    // TODO: Implement proper callback removal mechanism if needed
+}
+
+void PropertyClientFacade::notify_subscription_updated(const ClientSubscription& subscription) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    for (const auto& callback : pimpl_->subscription_update_callbacks_) {
+        callback(subscription);
+    }
 }
 
 } // namespace

@@ -22,7 +22,7 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() override;
     GetPropertyDataReply get_property_data(const GetPropertyData& msg) override;
     SetPropertyDataReply set_property_data(const SetPropertyData& msg) override;
-    SubscribePropertyReply subscribe_property(const SubscribeProperty& msg) override;
+    std::optional<SubscribePropertyReply> subscribe_property(const SubscribeProperty& msg) override;
     void add_metadata(std::unique_ptr<PropertyMetadata> property) override;
     void remove_metadata(const std::string& property_id) override;
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;

@@ -183,7 +183,7 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
     property_values_.erase(property_id);
 }
 
-SubscribePropertyReply CommonRulesPropertyService::subscribe_property(const SubscribeProperty& msg) {
+std::optional<SubscribePropertyReply> CommonRulesPropertyService::subscribe_property(const SubscribeProperty& msg) {
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
@@ -196,8 +196,11 @@ int CommonRulesPropertyService::get_header_field_integer(const std::vector<uint8
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::create_shutdown_subscription_header(const std::string& property_id) {
-    std::map<std::string, std::string> fields;
-    return helper_->create_request_header_bytes(property_id, fields);
+    auto e = std::find_if(subscriptions_.begin(), subscriptions_.end(), [&property_id](const SubscriptionEntry& entry) {
+        return entry.resource == property_id;
+    });
+    if (e == subscriptions_.end()) return {}; // FIXME: should we throw an error instead?
+    return helper_->create_subscribe_header_bytes(property_id, MidiCISubscriptionCommand::END);
 }
 
 const std::vector<SubscriptionEntry>& CommonRulesPropertyService::get_subscriptions() const {

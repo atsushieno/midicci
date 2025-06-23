@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include "TestPropertyRules.hpp"
 #include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/Json.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 
 using namespace midicci::commonproperties;
@@ -58,7 +56,9 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     auto subscriptions = host.get_subscriptions();
     if (!subscriptions.empty()) {
         auto sub = subscriptions[0];
+        std::cout << "Before host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
         host.shutdownSubscription(sub.subscriber_muid, sub.property_id);
+        std::cout << "After host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
         EXPECT_EQ(0, client.get_subscriptions().size()) << "Client subscriptions not cleared after host shutdown";
         EXPECT_EQ(0, host.get_subscriptions().size()) << "Host subscriptions not cleared after shutdown";
     }

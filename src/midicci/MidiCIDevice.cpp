@@ -9,7 +9,7 @@ namespace midicci {
 
 class MidiCIDevice::Impl {
 public:
-    Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid), initialized_(false),
+    Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid),
         profile_host_facade_(std::make_unique<ProfileHostFacade>(device)),
         property_host_facade_(std::make_unique<PropertyHostFacade>(device)),
         messenger_(device) {}
@@ -17,7 +17,6 @@ public:
     uint8_t device_id_;
     MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
-    bool initialized_;
     MessageCallback message_callback_;
     MessageReceivedCallback message_received_callback_;
     ConnectionsChangedCallback connections_changed_callback_;
@@ -37,36 +36,6 @@ MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, Log
 }
 
 MidiCIDevice::~MidiCIDevice() = default;
-
-void MidiCIDevice::initialize() {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (!pimpl_->initialized_) {
-        pimpl_->initialized_ = true;
-    }
-}
-
-void MidiCIDevice::shutdown() {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->initialized_) {
-        pimpl_->connections_.clear();
-        pimpl_->initialized_ = false;
-    }
-}
-
-bool MidiCIDevice::is_initialized() const noexcept {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return pimpl_->initialized_;
-}
-
-void MidiCIDevice::set_device_id(uint8_t device_id) noexcept {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->device_id_ = device_id;
-}
-
-uint8_t MidiCIDevice::get_device_id() const noexcept {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return pimpl_->device_id_;
-}
 
 void MidiCIDevice::set_message_callback(MessageCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
@@ -118,7 +87,7 @@ const std::unordered_map<uint32_t, std::shared_ptr<ClientConnection>>& MidiCIDev
 
 void MidiCIDevice::processInput(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->initialized_ && !sysex_data.empty()) {
+    if (!sysex_data.empty()) {
         pimpl_->messenger_.process_input(group, sysex_data);
     }
 }

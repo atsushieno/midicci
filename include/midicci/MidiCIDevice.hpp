@@ -31,15 +31,7 @@ public:
     
     MidiCIDevice(MidiCIDevice&&) = default;
     MidiCIDevice& operator=(MidiCIDevice&&) = default;
-    
-    void initialize();
-    void shutdown();
-    
-    bool is_initialized() const noexcept;
-    
-    void set_device_id(uint8_t device_id) noexcept;
-    uint8_t get_device_id() const noexcept;
-    
+
     void set_message_callback(MessageCallback callback);
     void set_message_received_callback(MessageReceivedCallback callback);
     void set_connections_changed_callback(ConnectionsChangedCallback callback);

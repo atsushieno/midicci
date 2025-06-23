@@ -51,6 +51,7 @@ public:
     std::vector<uint8_t> getProperty(const std::string& property_id) const;
     std::vector<PropertySubscription> get_subscriptions() const;
     void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id);
+    SubscribeProperty createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, uint8_t group, uint8_t request_id);
     
 private:
     class Impl;

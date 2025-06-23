@@ -21,7 +21,7 @@ public:
     
     virtual GetPropertyDataReply get_property_data(const GetPropertyData& msg) = 0;
     virtual SetPropertyDataReply set_property_data(const SetPropertyData& msg) = 0;
-    virtual SubscribePropertyReply subscribe_property(const SubscribeProperty& msg) = 0;
+    virtual std::optional<SubscribePropertyReply> subscribe_property(const SubscribeProperty& msg) = 0;
     
     virtual void add_metadata(std::unique_ptr<PropertyMetadata> property) = 0;
     virtual void remove_metadata(const std::string& property_id) = 0;

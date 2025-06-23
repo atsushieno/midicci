@@ -56,8 +56,7 @@ void CIDeviceModel::initialize() {
     
     pimpl_->device_ = std::make_shared<MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
     pimpl_->device_->set_sysex_sender(pimpl_->ci_output_sender_);
-    pimpl_->device_->initialize();
-    
+
     setup_event_listeners();
 
     std::cout << "CIDeviceModel initialized with MUID: 0x" << std::hex << pimpl_->muid_ << std::dec << std::endl;
@@ -66,7 +65,6 @@ void CIDeviceModel::initialize() {
 void CIDeviceModel::shutdown() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     if (pimpl_->device_) {
-        pimpl_->device_->shutdown();
         pimpl_->device_.reset();
     }
     pimpl_->connections_.clear();

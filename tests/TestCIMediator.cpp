@@ -1,6 +1,4 @@
 #include "TestCIMediator.hpp"
-#include "TestPropertyRules.hpp"
-#include <midicci/MidiCIDevice.hpp>
 #include <memory>
 
 using namespace midicci;
@@ -22,13 +20,4 @@ TestCIMediator::TestCIMediator() {
     
     device1_->set_sysex_sender(device1Sender_);
     device2_->set_sysex_sender(device2Sender_);
-    
-    device1_->initialize();
-    device2_->initialize();
-    
-    auto property_rules1 = std::make_unique<TestPropertyRules>();
-    auto property_rules2 = std::make_unique<TestPropertyRules>();
-    
-    device1_->get_property_host_facade().set_property_rules(std::move(property_rules1));
-    device2_->get_property_host_facade().set_property_rules(std::move(property_rules2));
 }

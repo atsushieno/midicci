@@ -13,7 +13,6 @@ set(GTEST_SOURCES
     test_json.cpp
     test_property_common_converter.cpp
     TestCIMediator.cpp
-    TestPropertyRules.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})

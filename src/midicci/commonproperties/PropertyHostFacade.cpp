@@ -121,32 +121,28 @@ SetPropertyDataReply PropertyHostFacade::process_set_property_data(const SetProp
 SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const SubscribeProperty& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (pimpl_->property_rules_) {
-        auto reply = pimpl_->property_rules_->subscribe_property(msg);
-        
-        auto status = pimpl_->property_rules_->get_header_field_integer(reply.get_header(), "status");
-        if (status == 200) {
-            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
-            auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
-            
-            if (command == "end") {
-                auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
-                    [msg_source_muid = msg.get_source_muid(), &property_id](const PropertySubscription& sub) {
-                        return sub.subscriber_muid == msg_source_muid && sub.property_id == property_id;
-                    });
-                pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
-            } else {
-                PropertySubscription subscription;
-                subscription.subscriber_muid = msg.get_source_muid();
-                subscription.property_id = property_id;
-                subscription.subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
-                pimpl_->subscriptions_.push_back(subscription);
-            }
+    auto reply = pimpl_->property_rules_->subscribe_property(msg);
+    if (reply.has_value()) {
+        auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+        auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
+
+        if (command == "end") {
+            auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+                [msg_source_muid = msg.get_source_muid(), &property_id](const PropertySubscription& sub) {
+                    return sub.subscriber_muid == msg_source_muid && sub.property_id == property_id;
+                });
+            pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+        } else {
+            PropertySubscription subscription;
+            subscription.subscriber_muid = msg.get_source_muid();
+            subscription.property_id = property_id;
+            subscription.subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
+            pimpl_->subscriptions_.push_back(subscription);
         }
-        
-        return reply;
+        return std::move(reply.value());
     }
-    
+    else
+        pimpl_->device_.get_logger()("Incoming SubscribeProperty message resulted in an error", true);
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
@@ -200,15 +196,20 @@ std::vector<PropertySubscription> PropertyHostFacade::get_subscriptions() const 
     return pimpl_->subscriptions_;
 }
 
-void PropertyHostFacade::shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id) {
+SubscribeProperty PropertyHostFacade::createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, uint8_t group, uint8_t request_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    auto header = pimpl_->property_rules_->create_shutdown_subscription_header(property_id);
     
-    auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
-        [subscriber_muid, &property_id](const PropertySubscription& sub) {
-            return sub.subscriber_muid == subscriber_muid && sub.property_id == property_id;
-        });
-    
-    pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+    Common common(pimpl_->device_.get_muid(), destination_muid, ADDRESS_FUNCTION_BLOCK, group);
+    return {common, request_id, header, {}};
+}
+
+void PropertyHostFacade::shutdownSubscription(uint32_t destination_muid, const std::string& property_id) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    auto& device = pimpl_->device_;
+    auto msg = createShutdownSubscriptionMessage(destination_muid, property_id, device.get_config().group, device.get_messenger().get_next_request_id());
+    device.get_messenger().send(msg);
 }
 
 } // namespace

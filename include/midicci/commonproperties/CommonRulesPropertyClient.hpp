@@ -40,6 +40,8 @@ public:
     
     void request_property_list(uint8_t group) override;
     
+    std::string get_subscribed_property(const SubscribeProperty& msg) override;
+    
     void add_property_catalog_updated_callback(std::function<void()> callback);
     
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;

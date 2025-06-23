@@ -52,6 +52,9 @@ public:
     void send_property_subscribe(uint8_t group, uint32_t destination_muid, uint8_t request_id,
                                const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     
+    void send_nak_for_error(const Common& common, uint8_t original_sub_id2, uint8_t status_code, 
+                           uint8_t status_data, const std::vector<uint8_t>& details, const std::string& message);
+    
     void send_process_inquiry_capabilities(uint8_t group, uint32_t destination_muid);
     void send_midi_message_report_inquiry(uint8_t group, uint8_t address, uint32_t destination_muid,
                                         uint8_t message_data_control, uint8_t system_messages,

@@ -10,6 +10,8 @@
 
 namespace midicci {
 
+class SubscribeProperty;
+
 namespace commonproperties {
 
 class PropertyMetadata {
@@ -90,6 +92,7 @@ public:
     std::vector<PropertyValue> getValues() const override;
     
     void updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType = "application/json");
+    std::string updateValue(const SubscribeProperty& msg);
     
 private:
     LoggerFunction logger_;

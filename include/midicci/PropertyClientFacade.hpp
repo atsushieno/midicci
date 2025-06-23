@@ -46,13 +46,17 @@ public:
     void process_property_capabilities_reply(const PropertyGetCapabilitiesReply& msg);
     void process_get_data_reply(const GetPropertyDataReply& msg);
     void process_set_data_reply(const SetPropertyDataReply& msg);
-    void process_subscribe_property(const SubscribeProperty& msg);
+    SubscribePropertyReply process_subscribe_property(const SubscribeProperty& msg);
     void process_subscribe_property_reply(const SubscribePropertyReply& msg);
     
     std::vector<ClientSubscription> get_subscriptions() const;
     ClientObservablePropertyList* get_properties();
 
 private:
+    SubscribePropertyReply handle_unsubscription_notification(const SubscribeProperty& msg);
+    std::pair<std::string, SubscribePropertyReply> update_property_by_subscribe(const SubscribeProperty& msg);
+    void add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id);
+    
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };
@@ -71,6 +75,7 @@ public:
     virtual void process_property_subscription_result(void* sub, const SubscribePropertyReply& msg) = 0;
     virtual void property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) = 0;
     virtual void request_property_list(uint8_t group) = 0;
+    virtual std::string get_subscribed_property(const SubscribeProperty& msg) = 0;
 };
 
 } // namespace

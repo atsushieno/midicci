@@ -102,6 +102,19 @@ constexpr uint32_t MIDI_CI_BROADCAST_MUID_32 = 0x7F7F7F7F;
 constexpr uint8_t MIDI_CI_ADDRESS_FUNCTION_BLOCK = 0x7F;
 constexpr size_t MIDI_CI_COMMON_HEADER_SIZE = 13;
 
+// NAK Status Codes
+constexpr uint8_t CI_NAK_STATUS_NAK = 0;
+constexpr uint8_t CI_NAK_STATUS_MESSAGE_NOT_SUPPORTED = 1;
+constexpr uint8_t CI_NAK_STATUS_CI_VERSION_NOT_SUPPORTED = 2;
+constexpr uint8_t CI_NAK_STATUS_TARGET_NOT_IN_USE = 3;
+constexpr uint8_t CI_NAK_STATUS_PROFILE_NOT_SUPPORTED_ON_TARGET = 4;
+constexpr uint8_t CI_NAK_STATUS_TERMINATE_INQUIRY = 0x20;
+constexpr uint8_t CI_NAK_STATUS_PROPERTY_EXCHANGE_CHUNKS_OUT_OF_SEQUENCE = 0x21;
+constexpr uint8_t CI_NAK_STATUS_ERROR_RETRY_SUGGESTED = 0x40;
+constexpr uint8_t CI_NAK_STATUS_MALFORMED_MESSAGE = 0x41;
+constexpr uint8_t CI_NAK_STATUS_TIMEOUT = 0x42;
+constexpr uint8_t CI_NAK_STATUS_TIMEOUT_RETRY_SUGGESTED = 0x43;
+
 inline void serialize_muid_32(std::vector<uint8_t>& data, uint32_t muid) {
     data.push_back(static_cast<uint8_t>(muid & 0xFF));
     data.push_back(static_cast<uint8_t>((muid >> 8) & 0xFF));

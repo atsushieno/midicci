@@ -115,10 +115,15 @@ void PropertyClientFacade::send_subscribe_property(const std::string& resource, 
     
     auto header = pimpl_->property_rules_->create_subscription_header(resource, fields);
     
+    auto request_id = pimpl_->device_.get_messenger().get_next_request_id();
+    
     SubscribeProperty msg(
         Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
-        pimpl_->device_.get_messenger().get_next_request_id(), header, {}
+        request_id, header, {}
     );
+    
+    // Create pending subscription entry before sending (like Kotlin implementation)
+    add_pending_subscription(request_id, subscription_id, resource);
     
     pimpl_->device_.get_messenger().send(msg);
 }
@@ -229,45 +234,200 @@ void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& ms
     }
 }
 
-void PropertyClientFacade::process_subscribe_property(const SubscribeProperty& msg) {
+SubscribePropertyReply PropertyClientFacade::process_subscribe_property(const SubscribeProperty& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (!pimpl_->property_rules_) return;
+    if (!pimpl_->property_rules_) {
+        // Return error reply if no property rules
+        return SubscribePropertyReply(
+            Common(pimpl_->device_.get_muid(), msg.get_common().source_muid, msg.get_common().address, msg.get_common().group),
+            msg.get_request_id(),
+            pimpl_->property_rules_ ? pimpl_->property_rules_->create_status_header(PropertyExchangeStatus::INTERNAL_ERROR) : std::vector<uint8_t>{},
+            {}
+        );
+    }
     
     auto command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
-    auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
     
     if (command == MidiCISubscriptionCommand::END) {
-        return;
-    } else if (command == MidiCISubscriptionCommand::NOTIFY) {
-        send_get_property_data(property_id);
-    } else if (command == MidiCISubscriptionCommand::FULL || 
-               command == MidiCISubscriptionCommand::PARTIAL) {
-        auto res_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "resId");
-        auto media_type = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "mediaType");
-        if (media_type.empty()) {
-            media_type = "application/json";
+        return handle_unsubscription_notification(msg);
+    } else {
+        auto result = update_property_by_subscribe(msg);
+        
+        // If the update was NOTIFY, then send Get Data request
+        if (result.first == MidiCISubscriptionCommand::NOTIFY) {
+            auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+            send_get_property_data(property_id);
         }
         
-        if (pimpl_->properties_) {
-            pimpl_->properties_->updateValue(property_id, msg.get_body(), media_type);
-        }
-        
-        pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
-        
-        pimpl_->cached_properties_[property_id] = msg.get_body();
+        return std::move(result.second);
     }
+}
+
+// Helper method: handle unsubscription notification
+SubscribePropertyReply PropertyClientFacade::handle_unsubscription_notification(const SubscribeProperty& msg) {
+    if (!pimpl_->property_rules_) {
+        return SubscribePropertyReply(
+            Common(pimpl_->device_.get_muid(), msg.get_common().source_muid, msg.get_common().address, msg.get_common().group),
+            msg.get_request_id(),
+            std::vector<uint8_t>{},
+            {}
+        );
+    }
+    
+    auto subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
+    auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
+    
+    // Find subscription by subscription ID or property ID
+    auto it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [&](const ClientSubscription& sub) {
+            return (sub.subscriptionId && *sub.subscriptionId == subscription_id) || 
+                   sub.propertyId == property_id;
+        });
+    
+    if (it != pimpl_->subscriptions_.end()) {
+        pimpl_->subscriptions_.erase(it);
+    }
+    
+    return SubscribePropertyReply(
+        Common(pimpl_->device_.get_muid(), msg.get_common().source_muid, msg.get_common().address, msg.get_common().group),
+        msg.get_request_id(),
+        pimpl_->property_rules_->create_status_header(PropertyExchangeStatus::OK),
+        {}
+    );
+}
+
+// Helper method: update property by subscribe
+std::pair<std::string, SubscribePropertyReply> PropertyClientFacade::update_property_by_subscribe(const SubscribeProperty& msg) {
+    if (!pimpl_->property_rules_) {
+        return std::make_pair("", SubscribePropertyReply(
+            Common(pimpl_->device_.get_muid(), msg.get_common().source_muid, msg.get_common().address, msg.get_common().group),
+            msg.get_request_id(),
+            std::vector<uint8_t>{},
+            {}
+        ));
+    }
+    
+    // Use the ObservablePropertyList updateValue method like the Kotlin implementation
+    std::string command;
+    if (pimpl_->properties_) {
+        pimpl_->device_.get_logger()(
+            "PropertyClientFacade: Calling properties updateValue(SubscribeProperty)", false);
+        command = pimpl_->properties_->updateValue(msg);
+        pimpl_->device_.get_logger()(
+            "PropertyClientFacade: properties updateValue(SubscribeProperty) returned command: '" + command + "'", false);
+    } else {
+        pimpl_->device_.get_logger()(
+            "PropertyClientFacade: WARNING - pimpl_->properties_ is null, cannot update property", false);
+        command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
+    }
+    
+    // For backwards compatibility, also call property_value_updated if not NOTIFY
+    if (command != MidiCISubscriptionCommand::NOTIFY) {
+        auto property_id = pimpl_->property_rules_->get_subscribed_property(msg);
+        if (!property_id.empty()) {
+            pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
+            pimpl_->cached_properties_[property_id] = msg.get_body();
+        }
+    }
+    
+    return std::make_pair(command, SubscribePropertyReply(
+        Common(pimpl_->device_.get_muid(), msg.get_common().source_muid, msg.get_common().address, msg.get_common().group),
+        msg.get_request_id(),
+        pimpl_->property_rules_->create_status_header(PropertyExchangeStatus::OK),
+        {}
+    ));
 }
 
 void PropertyClientFacade::process_subscribe_property_reply(const SubscribePropertyReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (pimpl_->property_rules_) {
-        auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
-        if (status == 200) {
-            auto subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
-        }
+    if (!pimpl_->property_rules_) {
+        return;
     }
+    
+    // Check if the reply status is OK
+    auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
+    if (status != PropertyExchangeStatus::OK) {
+        return; // TODO: should we do anything further here?
+    }
+    
+    auto subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
+    
+    // Find matching subscription by subscription ID or by pending request ID
+    auto sub_it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [&](const ClientSubscription& sub) {
+            return (sub.subscriptionId && *sub.subscriptionId == subscription_id) ||
+                   (sub.pendingRequestId && *sub.pendingRequestId == msg.get_request_id());
+        });
+    
+    if (sub_it == pimpl_->subscriptions_.end()) {
+        pimpl_->device_.get_logger()(
+            "There was no pending subscription that matches subscribeId (" + subscription_id + 
+            ") or requestId (" + std::to_string(msg.get_request_id()) + ")", false);
+        return;
+    }
+    
+    // Validate subscription ID is present (except for unsubscription reply)
+    if (subscription_id.empty() && sub_it->state != SubscriptionActionState::Unsubscribing) {
+        pimpl_->device_.get_logger()(
+            "Subscription ID is missing in the Reply to Subscription message. requestId: " + 
+            std::to_string(msg.get_request_id()), false);
+        return;
+    }
+    
+    // Check subscription state is valid
+    if (sub_it->state == SubscriptionActionState::Subscribed || 
+        sub_it->state == SubscriptionActionState::Unsubscribed) {
+        pimpl_->device_.get_logger()(
+            "Received Subscription Reply, but it is unexpected (existing subscription: property = " + 
+            sub_it->propertyId + ", state = " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
+        return;
+    }
+    
+    // Update subscription ID
+    if (!subscription_id.empty()) {
+        sub_it->subscriptionId = subscription_id;
+    }
+    
+    // Delegate to property rules for rule-specific processing
+    pimpl_->property_rules_->process_property_subscription_result(
+        const_cast<std::string*>(&sub_it->propertyId), msg);
+    
+    // Update subscription state
+    if (sub_it->state == SubscriptionActionState::Unsubscribing) {
+        // Unsubscribe: set state and remove from list
+        sub_it->state = SubscriptionActionState::Unsubscribed;
+        pimpl_->subscriptions_.erase(sub_it);
+        pimpl_->device_.get_logger()("Subscription unsubscribed and removed for property: " + sub_it->propertyId, false);
+    } else {
+        // Subscribe: set state to Subscribed
+        sub_it->state = SubscriptionActionState::Subscribed;
+        pimpl_->device_.get_logger()("Subscription registered: property=" + sub_it->propertyId + 
+                                   ", subscribeId=" + subscription_id, false);
+    }
+    
+    // TODO: Add subscription update callbacks similar to Kotlin subscriptionUpdated.forEach { it(sub) }
+}
+
+void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    ClientSubscription sub;
+    sub.pendingRequestId = request_id;
+    if (!subscription_id.empty()) {
+        sub.subscriptionId = subscription_id;
+    }
+    sub.propertyId = property_id;
+    sub.state = SubscriptionActionState::Subscribing;
+    
+    pimpl_->subscriptions_.push_back(sub);
+    
+    pimpl_->device_.get_logger()("Added pending subscription: property=" + property_id + 
+                               ", requestId=" + std::to_string(request_id) + 
+                               (subscription_id.empty() ? "" : ", subscriptionId=" + subscription_id), false);
+    
+    // TODO: Add subscription update callbacks similar to Kotlin subscriptionUpdated.forEach { it(sub) }
 }
 
 std::vector<ClientSubscription> PropertyClientFacade::get_subscriptions() const {

@@ -192,6 +192,23 @@ void Messenger::send_property_subscribe(uint8_t group, uint32_t destination_muid
     send(subscribe);
 }
 
+void Messenger::send_nak_for_error(const Common& common, uint8_t original_sub_id2, uint8_t status_code, 
+                                  uint8_t status_data, const std::vector<uint8_t>& details, const std::string& message) {
+    std::vector<uint8_t> dst(pimpl_->device_.get_config().receivable_max_sysex_size);
+    std::vector<uint8_t> message_bytes(message.begin(), message.end());
+    
+    auto nak_message = CIFactory::midiCIAckNak(
+        dst, true, common.address, CI_VERSION_AND_FORMAT,
+        pimpl_->device_.get_muid(), common.source_muid, original_sub_id2,
+        status_code, status_data, details, message_bytes
+    );
+    
+    auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
+    if (ci_output_sender) {
+        ci_output_sender(common.group, nak_message);
+    }
+}
+
 void Messenger::send_process_inquiry_capabilities(uint8_t group, uint32_t destination_muid) {
 
     Common common(pimpl_->device_.get_muid(), destination_muid, MIDI_CI_ADDRESS_FUNCTION_BLOCK, group);
@@ -773,12 +790,28 @@ void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg)
 }
 
 void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
+    pimpl_->device_.get_logger()(
+        "Messenger::processPropertyNotify: Processing SubscribeProperty notification from MUID 0x" + 
+        std::to_string(msg.get_common().source_muid) + " to MUID 0x" + 
+        std::to_string(msg.get_common().destination_muid), false);
+    
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
+    
+    bool client_found = false;
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
+        client_found = true;
+        pimpl_->device_.get_logger()(
+            "Messenger::processPropertyNotify: Found client connection, calling PropertyClientFacade", false);
         conn->get_property_client_facade().process_subscribe_property(msg);
     });
+    
+    if (!client_found) {
+        pimpl_->device_.get_logger()(
+            "Messenger::processPropertyNotify: No client connection found for MUID 0x" + 
+            std::to_string(msg.get_common().source_muid), false);
+    }
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
@@ -856,8 +889,53 @@ void Messenger::processSubscribeProperty(const SubscribeProperty& msg) {
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
-    auto reply = pimpl_->device_.get_property_host_facade().process_subscribe_property(msg);
-    send(reply);
+    
+    // Both initiator and recipient can receive SubscribeProperty.
+    auto& property_host = pimpl_->device_.get_property_host_facade();
+    auto* property_rules = property_host.get_property_rules();
+    if (!property_rules) {
+        // No property rules available, send NAK
+        send_nak_for_error(msg.get_common(), static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY), 
+                          CI_NAK_STATUS_NAK, 0, {}, "Property rules not available");
+        return;
+    }
+    
+    auto command = property_rules->get_header_field_string(msg.get_header(), "command");
+    
+    if (command.empty()) {
+        // Missing command field - send NAK as requested
+        send_nak_for_error(msg.get_common(), static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY), 
+                          CI_NAK_STATUS_MALFORMED_MESSAGE, 0, {}, "Missing 'command' field in SubscribeProperty");
+        return;
+    }
+    
+    if (command == "start") {
+        // New subscription request - handle on host side
+        auto reply = property_host.process_subscribe_property(msg);
+        send(reply);
+    } else if (command == "full" || command == "partial" || command == "notify") {
+        // Property value update notification - route to client side and send reply
+        onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
+            auto reply = conn->get_property_client_facade().process_subscribe_property(msg);
+            send(reply);
+        });
+    } else if (command == "end") {
+        // End subscription - route based on whether source MUID is a known connection
+        auto conn = pimpl_->device_.get_connection(msg.get_common().source_muid);
+        if (conn) {
+            // Source is a known connection (subscriber) - route to client side
+            auto reply = conn->get_property_client_facade().process_subscribe_property(msg);
+            send(reply);
+        } else {
+            // Source is not a known connection (notifier) - handle on host side
+            auto reply = property_host.process_subscribe_property(msg);
+            send(reply);
+        }
+    } else {
+        // Unknown command - send NAK
+        send_nak_for_error(msg.get_common(), static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_INQUIRY), 
+                          CI_NAK_STATUS_MALFORMED_MESSAGE, 0, {}, "Unknown command in SubscribeProperty: " + command);
+    }
 }
 
 void Messenger::processProcessInquiry(const ProcessInquiryCapabilities& msg) {

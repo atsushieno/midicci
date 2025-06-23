@@ -151,6 +151,26 @@ void CommonRulesPropertyClient::request_property_list(uint8_t group) {
     conn_.get_property_client_facade().send_get_property_data(msg);
 }
 
+std::string CommonRulesPropertyClient::get_subscribed_property(const SubscribeProperty& msg) {
+    auto subscribe_id = get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::SUBSCRIBE_ID);
+    if (subscribe_id.empty()) {
+        device_.get_logger()("Subscribe Id is not found in the property header", false);
+        return "";
+    }
+    
+    auto it = std::find_if(subscriptions_.begin(), subscriptions_.end(),
+        [&](const SubscriptionEntry& subscription) {
+            return subscription.subscribe_id == subscribe_id;
+        });
+    
+    if (it == subscriptions_.end()) {
+        device_.get_logger()("Property is not mapped to subscribeId " + subscribe_id, false);
+        return "";
+    }
+    
+    return it->resource;
+}
+
 void CommonRulesPropertyClient::add_property_catalog_updated_callback(std::function<void()> callback) {
     property_catalog_updated_callbacks_.push_back(callback);
 }

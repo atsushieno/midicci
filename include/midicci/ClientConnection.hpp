@@ -41,14 +41,6 @@ public:
     
     uint32_t get_target_muid() const noexcept;
 
-    void set_message_callback(MessageCallback callback);
-    void set_ci_output_sender(CIOutputSender sender);
-    
-    void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& sysex_data);
-    
-    bool is_connected() const noexcept;
-    void disconnect();
-    
     ProfileClientFacade& get_profile_client_facade();
     const ProfileClientFacade& get_profile_client_facade() const;
     

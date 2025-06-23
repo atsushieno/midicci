@@ -790,28 +790,13 @@ void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg)
 }
 
 void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
-    pimpl_->device_.get_logger()(
-        "Messenger::processPropertyNotify: Processing SubscribeProperty notification from MUID 0x" + 
-        std::to_string(msg.get_common().source_muid) + " to MUID 0x" + 
-        std::to_string(msg.get_common().destination_muid), false);
-    
     for (const auto& callback : pimpl_->callbacks_) {
         callback(msg);
     }
     
-    bool client_found = false;
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
-        client_found = true;
-        pimpl_->device_.get_logger()(
-            "Messenger::processPropertyNotify: Found client connection, calling PropertyClientFacade", false);
         conn->get_property_client_facade().process_subscribe_property(msg);
     });
-    
-    if (!client_found) {
-        pimpl_->device_.get_logger()(
-            "Messenger::processPropertyNotify: No client connection found for MUID 0x" + 
-            std::to_string(msg.get_common().source_muid), false);
-    }
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {

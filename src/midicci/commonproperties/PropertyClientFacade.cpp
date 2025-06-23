@@ -141,14 +141,10 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
         });
     
     if (sub_it == pimpl_->subscriptions_.end()) {
-        pimpl_->device_.get_logger()("Cannot unsubscribe property as not found: " + property_id, false);
         return;
     }
     
     if (sub_it->state == SubscriptionActionState::Unsubscribing) {
-        pimpl_->device_.get_logger()(
-            "Unsubscription for the property is already underway (property: " + sub_it->propertyId + 
-            ", state: " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
         return;
     }
     
@@ -342,14 +338,8 @@ std::pair<std::string, SubscribePropertyReply> PropertyClientFacade::update_prop
     // Use the ObservablePropertyList updateValue method like the Kotlin implementation
     std::string command;
     if (pimpl_->properties_) {
-        pimpl_->device_.get_logger()(
-            "PropertyClientFacade: Calling properties updateValue(SubscribeProperty)", false);
         command = pimpl_->properties_->updateValue(msg);
-        pimpl_->device_.get_logger()(
-            "PropertyClientFacade: properties updateValue(SubscribeProperty) returned command: '" + command + "'", false);
     } else {
-        pimpl_->device_.get_logger()(
-            "PropertyClientFacade: WARNING - pimpl_->properties_ is null, cannot update property", false);
         command = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "command");
     }
     
@@ -393,26 +383,17 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
         });
     
     if (sub_it == pimpl_->subscriptions_.end()) {
-        pimpl_->device_.get_logger()(
-            "There was no pending subscription that matches subscribeId (" + subscription_id + 
-            ") or requestId (" + std::to_string(msg.get_request_id()) + ")", false);
         return;
     }
     
     // Validate subscription ID is present (except for unsubscription reply)
     if (subscription_id.empty() && sub_it->state != SubscriptionActionState::Unsubscribing) {
-        pimpl_->device_.get_logger()(
-            "Subscription ID is missing in the Reply to Subscription message. requestId: " + 
-            std::to_string(msg.get_request_id()), false);
         return;
     }
     
     // Check subscription state is valid
     if (sub_it->state == SubscriptionActionState::Subscribed || 
         sub_it->state == SubscriptionActionState::Unsubscribed) {
-        pimpl_->device_.get_logger()(
-            "Received Subscription Reply, but it is unexpected (existing subscription: property = " + 
-            sub_it->propertyId + ", state = " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
         return;
     }
     
@@ -429,7 +410,6 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
     if (sub_it->state == SubscriptionActionState::Unsubscribing) {
         // Unsubscribe: set state and remove from list
         sub_it->state = SubscriptionActionState::Unsubscribed;
-        pimpl_->device_.get_logger()("Subscription unsubscribed and removed for property: " + sub_it->propertyId, false);
         
         // Notify UI before removing the subscription
         notify_subscription_updated(*sub_it);
@@ -438,8 +418,6 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
     } else {
         // Subscribe: set state to Subscribed
         sub_it->state = SubscriptionActionState::Subscribed;
-        pimpl_->device_.get_logger()("Subscription registered: property=" + sub_it->propertyId + 
-                                   ", subscribeId=" + subscription_id, false);
         
         // Notify UI of successful subscription
         notify_subscription_updated(*sub_it);
@@ -459,10 +437,6 @@ void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const st
     
     pimpl_->subscriptions_.push_back(sub);
     
-    pimpl_->device_.get_logger()("Added pending subscription: property=" + property_id + 
-                               ", requestId=" + std::to_string(request_id) + 
-                               (subscription_id.empty() ? "" : ", subscriptionId=" + subscription_id), false);
-    
     // Notify UI of subscription state change
     notify_subscription_updated(sub);
 }
@@ -476,23 +450,15 @@ void PropertyClientFacade::promote_subscription_as_unsubscribing(const std::stri
         });
     
     if (sub_it == pimpl_->subscriptions_.end()) {
-        pimpl_->device_.get_logger()("Cannot unsubscribe property as not found: " + property_id, false);
         return;
     }
     
     if (sub_it->state == SubscriptionActionState::Unsubscribing) {
-        pimpl_->device_.get_logger()(
-            "Unsubscription for the property is already underway (property: " + sub_it->propertyId + 
-            ", subscriptionId: " + (sub_it->subscriptionId ? *sub_it->subscriptionId : "none") + 
-            ", state: " + std::to_string(static_cast<int>(sub_it->state)) + ")", false);
         return;
     }
     
     sub_it->pendingRequestId = new_request_id;
     sub_it->state = SubscriptionActionState::Unsubscribing;
-    
-    pimpl_->device_.get_logger()("Promoted subscription to Unsubscribing: property=" + property_id + 
-                               ", requestId=" + std::to_string(new_request_id), false);
     
     // Notify UI of subscription state change
     notify_subscription_updated(*sub_it);

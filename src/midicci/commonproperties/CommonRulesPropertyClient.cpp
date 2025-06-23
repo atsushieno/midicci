@@ -154,7 +154,6 @@ void CommonRulesPropertyClient::request_property_list(uint8_t group) {
 std::string CommonRulesPropertyClient::get_subscribed_property(const SubscribeProperty& msg) {
     auto subscribe_id = get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::SUBSCRIBE_ID);
     if (subscribe_id.empty()) {
-        device_.get_logger()("Subscribe Id is not found in the property header", false);
         return "";
     }
     
@@ -164,7 +163,6 @@ std::string CommonRulesPropertyClient::get_subscribed_property(const SubscribePr
         });
     
     if (it == subscriptions_.end()) {
-        device_.get_logger()("Property is not mapped to subscribeId " + subscribe_id, false);
         return "";
     }
     

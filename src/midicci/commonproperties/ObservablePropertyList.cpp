@@ -97,36 +97,27 @@ std::vector<PropertyValue> ClientObservablePropertyList::getValues() const {
 void ClientObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
-    logger_("ClientObservablePropertyList: updateValue called for property '" + propertyId + 
-            "' with " + std::to_string(body.size()) + " bytes", false);
-    
     auto it = values_.find(propertyId);
     if (it != values_.end()) {
         it->second.body = body;
         it->second.mediaType = mediaType;
-        logger_("ClientObservablePropertyList: Updated existing property '" + propertyId + "'", false);
     } else {
         values_.emplace(propertyId, PropertyValue(propertyId, mediaType, body));
-        logger_("ClientObservablePropertyList: Created new property '" + propertyId + "'", false);
     }
     
-    logger_("ClientObservablePropertyList: Calling notifyPropertyUpdated for '" + propertyId + "'", false);
     notifyPropertyUpdated(propertyId);
-    logger_("ClientObservablePropertyList: notifyPropertyUpdated completed for '" + propertyId + "'", false);
 }
 
 std::string ClientObservablePropertyList::updateValue(const SubscribeProperty& msg) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     if (!property_client_) {
-        logger_("ClientObservablePropertyList: updateValue(SubscribeProperty) failed - no property client", false);
         return "";
     }
     
     // Get property ID from subscription mapping
     auto property_id = property_client_->get_subscribed_property(msg);
     if (property_id.empty()) {
-        logger_("ClientObservablePropertyList: Updating property value failed as the specified subscription property is not found.", false);
         return "";
     }
     
@@ -145,9 +136,6 @@ std::string ClientObservablePropertyList::updateValue(const SubscribeProperty& m
     
     // For now, we don't handle encoding, so just use body as-is
     // In full implementation, you'd call property_client_->decode_body(msg.get_header(), msg.get_body())
-    
-    logger_("ClientObservablePropertyList: updateValue(SubscribeProperty) updating property '" + property_id + 
-            "' with command '" + command + "' and media type '" + media_type + "'", false);
     
     updateValue(property_id, msg.get_body(), media_type);
     

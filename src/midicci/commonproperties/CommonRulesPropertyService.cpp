@@ -158,7 +158,29 @@ std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() con
 }
 
 SetPropertyDataReply CommonRulesPropertyService::set_property_data(const SetPropertyData& msg) {
-    return SetPropertyDataReply(msg.get_common(), msg.get_request_id(), {});
+    try {
+        std::string header_str(msg.get_header().begin(), msg.get_header().end());
+        JsonValue header_json = JsonValue::parse(header_str);
+        
+        auto result = set_property_data_internal(header_json, msg.get_body());
+        
+        std::string reply_header_str = result.serialize();
+        std::vector<uint8_t> reply_header(reply_header_str.begin(), reply_header_str.end());
+        
+        Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
+        return SetPropertyDataReply(common, msg.get_request_id(), reply_header);
+    } catch (const std::exception& e) {
+        JsonObject error_header;
+        error_header[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::INTERNAL_ERROR);
+        error_header[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Error: " + std::string(e.what()));
+        
+        JsonValue error_json(error_header);
+        std::string error_str = error_json.serialize();
+        std::vector<uint8_t> reply_header(error_str.begin(), error_str.end());
+        
+        Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
+        return SetPropertyDataReply(common, msg.get_request_id(), reply_header);
+    }
 }
 
 std::vector<uint8_t> CommonRulesPropertyService::encode_body(const std::vector<uint8_t>& data, const std::string& encoding) {
@@ -184,7 +206,39 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
 }
 
 std::optional<SubscribePropertyReply> CommonRulesPropertyService::subscribe_property(const SubscribeProperty& msg) {
-    return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
+    try {
+        std::string header_str(msg.get_header().begin(), msg.get_header().end());
+        JsonValue header_json = JsonValue::parse(header_str);
+        
+        std::string property_id = get_property_id_for_header(msg.get_header());
+        std::string command = get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::COMMAND);
+        
+        JsonValue reply_header_json;
+        JsonValue reply_body_json = JsonValue(JsonObject{});
+        
+        if (command == MidiCISubscriptionCommand::END) {
+            std::string subscribe_id = get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::SUBSCRIBE_ID);
+            auto result = unsubscribe(property_id, subscribe_id);
+            reply_header_json = result.first;
+            reply_body_json = result.second;
+        } else {
+            auto result = subscribe(msg.get_source_muid(), header_json);
+            reply_header_json = result.first;
+            reply_body_json = result.second;
+        }
+        
+        std::string reply_header_str = reply_header_json.serialize();
+        std::string reply_body_str = reply_body_json.serialize();
+        
+        std::vector<uint8_t> reply_header(reply_header_str.begin(), reply_header_str.end());
+        std::vector<uint8_t> reply_body(reply_body_str.begin(), reply_body_str.end());
+        
+        Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
+        return SubscribePropertyReply(common, msg.get_request_id(), reply_header, reply_body);
+    } catch (const std::exception& e) {
+        device_.get_logger()("Error processing SubscribeProperty: " + std::string(e.what()), true);
+        return std::nullopt;
+    }
 }
 
 std::string CommonRulesPropertyService::get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) {
@@ -205,6 +259,134 @@ std::vector<uint8_t> CommonRulesPropertyService::create_shutdown_subscription_he
 
 const std::vector<SubscriptionEntry>& CommonRulesPropertyService::get_subscriptions() const {
     return subscriptions_;
+}
+
+PropertyCommonRequestHeader CommonRulesPropertyService::get_property_header(const JsonValue& json) {
+    PropertyCommonRequestHeader header;
+    
+    if (json.is_object()) {
+        const auto& obj = json.as_object();
+        
+        auto resource_it = obj.find(PropertyCommonHeaderKeys::RESOURCE);
+        if (resource_it != obj.end() && resource_it->second.is_string()) {
+            header.resource = resource_it->second.as_string();
+        }
+        
+        auto res_id_it = obj.find(PropertyCommonHeaderKeys::RES_ID);
+        if (res_id_it != obj.end() && res_id_it->second.is_string()) {
+            header.res_id = res_id_it->second.as_string();
+        }
+        
+        auto encoding_it = obj.find(PropertyCommonHeaderKeys::MUTUAL_ENCODING);
+        if (encoding_it != obj.end() && encoding_it->second.is_string()) {
+            header.mutual_encoding = encoding_it->second.as_string();
+        }
+        
+        auto media_type_it = obj.find(PropertyCommonHeaderKeys::MEDIA_TYPE);
+        if (media_type_it != obj.end() && media_type_it->second.is_string()) {
+            header.media_type = media_type_it->second.as_string();
+        }
+        
+        auto set_partial_it = obj.find(PropertyCommonHeaderKeys::SET_PARTIAL);
+        if (set_partial_it != obj.end() && set_partial_it->second.is_bool()) {
+            header.set_partial = set_partial_it->second.as_bool();
+        }
+    }
+    
+    return header;
+}
+
+JsonValue CommonRulesPropertyService::get_reply_header_json(const PropertyCommonReplyHeader& src) {
+    JsonObject header_obj;
+    header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(src.status);
+    
+    if (!src.message.empty()) {
+        header_obj[PropertyCommonHeaderKeys::MESSAGE] = JsonValue(src.message);
+    }
+    
+    if (!src.mutual_encoding.empty() && src.mutual_encoding != PropertyDataEncoding::ASCII) {
+        header_obj[PropertyCommonHeaderKeys::MUTUAL_ENCODING] = JsonValue(src.mutual_encoding);
+    }
+    
+    if (!src.media_type.empty()) {
+        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(src.media_type);
+    }
+    
+    if (!src.subscribe_id.empty()) {
+        header_obj[PropertyCommonHeaderKeys::SUBSCRIBE_ID] = JsonValue(src.subscribe_id);
+    }
+    
+    return JsonValue(header_obj);
+}
+
+std::string CommonRulesPropertyService::create_new_subscription_id() {
+    static int subscription_counter = 0;
+    return std::to_string(++subscription_counter);
+}
+
+std::pair<JsonValue, JsonValue> CommonRulesPropertyService::subscribe(uint32_t subscriber_muid, const JsonValue& header_json) {
+    PropertyCommonRequestHeader header = get_property_header(header_json);
+    
+    std::string subscription_id = create_new_subscription_id();
+    SubscriptionEntry subscription(
+        subscriber_muid,
+        header.resource,
+        subscription_id,
+        header.mutual_encoding.empty() ? PropertyDataEncoding::ASCII : header.mutual_encoding
+    );
+    
+    subscriptions_.push_back(subscription);
+    
+    PropertyCommonReplyHeader reply_header;
+    reply_header.status = PropertyExchangeStatus::OK;
+    reply_header.subscribe_id = subscription_id;
+    
+    JsonValue reply_body = JsonValue(JsonObject{});
+    
+    return std::make_pair(get_reply_header_json(reply_header), reply_body);
+}
+
+std::pair<JsonValue, JsonValue> CommonRulesPropertyService::unsubscribe(const std::string& resource, const std::string& subscribe_id) {
+    auto it = std::find_if(subscriptions_.begin(), subscriptions_.end(),
+        [&subscribe_id, &resource](const SubscriptionEntry& entry) {
+            return (!subscribe_id.empty() && entry.subscribe_id == subscribe_id) ||
+                   (subscribe_id.empty() && entry.resource == resource);
+        });
+    
+    if (it != subscriptions_.end()) {
+        subscriptions_.erase(it);
+    }
+    
+    PropertyCommonReplyHeader reply_header;
+    reply_header.status = PropertyExchangeStatus::OK;
+    reply_header.subscribe_id = subscribe_id;
+    
+    JsonValue reply_body = JsonValue(JsonObject{});
+    
+    return std::make_pair(get_reply_header_json(reply_header), reply_body);
+}
+
+JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body) {
+    PropertyCommonRequestHeader header = get_property_header(header_json);
+    
+    // Check if it's a system property (read-only)
+    if (header.resource == PropertyResourceNames::DEVICE_INFO ||
+        header.resource == PropertyResourceNames::CHANNEL_LIST ||
+        header.resource == PropertyResourceNames::JSON_SCHEMA ||
+        header.resource == PropertyResourceNames::RESOURCE_LIST) {
+        
+        PropertyCommonReplyHeader reply_header;
+        reply_header.status = PropertyExchangeStatus::INTERNAL_ERROR;
+        reply_header.message = "Resource is readonly: " + header.resource;
+        return get_reply_header_json(reply_header);
+    }
+    
+    // Store the property value
+    property_values_[header.resource] = body;
+    
+    PropertyCommonReplyHeader reply_header;
+    reply_header.status = PropertyExchangeStatus::OK;
+    return get_reply_header_json(reply_header);
 }
 
 } // namespace

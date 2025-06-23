@@ -3,6 +3,7 @@
 #include "MidiCIServicePropertyRules.hpp"
 #include "CommonRulesPropertyHelper.hpp"
 #include "../MidiCIDevice.hpp"
+#include "../Json.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,6 +11,22 @@
 
 namespace midicci {
 namespace commonproperties {
+
+struct PropertyCommonRequestHeader {
+    std::string resource;
+    std::string res_id;
+    std::string mutual_encoding;
+    std::string media_type;
+    bool set_partial = false;
+};
+
+struct PropertyCommonReplyHeader {
+    int status = 200;
+    std::string message;
+    std::string mutual_encoding;
+    std::string media_type;
+    std::string subscribe_id;
+};
 
 class CommonRulesPropertyService : public MidiCIServicePropertyRules {
 public:
@@ -46,6 +63,14 @@ private:
     std::vector<uint8_t> create_channel_list_json() const;
     std::vector<uint8_t> create_json_schema_json() const;
     std::vector<uint8_t> create_resource_list_json() const;
+    
+    // Helper methods for subscription and property management
+    PropertyCommonRequestHeader get_property_header(const JsonValue& json);
+    JsonValue get_reply_header_json(const PropertyCommonReplyHeader& src);
+    std::string create_new_subscription_id();
+    std::pair<JsonValue, JsonValue> subscribe(uint32_t subscriber_muid, const JsonValue& header_json);
+    std::pair<JsonValue, JsonValue> unsubscribe(const std::string& resource, const std::string& subscribe_id);
+    JsonValue set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body);
 };
 
 } // namespace properties

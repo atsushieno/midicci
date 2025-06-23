@@ -207,6 +207,13 @@ SubscribeProperty PropertyHostFacade::createShutdownSubscriptionMessage(uint32_t
 void PropertyHostFacade::shutdownSubscription(uint32_t destination_muid, const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
 
+    // Remove the subscription from the host's local list
+    auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
+        [destination_muid, &property_id](const PropertySubscription& sub) {
+            return sub.subscriber_muid == destination_muid && sub.property_id == property_id;
+        });
+    pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+
     auto& device = pimpl_->device_;
     auto msg = createShutdownSubscriptionMessage(destination_muid, property_id, device.get_config().group, device.get_messenger().get_next_request_id());
     device.get_messenger().send(msg);

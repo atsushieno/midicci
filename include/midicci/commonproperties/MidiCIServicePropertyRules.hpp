@@ -5,6 +5,8 @@
 #include <map>
 #include <functional>
 #include <memory>
+#include <optional>
+
 #include "../Message.hpp"
 #include "../ObservablePropertyList.hpp"
 

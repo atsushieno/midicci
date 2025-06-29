@@ -22,6 +22,7 @@ public:
     std::unique_ptr<MidiCIServicePropertyRules> property_rules_;
     std::vector<std::unique_ptr<PropertyMetadata>> properties_;
     PropertyHostFacade::PropertyUpdatedCallback property_updated_callback_;
+    PropertyHostFacade::SubscriptionChangedCallback subscription_changed_callback_;
     std::vector<PropertySubscription> subscriptions_;
     mutable std::recursive_mutex mutex_;
 };
@@ -132,12 +133,14 @@ SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const Subs
                     return sub.subscriber_muid == msg_source_muid && sub.property_id == property_id;
                 });
             pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+            notify_subscription_changed(property_id);
         } else {
             PropertySubscription subscription;
             subscription.subscriber_muid = msg.get_source_muid();
             subscription.property_id = property_id;
             subscription.subscription_id = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "subscribeId");
             pimpl_->subscriptions_.push_back(subscription);
+            notify_subscription_changed(property_id);
         }
         return std::move(reply.value());
     }
@@ -154,9 +157,22 @@ void PropertyHostFacade::notify_property_updated(const std::string& property_id)
     }
 }
 
+void PropertyHostFacade::notify_subscription_changed(const std::string& property_id) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    if (pimpl_->subscription_changed_callback_) {
+        pimpl_->subscription_changed_callback_(property_id);
+    }
+}
+
 void PropertyHostFacade::set_property_updated_callback(PropertyUpdatedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->property_updated_callback_ = std::move(callback);
+}
+
+void PropertyHostFacade::set_subscription_changed_callback(SubscriptionChangedCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->subscription_changed_callback_ = std::move(callback);
 }
 
 void PropertyHostFacade::setPropertyValue(const std::string& property_id, const std::string& res_id, const std::vector<uint8_t>& data, bool notify) {
@@ -213,6 +229,7 @@ void PropertyHostFacade::shutdownSubscription(uint32_t destination_muid, const s
             return sub.subscriber_muid == destination_muid && sub.property_id == property_id;
         });
     pimpl_->subscriptions_.erase(it, pimpl_->subscriptions_.end());
+    notify_subscription_changed(property_id);
 
     auto& device = pimpl_->device_;
     auto msg = createShutdownSubscriptionMessage(destination_muid, property_id, device.get_config().group, device.get_messenger().get_next_request_id());

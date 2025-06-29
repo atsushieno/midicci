@@ -21,6 +21,7 @@ struct PropertySubscription {
 class PropertyHostFacade {
 public:
     using PropertyUpdatedCallback = std::function<void(const std::string&)>;
+    using SubscriptionChangedCallback = std::function<void(const std::string& property_id)>;
     
     explicit PropertyHostFacade(MidiCIDevice& device);
     ~PropertyHostFacade();
@@ -43,8 +44,10 @@ public:
     SubscribePropertyReply process_subscribe_property(const SubscribeProperty& msg);
     
     void notify_property_updated(const std::string& property_id);
+    void notify_subscription_changed(const std::string& property_id);
     
     void set_property_updated_callback(PropertyUpdatedCallback callback);
+    void set_subscription_changed_callback(SubscriptionChangedCallback callback);
     
     // Additional methods for test support
     void setPropertyValue(const std::string& property_id, const std::string& res_id, const std::vector<uint8_t>& data, bool notify);

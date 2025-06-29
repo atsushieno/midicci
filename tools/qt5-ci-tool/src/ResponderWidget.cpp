@@ -3,6 +3,7 @@
 #include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
 #include <midicci/ObservablePropertyList.hpp>
+#include <midicci/PropertyHostFacade.hpp>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -390,7 +391,26 @@ void ResponderWidget::updatePropertyDetails()
         m_schemaEdit->setText("{}");
         
         m_subscriptionsList->clear();
-        m_subscriptionsList->addItem("Client 1 (MUID: 0x12345678)");
+        
+        // Display real subscriptions from PropertyHostFacade
+        if (m_repository && m_repository->get_ci_device_manager()) {
+            auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+            if (deviceModel && deviceModel->get_device()) {
+                auto& propertyFacade = deviceModel->get_device()->get_property_host_facade();
+                auto subscriptions = propertyFacade.get_subscriptions();
+                
+                for (const auto& sub : subscriptions) {
+                    QString itemText = QString("Client MUID: 0x%1 (Subscription: %2)")
+                        .arg(sub.subscriber_muid, 8, 16, QLatin1Char('0'))
+                        .arg(QString::fromStdString(sub.subscription_id));
+                    m_subscriptionsList->addItem(itemText);
+                }
+                
+                if (subscriptions.empty()) {
+                    m_subscriptionsList->addItem("No active subscriptions");
+                }
+            }
+        }
     }
 }
 

@@ -2,6 +2,8 @@
 #include "CIDeviceManager.hpp"
 #include "midicci/ObservablePropertyList.hpp"
 #include "midicci/ProfileHostFacade.hpp"
+#include "midicci/PropertyHostFacade.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include <mutex>
 #include <iostream>
 
@@ -127,6 +129,16 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const M
 void CIDeviceModel::add_local_property(const midicci::commonproperties::PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
+    
+    // Actually add to the PropertyHostFacade
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        // Create a new CommonRulesPropertyMetadata based on the input
+        auto metadata_copy = std::make_unique<midicci::commonproperties::CommonRulesPropertyMetadata>(
+            property.getPropertyId());
+        metadata_copy->setData(property.getData());
+        property_facade.add_property(std::move(metadata_copy));
+    }
 
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
@@ -136,6 +148,12 @@ void CIDeviceModel::add_local_property(const midicci::commonproperties::Property
 void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
+    
+    // Actually remove from the PropertyHostFacade
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        property_facade.remove_property(property_id);
+    }
 
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
@@ -146,6 +164,12 @@ void CIDeviceModel::update_property_value(const std::string& property_id, const 
                                          const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
+    
+    // Actually update the PropertyHostFacade
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        property_facade.setPropertyValue(property_id, res_id, data, true);
+    }
     
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
@@ -213,6 +237,17 @@ void CIDeviceModel::setup_event_listeners() {
         }
         
 
+    });
+    
+    // Set up property host facade subscription change callback
+    auto& property_facade = pimpl_->device_->get_property_host_facade();
+    property_facade.set_subscription_changed_callback([this](const std::string& property_id) {
+        std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        
+        // Notify UI that property subscriptions have changed
+        for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+            callback();
+        }
     });
 }
 

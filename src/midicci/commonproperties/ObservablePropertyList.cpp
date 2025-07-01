@@ -166,6 +166,19 @@ std::vector<PropertyValue> ServiceObservablePropertyList::getValues() const {
     return result;
 }
 
+const PropertyMetadata* ServiceObservablePropertyList::getMetadata(const std::string& property_id) const {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    
+    // Return pointer to the actual stored metadata, not a copy
+    for (const auto& metadata : metadata_list_) {
+        if (metadata->getPropertyId() == property_id) {
+            return metadata.get();
+        }
+    }
+    
+    return nullptr;
+}
+
 void ServiceObservablePropertyList::addProperty(std::unique_ptr<PropertyMetadata> metadata, const std::vector<uint8_t>& initialValue) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     

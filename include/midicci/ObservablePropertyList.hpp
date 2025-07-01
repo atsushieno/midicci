@@ -111,6 +111,9 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
     
+    // Safer method to get metadata by property ID without ownership transfer
+    const PropertyMetadata* getMetadata(const std::string& property_id) const;
+    
     void addProperty(std::unique_ptr<PropertyMetadata> metadata, const std::vector<uint8_t>& initialValue);
     void updateProperty(const std::string& propertyId, const std::vector<uint8_t>& body);
     void removeProperty(const std::string& propertyId);

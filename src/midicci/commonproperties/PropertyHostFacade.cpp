@@ -441,14 +441,8 @@ std::vector<std::string> PropertyHostFacade::get_property_ids() const {
 const PropertyMetadata* PropertyHostFacade::get_property_metadata(const std::string& property_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    auto metadata_list = pimpl_->properties_->getMetadataList();
-    for (const auto& metadata : metadata_list) {
-        if (metadata->getPropertyId() == property_id) {
-            return metadata.get();
-        }
-    }
-    
-    return nullptr;
+    // Use the safer direct metadata access method instead of getMetadataList()
+    return pimpl_->properties_->getMetadata(property_id);
 }
 
 } // namespace midicci

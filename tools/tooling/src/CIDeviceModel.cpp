@@ -130,14 +130,10 @@ void CIDeviceModel::add_local_property(const midicci::commonproperties::Property
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Added local property: " << property.getPropertyId() << std::endl;
     
-    // Actually add to the PropertyHostFacade
+    // Actually add to the PropertyHostFacade using new API
     if (pimpl_->device_) {
         auto& property_facade = pimpl_->device_->get_property_host_facade();
-        // Create a new CommonRulesPropertyMetadata based on the input
-        auto metadata_copy = std::make_unique<midicci::commonproperties::CommonRulesPropertyMetadata>(
-            property.getPropertyId());
-        metadata_copy->setData(property.getData());
-        property_facade.add_property(std::move(metadata_copy));
+        property_facade.addProperty(property);
     }
 
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
@@ -149,10 +145,10 @@ void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
     
-    // Actually remove from the PropertyHostFacade
+    // Actually remove from the PropertyHostFacade using new API
     if (pimpl_->device_) {
         auto& property_facade = pimpl_->device_->get_property_host_facade();
-        property_facade.remove_property(property_id);
+        property_facade.removeProperty(property_id);
     }
 
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
@@ -165,15 +161,52 @@ void CIDeviceModel::update_property_value(const std::string& property_id, const 
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
     
-    // Actually update the PropertyHostFacade
+    // Actually update the PropertyHostFacade using new API
     if (pimpl_->device_) {
         auto& property_facade = pimpl_->device_->get_property_host_facade();
-        property_facade.setPropertyValue(property_id, res_id, data, true);
+        property_facade.setPropertyValue(property_id, res_id, data, false); // false = not partial
     }
     
     for (const auto& callback : pimpl_->properties_updated_callbacks_) {
         callback();
     }
+}
+
+std::vector<std::string> CIDeviceModel::get_local_property_ids() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        return property_facade.get_property_ids();
+    }
+    
+    return {};
+}
+
+void CIDeviceModel::update_property_metadata(const std::string& property_id, const midicci::commonproperties::PropertyMetadata& metadata) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    std::cout << "Updated property metadata: " << property_id << std::endl;
+    
+    // Actually update the PropertyHostFacade using new API
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        property_facade.updatePropertyMetadata(property_id, metadata);
+    }
+    
+    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+        callback();
+    }
+}
+
+const midicci::commonproperties::PropertyMetadata* CIDeviceModel::get_local_property_metadata(const std::string& property_id) const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    if (pimpl_->device_) {
+        auto& property_facade = pimpl_->device_->get_property_host_facade();
+        return property_facade.get_property_metadata(property_id);
+    }
+    
+    return nullptr;
 }
 
 void CIDeviceModel::setup_event_listeners() {

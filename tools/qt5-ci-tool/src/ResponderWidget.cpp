@@ -4,6 +4,7 @@
 #include "AppModel.hpp"
 #include <midicci/ObservablePropertyList.hpp>
 #include <midicci/PropertyHostFacade.hpp>
+#include <midicci/commonproperties/CommonRulesPropertyMetadata.hpp>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -281,7 +282,36 @@ void ResponderWidget::onAddProperty()
     bool ok;
     QString propertyId = QInputDialog::getText(this, "Add Property", "Property ID:", QLineEdit::Normal, QString("X-%1").arg(rand() % 10000), &ok);
     if (ok && !propertyId.isEmpty()) {
-        m_propertyList->addItem(propertyId);
+        if (!m_repository || !m_repository->get_ci_device_manager()) {
+            return;
+        }
+        
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (!deviceModel) {
+            return;
+        }
+        
+        // Create a new property with default metadata
+        auto property = midicci::commonproperties::CommonRulesPropertyMetadata(propertyId.toStdString());
+        property.canGet = true;
+        property.canSet = "full";
+        property.canSubscribe = true;
+        property.requireResId = false;
+        property.canPaginate = false;
+        property.mediaTypes = {"application/json"};
+        property.encodings = {"ASCII"};
+        property.schema = "{}";
+        
+        // Set initial empty data
+        std::vector<uint8_t> initialData = {};
+        property.setData(initialData);
+        
+        // Add to the business logic layer
+        deviceModel->add_local_property(property);
+        
+        // Update the UI to reflect the new property
+        updatePropertyList();
+        
         m_repository->log(QString("Added property: %1").arg(propertyId).toStdString(), tooling::MessageDirection::Out);
     }
 }
@@ -290,10 +320,38 @@ void ResponderWidget::onDeleteProperty()
 {
     auto *item = m_propertyList->currentItem();
     if (item) {
-        int ret = QMessageBox::question(this, "Delete Property", QString("Delete property '%1'?").arg(item->text()));
+        QString propertyId = item->text();
+        
+        // Don't allow deletion of predefined properties
+        if (propertyId == "DeviceInfo" || propertyId == "ChannelList" || propertyId == "JSONSchema") {
+            QMessageBox::information(this, "Cannot Delete", "Cannot delete predefined system properties.");
+            return;
+        }
+        
+        int ret = QMessageBox::question(this, "Delete Property", QString("Delete property '%1'?").arg(propertyId));
         if (ret == QMessageBox::Yes) {
-            m_repository->log(QString("Deleted property: %1").arg(item->text()).toStdString(), tooling::MessageDirection::Out);
-            delete item;
+            if (!m_repository || !m_repository->get_ci_device_manager()) {
+                return;
+            }
+            
+            auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+            if (!deviceModel) {
+                return;
+            }
+            
+            // Remove from business logic layer
+            deviceModel->remove_local_property(propertyId.toStdString());
+            
+            // Update the UI
+            updatePropertyList();
+            
+            // Clear selected property if it was the deleted one
+            if (m_selectedProperty == propertyId) {
+                m_selectedProperty.clear();
+                updatePropertyDetails();
+            }
+            
+            m_repository->log(QString("Deleted property: %1").arg(propertyId).toStdString(), tooling::MessageDirection::Out);
         }
     }
 }
@@ -301,7 +359,30 @@ void ResponderWidget::onDeleteProperty()
 void ResponderWidget::onUpdatePropertyValue()
 {
     if (!m_selectedProperty.isEmpty()) {
+        // Don't allow updating predefined properties
+        if (m_selectedProperty == "DeviceInfo" || m_selectedProperty == "ChannelList" || m_selectedProperty == "JSONSchema") {
+            m_repository->log(QString("Updated property value for: %1 (simulated for predefined property)").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
+            return;
+        }
+        
+        if (!m_repository || !m_repository->get_ci_device_manager()) {
+            return;
+        }
+        
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (!deviceModel) {
+            return;
+        }
+        
         QString value = m_propertyValueEdit->toPlainText();
+        
+        // Convert QString to bytes (UTF-8)
+        QByteArray byteArray = value.toUtf8();
+        std::vector<uint8_t> data(byteArray.begin(), byteArray.end());
+        
+        // Update in business logic layer
+        deviceModel->update_property_value(m_selectedProperty.toStdString(), "", data);
+        
         m_repository->log(QString("Updated property value for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
     }
 }
@@ -309,6 +390,59 @@ void ResponderWidget::onUpdatePropertyValue()
 void ResponderWidget::onUpdatePropertyMetadata()
 {
     if (!m_selectedProperty.isEmpty()) {
+        // Don't allow updating predefined properties
+        if (m_selectedProperty == "DeviceInfo" || m_selectedProperty == "ChannelList" || m_selectedProperty == "JSONSchema") {
+            m_repository->log(QString("Updated property metadata for: %1 (simulated for predefined property)").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
+            return;
+        }
+        
+        if (!m_repository || !m_repository->get_ci_device_manager()) {
+            return;
+        }
+        
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (!deviceModel) {
+            return;
+        }
+        
+        // Create new metadata with values from UI
+        auto newMetadata = midicci::commonproperties::CommonRulesPropertyMetadata(m_selectedProperty.toStdString());
+        
+        // Set metadata from UI fields
+        newMetadata.canGet = m_canGetCheck->isChecked();
+        newMetadata.canSet = m_canSetCombo->currentText().toStdString();
+        newMetadata.canSubscribe = m_canSubscribeCheck->isChecked();
+        newMetadata.requireResId = m_requireResIdCheck->isChecked();
+        newMetadata.canPaginate = m_canPaginateCheck->isChecked();
+        
+        // Parse media types (comma-separated)
+        QStringList mediaTypesList = m_mediaTypesEdit->toPlainText().split(",", Qt::SkipEmptyParts);
+        newMetadata.mediaTypes.clear();
+        for (const QString& type : mediaTypesList) {
+            newMetadata.mediaTypes.push_back(type.trimmed().toStdString());
+        }
+        if (newMetadata.mediaTypes.empty()) {
+            newMetadata.mediaTypes.push_back("application/json");
+        }
+        
+        // Parse encodings (comma-separated)
+        QStringList encodingsList = m_encodingsEdit->toPlainText().split(",", Qt::SkipEmptyParts);
+        newMetadata.encodings.clear();
+        for (const QString& encoding : encodingsList) {
+            newMetadata.encodings.push_back(encoding.trimmed().toStdString());
+        }
+        if (newMetadata.encodings.empty()) {
+            newMetadata.encodings.push_back("ASCII");
+        }
+        
+        newMetadata.schema = m_schemaEdit->toPlainText().toStdString();
+        if (newMetadata.schema.empty()) {
+            newMetadata.schema = "{}";
+        }
+        
+        // Update the property metadata in business logic
+        deviceModel->update_property_metadata(m_selectedProperty.toStdString(), newMetadata);
+        
         m_repository->log(QString("Updated property metadata for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
     }
 }
@@ -356,39 +490,108 @@ void ResponderWidget::updatePropertyList()
 {
     m_propertyList->clear();
     
-    if (!m_repository || !m_repository->get_ci_device_manager()) {
-        m_propertyList->addItem("DeviceInfo");
-        m_propertyList->addItem("ChannelList");
-        m_propertyList->addItem("JSONSchema");
-        return;
-    }
-    
-    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-    if (!deviceModel) {
-        m_propertyList->addItem("DeviceInfo");
-        m_propertyList->addItem("ChannelList");
-        m_propertyList->addItem("JSONSchema");
-        return;
-    }
-    
+    // Always show the predefined properties first
     m_propertyList->addItem("DeviceInfo");
     m_propertyList->addItem("ChannelList");
     m_propertyList->addItem("JSONSchema");
+    
+    // Add user-defined properties from PropertyHostFacade if available
+    if (m_repository && m_repository->get_ci_device_manager()) {
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (deviceModel) {
+            auto propertyIds = deviceModel->get_local_property_ids();
+            for (const auto& propertyId : propertyIds) {
+                m_propertyList->addItem(QString::fromStdString(propertyId));
+            }
+        }
+    }
 }
 
 void ResponderWidget::updatePropertyDetails()
 {
     if (!m_selectedProperty.isEmpty()) {
-        m_propertyValueEdit->setText(QString("{\n  \"property\": \"%1\",\n  \"value\": \"sample data\"\n}").arg(m_selectedProperty));
-        m_resourceEdit->setText(m_selectedProperty);
-        m_canGetCheck->setChecked(true);
-        m_canSetCombo->setCurrentText("full");
-        m_canSubscribeCheck->setChecked(true);
-        m_requireResIdCheck->setChecked(false);
-        m_canPaginateCheck->setChecked(false);
-        m_mediaTypesEdit->setText("application/json");
-        m_encodingsEdit->setText("ascii");
-        m_schemaEdit->setText("{}");
+        // Handle predefined properties with default values
+        if (m_selectedProperty == "DeviceInfo" || m_selectedProperty == "ChannelList" || m_selectedProperty == "JSONSchema") {
+            m_propertyValueEdit->setText(QString("{\n  \"property\": \"%1\",\n  \"value\": \"sample data\"\n}").arg(m_selectedProperty));
+            m_resourceEdit->setText(m_selectedProperty);
+            m_canGetCheck->setChecked(true);
+            m_canSetCombo->setCurrentText("full");
+            m_canSubscribeCheck->setChecked(true);
+            m_requireResIdCheck->setChecked(false);
+            m_canPaginateCheck->setChecked(false);
+            m_mediaTypesEdit->setText("application/json");
+            m_encodingsEdit->setText("ascii");
+            m_schemaEdit->setText("{}");
+        } else {
+            // Handle user-defined properties from PropertyHostFacade
+            if (!m_repository || !m_repository->get_ci_device_manager()) {
+                return;
+            }
+            
+            auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+            if (!deviceModel) {
+                return;
+            }
+            
+            // Get actual property metadata
+            auto* metadata = deviceModel->get_local_property_metadata(m_selectedProperty.toStdString());
+            if (metadata) {
+            // Display actual property value
+            auto data = metadata->getData();
+            QString valueText = QString::fromUtf8(reinterpret_cast<const char*>(data.data()), data.size());
+            m_propertyValueEdit->setText(valueText);
+            
+            // Set resource ID
+            m_resourceEdit->setText(QString::fromStdString(metadata->getPropertyId()));
+            
+            // Try to cast to CommonRulesPropertyMetadata to access extended properties
+            auto* commonRules = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(metadata);
+            if (commonRules) {
+                m_canGetCheck->setChecked(commonRules->canGet);
+                m_canSetCombo->setCurrentText(QString::fromStdString(commonRules->canSet));
+                m_canSubscribeCheck->setChecked(commonRules->canSubscribe);
+                m_requireResIdCheck->setChecked(commonRules->requireResId);
+                m_canPaginateCheck->setChecked(commonRules->canPaginate);
+                
+                // Join media types and encodings
+                QStringList mediaTypes;
+                for (const auto& type : commonRules->mediaTypes) {
+                    mediaTypes << QString::fromStdString(type);
+                }
+                m_mediaTypesEdit->setText(mediaTypes.join(", "));
+                
+                QStringList encodings;
+                for (const auto& encoding : commonRules->encodings) {
+                    encodings << QString::fromStdString(encoding);
+                }
+                m_encodingsEdit->setText(encodings.join(", "));
+                
+                m_schemaEdit->setText(QString::fromStdString(commonRules->schema));
+            } else {
+                // Default values for non-CommonRules metadata
+                m_canGetCheck->setChecked(true);
+                m_canSetCombo->setCurrentText("full");
+                m_canSubscribeCheck->setChecked(false);
+                m_requireResIdCheck->setChecked(false);
+                m_canPaginateCheck->setChecked(false);
+                m_mediaTypesEdit->setText("application/json");
+                m_encodingsEdit->setText("ASCII");
+                m_schemaEdit->setText("{}");
+            }
+        } else {
+            // Property not found, clear fields
+            m_propertyValueEdit->clear();
+            m_resourceEdit->clear();
+            m_canGetCheck->setChecked(false);
+            m_canSetCombo->setCurrentText("none");
+            m_canSubscribeCheck->setChecked(false);
+            m_requireResIdCheck->setChecked(false);
+            m_canPaginateCheck->setChecked(false);
+            m_mediaTypesEdit->clear();
+            m_encodingsEdit->clear();
+            m_schemaEdit->clear();
+            }
+        }
         
         m_subscriptionsList->clear();
         

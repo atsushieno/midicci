@@ -51,6 +51,7 @@ public:
     
     // Additional helper methods
     std::vector<std::string> get_property_ids() const;
+    void set_property_value(const std::string& property_id, const std::vector<uint8_t>& data);
     
 private:
     MidiCIDevice& device_;

@@ -61,6 +61,9 @@ public:
     void remove_local_property(const std::string& property_id);
     void update_property_value(const std::string& property_id, const std::string& res_id, 
                              const std::vector<uint8_t>& data);
+    void update_property_metadata(const std::string& property_id, const midicci::commonproperties::PropertyMetadata& metadata);
+    std::vector<std::string> get_local_property_ids() const;
+    const midicci::commonproperties::PropertyMetadata* get_local_property_metadata(const std::string& property_id) const;
     
     void add_test_profile_items();
     

@@ -21,6 +21,10 @@ std::vector<std::string> CommonRulesPropertyService::get_property_ids() const {
     };
 }
 
+void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::vector<uint8_t>& data) {
+    property_values_[property_id] = data;
+}
+
 std::string CommonRulesPropertyService::get_property_id_for_header(const std::vector<uint8_t>& header) {
     return helper_->get_property_identifier_internal(header);
 }
@@ -64,8 +68,29 @@ GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetProp
         header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
         body_data = create_resource_list_json();
     } else {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
-        header_obj[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Property not found: " + property_id);
+        // Check if it's a user-defined property in our metadata list
+        auto it = std::find_if(metadata_list_.begin(), metadata_list_.end(),
+            [&property_id](const std::unique_ptr<PropertyMetadata>& metadata) {
+                return metadata->getPropertyId() == property_id;
+            });
+        
+        if (it != metadata_list_.end()) {
+            // Found user-defined property - return its data
+            header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
+            header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
+            
+            // Get the property data - first check if we have stored value, otherwise use metadata default
+            auto value_it = property_values_.find(property_id);
+            if (value_it != property_values_.end()) {
+                body_data = value_it->second;
+            } else {
+                // Use the data from metadata
+                body_data = (*it)->getData();
+            }
+        } else {
+            header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
+            header_obj[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Property not found: " + property_id);
+        }
     }
     
     JsonValue header(header_obj);

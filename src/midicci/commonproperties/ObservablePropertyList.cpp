@@ -190,11 +190,24 @@ void ServiceObservablePropertyList::addProperty(std::unique_ptr<PropertyMetadata
     notifyPropertyUpdated(propertyId);
 }
 
-void ServiceObservablePropertyList::updateProperty(const std::string& propertyId, const std::vector<uint8_t>& body) {
+void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     auto it = values_.find(propertyId);
     if (it != values_.end()) {
+        it->second.body = body;
+        notifyPropertyUpdated(propertyId);
+    }
+}
+
+void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::string& resId,
+                                                const std::string& mediaType, const std::vector<uint8_t>& body) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    
+    auto it = values_.find(propertyId);
+    if (it != values_.end()) {
+        it->second.resId = resId;
+        it->second.mediaType = mediaType;
         it->second.body = body;
         notifyPropertyUpdated(propertyId);
     }

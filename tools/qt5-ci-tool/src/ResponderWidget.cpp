@@ -383,6 +383,9 @@ void ResponderWidget::onUpdatePropertyValue()
         // Update in business logic layer
         deviceModel->update_property_value(m_selectedProperty.toStdString(), "", data);
         
+        // Refresh the UI to show the updated property value
+        updatePropertyDetails();
+        
         m_repository->log(QString("Updated property value for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
     }
 }

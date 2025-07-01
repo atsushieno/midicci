@@ -34,14 +34,18 @@ class MidiCIClientPropertyRules;
 
 struct PropertyValue {
     std::string id;
+    std::string resId;  // Resource ID (can be empty for properties without resource ID)
     std::string mediaType;
     std::vector<uint8_t> body;
     
     PropertyValue(const std::string& property_id, const std::string& media_type, const std::vector<uint8_t>& data)
-        : id(property_id), mediaType(media_type), body(data) {}
+        : id(property_id), resId(""), mediaType(media_type), body(data) {}
+    
+    PropertyValue(const std::string& property_id, const std::string& resource_id, const std::string& media_type, const std::vector<uint8_t>& data)
+        : id(property_id), resId(resource_id), mediaType(media_type), body(data) {}
     
     bool operator==(const PropertyValue& other) const {
-        return id == other.id && mediaType == other.mediaType && body == other.body;
+        return id == other.id && resId == other.resId && mediaType == other.mediaType && body == other.body;
     }
 };
 
@@ -105,7 +109,7 @@ class ServiceObservablePropertyList : public ObservablePropertyList {
 public:
     using LoggerFunction = std::function<void(const std::string&, bool)>;
     
-    ServiceObservablePropertyList(LoggerFunction logger);
+    explicit ServiceObservablePropertyList(LoggerFunction logger);
     ~ServiceObservablePropertyList() override = default;
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
@@ -115,7 +119,8 @@ public:
     const PropertyMetadata* getMetadata(const std::string& property_id) const;
     
     void addProperty(std::unique_ptr<PropertyMetadata> metadata, const std::vector<uint8_t>& initialValue);
-    void updateProperty(const std::string& propertyId, const std::vector<uint8_t>& body);
+    void updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    void updateValue(const std::string& propertyId, const std::string& resId, const std::string& mediaType, const std::vector<uint8_t>& body);
     void removeProperty(const std::string& propertyId);
     
 private:

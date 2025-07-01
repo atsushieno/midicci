@@ -188,8 +188,16 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
         common_service->set_property_value(property_id, data);
     }
     
-    // Update the property value in our observable list
-    pimpl_->properties_->updateProperty(property_id, data);
+    // Update the property value in our observable list with full property information
+    // Get the current media type from metadata or use default
+    auto* metadata = get_property_metadata(property_id);
+    std::string media_type = "application/json"; // Default media type
+    if (metadata) {
+        media_type = metadata->getMediaType();
+    }
+    
+    // Use the enhanced updateProperty method that handles resource ID and media type
+    pimpl_->properties_->updateValue(property_id, res_id, media_type, data);
     
     // This will trigger the property updated callback which notifies subscribers
     notify_property_updated(property_id);
@@ -255,7 +263,7 @@ SetPropertyDataReply PropertyHostFacade::process_set_property_data(const SetProp
         if (status == 200) {
             auto property_id = pimpl_->property_service_->get_property_id_for_header(msg.get_header());
             // Update property value using new implementation
-            pimpl_->properties_->updateProperty(property_id, msg.get_body());
+            pimpl_->properties_->updateValue(property_id, msg.get_header(), msg.get_body());
             notify_property_updated(property_id);
         }
         

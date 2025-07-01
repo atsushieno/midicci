@@ -149,7 +149,7 @@ void ServiceObservablePropertyList::addProperty(std::unique_ptr<PropertyMetadata
     notifyPropertyCatalogUpdated();
 }
 
-void ServiceObservablePropertyList::updateProperty(const std::string& propertyId, const std::vector<uint8_t>& body) {
+void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     auto it = values_.find(propertyId);

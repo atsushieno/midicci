@@ -145,18 +145,23 @@ namespace midicci {
 
     ServiceObservablePropertyList::ServiceObservablePropertyList(std::vector<PropertyValue>& internalValues, MidiCIServicePropertyRules& propertyService)
             : internal_values_(internalValues), property_service_(propertyService) {
+        
+        // Initialize catalog updated event handler (following Kotlin initializeCatalogUpdatedEvent pattern)
+        auto* common_rules_service = dynamic_cast<CommonRulesPropertyService*>(&property_service_);
+        if (common_rules_service) {
+            common_rules_service->add_property_catalog_updated_callback([this]() {
+                // Note: Don't update metadata_list_ here since ServiceObservablePropertyList
+                // gets its metadata directly from the property service via get_metadata_list()
+                // Just notify that the catalog has been updated
+                notifyPropertyCatalogUpdated();
+            });
+        }
     }
 
     std::vector<std::unique_ptr<PropertyMetadata>> ServiceObservablePropertyList::getMetadataList() const {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
-        std::vector<std::unique_ptr<PropertyMetadata>> result;
-        for (const auto& metadata : metadata_list_) {
-            auto* common_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get());
-            if (common_metadata) {
-                result.push_back(std::make_unique<CommonRulesPropertyMetadata>(*common_metadata));
-            }
-        }
-        return result;
+        // Delegate to the property service to get the current metadata list
+        return property_service_.get_metadata_list();
     }
 
     std::vector<PropertyValue> ServiceObservablePropertyList::getValues() const {
@@ -167,11 +172,10 @@ namespace midicci {
     const PropertyMetadata* ServiceObservablePropertyList::getMetadata(const std::string& property_id) const {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        // Return pointer to the actual stored metadata, not a copy
-        for (const auto& metadata : metadata_list_) {
-            if (metadata->getPropertyId() == property_id) {
-                return metadata.get();
-            }
+        // Use the proper accessor method from CommonRulesPropertyService
+        auto* common_rules_service = dynamic_cast<CommonRulesPropertyService*>(&property_service_);
+        if (common_rules_service) {
+            return common_rules_service->get_metadata_by_id(property_id);
         }
 
         return nullptr;
@@ -180,9 +184,9 @@ namespace midicci {
     void ServiceObservablePropertyList::addMetadata(std::unique_ptr<PropertyMetadata> metadata) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        const std::string propertyId = metadata->getPropertyId();
-        metadata_list_.push_back(std::move(metadata));
-        notifyPropertyCatalogUpdated();
+        // Add to property service - this will trigger the catalog update callback we registered
+        property_service_.add_metadata(std::move(metadata));
+        // Note: Don't call notifyPropertyCatalogUpdated() here as it will be called by the callback
     }
 
     void ServiceObservablePropertyList::updateMetadata(const std::string& propertyId, PropertyMetadata* metadata) {
@@ -221,8 +225,9 @@ namespace midicci {
     void ServiceObservablePropertyList::removeMetadata(const std::string& propertyId) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
+        // Remove from property service - this will trigger the catalog update callback we registered
         property_service_.remove_metadata(propertyId);
-        notifyPropertyCatalogUpdated();
+        // Note: Don't call notifyPropertyCatalogUpdated() here as it will be called by the callback
     }
 
     SubscriptionEntry::SubscriptionEntry(uint32_t subscriber_muid, const std::string& res,

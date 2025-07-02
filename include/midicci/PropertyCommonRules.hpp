@@ -72,6 +72,17 @@ struct DeviceInfoPropertyNames {
     static constexpr const char* SERIAL_NUMBER = "serialNumber";
 };
 
+struct ChannelInfoPropertyNames {
+    static constexpr const char* TITLE = "title";
+    static constexpr const char* CHANNEL = "channel";
+    static constexpr const char* PROGRAM_TITLE = "programTitle";
+    static constexpr const char* BANK_PC = "bankPC";
+    static constexpr const char* CLUSTER_CHANNEL_START = "clusterChannelStart";
+    static constexpr const char* CLUSTER_LENGTH = "clusterLength";
+    static constexpr const char* CLUSTER_MIDI_MODE = "clusterMidiMode";
+    static constexpr const char* CLUSTER_TYPE = "clusterType";
+};
+
 struct PropertyResourceFields {
     static constexpr const char* RESOURCE = "resource";
     static constexpr const char* CAN_GET = "canGet";

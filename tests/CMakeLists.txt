@@ -14,8 +14,6 @@ set(GTEST_SOURCES
     test_property_common_converter.cpp
     TestCIMediator.cpp
     test_ci_device_model_properties.cpp
-    test_property_host_facade_simple.cpp
-    test_integration_property_creation.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})

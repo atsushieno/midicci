@@ -79,7 +79,6 @@ public:
     void update_property(const std::string& property_id, const std::vector<uint8_t>& data);
     void update_property_metadata(const std::string& property_id, std::unique_ptr<PropertyMetadata> new_metadata);
     std::vector<uint8_t> getProperty(const std::string& property_id) const;
-    std::vector<std::string> get_property_ids() const;
     const PropertyMetadata* get_property_metadata(const std::string& property_id) const;
     
 private:

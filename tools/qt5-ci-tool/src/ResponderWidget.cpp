@@ -477,13 +477,16 @@ void ResponderWidget::updatePropertyList()
     m_propertyList->addItem("ChannelList");
     m_propertyList->addItem("JSONSchema");
     
-    // Add user-defined properties from PropertyHostFacade if available
+    // Add user-defined properties directly from PropertyHostFacade
     if (m_repository && m_repository->get_ci_device_manager()) {
         auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-        if (deviceModel) {
-            auto propertyIds = deviceModel->get_local_property_ids();
-            for (const auto& propertyId : propertyIds) {
-                m_propertyList->addItem(QString::fromStdString(propertyId));
+        if (deviceModel && deviceModel->get_device()) {
+            auto& propertyFacade = deviceModel->get_device()->get_property_host_facade();
+            auto metadataList = propertyFacade.get_properties().getMetadataList();
+            for (const auto& metadata : metadataList) {
+                if (metadata) {
+                    m_propertyList->addItem(QString::fromStdString(metadata->getPropertyId()));
+                }
             }
         }
     }

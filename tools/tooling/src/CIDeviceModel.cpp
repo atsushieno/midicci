@@ -159,16 +159,6 @@ void CIDeviceModel::update_property_value(const std::string& property_id, const 
     }
 }
 
-std::vector<std::string> CIDeviceModel::get_local_property_ids() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->get_property_host_facade();
-        return property_facade.get_property_ids();
-    }
-    
-    return {};
-}
 
 void CIDeviceModel::update_property_metadata(const std::string& property_id, const midicci::commonproperties::PropertyMetadata& metadata) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);

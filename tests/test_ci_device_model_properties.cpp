@@ -5,7 +5,7 @@
 
 #include "midicci/tooling/CIDeviceModel.hpp"
 #include "midicci/tooling/CIToolRepository.hpp"
-#include "midicci/tooling/MidiDeviceManager.hpp"
+#include "midicci/PropertyHostFacade.hpp"
 
 using namespace midicci::tooling;
 
@@ -51,23 +51,24 @@ protected:
 };
 
 TEST_F(CIDeviceModelPropertyTest, CreatePropertyAppearsInPropertyList) {
-    // Get initial property count
-    auto initial_properties = device_model->get_local_property_ids();
-    size_t initial_count = initial_properties.size();
+    // Get initial property count using the correct Kotlin pattern
+    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
+    auto initial_metadata = propertyFacade.get_properties().getMetadataList();
+    size_t initial_count = initial_metadata.size();
     
     // Create a new property
     auto property = device_model->create_new_property();
     ASSERT_NE(property, nullptr);
     
-    // Verify property appears in property list
-    auto updated_properties = device_model->get_local_property_ids();
-    EXPECT_EQ(updated_properties.size(), initial_count + 1);
+    // Verify property appears in property list using the correct pattern
+    auto updated_metadata = propertyFacade.get_properties().getMetadataList();
+    EXPECT_EQ(updated_metadata.size(), initial_count + 1);
     
     // Verify the new property is in the list
     std::string new_property_id = property->getPropertyId();
     bool found = false;
-    for (const auto& prop_id : updated_properties) {
-        if (prop_id == new_property_id) {
+    for (const auto& metadata : updated_metadata) {
+        if (metadata && metadata->getPropertyId() == new_property_id) {
             found = true;
             break;
         }
@@ -96,9 +97,10 @@ TEST_F(CIDeviceModelPropertyTest, CreatePropertyTriggersNotification) {
 }
 
 TEST_F(CIDeviceModelPropertyTest, MultiplePropertiesCreatedCorrectly) {
-    // Get initial count
-    auto initial_properties = device_model->get_local_property_ids();
-    size_t initial_count = initial_properties.size();
+    // Get initial count using correct pattern
+    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
+    auto initial_metadata = propertyFacade.get_properties().getMetadataList();
+    size_t initial_count = initial_metadata.size();
     
     // Set up callback tracking
     device_model->add_properties_updated_callback([this]() {
@@ -115,15 +117,15 @@ TEST_F(CIDeviceModelPropertyTest, MultiplePropertiesCreatedCorrectly) {
         created_property_ids.push_back(property->getPropertyId());
     }
     
-    // Verify all properties appear in the list
-    auto final_properties = device_model->get_local_property_ids();
-    EXPECT_EQ(final_properties.size(), initial_count + num_properties);
+    // Verify all properties appear in the list using correct pattern
+    auto final_metadata = propertyFacade.get_properties().getMetadataList();
+    EXPECT_EQ(final_metadata.size(), initial_count + num_properties);
     
     // Verify each created property is in the final list
     for (const auto& created_id : created_property_ids) {
         bool found = false;
-        for (const auto& final_id : final_properties) {
-            if (final_id == created_id) {
+        for (const auto& metadata : final_metadata) {
+            if (metadata && metadata->getPropertyId() == created_id) {
                 found = true;
                 break;
             }
@@ -157,11 +159,12 @@ TEST_F(CIDeviceModelPropertyTest, RemovePropertyUpdatesListAndNotifications) {
     ASSERT_NE(property, nullptr);
     std::string property_id = property->getPropertyId();
     
-    // Verify it's in the list
-    auto properties_with_new = device_model->get_local_property_ids();
+    // Verify it's in the list using correct pattern
+    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
+    auto metadata_with_new = propertyFacade.get_properties().getMetadataList();
     bool found_before = false;
-    for (const auto& id : properties_with_new) {
-        if (id == property_id) {
+    for (const auto& metadata : metadata_with_new) {
+        if (metadata && metadata->getPropertyId() == property_id) {
             found_before = true;
             break;
         }
@@ -177,11 +180,11 @@ TEST_F(CIDeviceModelPropertyTest, RemovePropertyUpdatesListAndNotifications) {
     // Remove the property
     device_model->remove_local_property(property_id);
     
-    // Verify it's no longer in the list
-    auto properties_after_remove = device_model->get_local_property_ids();
+    // Verify it's no longer in the list using correct pattern
+    auto metadata_after_remove = propertyFacade.get_properties().getMetadataList();
     bool found_after = false;
-    for (const auto& id : properties_after_remove) {
-        if (id == property_id) {
+    for (const auto& metadata : metadata_after_remove) {
+        if (metadata && metadata->getPropertyId() == property_id) {
             found_after = true;
             break;
         }

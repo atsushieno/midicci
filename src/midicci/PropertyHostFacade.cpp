@@ -236,12 +236,11 @@ std::vector<const PropertyMetadata*> PropertyHostFacade::get_metadata_list() con
     
     std::vector<const PropertyMetadata*> result;
     
-    // Get all property IDs and use the safe getMetadata method
-    auto property_ids = get_property_ids();
-    for (const auto& property_id : property_ids) {
-        const PropertyMetadata* metadata = pimpl_->properties_->getMetadata(property_id);
+    // Get metadata directly from the list
+    auto metadata_list = pimpl_->properties_->getMetadataList();
+    for (const auto& metadata : metadata_list) {
         if (metadata) {
-            result.push_back(metadata);
+            result.push_back(metadata.get());
         }
     }
     
@@ -399,9 +398,11 @@ void PropertyHostFacade::terminateSubscriptionsToAllSubscribers(uint8_t group) {
     pimpl_->subscriptions_.clear();
     
     // Notify about subscription changes for all properties
-    auto property_ids = get_property_ids();
-    for (const auto& property_id : property_ids) {
-        notify_subscription_changed(property_id);
+    auto metadata_list = pimpl_->properties_->getMetadataList();
+    for (const auto& metadata : metadata_list) {
+        if (metadata) {
+            notify_subscription_changed(metadata->getPropertyId());
+        }
     }
 }
 
@@ -439,18 +440,6 @@ std::vector<uint8_t> PropertyHostFacade::getProperty(const std::string& property
     return {};
 }
 
-std::vector<std::string> PropertyHostFacade::get_property_ids() const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    std::vector<std::string> property_ids;
-    
-    auto metadata_list = pimpl_->properties_->getMetadataList();
-    for (const auto& metadata : metadata_list) {
-        if (metadata) {
-            property_ids.push_back(metadata->getPropertyId());
-        }
-    }
-    return property_ids;
-}
 
 const PropertyMetadata* PropertyHostFacade::get_property_metadata(const std::string& property_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);

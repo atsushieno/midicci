@@ -166,27 +166,35 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
                                          const std::vector<uint8_t>& data, bool is_partial) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
+    // Following Kotlin implementation exactly: properties.values.first { it.id == propertyId && (resId == null || it.resId == resId) }.body = data
+    auto& property_values = pimpl_->properties_->getMutableValues();
+    auto it = std::find_if(property_values.begin(), property_values.end(),
+        [&property_id, &res_id](const PropertyValue& pv) { 
+            return pv.id == property_id && (res_id.empty() || pv.resId == res_id); 
+        });
+    
+    if (it != property_values.end()) {
+        // Update existing property value directly (following Kotlin pattern)
+        it->body = data;
+    } else {
+        // Property doesn't exist yet - create it
+        auto* metadata = get_property_metadata(property_id);
+        std::string media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
+        if (metadata) {
+            media_type = metadata->getMediaType();
+        }
+        
+        // Add new property value to the list
+        property_values.emplace_back(property_id, res_id, media_type, data);
+    }
+    
     // CRITICAL: Update the property value in the service layer so GetPropertyData works
     if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
         common_service->set_property_value(property_id, data);
     }
     
-    // Update the property value in our observable list with full property information
-    // Get the current media type from metadata or use default
-    auto* metadata = get_property_metadata(property_id);
-    std::string media_type = "application/json"; // Default media type
-    if (metadata) {
-        media_type = metadata->getMediaType();
-    }
-    
-    // Use the enhanced updateProperty method that handles resource ID and media type
-    pimpl_->properties_->updateValue(property_id, res_id, media_type, data);
-    
-    // Directly notify subscribers with the data and partial flag (like Kotlin)
+    // Following Kotlin implementation: notifyPropertyUpdatesToSubscribers(propertyId, data, isPartial)
     pimpl_->notify_property_updates_to_subscribers(property_id, data, is_partial);
-    
-    // Also trigger the standard property updated callback
-    notify_property_updated(property_id);
 }
 
 // Common Rules updates (following Kotlin implementation)
@@ -263,12 +271,15 @@ SetPropertyDataReply PropertyHostFacade::process_set_property_data(const SetProp
     if (pimpl_->property_service_) {
         auto reply = pimpl_->property_service_->set_property_data(msg);
         
-        auto status = pimpl_->property_service_->get_header_field_integer(reply.get_header(), "status");
-        if (status == 200) {
+        // Following Kotlin implementation: check if reply is successful, then update property
+        auto status = pimpl_->property_service_->get_header_field_integer(reply.get_header(), PropertyCommonHeaderKeys::STATUS);
+        if (status == PropertyExchangeStatus::OK) {
             auto property_id = pimpl_->property_service_->get_property_id_for_header(msg.get_header());
-            // Update property value using new implementation
+            
+            // Update property value - this will trigger notifications automatically
             pimpl_->properties_->updateValue(property_id, msg.get_header(), msg.get_body());
-            notify_property_updated(property_id);
+            
+            // Note: Don't call notify_property_updated here as it's already called by updateValue
         }
         
         return reply;

@@ -181,6 +181,10 @@ namespace midicci {
         return nullptr;
     }
 
+    std::vector<PropertyValue>& ServiceObservablePropertyList::getMutableValues() {
+        return internal_values_;
+    }
+
     void ServiceObservablePropertyList::addMetadata(std::unique_ptr<PropertyMetadata> metadata) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
@@ -202,24 +206,36 @@ namespace midicci {
     void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),[&](PropertyValue& i) { return i.id == propertyId; });
-        if (it != internal_values_.end()) {
-            it->body = body;
-            notifyPropertyUpdated(propertyId);
+        // Following Kotlin implementation: extract resId and mediaType from header, decode body
+        std::string resId = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::RES_ID);
+        std::string mediaType = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::MEDIA_TYPE);
+        if (mediaType.empty()) {
+            mediaType = CommonRulesKnownMimeTypes::APPLICATION_JSON;
         }
+        
+        // Decode the body using the property service
+        std::vector<uint8_t> decodedBody = property_service_.decode_body(header, body);
+        
+        // Call the full updateValue method with decoded data
+        updateValue(propertyId, resId, mediaType, decodedBody);
     }
 
     void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::string& resId,
                                                     const std::string& mediaType, const std::vector<uint8_t>& body) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),[&](PropertyValue& i) { return i.id == propertyId; });
+        // Following Kotlin implementation: remove existing property, then add new one
+        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),
+            [&propertyId](const PropertyValue& pv) { return pv.id == propertyId; });
         if (it != internal_values_.end()) {
-            it->resId = resId;
-            it->mediaType = mediaType;
-            it->body = body;
-            notifyPropertyUpdated(propertyId);
+            internal_values_.erase(it);
         }
+        
+        // Add the new property value
+        internal_values_.emplace_back(propertyId, resId, mediaType, body);
+        
+        // Notify that the property was updated
+        notifyPropertyUpdated(propertyId);
     }
 
     void ServiceObservablePropertyList::removeMetadata(const std::string& propertyId) {

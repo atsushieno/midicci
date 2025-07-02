@@ -120,6 +120,9 @@ public:
     // Safer method to get metadata by property ID without ownership transfer
     const PropertyMetadata* getMetadata(const std::string& property_id) const;
     
+    // Direct access to internal values for PropertyHostFacade (following Kotlin pattern)
+    std::vector<PropertyValue>& getMutableValues();
+    
     void addMetadata(std::unique_ptr<PropertyMetadata> metadata);
     void updateMetadata(const std::string& propertyId, PropertyMetadata* metadata);
     void updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);

@@ -443,9 +443,11 @@ std::vector<std::string> PropertyHostFacade::get_property_ids() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::vector<std::string> property_ids;
     
-    auto values = pimpl_->properties_->getValues();
-    for (const auto& value : values) {
-        property_ids.push_back(value.id);
+    auto metadata_list = pimpl_->properties_->getMetadataList();
+    for (const auto& metadata : metadata_list) {
+        if (metadata) {
+            property_ids.push_back(metadata->getPropertyId());
+        }
     }
     return property_ids;
 }

@@ -6,6 +6,8 @@
 #include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include <mutex>
 #include <iostream>
+#include <random>
+#include <sstream>
 
 namespace midicci::tooling {
 
@@ -380,13 +382,37 @@ void CIDeviceModel::remove_properties_updated_callback(const PropertiesUpdatedCa
         pimpl_->properties_updated_callbacks_.end());
 }
 
-    const midicci::commonproperties::PropertyMetadata* CIDeviceModel::create_new_property() {
-        auto property = std::make_unique<CommonRulesPropertyMetadata>();
-        property->resource = "X-${Random.nextInt(9999)}";
+const midicci::commonproperties::PropertyMetadata* CIDeviceModel::create_new_property() {
+    auto property = std::make_unique<CommonRulesPropertyMetadata>();
+    
+    // Generate a random property ID in the format "X-####"
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(1000, 9999);
+    
+    std::ostringstream oss;
+    oss << "X-" << dis(gen);
+    property->resource = oss.str();
+    
+    // Set default metadata values
+    property->canGet = true;
+    property->canSet = "full";
+    property->canSubscribe = true;
+    property->requireResId = false;
+    property->mediaTypes = {"application/json"};
+    property->encodings = {"ASCII"};
+    property->schema = "{}";
+    property->canPaginate = false;
 
-        auto ret = property.get();
-        get_device()->get_property_host_facade().addMetadata(std::move(property));
-        return ret;
+    auto ret = property.get();
+    get_device()->get_property_host_facade().addMetadata(std::move(property));
+    
+    // Notify ResponderWidget that properties have been updated
+    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
+        callback();
     }
+    
+    return ret;
+}
 
 } // namespace ci_tool

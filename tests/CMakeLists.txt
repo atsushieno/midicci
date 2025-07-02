@@ -13,6 +13,9 @@ set(GTEST_SOURCES
     test_json.cpp
     test_property_common_converter.cpp
     TestCIMediator.cpp
+    test_ci_device_model_properties.cpp
+    test_property_host_facade_simple.cpp
+    test_integration_property_creation.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})
@@ -20,6 +23,7 @@ add_executable(midicci-gtest ${GTEST_SOURCES})
 target_link_libraries(midicci-gtest
     PRIVATE 
         midicci
+        midicci-tooling
         gtest_main
         gtest
         Threads::Threads
@@ -28,6 +32,7 @@ target_link_libraries(midicci-gtest
 target_include_directories(midicci-gtest
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tools/tooling/include
 )
 
 target_compile_features(midicci-gtest PRIVATE cxx_std_20)

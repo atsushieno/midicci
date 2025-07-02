@@ -279,25 +279,19 @@ void ResponderWidget::onPropertySelectionChanged()
 
 void ResponderWidget::onAddProperty()
 {
-    bool ok;
-    QString propertyId = QInputDialog::getText(this, "Add Property", "Property ID:", QLineEdit::Normal, QString("X-%1").arg(rand() % 10000), &ok);
-    if (ok && !propertyId.isEmpty()) {
-        if (!m_repository || !m_repository->get_ci_device_manager()) {
-            return;
-        }
-        
-        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
-        if (!deviceModel) {
-            return;
-        }
-        
-        // Create a new property with default metadata
-        auto property = deviceModel->create_new_property();
-
-        // Update the UI to reflect the new property
-        updatePropertyList();
-        
-        m_repository->log(QString("Added property: %1").arg(propertyId).toStdString(), tooling::MessageDirection::Out);
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    // Create a new property with default metadata
+    auto property = deviceModel->create_new_property();
+    if (!property) {
+        return;
     }
 }
 

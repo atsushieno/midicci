@@ -7,6 +7,7 @@
 #include "midicci/Json.hpp"
 #include "midicci/MidiCIDevice.hpp"
 #include "midicci/Message.hpp"
+#include "midicci/MidiCIConstants.hpp"
 #include <mutex>
 #include <algorithm>
 
@@ -14,13 +15,12 @@ namespace midicci {
 
 class PropertyHostFacade::Impl {
 public:
-    explicit Impl(MidiCIDevice& device) 
+    explicit Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config)
         : device_(device)
         , property_service_(std::make_unique<CommonRulesPropertyService>(device))
-        , properties_(std::make_unique<ServiceObservablePropertyList>([&device](const std::string& msg, bool is_error) {
-            device.get_logger()(msg, is_error);
-          }))
     {
+        properties_ = std::make_unique<ServiceObservablePropertyList>(config.property_values, *property_service_);
+
         // Set up property catalog update callback
         properties_->addPropertyCatalogUpdatedCallback([this]() {
             // Notify that the property catalog has changed
@@ -36,21 +36,66 @@ public:
     }
     
     void notify_property_updated_to_subscribers(const std::string& property_id) {
-        // Create property notifications for all subscribers
+        // Get the property value
         auto property_values = properties_->getValues();
         auto it = std::find_if(property_values.begin(), property_values.end(),
             [&property_id](const PropertyValue& pv) { return pv.id == property_id; });
             
         if (it != property_values.end()) {
-            // Notify all subscribers for this property
-            for (const auto& subscription : subscriptions_) {
-                if (subscription.property_id == property_id) {
-                    // In a full implementation, this would create and send SubscribeProperty messages
-                    // For now, just log the notification
-                    device_.get_logger()("Notifying subscriber MUID 0x" + std::to_string(subscription.subscriber_muid) + 
-                                       " of property update: " + property_id, false);
-                }
+            // Call the main notification method with property data and isPartial=false
+            notify_property_updates_to_subscribers(property_id, it->body, false);
+        }
+    }
+    
+    // Main notification method that matches Kotlin implementation
+    void notify_property_updates_to_subscribers(const std::string& property_id, const std::vector<uint8_t>& data, bool is_partial) {
+        create_property_notification(property_id, data, is_partial);
+    }
+    
+    // Create and send property notification messages (port of Kotlin createPropertyNotification)
+    void create_property_notification(const std::string& property_id, const std::vector<uint8_t>& data, bool is_partial) {
+        std::string last_encoding;
+        std::vector<uint8_t> last_encoded_data = data;
+        
+        // Get subscriptions from property service
+        const auto& service_subscriptions = property_service_->get_subscriptions();
+        
+        for (const auto& subscription : service_subscriptions) {
+            if (subscription.resource != property_id) {
+                continue; // Skip subscriptions for other properties
             }
+            
+            // Encode data if needed (optimize by caching last encoding)
+            std::vector<uint8_t> encoded_data;
+            if (subscription.encoding == last_encoding) {
+                encoded_data = last_encoded_data;
+            } else if (subscription.encoding.empty()) {
+                encoded_data = data; // No encoding needed
+            } else {
+                encoded_data = property_service_->encode_body(data, subscription.encoding);
+                // Cache the encoding result
+                last_encoding = subscription.encoding;
+                last_encoded_data = encoded_data;
+            }
+            
+            // Create header fields for notification
+            std::map<std::string, std::string> header_fields;
+            header_fields[PropertyCommonHeaderKeys::SUBSCRIBE_ID] = subscription.subscribe_id;
+            header_fields[PropertyCommonHeaderKeys::SET_PARTIAL] = is_partial ? "true" : "false";
+            if (!subscription.encoding.empty()) {
+                header_fields[PropertyCommonHeaderKeys::MUTUAL_ENCODING] = subscription.encoding;
+            }
+            
+            // Create notification header
+            auto header = property_service_->create_update_notification_header(subscription.resource, header_fields);
+            
+            // Create and send SubscribeProperty message
+            Common common(device_.get_muid(), BROADCAST_MUID_32, ADDRESS_FUNCTION_BLOCK, device_.get_config().group);
+            auto request_id = device_.get_messenger().get_next_request_id();
+            SubscribeProperty msg(common, request_id, header, encoded_data);
+            
+            // Send the notification
+            device_.get_messenger().send(msg);
         }
     }
     
@@ -63,7 +108,9 @@ public:
     mutable std::recursive_mutex mutex_;
 };
 
-PropertyHostFacade::PropertyHostFacade(MidiCIDevice& device) : pimpl_(std::make_unique<Impl>(device)) {}
+PropertyHostFacade::PropertyHostFacade(MidiCIDevice& device, MidiCIDeviceConfiguration& config) {
+    pimpl_ = std::make_unique<Impl>(device, config);
+}
 
 PropertyHostFacade::~PropertyHostFacade() = default;
 
@@ -82,53 +129,9 @@ MidiCIServicePropertyRules* PropertyHostFacade::get_property_rules() {
 }
 
 // Core property management methods (following Kotlin implementation)
-void PropertyHostFacade::addProperty(const PropertyMetadata& property) {
+void PropertyHostFacade::addMetadata(std::unique_ptr<PropertyMetadata> property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    // Create a copy of the metadata for the observable property list
-    auto metadata_copy_for_properties = std::make_unique<CommonRulesPropertyMetadata>(property.getPropertyId());
-    metadata_copy_for_properties->setData(property.getData());
-    
-    // Create another copy for the service layer registration
-    auto metadata_copy_for_service = std::make_unique<CommonRulesPropertyMetadata>(property.getPropertyId());
-    metadata_copy_for_service->setData(property.getData());
-    
-    // Copy extended metadata if it's a CommonRulesPropertyMetadata
-    if (auto* common_rules = dynamic_cast<const CommonRulesPropertyMetadata*>(&property)) {
-        auto* target1 = static_cast<CommonRulesPropertyMetadata*>(metadata_copy_for_properties.get());
-        auto* target2 = static_cast<CommonRulesPropertyMetadata*>(metadata_copy_for_service.get());
-        
-        target1->canGet = common_rules->canGet;
-        target1->canSet = common_rules->canSet;
-        target1->canSubscribe = common_rules->canSubscribe;
-        target1->requireResId = common_rules->requireResId;
-        target1->canPaginate = common_rules->canPaginate;
-        target1->mediaTypes = common_rules->mediaTypes;
-        target1->encodings = common_rules->encodings;
-        target1->schema = common_rules->schema;
-        
-        target2->canGet = common_rules->canGet;
-        target2->canSet = common_rules->canSet;
-        target2->canSubscribe = common_rules->canSubscribe;
-        target2->requireResId = common_rules->requireResId;
-        target2->canPaginate = common_rules->canPaginate;
-        target2->mediaTypes = common_rules->mediaTypes;
-        target2->encodings = common_rules->encodings;
-        target2->schema = common_rules->schema;
-    }
-    
-    // CRITICAL: Register with the service layer so it appears in ResourceList
-    if (pimpl_->property_service_) {
-        pimpl_->property_service_->add_metadata(std::move(metadata_copy_for_service));
-        
-        // Also set the initial property value in the service layer
-        if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
-            common_service->set_property_value(property.getPropertyId(), property.getData());
-        }
-    }
-    
-    // Add to the observable property list with initial value
-    pimpl_->properties_->addProperty(std::move(metadata_copy_for_properties), property.getData());
+    get_properties().addMetadata(std::move(property));
 }
 
 void PropertyHostFacade::removeProperty(const std::string& property_id) {
@@ -140,7 +143,7 @@ void PropertyHostFacade::removeProperty(const std::string& property_id) {
     }
     
     // Remove from the observable property list
-    pimpl_->properties_->removeProperty(property_id);
+    pimpl_->properties_->removeMetadata(property_id);
     
     // Remove any subscriptions for this property
     auto it = std::remove_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
@@ -154,31 +157,11 @@ void PropertyHostFacade::removeProperty(const std::string& property_id) {
 
 void PropertyHostFacade::updatePropertyMetadata(const std::string& old_property_id, const PropertyMetadata& property) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    // For now, treat this as remove + add to ensure proper service layer registration
-    // Save existing data first
-    std::vector<uint8_t> existing_data;
-    auto current_values = pimpl_->properties_->getValues();
-    auto it = std::find_if(current_values.begin(), current_values.end(),
-        [&old_property_id](const PropertyValue& pv) { return pv.id == old_property_id; });
-    
-    if (it != current_values.end()) {
-        existing_data = it->body;
-    }
-    
-    // Remove old property (this removes from both service layer and observable list)
-    removeProperty(old_property_id);
-    
-    // Add new property (this adds to both service layer and observable list)
-    addProperty(property);
-    
-    // Restore the data if we had any
-    if (!existing_data.empty()) {
-        setPropertyValue(property.getPropertyId(), "", existing_data, false);
-    }
+
+    pimpl_->properties_->updateMetadata(old_property_id, (PropertyMetadata*) &property);
 }
 
-// Property value updates with subscriber notifications (like Kotlin setPropertyValue)
+// Property value updates with subscriber notifications (matching Kotlin setPropertyValue)
 void PropertyHostFacade::setPropertyValue(const std::string& property_id, const std::string& res_id, 
                                          const std::vector<uint8_t>& data, bool is_partial) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
@@ -199,7 +182,10 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
     // Use the enhanced updateProperty method that handles resource ID and media type
     pimpl_->properties_->updateValue(property_id, res_id, media_type, data);
     
-    // This will trigger the property updated callback which notifies subscribers
+    // Directly notify subscribers with the data and partial flag (like Kotlin)
+    pimpl_->notify_property_updates_to_subscribers(property_id, data, is_partial);
+    
+    // Also trigger the standard property updated callback
     notify_property_updated(property_id);
 }
 
@@ -207,31 +193,32 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
 void PropertyHostFacade::updateCommonRulesDeviceInfo(const DeviceInfo& device_info) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (auto* common_rules = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
-        // Update device info in the service
-        // This would need to be implemented in CommonRulesPropertyService
-        pimpl_->device_.get_logger()("Updated Common Rules device info", false);
-    }
+    // Update device info in the device itself
+    auto& current_device_info = pimpl_->device_.get_device_info();
+    current_device_info = device_info;
+    
+    // Notify that DeviceInfo property may have changed
+    notify_property_updated(PropertyResourceNames::DEVICE_INFO);
 }
 
 void PropertyHostFacade::updateCommonRulesChannelList(const MidiCIChannelList& channel_list) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (auto* common_rules = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
-        // Update channel list in the service
-        // This would need to be implemented in CommonRulesPropertyService
-        pimpl_->device_.get_logger()("Updated Common Rules channel list", false);
-    }
+    // Update channel list in the device configuration
+    pimpl_->device_.get_config().channel_list = channel_list;
+    
+    // Notify that ChannelList property may have changed
+    notify_property_updated(PropertyResourceNames::CHANNEL_LIST);
 }
 
 void PropertyHostFacade::updateJsonSchema(const std::string& json_schema) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (auto* common_rules = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
-        // Update JSON schema in the service
-        // This would need to be implemented in CommonRulesPropertyService
-        pimpl_->device_.get_logger()("Updated JSON schema", false);
-    }
+    // Update JSON schema in the device configuration
+    pimpl_->device_.get_config().json_schema_string = json_schema;
+    
+    // Notify that JSONSchema property may have changed
+    notify_property_updated(PropertyResourceNames::JSON_SCHEMA);
 }
 
 // Observable property list access (following Kotlin lazy properties)
@@ -241,6 +228,24 @@ ServiceObservablePropertyList& PropertyHostFacade::get_properties() {
 
 const ServiceObservablePropertyList& PropertyHostFacade::get_properties() const {
     return *pimpl_->properties_;
+}
+
+// Metadata list access (like Kotlin metadataList property) - returns safe pointers
+std::vector<const PropertyMetadata*> PropertyHostFacade::get_metadata_list() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    std::vector<const PropertyMetadata*> result;
+    
+    // Get all property IDs and use the safe getMetadata method
+    auto property_ids = get_property_ids();
+    for (const auto& property_id : property_ids) {
+        const PropertyMetadata* metadata = pimpl_->properties_->getMetadata(property_id);
+        if (metadata) {
+            result.push_back(metadata);
+        }
+    }
+    
+    return result;
 }
 
 GetPropertyDataReply PropertyHostFacade::process_get_property_data(const GetPropertyData& msg) {
@@ -402,9 +407,8 @@ void PropertyHostFacade::terminateSubscriptionsToAllSubscribers(uint8_t group) {
 
 // Legacy compatibility methods (delegate to new implementation)
 void PropertyHostFacade::add_property(std::unique_ptr<PropertyMetadata> property) {
-    if (property) {
-        addProperty(*property);
-    }
+    if (property)
+        get_properties().addMetadata(std::move(property));
 }
 
 void PropertyHostFacade::remove_property(const std::string& property_id) {

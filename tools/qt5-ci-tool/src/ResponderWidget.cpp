@@ -292,23 +292,8 @@ void ResponderWidget::onAddProperty()
         }
         
         // Create a new property with default metadata
-        auto property = midicci::commonproperties::CommonRulesPropertyMetadata(propertyId.toStdString());
-        property.canGet = true;
-        property.canSet = "full";
-        property.canSubscribe = true;
-        property.requireResId = false;
-        property.canPaginate = false;
-        property.mediaTypes = {"application/json"};
-        property.encodings = {"ASCII"};
-        property.schema = "{}";
-        
-        // Set initial empty data
-        std::vector<uint8_t> initialData = {};
-        property.setData(initialData);
-        
-        // Add to the business logic layer
-        deviceModel->add_local_property(property);
-        
+        auto property = deviceModel->create_new_property();
+
         // Update the UI to reflect the new property
         updatePropertyList();
         

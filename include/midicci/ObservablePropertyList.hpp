@@ -14,6 +14,8 @@ class SubscribeProperty;
 
 namespace commonproperties {
 
+class MidiCIServicePropertyRules;
+
 class PropertyMetadata {
 public:
     virtual ~PropertyMetadata() = default;
@@ -94,7 +96,7 @@ public:
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
-    
+
     void updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType = "application/json");
     std::string updateValue(const SubscribeProperty& msg);
     
@@ -109,24 +111,25 @@ class ServiceObservablePropertyList : public ObservablePropertyList {
 public:
     using LoggerFunction = std::function<void(const std::string&, bool)>;
     
-    explicit ServiceObservablePropertyList(LoggerFunction logger);
+    ServiceObservablePropertyList(std::vector<PropertyValue>& internalValues, MidiCIServicePropertyRules& propertyService);
     ~ServiceObservablePropertyList() override = default;
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
-    
+
     // Safer method to get metadata by property ID without ownership transfer
     const PropertyMetadata* getMetadata(const std::string& property_id) const;
     
-    void addProperty(std::unique_ptr<PropertyMetadata> metadata, const std::vector<uint8_t>& initialValue);
+    void addMetadata(std::unique_ptr<PropertyMetadata> metadata);
+    void updateMetadata(const std::string& propertyId, PropertyMetadata* metadata);
     void updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     void updateValue(const std::string& propertyId, const std::string& resId, const std::string& mediaType, const std::vector<uint8_t>& body);
-    void removeProperty(const std::string& propertyId);
+    void removeMetadata(const std::string& propertyId);
     
 private:
-    LoggerFunction logger_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
-    std::map<std::string, PropertyValue> values_;
+    std::vector<PropertyValue>& internal_values_;
+    midicci::commonproperties::MidiCIServicePropertyRules& property_service_;
     mutable std::recursive_mutex mutex_;
 };
 

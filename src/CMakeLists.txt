@@ -10,10 +10,10 @@ set(MIDICCI_SOURCES
         midicci/ObservableProfileList.cpp
         midicci/ProfileClientFacade.cpp
         midicci/ProfileHostFacade.cpp
-        midicci/commonproperties/PropertyChunkManager.cpp
-        midicci/commonproperties/PropertyClientFacade.cpp
-        midicci/commonproperties/PropertyHostFacade.cpp
-        midicci/commonproperties/ObservablePropertyList.cpp
+        midicci/PropertyChunkManager.cpp
+        midicci/PropertyClientFacade.cpp
+        midicci/PropertyHostFacade.cpp
+        midicci/ObservablePropertyList.cpp
         midicci/commonproperties/CommonRulesPropertyHelper.cpp
         midicci/commonproperties/CommonRulesPropertyService.cpp
         midicci/commonproperties/CommonRulesPropertyClient.cpp

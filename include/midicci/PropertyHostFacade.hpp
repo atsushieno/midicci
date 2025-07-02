@@ -23,7 +23,7 @@ public:
     using PropertyUpdatedCallback = std::function<void(const std::string&)>;
     using SubscriptionChangedCallback = std::function<void(const std::string& property_id)>;
     
-    explicit PropertyHostFacade(MidiCIDevice& device);
+    explicit PropertyHostFacade(MidiCIDevice& device, MidiCIDeviceConfiguration& config);
     ~PropertyHostFacade();
     
     PropertyHostFacade(const PropertyHostFacade&) = delete;
@@ -33,7 +33,7 @@ public:
     PropertyHostFacade& operator=(PropertyHostFacade&&) noexcept;
     
     // Core property management (following Kotlin implementation)
-    void addProperty(const PropertyMetadata& property);
+    void addMetadata(std::unique_ptr<PropertyMetadata> property);
     void removeProperty(const std::string& property_id);
     void updatePropertyMetadata(const std::string& old_property_id, const PropertyMetadata& property);
     
@@ -52,6 +52,9 @@ public:
     // Observable property list access (following Kotlin lazy properties)
     ServiceObservablePropertyList& get_properties();
     const ServiceObservablePropertyList& get_properties() const;
+    
+    // Metadata list access (like Kotlin metadataList property) - returns safe pointers
+    std::vector<const PropertyMetadata*> get_metadata_list() const;
     
     // Message processing
     GetPropertyDataReply process_get_property_data(const GetPropertyData& msg);

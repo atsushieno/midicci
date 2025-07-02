@@ -1,190 +1,232 @@
 #include "midicci/ObservablePropertyList.hpp"
+#include "midicci/PropertyClientFacade.hpp"
+#include "midicci/commonproperties/CommonRulesPropertyService.hpp"
 #include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include <algorithm>
+#include "midicci/commonproperties/CommonRulesPropertyClient.hpp"
+#include "midicci/Message.hpp"
+#include "midicci/PropertyCommonRules.hpp"
 #include <mutex>
+#include <vector>
+#include <algorithm>
 
 namespace midicci {
 
-// SubscriptionEntry implementation
-SubscriptionEntry::SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, 
-                                   const std::string& sub_id, const std::string& enc)
-    : muid(subscriber_muid), resource(res), subscribe_id(sub_id), encoding(enc) {}
-
-// ObservablePropertyList base implementation
-void ObservablePropertyList::addPropertyUpdatedCallback(PropertyUpdatedCallback callback) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    property_updated_callbacks_.push_back(std::move(callback));
-}
-
-void ObservablePropertyList::addPropertyCatalogUpdatedCallback(PropertyCatalogUpdatedCallback callback) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    property_catalog_updated_callbacks_.push_back(std::move(callback));
-}
-
-void ObservablePropertyList::removePropertyUpdatedCallback(const PropertyUpdatedCallback& callback) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    // Note: This is a simplified removal - in practice, you'd need to compare function targets
-    property_updated_callbacks_.clear(); // Simplified for now
-}
-
-void ObservablePropertyList::removePropertyCatalogUpdatedCallback(const PropertyCatalogUpdatedCallback& callback) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    // Note: This is a simplified removal - in practice, you'd need to compare function targets
-    property_catalog_updated_callbacks_.clear(); // Simplified for now
-}
-
-void ObservablePropertyList::notifyPropertyUpdated(const std::string& propertyId) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    for (const auto& callback : property_updated_callbacks_) {
-        callback(propertyId);
+    void ObservablePropertyList::addPropertyUpdatedCallback(PropertyUpdatedCallback callback) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        property_updated_callbacks_.push_back(std::move(callback));
     }
-}
 
-void ObservablePropertyList::notifyPropertyCatalogUpdated() {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    for (const auto& callback : property_catalog_updated_callbacks_) {
-        callback();
+    void ObservablePropertyList::addPropertyCatalogUpdatedCallback(PropertyCatalogUpdatedCallback callback) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        property_catalog_updated_callbacks_.push_back(std::move(callback));
     }
-}
 
-// ClientObservablePropertyList implementation
-ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
-    : logger_(std::move(logger)), property_client_(property_client) {}
-
-std::vector<std::unique_ptr<PropertyMetadata>> ClientObservablePropertyList::getMetadataList() const {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    // This would typically query the property client for metadata
-    // For now, return empty list
-    return {};
-}
-
-std::vector<PropertyValue> ClientObservablePropertyList::getValues() const {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    std::vector<PropertyValue> result;
-    for (const auto& [id, value] : values_) {
-        result.push_back(value);
+    void ObservablePropertyList::removePropertyUpdatedCallback(const PropertyUpdatedCallback& callback) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
     }
-    return result;
-}
 
-void ClientObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    auto it = values_.find(propertyId);
-    if (it != values_.end()) {
-        it->second.body = body;
-        it->second.mediaType = mediaType;
-    } else {
-        values_.emplace(propertyId, PropertyValue(propertyId, mediaType, body));
+    void ObservablePropertyList::removePropertyCatalogUpdatedCallback(const PropertyCatalogUpdatedCallback& callback) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
     }
-    
-    notifyPropertyUpdated(propertyId);
-}
 
-std::string ClientObservablePropertyList::updateValue(const SubscribeProperty& msg) {
-    // This would process the SubscribeProperty message and update values accordingly
-    // Implementation depends on the SubscribeProperty message structure
-    logger_("ClientObservablePropertyList::updateValue from SubscribeProperty message", false);
-    return "OK";
-}
-
-// ServiceObservablePropertyList implementation
-ServiceObservablePropertyList::ServiceObservablePropertyList(LoggerFunction logger)
-    : logger_(std::move(logger)) {}
-
-std::vector<std::unique_ptr<PropertyMetadata>> ServiceObservablePropertyList::getMetadataList() const {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    std::vector<std::unique_ptr<PropertyMetadata>> result;
-    
-    // Create copies of the metadata for return
-    for (const auto& metadata : metadata_list_) {
-        auto copy = std::make_unique<commonproperties::CommonRulesPropertyMetadata>(metadata->getPropertyId());
-        if (auto* common_rules = dynamic_cast<const commonproperties::CommonRulesPropertyMetadata*>(metadata.get())) {
-            auto* copy_common = static_cast<commonproperties::CommonRulesPropertyMetadata*>(copy.get());
-            copy_common->setData(common_rules->getData());
-        }
-        result.push_back(std::move(copy));
-    }
-    
-    return result;
-}
-
-std::vector<PropertyValue> ServiceObservablePropertyList::getValues() const {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    std::vector<PropertyValue> result;
-    for (const auto& [id, value] : values_) {
-        result.push_back(value);
-    }
-    return result;
-}
-
-const PropertyMetadata* ServiceObservablePropertyList::getMetadata(const std::string& property_id) const {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    // Return pointer to the actual stored metadata, not a copy
-    for (const auto& metadata : metadata_list_) {
-        if (metadata->getPropertyId() == property_id) {
-            return metadata.get();
+    void ObservablePropertyList::notifyPropertyUpdated(const std::string& propertyId) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        for (const auto& callback : property_updated_callbacks_) {
+            callback(propertyId);
         }
     }
-    
-    return nullptr;
-}
 
-void ServiceObservablePropertyList::addProperty(std::unique_ptr<PropertyMetadata> metadata, const std::vector<uint8_t>& initialValue) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    const std::string property_id = metadata->getPropertyId();
-    
-    // Remove existing property with same ID
-    removeProperty(property_id);
-    
-    // Add new metadata
-    metadata_list_.push_back(std::move(metadata));
-    
-    // Add initial value
-    values_.emplace(property_id, PropertyValue(property_id, "application/json", initialValue));
-    
-    logger_("Added property: " + property_id, false);
-    notifyPropertyCatalogUpdated();
-}
+    void ObservablePropertyList::notifyPropertyCatalogUpdated() {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        for (const auto& callback : property_catalog_updated_callbacks_) {
+            callback();
+        }
+    }
 
-void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    auto it = values_.find(propertyId);
-    if (it != values_.end()) {
-        it->second.body = body;
-        logger_("Updated property value: " + propertyId, false);
+    ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
+            : logger_(std::move(logger)), property_client_(property_client) {
+
+        auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
+        if (common_rules_client) {
+            common_rules_client->add_property_catalog_updated_callback([this]() {
+                std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+                auto metadata_list = getMetadataList();
+
+                std::map<std::string, PropertyValue> new_values;
+
+                for (const auto& metadata : metadata_list) {
+                    const std::string& property_id = metadata->getPropertyId();
+
+                    auto existing_it = values_.find(property_id);
+                    if (existing_it != values_.end()) {
+                        new_values.emplace(property_id, existing_it->second);
+                    } else {
+                        std::string media_type = metadata->getMediaType();
+                        if (media_type.empty()) {
+                            media_type = "application/json";
+                        }
+                        new_values.emplace(property_id, PropertyValue(property_id, media_type, std::vector<uint8_t>()));
+                    }
+                }
+
+                values_ = std::move(new_values);
+
+                notifyPropertyCatalogUpdated();
+            });
+        }
+    }
+
+    std::vector<std::unique_ptr<PropertyMetadata>> ClientObservablePropertyList::getMetadataList() const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
+        if (common_rules_client) {
+            return common_rules_client->get_metadata_list();
+        }
+        return {};
+    }
+
+    std::vector<PropertyValue> ClientObservablePropertyList::getValues() const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        std::vector<PropertyValue> result;
+        for (const auto& pair : values_) {
+            result.push_back(pair.second);
+        }
+        return result;
+    }
+
+    void ClientObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        auto it = values_.find(propertyId);
+        if (it != values_.end()) {
+            it->second.body = body;
+            it->second.mediaType = mediaType;
+        } else {
+            values_.emplace(propertyId, PropertyValue(propertyId, mediaType, body));
+        }
+
         notifyPropertyUpdated(propertyId);
-    } else {
-        logger_("Property not found for update: " + propertyId, true);
     }
-}
 
-void ServiceObservablePropertyList::removeProperty(const std::string& propertyId) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    // Remove from metadata list
-    auto metadata_it = std::remove_if(metadata_list_.begin(), metadata_list_.end(),
-        [&propertyId](const std::unique_ptr<PropertyMetadata>& p) {
-            return p->getPropertyId() == propertyId;
-        });
-    
-    bool removed_metadata = metadata_it != metadata_list_.end();
-    metadata_list_.erase(metadata_it, metadata_list_.end());
-    
-    // Remove from values
-    auto values_it = values_.find(propertyId);
-    bool removed_value = values_it != values_.end();
-    if (removed_value) {
-        values_.erase(values_it);
+    std::string ClientObservablePropertyList::updateValue(const SubscribeProperty& msg) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        if (!property_client_) {
+            return "";
+        }
+
+        // Get property ID from subscription mapping
+        auto property_id = property_client_->get_subscribed_property(msg);
+        if (property_id.empty()) {
+            return "";
+        }
+
+        auto command = property_client_->get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::COMMAND);
+
+        // For NOTIFY commands, just return the command without updating property
+        if (command == MidiCISubscriptionCommand::NOTIFY) {
+            return command;
+        }
+
+        // For FULL and PARTIAL commands, update the property value
+        auto media_type = property_client_->get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::MEDIA_TYPE);
+        if (media_type.empty()) {
+            media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
+        }
+
+        // For now, we don't handle encoding, so just use body as-is
+        // In full implementation, you'd call property_client_->decode_body(msg.get_header(), msg.get_body())
+
+        updateValue(property_id, msg.get_body(), media_type);
+
+        return command;
     }
-    
-    if (removed_metadata || removed_value) {
-        logger_("Removed property: " + propertyId, false);
+
+    ServiceObservablePropertyList::ServiceObservablePropertyList(std::vector<PropertyValue>& internalValues, MidiCIServicePropertyRules& propertyService)
+            : internal_values_(internalValues), property_service_(propertyService) {
+    }
+
+    std::vector<std::unique_ptr<PropertyMetadata>> ServiceObservablePropertyList::getMetadataList() const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        std::vector<std::unique_ptr<PropertyMetadata>> result;
+        for (const auto& metadata : metadata_list_) {
+            auto* common_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get());
+            if (common_metadata) {
+                result.push_back(std::make_unique<CommonRulesPropertyMetadata>(*common_metadata));
+            }
+        }
+        return result;
+    }
+
+    std::vector<PropertyValue> ServiceObservablePropertyList::getValues() const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        return internal_values_;
+    }
+
+    const PropertyMetadata* ServiceObservablePropertyList::getMetadata(const std::string& property_id) const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        // Return pointer to the actual stored metadata, not a copy
+        for (const auto& metadata : metadata_list_) {
+            if (metadata->getPropertyId() == property_id) {
+                return metadata.get();
+            }
+        }
+
+        return nullptr;
+    }
+
+    void ServiceObservablePropertyList::addMetadata(std::unique_ptr<PropertyMetadata> metadata) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        const std::string propertyId = metadata->getPropertyId();
+        metadata_list_.push_back(std::move(metadata));
         notifyPropertyCatalogUpdated();
     }
-}
 
-} // namespace midicci
+    void ServiceObservablePropertyList::updateMetadata(const std::string& propertyId, PropertyMetadata* metadata) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        // FIXME: implement
+        /*
+        property_service_.remove_metadata(propertyId);
+        property_service_.add_metadata(std::make_unique(metadata));
+         */
+    }
+
+    void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),[&](PropertyValue& i) { return i.id == propertyId; });
+        if (it != internal_values_.end()) {
+            it->body = body;
+            notifyPropertyUpdated(propertyId);
+        }
+    }
+
+    void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::string& resId,
+                                                    const std::string& mediaType, const std::vector<uint8_t>& body) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),[&](PropertyValue& i) { return i.id == propertyId; });
+        if (it != internal_values_.end()) {
+            it->resId = resId;
+            it->mediaType = mediaType;
+            it->body = body;
+            notifyPropertyUpdated(propertyId);
+        }
+    }
+
+    void ServiceObservablePropertyList::removeMetadata(const std::string& propertyId) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        property_service_.remove_metadata(propertyId);
+        notifyPropertyCatalogUpdated();
+    }
+
+    SubscriptionEntry::SubscriptionEntry(uint32_t subscriber_muid, const std::string& res,
+                                         const std::string& sub_id, const std::string& enc)
+            : muid(subscriber_muid), resource(res), subscribe_id(sub_id), encoding(enc) {}
+
+} // namespace

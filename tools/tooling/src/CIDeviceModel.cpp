@@ -126,21 +126,6 @@ void CIDeviceModel::remove_local_profile(uint8_t group, uint8_t address, const M
     get_device()->get_profile_host_facade().remove_profile(group, address, profile_id);
 }
 
-void CIDeviceModel::add_local_property(const midicci::commonproperties::PropertyMetadata& property) {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    std::cout << "Added local property: " << property.getPropertyId() << std::endl;
-    
-    // Actually add to the PropertyHostFacade using new API
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->get_property_host_facade();
-        property_facade.addProperty(property);
-    }
-
-    for (const auto& callback : pimpl_->properties_updated_callbacks_) {
-        callback();
-    }
-}
-
 void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     std::cout << "Removed local property: " << property_id << std::endl;
@@ -394,5 +379,14 @@ void CIDeviceModel::remove_properties_updated_callback(const PropertiesUpdatedCa
                       }),
         pimpl_->properties_updated_callbacks_.end());
 }
+
+    const midicci::commonproperties::PropertyMetadata* CIDeviceModel::create_new_property() {
+        auto property = std::make_unique<CommonRulesPropertyMetadata>();
+        property->resource = "X-${Random.nextInt(9999)}";
+
+        auto ret = property.get();
+        get_device()->get_property_host_facade().addMetadata(std::move(property));
+        return ret;
+    }
 
 } // namespace ci_tool

@@ -11,8 +11,9 @@ class MidiCIDevice::Impl {
 public:
     Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid),
         profile_host_facade_(std::make_unique<ProfileHostFacade>(device)),
-        property_host_facade_(std::make_unique<PropertyHostFacade>(device)),
-        messenger_(device) {}
+        messenger_(device) {
+        property_host_facade_ = std::make_unique<PropertyHostFacade>(device, config);
+    }
     
     uint8_t device_id_;
     MidiCIDeviceConfiguration& config_;

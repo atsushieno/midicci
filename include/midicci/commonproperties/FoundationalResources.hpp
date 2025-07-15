@@ -7,6 +7,7 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace midicci {
 namespace commonproperties {
@@ -29,6 +30,12 @@ public:
     static JsonValue toJsonValue(const std::vector<std::unique_ptr<PropertyMetadata>>& resourceList);
     static JsonValue toJsonValue(const DeviceInfo& deviceInfo);
     static JsonValue toJsonValue(const MidiCIChannelList& channelList);
+    
+    // Extension methods for ObservablePropertyList (matching Kotlin extension properties)
+    static std::vector<std::unique_ptr<PropertyMetadata>> getResourceList(const midicci::ObservablePropertyList& propertyList);
+    static std::optional<DeviceInfo> getDeviceInfo(const midicci::ObservablePropertyList& propertyList);
+    static std::optional<MidiCIChannelList> getChannelList(const midicci::ObservablePropertyList& propertyList);
+    static std::optional<JsonValue> getJsonSchema(const midicci::ObservablePropertyList& propertyList);
 
 private:
     static JsonValue convertApplicationJsonBytesToJson(const std::vector<uint8_t>& data);

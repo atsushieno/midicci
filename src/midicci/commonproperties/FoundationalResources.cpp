@@ -3,6 +3,8 @@
 #include "midicci/PropertyCommonRules.hpp"
 #include "midicci/MidiCIConverter.hpp"
 #include <stdexcept>
+#include <algorithm>
+#include <optional>
 
 namespace midicci::commonproperties {
 
@@ -316,6 +318,56 @@ JsonValue FoundationalResources::channelToJson(const MidiCIChannel& channel) {
     }
     
     return JsonValue(obj);
+}
+
+// Extension methods for ObservablePropertyList (matching Kotlin extension properties)
+std::vector<std::unique_ptr<PropertyMetadata>> FoundationalResources::getResourceList(const midicci::ObservablePropertyList& propertyList) {
+    return propertyList.getMetadataList();
+}
+
+std::optional<DeviceInfo> FoundationalResources::getDeviceInfo(const midicci::ObservablePropertyList& propertyList) {
+    auto values = propertyList.getValues();
+    auto it = std::find_if(values.begin(), values.end(), 
+        [](const PropertyValue& pv) { return pv.id == PropertyResourceNames::DEVICE_INFO; });
+    
+    if (it != values.end()) {
+        try {
+            return FoundationalResources::parseDeviceInfo(it->body);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<MidiCIChannelList> FoundationalResources::getChannelList(const midicci::ObservablePropertyList& propertyList) {
+    auto values = propertyList.getValues();
+    auto it = std::find_if(values.begin(), values.end(), 
+        [](const PropertyValue& pv) { return pv.id == PropertyResourceNames::CHANNEL_LIST; });
+    
+    if (it != values.end()) {
+        try {
+            return FoundationalResources::parseChannelList(it->body);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<JsonValue> FoundationalResources::getJsonSchema(const midicci::ObservablePropertyList& propertyList) {
+    auto values = propertyList.getValues();
+    auto it = std::find_if(values.begin(), values.end(), 
+        [](const PropertyValue& pv) { return pv.id == PropertyResourceNames::JSON_SCHEMA; });
+    
+    if (it != values.end()) {
+        try {
+            return FoundationalResources::parseJsonSchema(it->body);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+    return std::nullopt;
 }
 
 } // namespace midicci::commonproperties

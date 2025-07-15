@@ -7,6 +7,10 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <optional>
+#include "MidiCIConstants.hpp"
+#include "MidiCIChannelList.hpp"
+#include "Json.hpp"
 
 namespace midicci {
 

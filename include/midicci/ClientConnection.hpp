@@ -56,6 +56,11 @@ public:
     void set_json_schema(const JsonValue& json_schema);
     const JsonValue* get_json_schema() const;
     
+    // Convenience methods that match Kotlin pattern - use extension functions when available
+    DeviceInfo deviceInfo() const;
+    JsonValue channelList() const;
+    JsonValue jsonSchema() const;
+    
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

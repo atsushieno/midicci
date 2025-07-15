@@ -3,6 +3,7 @@
 #include "midicci/commonproperties/CommonRulesPropertyService.hpp"
 #include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 #include "midicci/commonproperties/CommonRulesPropertyClient.hpp"
+#include "midicci/commonproperties/FoundationalResources.hpp"
 #include "midicci/Message.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 #include <mutex>

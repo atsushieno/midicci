@@ -1,0 +1,339 @@
+#include "midicci/commonproperties/StandardProperties.hpp"
+#include "midicci/Json.hpp"
+#include "midicci/PropertyCommonRules.hpp"
+
+namespace midicci {
+namespace commonproperties {
+
+MidiCIState::MidiCIState(const std::string& title, const std::string& stateId,
+                         const std::optional<std::string>& stateRev,
+                         const std::optional<int64_t>& timestamp,
+                         const std::optional<std::string>& description,
+                         const std::optional<int32_t>& size)
+    : title(title), stateId(stateId), stateRev(stateRev), timestamp(timestamp), 
+      description(description), size(size) {}
+
+MidiCIControl::MidiCIControl(const std::string& title, const std::string& ctrlType,
+                             const std::string& description,
+                             const std::vector<uint8_t>& ctrlIndex,
+                             const std::optional<uint8_t>& channel,
+                             const std::optional<uint8_t>& priority,
+                             uint32_t defaultValue,
+                             const std::string& transmit,
+                             const std::string& recognize,
+                             int32_t numSigBits,
+                             const std::optional<std::string>& paramPath,
+                             const std::optional<std::string>& typeHint,
+                             const std::optional<std::string>& ctrlMapId,
+                             const std::optional<int32_t>& stepCount,
+                             const std::vector<uint32_t>& minMax,
+                             bool defaultCCMap)
+    : title(title), ctrlType(ctrlType), description(description), ctrlIndex(ctrlIndex),
+      channel(channel), priority(priority), defaultValue(defaultValue), transmit(transmit),
+      recognize(recognize), numSigBits(numSigBits), paramPath(paramPath), typeHint(typeHint),
+      ctrlMapId(ctrlMapId), stepCount(stepCount), minMax(minMax), defaultCCMap(defaultCCMap) {}
+
+std::vector<MidiCIState> StandardProperties::parseStateList(const std::vector<uint8_t>& data) {
+    std::vector<MidiCIState> result;
+    
+    try {
+        std::string json_str(data.begin(), data.end());
+        auto json = JsonValue::parse(json_str);
+        
+        if (!json.is_array()) {
+            return result;
+        }
+        
+        const auto& json_array = json.as_array();
+        for (const auto& item : json_array) {
+            if (!item.is_object()) {
+                continue;
+            }
+            
+            const auto& obj = item.as_object();
+            
+            std::string title;
+            std::string stateId;
+            std::optional<std::string> stateRev;
+            std::optional<int64_t> timestamp;
+            std::optional<std::string> description;
+            std::optional<int32_t> size;
+            
+            auto it = obj.find(StatePropertyNames::TITLE);
+            if (it != obj.end() && it->second.is_string()) {
+                title = it->second.as_string();
+            }
+            
+            it = obj.find(StatePropertyNames::STATE_ID);
+            if (it != obj.end() && it->second.is_string()) {
+                stateId = it->second.as_string();
+            }
+            
+            it = obj.find(StatePropertyNames::STATE_REV);
+            if (it != obj.end() && it->second.is_string()) {
+                stateRev = it->second.as_string();
+            }
+            
+            it = obj.find(StatePropertyNames::TIMESTAMP);
+            if (it != obj.end() && it->second.is_number()) {
+                timestamp = static_cast<int64_t>(it->second.as_number());
+            }
+            
+            it = obj.find(StatePropertyNames::DESCRIPTION);
+            if (it != obj.end() && it->second.is_string()) {
+                description = it->second.as_string();
+            }
+            
+            it = obj.find(StatePropertyNames::SIZE);
+            if (it != obj.end() && it->second.is_number()) {
+                size = it->second.as_int();
+            }
+            
+            result.emplace_back(title, stateId, stateRev, timestamp, description, size);
+        }
+    } catch (...) {
+        // Return empty result on parse error
+    }
+    
+    return result;
+}
+
+std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vector<uint8_t>& data) {
+    std::vector<MidiCIControl> result;
+    
+    try {
+        std::string json_str(data.begin(), data.end());
+        auto json = JsonValue::parse(json_str);
+        
+        if (!json.is_array()) {
+            return result;
+        }
+        
+        const auto& json_array = json.as_array();
+        for (const auto& item : json_array) {
+            if (!item.is_object()) {
+                continue;
+            }
+            
+            const auto& obj = item.as_object();
+            
+            std::string title;
+            std::string ctrlType;
+            std::string description;
+            std::vector<uint8_t> ctrlIndex = {0};
+            std::optional<uint8_t> channel;
+            std::optional<uint8_t> priority;
+            uint32_t defaultValue = 0;
+            std::string transmit = MidiCIControlTransmit::ABSOLUTE;
+            std::string recognize = MidiCIControlTransmit::ABSOLUTE;
+            int32_t numSigBits = 32;
+            std::optional<std::string> paramPath;
+            std::optional<std::string> typeHint;
+            std::optional<std::string> ctrlMapId;
+            std::optional<int32_t> stepCount;
+            std::vector<uint32_t> minMax = {0, UINT32_MAX};
+            bool defaultCCMap = false;
+            
+            auto it = obj.find(ControlPropertyNames::TITLE);
+            if (it != obj.end() && it->second.is_string()) {
+                title = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::CTRL_TYPE);
+            if (it != obj.end() && it->second.is_string()) {
+                ctrlType = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::DESCRIPTION);
+            if (it != obj.end() && it->second.is_string()) {
+                description = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::CTRL_INDEX);
+            if (it != obj.end() && it->second.is_array()) {
+                const auto& index_array = it->second.as_array();
+                ctrlIndex.clear();
+                for (const auto& index_val : index_array) {
+                    if (index_val.is_number()) {
+                        ctrlIndex.push_back(static_cast<uint8_t>(index_val.as_int()));
+                    }
+                }
+                if (ctrlIndex.empty()) {
+                    ctrlIndex = {0};
+                }
+            }
+            
+            it = obj.find(ControlPropertyNames::CHANNEL);
+            if (it != obj.end() && it->second.is_number()) {
+                channel = static_cast<uint8_t>(it->second.as_int());
+            }
+            
+            it = obj.find(ControlPropertyNames::PRIORITY);
+            if (it != obj.end() && it->second.is_number()) {
+                priority = static_cast<uint8_t>(it->second.as_int());
+            }
+            
+            it = obj.find(ControlPropertyNames::DEFAULT);
+            if (it != obj.end() && it->second.is_number()) {
+                defaultValue = static_cast<uint32_t>(it->second.as_number());
+            }
+            
+            it = obj.find(ControlPropertyNames::TRANSMIT);
+            if (it != obj.end() && it->second.is_string()) {
+                transmit = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::RECOGNIZE);
+            if (it != obj.end() && it->second.is_string()) {
+                recognize = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::NUM_SIG_BITS);
+            if (it != obj.end() && it->second.is_number()) {
+                numSigBits = it->second.as_int();
+            }
+            
+            it = obj.find(ControlPropertyNames::PARAM_PATH);
+            if (it != obj.end() && it->second.is_string()) {
+                paramPath = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::TYPE_HINT);
+            if (it != obj.end() && it->second.is_string()) {
+                typeHint = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::CTRL_MAP_ID);
+            if (it != obj.end() && it->second.is_string()) {
+                ctrlMapId = it->second.as_string();
+            }
+            
+            it = obj.find(ControlPropertyNames::STEP_COUNT);
+            if (it != obj.end() && it->second.is_number()) {
+                stepCount = it->second.as_int();
+            }
+            
+            it = obj.find(ControlPropertyNames::MIN_MAX);
+            if (it != obj.end() && it->second.is_array()) {
+                const auto& minmax_array = it->second.as_array();
+                minMax.clear();
+                for (const auto& val : minmax_array) {
+                    if (val.is_number()) {
+                        minMax.push_back(static_cast<uint32_t>(val.as_number()));
+                    }
+                }
+                if (minMax.empty()) {
+                    minMax = {0, UINT32_MAX};
+                }
+            }
+            
+            it = obj.find(ControlPropertyNames::DEFAULT_CC_MAP);
+            if (it != obj.end() && it->second.is_bool()) {
+                defaultCCMap = it->second.as_bool();
+            }
+            
+            result.emplace_back(title, ctrlType, description, ctrlIndex, channel, priority,
+                               defaultValue, transmit, recognize, numSigBits, paramPath,
+                               typeHint, ctrlMapId, stepCount, minMax, defaultCCMap);
+        }
+    } catch (...) {
+        // Return empty result on parse error
+    }
+    
+    return result;
+}
+
+std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIState>& stateList) {
+    JsonArray json_array;
+    
+    for (const auto& state : stateList) {
+        JsonObject obj;
+        obj[StatePropertyNames::TITLE] = JsonValue(state.title);
+        obj[StatePropertyNames::STATE_ID] = JsonValue(state.stateId);
+        
+        if (state.stateRev.has_value()) {
+            obj[StatePropertyNames::STATE_REV] = JsonValue(state.stateRev.value());
+        }
+        
+        if (state.timestamp.has_value()) {
+            obj[StatePropertyNames::TIMESTAMP] = JsonValue(static_cast<double>(state.timestamp.value()));
+        }
+        
+        if (state.description.has_value()) {
+            obj[StatePropertyNames::DESCRIPTION] = JsonValue(state.description.value());
+        }
+        
+        if (state.size.has_value()) {
+            obj[StatePropertyNames::SIZE] = JsonValue(static_cast<double>(state.size.value()));
+        }
+        
+        json_array.push_back(JsonValue(obj));
+    }
+    
+    JsonValue root(json_array);
+    std::string json_str = root.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
+}
+
+std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>& controlList) {
+    JsonArray json_array;
+    
+    for (const auto& control : controlList) {
+        JsonObject obj;
+        obj[ControlPropertyNames::TITLE] = JsonValue(control.title);
+        obj[ControlPropertyNames::CTRL_TYPE] = JsonValue(control.ctrlType);
+        obj[ControlPropertyNames::DESCRIPTION] = JsonValue(control.description);
+        
+        JsonArray index_array;
+        for (uint8_t index : control.ctrlIndex) {
+            index_array.push_back(JsonValue(static_cast<double>(index)));
+        }
+        obj[ControlPropertyNames::CTRL_INDEX] = JsonValue(index_array);
+        
+        if (control.channel.has_value()) {
+            obj[ControlPropertyNames::CHANNEL] = JsonValue(static_cast<double>(control.channel.value()));
+        }
+        
+        if (control.priority.has_value()) {
+            obj[ControlPropertyNames::PRIORITY] = JsonValue(static_cast<double>(control.priority.value()));
+        }
+        
+        obj[ControlPropertyNames::DEFAULT] = JsonValue(static_cast<double>(control.defaultValue));
+        obj[ControlPropertyNames::TRANSMIT] = JsonValue(control.transmit);
+        obj[ControlPropertyNames::RECOGNIZE] = JsonValue(control.recognize);
+        obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));
+        
+        if (control.paramPath.has_value()) {
+            obj[ControlPropertyNames::PARAM_PATH] = JsonValue(control.paramPath.value());
+        }
+        
+        if (control.typeHint.has_value()) {
+            obj[ControlPropertyNames::TYPE_HINT] = JsonValue(control.typeHint.value());
+        }
+        
+        if (control.ctrlMapId.has_value()) {
+            obj[ControlPropertyNames::CTRL_MAP_ID] = JsonValue(control.ctrlMapId.value());
+        }
+        
+        if (control.stepCount.has_value()) {
+            obj[ControlPropertyNames::STEP_COUNT] = JsonValue(static_cast<double>(control.stepCount.value()));
+        }
+        
+        JsonArray minmax_array;
+        for (uint32_t val : control.minMax) {
+            minmax_array.push_back(JsonValue(static_cast<double>(val)));
+        }
+        obj[ControlPropertyNames::MIN_MAX] = JsonValue(minmax_array);
+        
+        obj[ControlPropertyNames::DEFAULT_CC_MAP] = JsonValue(control.defaultCCMap);
+        
+        json_array.push_back(JsonValue(obj));
+    }
+    
+    JsonValue root(json_array);
+    std::string json_str = root.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
+}
+
+} // namespace commonproperties
+} // namespace midicci

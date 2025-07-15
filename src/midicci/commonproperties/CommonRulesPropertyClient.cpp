@@ -1,5 +1,6 @@
 #include "midicci/commonproperties/CommonRulesPropertyClient.hpp"
 #include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/commonproperties/FoundationalResources.hpp"
 #include "midicci/PropertyCommonRules.hpp"
 #include "midicci/MidiCIDevice.hpp"
 #include "midicci/ClientConnection.hpp"
@@ -83,60 +84,34 @@ void CommonRulesPropertyClient::process_property_subscription_result(void* sub, 
 }
 
 void CommonRulesPropertyClient::property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) {
+    // Here we only care about Foundational Resources.
+    // Other standard properties should be handled at ObservablePropertyList.valueUpdated.
     if (property_id == PropertyResourceNames::RESOURCE_LIST) {
-        auto list = get_metadata_list_for_body(body);
-        resource_list_.clear();
-        for (auto& item : list) {
-            resource_list_.push_back(std::move(item));
-        }
-        
-        for (auto& callback : property_catalog_updated_callbacks_) {
-            callback();
-        }
-        
-        bool auto_send_device_info = true;
-        if (auto_send_device_info) {
-            auto it = std::find_if(resource_list_.begin(), resource_list_.end(),
-                [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == PropertyResourceNames::DEVICE_INFO; });
-            if (it != resource_list_.end()) {
-                conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, (*it)->getEncoding());
+        try {
+            auto list = FoundationalResources::parseResourceList(body);
+            resource_list_.clear();
+            for (auto& item : list) {
+                resource_list_.push_back(std::move(item));
             }
-        }
-    } else if (property_id == PropertyResourceNames::DEVICE_INFO) {
-        try {
-            JsonValue json_body;
-            convert_application_json_bytes_to_json(body, json_body);
-
-            auto manufacturerId = json_body[DeviceInfoPropertyNames::MANUFACTURER_ID].as_int();
-            auto familyId = json_body[DeviceInfoPropertyNames::FAMILY_ID].as_int();
-            auto modelId = json_body[DeviceInfoPropertyNames::MODEL_ID].as_int();
-            auto versionId = json_body[DeviceInfoPropertyNames::VERSION_ID].as_int();
-            std::string manufacturer = json_body[DeviceInfoPropertyNames::MANUFACTURER].is_string() ? json_body[DeviceInfoPropertyNames::MANUFACTURER].as_string() : "";
-            std::string family = json_body[DeviceInfoPropertyNames::FAMILY].is_string() ? json_body[DeviceInfoPropertyNames::FAMILY].as_string() : "";
-            std::string model = json_body[DeviceInfoPropertyNames::MODEL].is_string() ? json_body[DeviceInfoPropertyNames::MODEL].as_string() : "";
-            std::string version = json_body[DeviceInfoPropertyNames::VERSION].is_string() ? json_body[DeviceInfoPropertyNames::VERSION].as_string() : "";
-            std::string serial = json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].is_string() ? json_body[DeviceInfoPropertyNames::SERIAL_NUMBER].as_string() : "";
-
-            DeviceInfo device_info(manufacturerId, familyId, modelId, versionId,
-                                         manufacturer, family, model, version, serial);
-            conn_.set_device_info(device_info);
-        } catch (...) {
-        }
-    } else if (property_id == PropertyResourceNames::CHANNEL_LIST) {
-        try {
-            JsonValue json_body;
-            convert_application_json_bytes_to_json(body, json_body);
-            conn_.set_channel_list(json_body);
-        } catch (...) {
-        }
-    } else if (property_id == PropertyResourceNames::JSON_SCHEMA) {
-        try {
-            JsonValue json_body;
-            convert_application_json_bytes_to_json(body, json_body);
-            conn_.set_json_schema(json_body);
-        } catch (...) {
+            
+            for (auto& callback : property_catalog_updated_callbacks_) {
+                callback();
+            }
+            
+            bool auto_send_device_info = true;
+            if (auto_send_device_info) {
+                auto it = std::find_if(resource_list_.begin(), resource_list_.end(),
+                    [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == PropertyResourceNames::DEVICE_INFO; });
+                if (it != resource_list_.end()) {
+                    conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, (*it)->getEncoding());
+                }
+            }
+        } catch (const std::exception& ex) {
+            device_.get_logger()("Error parsing resource list: " + std::string(ex.what()), true);
         }
     }
+    // Note: DeviceInfo, ChannelList, and JsonSchema are now handled via FoundationalResources
+    // and should be accessed through ObservablePropertyList extension methods
 }
 
 void CommonRulesPropertyClient::request_property_list(uint8_t group) {
@@ -196,57 +171,13 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_me
 
 std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_metadata_list_for_body(const std::vector<uint8_t>& body) {
     try {
-        JsonValue json_body;
-        convert_application_json_bytes_to_json(body, json_body);
-        
-        std::vector<std::unique_ptr<PropertyMetadata>> result;
-        
-        if (json_body.is_array()) {
-            const auto& array = json_body.as_array();
-            for (size_t i = 0; i < array.size(); ++i) {
-                const auto& entry = array[i];
-                if (entry.is_object()) {
-                    std::string resource = entry["resource"].is_string() ? entry["resource"].as_string() : "";
-                    
-                    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(resource);
-                    
-                    if (entry["canSet"].is_string()) {
-                        metadata->canSet = entry["canSet"].as_string();
-                    }
-                    
-                    if (entry["encodings"].is_array() && entry["encodings"].as_array().size() > 0) {
-                        const auto& encodings_array = entry["encodings"].as_array();
-                        std::vector<std::string> encodings;
-                        for (const auto& enc : encodings_array) {
-                            if (enc.is_string()) encodings.push_back(enc.as_string());
-                        }
-                        metadata->encodings = encodings;
-                    }
-                    
-                    if (entry["mediaType"].is_array() && entry["mediaType"].as_array().size() > 0) {
-                        const auto& media_type_array = entry["mediaType"].as_array();
-                        std::vector<std::string> mediaTypes;
-                        for (const auto& mt : media_type_array) {
-                            if (mt.is_string()) mediaTypes.push_back(mt.as_string());
-                        }
-                        metadata->mediaTypes = mediaTypes;
-                    }
-                    
-                    result.push_back(std::move(metadata));
-                }
-            }
-        }
-        
-        return result;
-    } catch (...) {
+        return FoundationalResources::parseResourceList(body);
+    } catch (const std::exception& ex) {
+        device_.get_logger()("Error parsing metadata list: " + std::string(ex.what()), true);
         return std::vector<std::unique_ptr<PropertyMetadata>>();
     }
 }
 
-void CommonRulesPropertyClient::convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, JsonValue& result) {
-    std::string data_str(data.begin(), data.end());
-    result = JsonValue::parse(data_str);
-}
 
 } // namespace properties
 } // namespace midi_ci

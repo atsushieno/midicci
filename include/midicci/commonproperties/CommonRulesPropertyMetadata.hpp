@@ -6,6 +6,14 @@
 #include <vector>
 
 namespace midicci::commonproperties {
+    struct PropertyResourceColumn {
+        std::string property;
+        std::string link;
+        std::string title;
+    };
+}
+
+namespace midicci::commonproperties {
 
 class CommonRulesPropertyMetadata : public PropertyMetadata {
 public:
@@ -26,6 +34,7 @@ public:
     std::vector<std::string> encodings = {"ASCII"};
     std::string schema;
     bool canPaginate = false;
+    std::vector<PropertyResourceColumn> columns;
     Originator originator = Originator::USER;
     std::vector<uint8_t> data;
     

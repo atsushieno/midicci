@@ -2,6 +2,7 @@
 
 #include "MidiCIServicePropertyRules.hpp"
 #include "CommonRulesPropertyHelper.hpp"
+#include "FoundationalResources.hpp"
 #include "../MidiCIDevice.hpp"
 #include "../Json.hpp"
 #include <memory>
@@ -93,9 +94,6 @@ private:
     JsonValue set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body);
     
     // Internal helper methods following Kotlin implementation
-    JsonValue bytes_to_json_array(const std::vector<uint8_t>& bytes) const;
-    JsonValue get_device_info_json() const;
-    JsonValue channel_to_json(const MidiCIChannel& channel) const;
     std::pair<JsonValue, JsonValue> get_property_data_json(const PropertyCommonRequestHeader& header) const;
     std::pair<JsonValue, std::vector<uint8_t>> get_property_data_internal(const JsonValue& header_json) const;
     std::vector<uint8_t> decode_body_internal(const std::string& mutual_encoding, const std::vector<uint8_t>& body) const;

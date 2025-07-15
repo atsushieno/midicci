@@ -6,6 +6,7 @@
 #include "../PropertyClientFacade.hpp"
 #include "CommonRulesPropertyHelper.hpp"
 #include "../ObservablePropertyList.hpp"
+#include "FoundationalResources.hpp"
 #include <memory>
 #include <vector>
 #include <functional>
@@ -55,7 +56,6 @@ private:
     std::vector<SubscriptionEntry> subscriptions_;
     
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list_for_body(const std::vector<uint8_t>& body);
-    void convert_application_json_bytes_to_json(const std::vector<uint8_t>& data, JsonValue& result);
 };
 
 } // namespace properties

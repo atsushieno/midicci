@@ -103,7 +103,7 @@ std::vector<std::unique_ptr<PropertyMetadata>> ClientConnectionModel::get_metada
 
 
 
-void ClientConnectionModel::get_property_data(const std::string& resource, const std::string& encoding,
+void ClientConnectionModel::get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding,
                                             int paginate_offset, int paginate_limit) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
@@ -111,9 +111,9 @@ void ClientConnectionModel::get_property_data(const std::string& resource, const
     auto& property_facade = pimpl_->connection_->get_property_client_facade();
     
     if (paginate_offset >= 0 && paginate_limit > 0) {
-        property_facade.send_get_property_data(resource, encoding, paginate_offset, paginate_limit);
+        property_facade.send_get_property_data(resource, res_id, encoding, paginate_offset, paginate_limit);
     } else {
-        property_facade.send_get_property_data(resource, encoding);
+        property_facade.send_get_property_data(resource, res_id, encoding);
     }
     
     std::cout << "Getting property data for resource: " << resource << std::endl;
@@ -132,7 +132,7 @@ void ClientConnectionModel::set_property_data(const std::string& resource, const
               << " (partial: " << is_partial << ")" << std::endl;
 }
 
-void ClientConnectionModel::subscribe_property(const std::string& resource, const std::string& mutual_encoding) {
+void ClientConnectionModel::subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
@@ -148,12 +148,12 @@ void ClientConnectionModel::subscribe_property(const std::string& resource, cons
     
     // Actually send the subscription request
     auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    property_facade.send_subscribe_property(resource, mutual_encoding, "subscription_id");
+    property_facade.send_subscribe_property(resource, res_id, mutual_encoding, "subscription_id");
     
     std::cout << "Subscribing to property: " << resource << std::endl;
 }
 
-void ClientConnectionModel::unsubscribe_property(const std::string& resource) {
+void ClientConnectionModel::unsubscribe_property(const std::string& resource, const std::string& res_id) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
@@ -170,7 +170,7 @@ void ClientConnectionModel::unsubscribe_property(const std::string& resource) {
     
     // Actually send the unsubscription request
     auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    property_facade.send_unsubscribe_property(resource);
+    property_facade.send_unsubscribe_property(resource, res_id);
     
     std::cout << "Unsubscribing from property: " << resource << std::endl;
 }

@@ -277,9 +277,9 @@ int CommonRulesPropertyService::get_header_field_integer(const std::vector<uint8
     return helper_->get_header_field_integer(header, field);
 }
 
-std::vector<uint8_t> CommonRulesPropertyService::create_shutdown_subscription_header(const std::string& property_id) {
-    auto e = std::find_if(subscriptions_.begin(), subscriptions_.end(), [&property_id](const SubscriptionEntry& entry) {
-        return entry.resource == property_id;
+std::vector<uint8_t> CommonRulesPropertyService::create_shutdown_subscription_header(const std::string& property_id, const std::string& res_id) {
+    auto e = std::find_if(subscriptions_.begin(), subscriptions_.end(), [&property_id, &res_id](const SubscriptionEntry& entry) {
+        return entry.resource == property_id && (res_id.empty() || entry.res_id == res_id);
     });
     if (e == subscriptions_.end()) return {}; // FIXME: should we throw an error instead?
     return helper_->create_subscribe_header_bytes(property_id, MidiCISubscriptionCommand::END);
@@ -380,6 +380,7 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::subscribe(uint32_t s
     SubscriptionEntry subscription(
         subscriber_muid,
         header.resource,
+        header.res_id,
         subscription_id,
         header.mutual_encoding.empty() ? PropertyDataEncoding::ASCII : header.mutual_encoding
     );

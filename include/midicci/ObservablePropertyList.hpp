@@ -58,10 +58,11 @@ struct PropertyValue {
 struct SubscriptionEntry {
     uint32_t muid;
     std::string resource;
+    std::string res_id;
     std::string subscribe_id;
     std::string encoding;
     
-    SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, 
+    SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, const std::string& resource_id,
                      const std::string& sub_id, const std::string& enc);
 };
 

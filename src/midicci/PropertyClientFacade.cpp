@@ -49,12 +49,13 @@ MidiCIClientPropertyRules* PropertyClientFacade::get_property_rules() {
     return pimpl_->property_rules_.get();
 }
 
-void PropertyClientFacade::send_get_property_data(const std::string& resource, const std::string& encoding, int paginate_offset, int paginate_limit) {
+void PropertyClientFacade::send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding, int paginate_offset, int paginate_limit) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (!pimpl_->property_rules_) return;
     
     std::map<std::string, std::string> fields;
+    if (!res_id.empty()) fields["resId"] = res_id;
     if (!encoding.empty()) fields["mutualEncoding"] = encoding;
     fields["setPartial"] = "false";
     if (paginate_offset >= 0) fields["offset"] = std::to_string(paginate_offset);
@@ -105,13 +106,14 @@ void PropertyClientFacade::send_set_property_data(const SetPropertyData& msg) {
     pimpl_->device_.get_messenger().send(msg);
 }
 
-void PropertyClientFacade::send_subscribe_property(const std::string& resource, const std::string& mutual_encoding, const std::string& subscription_id) {
+void PropertyClientFacade::send_subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding, const std::string& subscription_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (!pimpl_->property_rules_) return;
     
     std::map<std::string, std::string> fields;
     fields["command"] = MidiCISubscriptionCommand::START;
+    if (!res_id.empty()) fields["resId"] = res_id;
     if (!mutual_encoding.empty()) fields["mutualEncoding"] = mutual_encoding;
     
     auto header = pimpl_->property_rules_->create_subscription_header(resource, fields);
@@ -124,20 +126,20 @@ void PropertyClientFacade::send_subscribe_property(const std::string& resource, 
     );
     
     // Create pending subscription entry before sending (like Kotlin implementation)
-    add_pending_subscription(request_id, subscription_id, resource);
+    add_pending_subscription(request_id, subscription_id, resource, res_id);
     
     pimpl_->device_.get_messenger().send(msg);
 }
 
-void PropertyClientFacade::send_unsubscribe_property(const std::string& property_id) {
+void PropertyClientFacade::send_unsubscribe_property(const std::string& property_id, const std::string& res_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (!pimpl_->property_rules_) return;
     
-    // Find existing subscription for this property
+    // Find existing subscription for this property and resId
     auto sub_it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
         [&](const ClientSubscription& sub) {
-            return sub.propertyId == property_id;
+            return sub.propertyId == property_id && (res_id.empty() || sub.resId == res_id);
         });
     
     if (sub_it == pimpl_->subscriptions_.end()) {
@@ -166,7 +168,7 @@ void PropertyClientFacade::send_unsubscribe_property(const std::string& property
     );
     
     // Update subscription state to Unsubscribing before sending (like Kotlin implementation)
-    promote_subscription_as_unsubscribing(property_id, new_request_id);
+    promote_subscription_as_unsubscribing(property_id, res_id, new_request_id);
     
     pimpl_->device_.get_messenger().send(msg);
 }
@@ -282,7 +284,8 @@ SubscribePropertyReply PropertyClientFacade::process_subscribe_property(const Su
         // If the update was NOTIFY, then send Get Data request
         if (result.first == MidiCISubscriptionCommand::NOTIFY) {
             auto property_id = pimpl_->property_rules_->get_property_id_for_header(msg.get_header());
-            send_get_property_data(property_id);
+            auto res_id = pimpl_->property_rules_->get_res_id_for_header(msg.get_header());
+            send_get_property_data(property_id, res_id);
         }
         
         return std::move(result.second);
@@ -424,7 +427,7 @@ void PropertyClientFacade::process_subscribe_property_reply(const SubscribePrope
     }
 }
 
-void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id) {
+void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id, const std::string& res_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     ClientSubscription sub;
@@ -433,6 +436,7 @@ void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const st
         sub.subscriptionId = subscription_id;
     }
     sub.propertyId = property_id;
+    sub.resId = res_id;
     sub.state = SubscriptionActionState::Subscribing;
     
     pimpl_->subscriptions_.push_back(sub);
@@ -441,12 +445,12 @@ void PropertyClientFacade::add_pending_subscription(uint8_t request_id, const st
     notify_subscription_updated(sub);
 }
 
-void PropertyClientFacade::promote_subscription_as_unsubscribing(const std::string& property_id, uint8_t new_request_id) {
+void PropertyClientFacade::promote_subscription_as_unsubscribing(const std::string& property_id, const std::string& res_id, uint8_t new_request_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto sub_it = std::find_if(pimpl_->subscriptions_.begin(), pimpl_->subscriptions_.end(),
         [&](ClientSubscription& sub) {
-            return sub.propertyId == property_id;
+            return sub.propertyId == property_id && (res_id.empty() || sub.resId == res_id);
         });
     
     if (sub_it == pimpl_->subscriptions_.end()) {

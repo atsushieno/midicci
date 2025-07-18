@@ -57,13 +57,13 @@ public:
     
     std::vector<std::unique_ptr<midicci::commonproperties::PropertyMetadata>> get_metadata_list() const;
     
-    void get_property_data(const std::string& resource, const std::string& encoding = "",
+    void get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding = "",
                           int paginate_offset = -1, int paginate_limit = -1);
     void set_property_data(const std::string& resource, const std::string& res_id,
                           const std::vector<uint8_t>& data, const std::string& encoding = "",
                           bool is_partial = false);
-    void subscribe_property(const std::string& resource, const std::string& mutual_encoding = "");
-    void unsubscribe_property(const std::string& resource);
+    void subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding = "");
+    void unsubscribe_property(const std::string& resource, const std::string& res_id);
     
     void request_midi_message_report(uint8_t address, uint32_t target_muid,
                                    uint8_t message_data_control = 0xFF,

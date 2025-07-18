@@ -49,6 +49,10 @@ std::string CommonRulesPropertyClient::get_property_id_for_header(const std::vec
     return helper_->get_property_identifier_internal(header);
 }
 
+std::string CommonRulesPropertyClient::get_res_id_for_header(const std::vector<uint8_t>& header) {
+    return helper_->get_header_field_string(header, PropertyCommonHeaderKeys::RES_ID);
+}
+
 std::string CommonRulesPropertyClient::get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) {
     return helper_->get_header_field_string(header, field);
 }
@@ -72,15 +76,16 @@ void CommonRulesPropertyClient::process_property_subscription_result(void* sub, 
     
     std::string* property_id_ptr = static_cast<std::string*>(sub);
     std::string property_id = *property_id_ptr;
+    std::string res_id = get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::RES_ID);
     
     auto it = std::find_if(subscriptions_.begin(), subscriptions_.end(),
-        [&](const SubscriptionEntry& s) { return s.resource == property_id; });
+        [&](const SubscriptionEntry& s) { return s.resource == property_id && (res_id.empty() || s.res_id == res_id); });
     
     if (it != subscriptions_.end()) {
         subscriptions_.erase(it);
     }
     
-    subscriptions_.emplace_back(conn_.get_target_muid(), property_id, subscribe_id, "");
+    subscriptions_.emplace_back(conn_.get_target_muid(), property_id, res_id, subscribe_id, "");
 }
 
 void CommonRulesPropertyClient::property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) {

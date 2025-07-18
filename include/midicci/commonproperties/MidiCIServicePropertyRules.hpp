@@ -32,7 +32,7 @@ public:
     virtual std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) = 0;
     virtual std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) = 0;
     virtual int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) = 0;
-    virtual std::vector<uint8_t> create_shutdown_subscription_header(const std::string& property_id) = 0;
+    virtual std::vector<uint8_t> create_shutdown_subscription_header(const std::string& property_id, const std::string& res_id) = 0;
     
     virtual const std::vector<SubscriptionEntry>& get_subscriptions() const = 0;
     

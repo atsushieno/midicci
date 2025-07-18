@@ -22,6 +22,7 @@ struct ClientSubscription {
     std::optional<uint8_t> pendingRequestId;
     std::optional<std::string> subscriptionId;
     std::string propertyId;
+    std::string resId;
     SubscriptionActionState state;
 };
 

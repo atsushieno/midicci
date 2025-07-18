@@ -15,6 +15,7 @@ namespace midicci {
 struct PropertySubscription {
     uint32_t subscriber_muid;
     std::string property_id;
+    std::string res_id;
     std::string subscription_id;
 };
 
@@ -63,9 +64,9 @@ public:
     
     // Subscription management
     std::vector<PropertySubscription> get_subscriptions() const;
-    void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id);
+    void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id, const std::string& res_id);
     void terminateSubscriptionsToAllSubscribers(uint8_t group);
-    SubscribeProperty createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, uint8_t group, uint8_t request_id);
+    SubscribeProperty createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, const std::string& res_id, uint8_t group, uint8_t request_id);
     
     // Notification callbacks
     void set_property_updated_callback(PropertyUpdatedCallback callback);

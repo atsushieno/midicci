@@ -31,6 +31,8 @@ public:
     
     std::string get_property_id_for_header(const std::vector<uint8_t>& header) override;
     
+    std::string get_res_id_for_header(const std::vector<uint8_t>& header) override;
+    
     std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) override;
     
     int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) override;

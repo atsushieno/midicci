@@ -458,6 +458,7 @@ void InitiatorWidget::onRefreshProperty()
                     if (m_propertyPaginationGroup->isVisible()) {
                         property_facade.send_get_property_data(
                             m_selectedProperty.toStdString(),
+                            "",  // res_id - empty for now
                             encoding.toStdString(),
                             offset,
                             limit
@@ -465,6 +466,7 @@ void InitiatorWidget::onRefreshProperty()
                     } else {
                         property_facade.send_get_property_data(
                             m_selectedProperty.toStdString(),
+                            "",  // res_id - empty for now
                             encoding.toStdString()
                         );
                     }
@@ -510,13 +512,14 @@ void InitiatorWidget::onSubscribeProperty()
                     QString encoding = m_propertyEncodingSelector->currentData().toString();
                     
                     if (isSubscribed) {
-                        property_facade.send_unsubscribe_property(m_selectedProperty.toStdString());
+                        property_facade.send_unsubscribe_property(m_selectedProperty.toStdString(), "");
                         m_subscribePropertyButton->setText("Subscribe");
                         m_repository->log(QString("Unsubscribing from property: %1")
                             .arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
                     } else {
                         property_facade.send_subscribe_property(
                             m_selectedProperty.toStdString(),
+                            "",  // res_id - empty for now
                             encoding.toStdString()
                         );
                         m_subscribePropertyButton->setText("Unsubscribe");
@@ -1070,6 +1073,7 @@ void InitiatorWidget::sendGetPropertyDataRequest()
                         
                         property_facade.send_get_property_data(
                             m_selectedProperty.toStdString(),
+                            "",  // res_id - empty for now
                             encoding.toStdString(),
                             offset,
                             limit
@@ -1086,6 +1090,7 @@ void InitiatorWidget::sendGetPropertyDataRequest()
                     } else {
                         property_facade.send_get_property_data(
                             m_selectedProperty.toStdString(),
+                            "",  // res_id - empty for now
                             encoding.toStdString()
                         );
                         

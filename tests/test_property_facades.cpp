@@ -35,7 +35,7 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     
     auto& client = conn->get_property_client_facade();
 
-    client.send_get_property_data(id, "");
+    client.send_get_property_data(id, "", "");
 
     JsonValue barValue("BAR");
     std::string barJson = barValue.serialize();
@@ -45,19 +45,19 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     
     EXPECT_EQ(barBytes, host.getProperty(id)) << "Host property value not updated";
 
-    client.send_subscribe_property(id, "");
+    client.send_subscribe_property(id, "", "");
     EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host";
 
-    client.send_unsubscribe_property(id);
+    client.send_unsubscribe_property(id, "");
     EXPECT_EQ(0, host.get_subscriptions().size()) << "Subscription not removed after unsubscription";
     
-    client.send_subscribe_property(id, "");
+    client.send_subscribe_property(id, "", "");
     EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host, 2nd time";
     auto subscriptions = host.get_subscriptions();
     if (!subscriptions.empty()) {
         auto sub = subscriptions[0];
         std::cout << "Before host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
-        host.shutdownSubscription(sub.subscriber_muid, sub.property_id);
+        host.shutdownSubscription(sub.subscriber_muid, sub.property_id, sub.res_id);
         std::cout << "After host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
         EXPECT_EQ(0, client.get_subscriptions().size()) << "Client subscriptions not cleared after host shutdown";
         EXPECT_EQ(0, host.get_subscriptions().size()) << "Host subscriptions not cleared after shutdown";
@@ -78,5 +78,5 @@ TEST(PropertyFacadesTest, propertyExchange2) {
     ASSERT_NE(nullptr, conn) << "Connection is null";
     
     auto& client = conn->get_property_client_facade();
-    client.send_get_property_data(PropertyResourceNames::CHANNEL_LIST, "");
+    client.send_get_property_data(PropertyResourceNames::CHANNEL_LIST, "", "");
 }

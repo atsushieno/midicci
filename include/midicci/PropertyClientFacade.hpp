@@ -36,14 +36,14 @@ public:
     void set_property_rules(std::unique_ptr<MidiCIClientPropertyRules> rules);
     MidiCIClientPropertyRules* get_property_rules();
     
-    void send_get_property_data(const std::string& resource, const std::string& encoding = "", int paginate_offset = -1, int paginate_limit = -1);
+    void send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding = "", int paginate_offset = -1, int paginate_limit = -1);
     void send_get_property_data(const GetPropertyData& msg);
     
     void send_set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, const std::string& encoding = "", bool is_partial = false);
     void send_set_property_data(const SetPropertyData& msg);
     
-    void send_subscribe_property(const std::string& resource, const std::string& mutual_encoding = "", const std::string& subscription_id = "");
-    void send_unsubscribe_property(const std::string& property_id);
+    void send_subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding = "", const std::string& subscription_id = "");
+    void send_unsubscribe_property(const std::string& property_id, const std::string& res_id);
     
     void process_property_capabilities_reply(const PropertyGetCapabilitiesReply& msg);
     void process_get_data_reply(const GetPropertyDataReply& msg);
@@ -60,8 +60,8 @@ public:
 private:
     SubscribePropertyReply handle_unsubscription_notification(const SubscribeProperty& msg);
     std::pair<std::string, SubscribePropertyReply> update_property_by_subscribe(const SubscribeProperty& msg);
-    void add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id);
-    void promote_subscription_as_unsubscribing(const std::string& property_id, uint8_t new_request_id);
+    void add_pending_subscription(uint8_t request_id, const std::string& subscription_id, const std::string& property_id, const std::string& res_id);
+    void promote_subscription_as_unsubscribing(const std::string& property_id, const std::string& res_id, uint8_t new_request_id);
     void notify_subscription_updated(const ClientSubscription& subscription);
     
     class Impl;
@@ -77,6 +77,7 @@ public:
     virtual std::vector<uint8_t> create_status_header(int status) = 0;
     virtual std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) = 0;
     virtual std::string get_property_id_for_header(const std::vector<uint8_t>& header) = 0;
+    virtual std::string get_res_id_for_header(const std::vector<uint8_t>& header) = 0;
     virtual std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) = 0;
     virtual int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) = 0;
     virtual void process_property_subscription_result(void* sub, const SubscribePropertyReply& msg) = 0;

@@ -19,6 +19,7 @@ set(MIDICCI_SOURCES
         midicci/commonproperties/CommonRulesPropertyClient.cpp
         midicci/commonproperties/CommonRulesPropertyMetadata.cpp
         midicci/commonproperties/FoundationalResources.cpp
+        midicci/commonproperties/StandardProperties.cpp
         midicci/ump/Ump.cpp
         midicci/ump/UmpRetriever.cpp
 )

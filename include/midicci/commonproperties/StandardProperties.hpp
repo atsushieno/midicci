@@ -9,6 +9,12 @@
 namespace midicci {
 namespace commonproperties {
 
+namespace StandardPropertyNames {
+    constexpr const char* STATE_LIST = "StateList";
+    constexpr const char* ALL_CTRL_LIST = "AllCtrlList";
+    constexpr const char* CH_CTRL_LIST = "ChCtrlList";
+}
+
 struct MidiCIState {
     std::string title;
     std::string stateId;

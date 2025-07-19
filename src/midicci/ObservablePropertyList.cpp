@@ -44,6 +44,37 @@ namespace midicci {
         }
     }
 
+    // Extension methods for StandardProperties access (like Kotlin extensions)
+    std::optional<std::vector<commonproperties::MidiCIState>> ObservablePropertyList::getStateList() const {
+        auto values = getValues();
+        auto it = std::find_if(values.begin(), values.end(),
+            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::STATE_LIST; });
+        if (it != values.end()) {
+            return commonproperties::StandardProperties::parseStateList(it->body);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<commonproperties::MidiCIControl>> ObservablePropertyList::getAllCtrlList() const {
+        auto values = getValues();
+        auto it = std::find_if(values.begin(), values.end(),
+            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::ALL_CTRL_LIST; });
+        if (it != values.end()) {
+            return commonproperties::StandardProperties::parseControlList(it->body);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<commonproperties::MidiCIControl>> ObservablePropertyList::getChCtrlList() const {
+        auto values = getValues();
+        auto it = std::find_if(values.begin(), values.end(),
+            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::CH_CTRL_LIST; });
+        if (it != values.end()) {
+            return commonproperties::StandardProperties::parseControlList(it->body);
+        }
+        return std::nullopt;
+    }
+
     ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
             : logger_(std::move(logger)), property_client_(property_client) {
 

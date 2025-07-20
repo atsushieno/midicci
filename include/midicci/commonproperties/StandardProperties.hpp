@@ -129,4 +129,21 @@ public:
 };
 
 } // namespace commonproperties
+
+// Forward declaration for MidiCIDevice extension methods
+class MidiCIDevice;
+
+// Extension methods for MidiCIDevice (similar to Kotlin extension properties)
+namespace StandardPropertiesExtensions {
+    // Getter extensions (delegate to ObservablePropertyList getters)
+    std::optional<std::vector<commonproperties::MidiCIState>> getStateList(const MidiCIDevice& device);
+    std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device);
+    std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device);
+    
+    // Setter extensions (use PropertyHostFacade setPropertyValue)
+    void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList);
+    void setAllCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList);
+    void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList);
+}
+
 } // namespace midicci

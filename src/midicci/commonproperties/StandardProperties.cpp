@@ -1,6 +1,8 @@
 #include "midicci/commonproperties/StandardProperties.hpp"
 #include "midicci/Json.hpp"
 #include "midicci/PropertyCommonRules.hpp"
+#include "midicci/MidiCIDevice.hpp"
+#include "midicci/PropertyHostFacade.hpp"
 
 namespace midicci {
 namespace commonproperties {
@@ -336,4 +338,52 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
 }
 
 } // namespace commonproperties
+
+// Implementation of MidiCIDevice extension methods
+namespace StandardPropertiesExtensions {
+
+std::optional<std::vector<commonproperties::MidiCIState>> getStateList(const MidiCIDevice& device) {
+    return device.get_property_host_facade().get_properties().getStateList();
+}
+
+std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device) {
+    return device.get_property_host_facade().get_properties().getAllCtrlList();
+}
+
+std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
+    return device.get_property_host_facade().get_properties().getChCtrlList();
+}
+
+void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList) {
+    auto json_data = commonproperties::StandardProperties::toJson(stateList);
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::STATE_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setAllCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList);
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList);
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+} // namespace StandardPropertiesExtensions
+
 } // namespace midicci

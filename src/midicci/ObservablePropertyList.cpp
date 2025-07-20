@@ -74,6 +74,15 @@ namespace midicci {
         }
         return std::nullopt;
     }
+    std::optional<std::vector<commonproperties::MidiCIProgram>> ObservablePropertyList::getProgramList() const {
+        auto values = getValues();
+        auto it = std::find_if(values.begin(), values.end(),
+            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::PROGRAM_LIST; });
+        if (it != values.end()) {
+            return commonproperties::StandardProperties::parseProgramList(it->body);
+        }
+        return std::nullopt;
+    }
 
     ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
             : logger_(std::move(logger)), property_client_(property_client) {

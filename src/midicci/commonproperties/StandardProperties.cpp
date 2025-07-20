@@ -35,6 +35,11 @@ MidiCIControl::MidiCIControl(const std::string& title, const std::string& ctrlTy
       recognize(recognize), numSigBits(numSigBits), paramPath(paramPath), typeHint(typeHint),
       ctrlMapId(ctrlMapId), stepCount(stepCount), minMax(minMax), defaultCCMap(defaultCCMap) {}
 
+MidiCIProgram::MidiCIProgram(const std::string& title, const std::vector<uint8_t>& bankPC,
+                             const std::optional<std::vector<std::string>>& category,
+                             const std::optional<std::vector<std::string>>& tags)
+    : title(title), bankPC(bankPC), category(category), tags(tags) {}
+
 std::vector<MidiCIState> StandardProperties::parseStateList(const std::vector<uint8_t>& data) {
     std::vector<MidiCIState> result;
     
@@ -245,6 +250,82 @@ std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vecto
     return result;
 }
 
+std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vector<uint8_t>& data) {
+    std::vector<MidiCIProgram> result;
+    
+    try {
+        std::string json_str(data.begin(), data.end());
+        auto json = JsonValue::parse(json_str);
+        
+        if (!json.is_array()) {
+            return result;
+        }
+        
+        const auto& json_array = json.as_array();
+        for (const auto& item : json_array) {
+            if (!item.is_object()) {
+                continue;
+            }
+            
+            const auto& obj = item.as_object();
+            
+            std::string title;
+            std::vector<uint8_t> bankPC;
+            std::optional<std::vector<std::string>> category;
+            std::optional<std::vector<std::string>> tags;
+            
+            auto it = obj.find(ProgramPropertyNames::TITLE);
+            if (it != obj.end() && it->second.is_string()) {
+                title = it->second.as_string();
+            }
+            
+            it = obj.find(ProgramPropertyNames::BANK_PC);
+            if (it != obj.end() && it->second.is_array()) {
+                const auto& bankpc_array = it->second.as_array();
+                for (const auto& val : bankpc_array) {
+                    if (val.is_number()) {
+                        bankPC.push_back(static_cast<uint8_t>(val.as_int()));
+                    }
+                }
+            }
+            
+            it = obj.find(ProgramPropertyNames::CATEGORY);
+            if (it != obj.end() && it->second.is_array()) {
+                const auto& category_array = it->second.as_array();
+                std::vector<std::string> cat_vec;
+                for (const auto& val : category_array) {
+                    if (val.is_string()) {
+                        cat_vec.push_back(val.as_string());
+                    }
+                }
+                if (!cat_vec.empty()) {
+                    category = cat_vec;
+                }
+            }
+            
+            it = obj.find(ProgramPropertyNames::TAGS);
+            if (it != obj.end() && it->second.is_array()) {
+                const auto& tags_array = it->second.as_array();
+                std::vector<std::string> tags_vec;
+                for (const auto& val : tags_array) {
+                    if (val.is_string()) {
+                        tags_vec.push_back(val.as_string());
+                    }
+                }
+                if (!tags_vec.empty()) {
+                    tags = tags_vec;
+                }
+            }
+            
+            result.emplace_back(title, bankPC, category, tags);
+        }
+    } catch (...) {
+        // Return empty result on parse error
+    }
+    
+    return result;
+}
+
 std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIState>& stateList) {
     JsonArray json_array;
     
@@ -337,6 +418,43 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
+std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIProgram>& programList) {
+    JsonArray json_array;
+    
+    for (const auto& program : programList) {
+        JsonObject obj;
+        obj[ProgramPropertyNames::TITLE] = JsonValue(program.title);
+        
+        JsonArray bankpc_array;
+        for (uint8_t val : program.bankPC) {
+            bankpc_array.push_back(JsonValue(static_cast<double>(val)));
+        }
+        obj[ProgramPropertyNames::BANK_PC] = JsonValue(bankpc_array);
+        
+        if (program.category.has_value()) {
+            JsonArray category_array;
+            for (const auto& cat : program.category.value()) {
+                category_array.push_back(JsonValue(cat));
+            }
+            obj[ProgramPropertyNames::CATEGORY] = JsonValue(category_array);
+        }
+        
+        if (program.tags.has_value()) {
+            JsonArray tags_array;
+            for (const auto& tag : program.tags.value()) {
+                tags_array.push_back(JsonValue(tag));
+            }
+            obj[ProgramPropertyNames::TAGS] = JsonValue(tags_array);
+        }
+        
+        json_array.push_back(JsonValue(obj));
+    }
+    
+    JsonValue root(json_array);
+    std::string json_str = root.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
+}
+
 } // namespace commonproperties
 
 // Implementation of MidiCIDevice extension methods
@@ -352,6 +470,10 @@ std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const
 
 std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
     return device.get_property_host_facade().get_properties().getChCtrlList();
+}
+
+std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
+    return device.get_property_host_facade().get_properties().getProgramList();
 }
 
 void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList) {
@@ -378,6 +500,16 @@ void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::Mid
     auto json_data = commonproperties::StandardProperties::toJson(controlList);
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setProgramList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIProgram>& programList) {
+    auto json_data = commonproperties::StandardProperties::toJson(programList);
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::PROGRAM_LIST, 
         "", // empty resId
         json_data, 
         false // not partial

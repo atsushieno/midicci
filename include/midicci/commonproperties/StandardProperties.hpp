@@ -13,6 +13,7 @@ namespace StandardPropertyNames {
     constexpr const char* STATE_LIST = "StateList";
     constexpr const char* ALL_CTRL_LIST = "AllCtrlList";
     constexpr const char* CH_CTRL_LIST = "ChCtrlList";
+    constexpr const char* PROGRAM_LIST = "ProgramList";
 }
 
 struct MidiCIState {
@@ -92,6 +93,17 @@ struct MidiCIControl {
                   bool defaultCCMap = false);
 };
 
+struct MidiCIProgram {
+    std::string title;
+    std::vector<uint8_t> bankPC; // minItems = 3, maxItems = 3
+    std::optional<std::vector<std::string>> category; // minItems = 1, minLength = 1
+    std::optional<std::vector<std::string>> tags; // minItems = 1, minLength = 1
+    
+    MidiCIProgram(const std::string& title, const std::vector<uint8_t>& bankPC,
+                  const std::optional<std::vector<std::string>>& category = std::nullopt,
+                  const std::optional<std::vector<std::string>>& tags = std::nullopt);
+};
+
 namespace StatePropertyNames {
     constexpr const char* TITLE = "title";
     constexpr const char* STATE_ID = "stateId";
@@ -120,12 +132,21 @@ namespace ControlPropertyNames {
     constexpr const char* DEFAULT_CC_MAP = "defaultCCMap";
 }
 
+namespace ProgramPropertyNames {
+    constexpr const char* TITLE = "title";
+    constexpr const char* BANK_PC = "bankPC";
+    constexpr const char* CATEGORY = "category";
+    constexpr const char* TAGS = "tags";
+}
+
 class StandardProperties {
 public:
     static std::vector<MidiCIState> parseStateList(const std::vector<uint8_t>& data);
     static std::vector<MidiCIControl> parseControlList(const std::vector<uint8_t>& data);
+    static std::vector<MidiCIProgram> parseProgramList(const std::vector<uint8_t>& data);
     static std::vector<uint8_t> toJson(const std::vector<MidiCIState>& stateList);
     static std::vector<uint8_t> toJson(const std::vector<MidiCIControl>& controlList);
+    static std::vector<uint8_t> toJson(const std::vector<MidiCIProgram>& programList);
 };
 
 } // namespace commonproperties
@@ -139,11 +160,13 @@ namespace StandardPropertiesExtensions {
     std::optional<std::vector<commonproperties::MidiCIState>> getStateList(const MidiCIDevice& device);
     std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device);
     std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device);
+    std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device);
     
     // Setter extensions (use PropertyHostFacade setPropertyValue)
     void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList);
     void setAllCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList);
     void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList);
+    void setProgramList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIProgram>& programList);
 }
 
 } // namespace midicci

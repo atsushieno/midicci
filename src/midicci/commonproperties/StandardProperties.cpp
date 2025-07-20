@@ -455,25 +455,47 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIProgram>
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-} // namespace commonproperties
-
 // Implementation of MidiCIDevice extension methods
 namespace StandardPropertiesExtensions {
 
 std::optional<std::vector<commonproperties::MidiCIState>> getStateList(const MidiCIDevice& device) {
-    return device.get_property_host_facade().get_properties().getStateList();
+    auto &props = device.get_property_host_facade().get_properties();
+    auto values = props.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [](const PropertyValue &pv) { return pv.id == commonproperties::StandardPropertyNames::STATE_LIST; });
+    if (it != values.end())
+        return commonproperties::StandardProperties::parseStateList(it->body);
+    return std::nullopt;
 }
 
 std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device) {
-    return device.get_property_host_facade().get_properties().getAllCtrlList();
+    auto &props = device.get_property_host_facade().get_properties();
+    auto values = props.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::ALL_CTRL_LIST; });
+    if (it != values.end())
+        return commonproperties::StandardProperties::parseControlList(it->body);
+    return std::nullopt;
 }
 
 std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
-    return device.get_property_host_facade().get_properties().getChCtrlList();
+    auto &props = device.get_property_host_facade().get_properties();
+    auto values = props.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::CH_CTRL_LIST; });
+    if (it != values.end())
+        return commonproperties::StandardProperties::parseControlList(it->body);
+    return std::nullopt;
 }
 
 std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
-    return device.get_property_host_facade().get_properties().getProgramList();
+    auto &props = device.get_property_host_facade().get_properties();
+    auto values = props.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::PROGRAM_LIST; });
+    if (it != values.end())
+        return commonproperties::StandardProperties::parseProgramList(it->body);
+    return std::nullopt;
 }
 
 void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList) {
@@ -518,4 +540,5 @@ void setProgramList(MidiCIDevice& device, const std::vector<commonproperties::Mi
 
 } // namespace StandardPropertiesExtensions
 
+} // namespace commonproperties
 } // namespace midicci

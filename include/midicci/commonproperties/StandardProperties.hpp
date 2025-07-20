@@ -5,6 +5,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include "../MidiCIDevice.hpp"
+
+using namespace midicci;
 
 namespace midicci {
 namespace commonproperties {
@@ -149,11 +152,6 @@ public:
     static std::vector<uint8_t> toJson(const std::vector<MidiCIProgram>& programList);
 };
 
-} // namespace commonproperties
-
-// Forward declaration for MidiCIDevice extension methods
-class MidiCIDevice;
-
 // Extension methods for MidiCIDevice (similar to Kotlin extension properties)
 namespace StandardPropertiesExtensions {
     // Getter extensions (delegate to ObservablePropertyList getters)
@@ -169,4 +167,5 @@ namespace StandardPropertiesExtensions {
     void setProgramList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIProgram>& programList);
 }
 
+} // namespace commonproperties
 } // namespace midicci

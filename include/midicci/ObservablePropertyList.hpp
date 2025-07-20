@@ -11,7 +11,6 @@
 #include "MidiCIConstants.hpp"
 #include "MidiCIChannelList.hpp"
 #include "Json.hpp"
-#include "commonproperties/StandardProperties.hpp"
 
 namespace midicci {
 
@@ -82,12 +81,6 @@ public:
     
     void removePropertyUpdatedCallback(const PropertyUpdatedCallback& callback);
     void removePropertyCatalogUpdatedCallback(const PropertyCatalogUpdatedCallback& callback);
-    
-    // Extension methods for StandardProperties access (like Kotlin extensions)
-    std::optional<std::vector<commonproperties::MidiCIState>> getStateList() const;
-    std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList() const;
-    std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList() const;
-    std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList() const;
 
 protected:
     void notifyPropertyUpdated(const std::string& propertyId);

@@ -22,6 +22,9 @@ set(MIDICCI_SOURCES
         midicci/commonproperties/StandardProperties.cpp
         midicci/ump/Ump.cpp
         midicci/ump/UmpRetriever.cpp
+        midicci/musicdevice/MidiMachineMessageReporter.cpp
+        midicci/musicdevice/MidiCISession.cpp
+        midicci/musicdevice/MusicDevice.cpp
 )
 
 set(MODULE_NAME midicci)

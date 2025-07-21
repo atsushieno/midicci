@@ -275,10 +275,10 @@ std::vector<uint8_t> UmpRetriever::ump_to_platform_bytes(const Ump& ump) {
         #ifdef __BYTE_ORDER__
             #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
                 // Little endian
-                bytes.push_back((value >> 24) & 0xFF);
-                bytes.push_back((value >> 16) & 0xFF);
-                bytes.push_back((value >> 8) & 0xFF);
                 bytes.push_back(value & 0xFF);
+                bytes.push_back((value >> 8) & 0xFF);
+                bytes.push_back((value >> 16) & 0xFF);
+                bytes.push_back((value >> 24) & 0xFF);
             #else
                 // Big endian
                 bytes.push_back((value >> 24) & 0xFF);

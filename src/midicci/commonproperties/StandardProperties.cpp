@@ -1,8 +1,8 @@
-#include "midicci/commonproperties/StandardProperties.hpp"
-#include "midicci/Json.hpp"
-#include "midicci/PropertyCommonRules.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/PropertyHostFacade.hpp"
+#include "midicci/details/commonproperties/StandardProperties.hpp"
+#include "midicci/details/Json.hpp"
+#include "midicci/details/PropertyCommonRules.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/PropertyHostFacade.hpp"
 
 namespace midicci {
 namespace commonproperties {

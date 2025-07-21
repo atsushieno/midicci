@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include "midicci/ClientConnection.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/ClientConnection.hpp"
 
 TEST(MidiCIDeviceTest, initialState) {
     TestCIMediator mediator;

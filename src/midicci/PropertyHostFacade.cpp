@@ -1,13 +1,13 @@
-#include "midicci/PropertyHostFacade.hpp"
-#include "midicci/commonproperties/MidiCIServicePropertyRules.hpp"
-#include "midicci/ObservablePropertyList.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/PropertyCommonRules.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyService.hpp"
-#include "midicci/Json.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/Message.hpp"
-#include "midicci/MidiCIConstants.hpp"
+#include "midicci/details/PropertyHostFacade.hpp"
+#include "midicci/details/commonproperties/MidiCIServicePropertyRules.hpp"
+#include "midicci/details/ObservablePropertyList.hpp"
+#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/details/PropertyCommonRules.hpp"
+#include "midicci/details/commonproperties/CommonRulesPropertyService.hpp"
+#include "midicci/details/Json.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/Message.hpp"
+#include "midicci/details/MidiCIConstants.hpp"
 #include <mutex>
 #include <algorithm>
 

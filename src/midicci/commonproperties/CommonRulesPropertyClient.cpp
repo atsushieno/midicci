@@ -1,11 +1,11 @@
-#include "midicci/commonproperties/CommonRulesPropertyClient.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/commonproperties/FoundationalResources.hpp"
-#include "midicci/PropertyCommonRules.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/ClientConnection.hpp"
-#include "midicci/Message.hpp"
-#include "midicci/Json.hpp"
+#include "midicci/details/commonproperties/CommonRulesPropertyClient.hpp"
+#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "midicci/details/commonproperties/FoundationalResources.hpp"
+#include "midicci/details/PropertyCommonRules.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/ClientConnection.hpp"
+#include "midicci/details/Message.hpp"
+#include "midicci/details/Json.hpp"
 #include <sstream>
 #include <algorithm>
 

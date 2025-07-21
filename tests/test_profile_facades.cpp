@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include "midicci/ProfileClientFacade.hpp"
-#include "midicci/ProfileHostFacade.hpp"
-#include "midicci/MidiCIProfile.hpp"
-#include "midicci/ClientConnection.hpp"
-#include "midicci/Message.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/ProfileClientFacade.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/ProfileHostFacade.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/MidiCIProfile.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/ClientConnection.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/Message.hpp"
 
 using namespace midicci;
 

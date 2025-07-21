@@ -3,9 +3,9 @@
 #include <vector>
 #include <string>
 
-#include "midicci/tooling/CIDeviceModel.hpp"
-#include "midicci/tooling/CIToolRepository.hpp"
-#include "midicci/PropertyHostFacade.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/tooling/CIDeviceModel.hpp>
+#include <midicci/tooling/CIToolRepository.hpp>
 
 using namespace midicci::tooling;
 

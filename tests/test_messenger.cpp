@@ -1,9 +1,9 @@
 /*
 #include <gtest/gtest.h>
-#include "midicci/core/MidiCIDevice.hpp"
-#include "midicci/messages/Messenger.hpp"
-#include "midicci/messages/Message.hpp"
-#include "midicci/core/MidiCIDeviceConfiguration.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/core/MidiCIDevice.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/messages/Messenger.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/messages/Message.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/core/MidiCIDeviceConfiguration.hpp"
 
 using namespace midi_ci;
 

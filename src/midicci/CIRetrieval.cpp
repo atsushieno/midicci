@@ -1,4 +1,4 @@
-#include "midicci/CIRetrieval.hpp"
+#include "midicci/details/CIRetrieval.hpp"
 #include <algorithm>
 
 namespace midicci {

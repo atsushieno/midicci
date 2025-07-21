@@ -1,4 +1,4 @@
-#include "midicci/MidiCIConverter.hpp"
+#include "midicci/details/MidiCIConverter.hpp"
 #include <sstream>
 #include <iomanip>
 

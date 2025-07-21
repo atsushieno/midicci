@@ -1,6 +1,6 @@
 /*
 #include <gtest/gtest.h>
-#include "midicci/profiles/ProfileManager.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/profiles/ProfileManager.hpp"
 
 using namespace midi_ci::profiles;
 

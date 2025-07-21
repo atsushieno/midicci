@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
-#include "midicci/Messenger.hpp"
+#include "midicci/details/Messenger.hpp"
 
 namespace midicci {
 class ProfileHostFacade;

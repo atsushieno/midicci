@@ -1,7 +1,7 @@
 /*
 #include <gtest/gtest.h>
-#include "midicci/core/MidiCIDevice.hpp"
-#include "midicci/messages/Message.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/core/MidiCIDevice.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/messages/Message.hpp"
 
 using namespace midi_ci;
 

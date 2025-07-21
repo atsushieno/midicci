@@ -1,4 +1,4 @@
-#include "midicci/ump/UmpRetriever.hpp"
+#include "midicci/details/ump/UmpRetriever.hpp"
 #include <cstring>
 
 namespace midicci {

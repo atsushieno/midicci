@@ -1,9 +1,9 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
-#include "midicci/ObservablePropertyList.hpp"
-#include "midicci/ProfileHostFacade.hpp"
-#include "midicci/PropertyHostFacade.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
 #include <random>

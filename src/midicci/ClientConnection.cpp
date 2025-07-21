@@ -1,12 +1,12 @@
-#include "midicci/ClientConnection.hpp"
-#include "midicci/Message.hpp"
-#include "midicci/MidiCIConstants.hpp"
-#include "midicci/commonproperties/FoundationalResources.hpp"
-#include "midicci/CIFactory.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/ProfileClientFacade.hpp"
-#include "midicci/PropertyClientFacade.hpp"
-#include "midicci/Json.hpp"
+#include "midicci/details/ClientConnection.hpp"
+#include "midicci/details/Message.hpp"
+#include "midicci/details/MidiCIConstants.hpp"
+#include "midicci/details/commonproperties/FoundationalResources.hpp"
+#include "midicci/details/CIFactory.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/ProfileClientFacade.hpp"
+#include "midicci/details/PropertyClientFacade.hpp"
+#include "midicci/details/Json.hpp"
 #include <mutex>
 
 namespace midicci {

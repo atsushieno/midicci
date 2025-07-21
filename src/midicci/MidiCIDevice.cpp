@@ -1,7 +1,7 @@
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/ClientConnection.hpp"
-#include "midicci/ProfileHostFacade.hpp"
-#include "midicci/PropertyHostFacade.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/ClientConnection.hpp"
+#include "midicci/details/ProfileHostFacade.hpp"
+#include "midicci/details/PropertyHostFacade.hpp"
 #include <unordered_map>
 #include <mutex>
 

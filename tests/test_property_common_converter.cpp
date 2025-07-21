@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "midicci/PropertyCommonRules.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/PropertyCommonRules.hpp"
 #include <vector>
 #include <cstdint>
 

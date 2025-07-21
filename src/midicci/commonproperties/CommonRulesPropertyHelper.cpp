@@ -1,7 +1,7 @@
-#include "midicci/commonproperties/CommonRulesPropertyHelper.hpp"
-#include "midicci/PropertyCommonRules.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/Json.hpp"
+#include "midicci/details/commonproperties/CommonRulesPropertyHelper.hpp"
+#include "midicci/details/PropertyCommonRules.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/Json.hpp"
 #include <sstream>
 
 namespace midicci {

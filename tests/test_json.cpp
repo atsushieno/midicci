@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "midicci/Json.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/Json.hpp"
 
 using namespace midicci;
 

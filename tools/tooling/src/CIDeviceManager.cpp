@@ -2,10 +2,10 @@
 #include "midicci/tooling/CIToolRepository.hpp"
 #include "midicci/tooling/MidiDeviceManager.hpp"
 #include "midicci/tooling/CIDeviceModel.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/MidiCIConstants.hpp"
-#include "midicci/ump/Ump.hpp"
-#include "midicci/ump/UmpRetriever.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
 #include "MidiDeviceManager.hpp"

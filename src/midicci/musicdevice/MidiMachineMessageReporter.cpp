@@ -1,4 +1,4 @@
-#include "midicci/musicdevice/MidiMachineMessageReporter.hpp"
+#include "midicci/details/musicdevice/MidiMachineMessageReporter.hpp"
 
 namespace midicci::musicdevice {
 

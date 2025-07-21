@@ -1,8 +1,8 @@
 #include "CIToolRepository.hpp"
 #include "MidiDeviceManager.hpp"
 #include "CIDeviceManager.hpp"
-#include "midicci/Json.hpp"
-#include "midicci/MidiCIDevice.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
 #include <random>
 #include <fstream>
 #include <iostream>

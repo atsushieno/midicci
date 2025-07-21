@@ -4,7 +4,7 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
-#include "midicci/MidiCIDeviceConfiguration.hpp"
+#include <midicci/midicci.hpp>
 
 namespace midicci {
 class MidiCIDevice;

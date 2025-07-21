@@ -5,8 +5,8 @@
 #include <functional>
 #include <cstdint>
 #include <string>
-#include "midicci/ClientConnection.hpp"
-#include "midicci/ObservablePropertyList.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
 #include "MutableState.hpp"
 
 using namespace midicci;

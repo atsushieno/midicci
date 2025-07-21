@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstdint>
 #include <functional>
-#include <midicci/MidiCIProfile.hpp>
+#include <midicci/midicci.hpp>
 #include "MutableState.hpp"
 
 namespace midicci::tooling {

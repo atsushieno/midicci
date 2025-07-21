@@ -1,5 +1,5 @@
-#include "midicci/Json.hpp"
-#include "midicci/MidiCIConverter.hpp"
+#include "midicci/details/Json.hpp"
+#include "midicci/details/MidiCIConverter.hpp"
 #include <sstream>
 #include <stdexcept>
 #include <cctype>

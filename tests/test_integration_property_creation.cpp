@@ -3,10 +3,10 @@
 #include <vector>
 #include <string>
 
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/PropertyHostFacade.hpp"
-#include "midicci/MidiCIDeviceConfiguration.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/MidiCIDevice.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/PropertyHostFacade.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/MidiCIDeviceConfiguration.hpp"
+#include <midicci/midicci.hpp>  // was: midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
 
 class IntegrationPropertyTest : public ::testing::Test {
 protected:

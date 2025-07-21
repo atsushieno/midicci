@@ -2,8 +2,8 @@
 #include <midicci/tooling/CIToolRepository.hpp>
 #include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
-#include "midicci/ObservablePropertyList.hpp"
-#include "midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include <midicci/midicci.hpp>
+#include <midicci/midicci.hpp>
 
 #include <QGridLayout>
 #include <QSplitter>

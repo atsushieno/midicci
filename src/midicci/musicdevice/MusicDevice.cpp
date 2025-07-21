@@ -1,4 +1,4 @@
-#include "midicci/musicdevice/MusicDevice.hpp"
+#include "midicci/details/musicdevice/MusicDevice.hpp"
 #include <algorithm>
 #include <thread>
 #include <future>

@@ -1,6 +1,6 @@
 #include "ClientConnectionModel.hpp"
 #include "CIDeviceModel.hpp"
-#include "midicci/ObservablePropertyList.hpp"
+#include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
 

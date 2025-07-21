@@ -1,4 +1,4 @@
-#include "midicci/commonproperties/MidiCIServicePropertyRules.hpp"
+#include "midicci/details/commonproperties/MidiCIServicePropertyRules.hpp"
 
 namespace midicci {
 namespace commonproperties {

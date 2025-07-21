@@ -1,8 +1,8 @@
-#include "midicci/ProfileClientFacade.hpp"
-#include "midicci/ObservableProfileList.hpp"
-#include "midicci/MidiCIDevice.hpp"
-#include "midicci/ClientConnection.hpp"
-#include "midicci/Message.hpp"
+#include "midicci/details/ProfileClientFacade.hpp"
+#include "midicci/details/ObservableProfileList.hpp"
+#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/details/ClientConnection.hpp"
+#include "midicci/details/Message.hpp"
 #include <mutex>
 
 namespace midicci {

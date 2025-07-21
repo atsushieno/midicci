@@ -3,7 +3,6 @@
 #include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
 #include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
 
 #include <QGridLayout>
 #include <QSplitter>

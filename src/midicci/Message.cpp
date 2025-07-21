@@ -1,7 +1,4 @@
-#include "midicci/details/Message.hpp"
-#include "midicci/details/MidiCIConstants.hpp"
-#include "midicci/details/CIFactory.hpp"
-#include "midicci/details/Json.hpp"
+#include "midicci/midicci.hpp"
 #include <sstream>
 #include <iomanip>
 

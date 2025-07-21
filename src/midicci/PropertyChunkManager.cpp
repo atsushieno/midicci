@@ -1,4 +1,4 @@
-#include "midicci/details/PropertyChunkManager.hpp"
+#include "midicci/midicci.hpp"
 #include <mutex>
 #include <vector>
 #include <algorithm>

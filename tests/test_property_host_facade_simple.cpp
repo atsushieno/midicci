@@ -3,10 +3,7 @@
 #include <vector>
 #include <string>
 
-#include <midicci/midicci.hpp>  // was: midicci/PropertyHostFacade.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIDeviceConfiguration.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIDevice.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include <midicci/midicci.hpp>
 
 class PropertyHostFacadeTest : public ::testing::Test {
 protected:

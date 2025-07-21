@@ -2,11 +2,12 @@
 
 #include <memory>
 #include <cstdint>
-#include "Message.hpp"
-#include "ObservableProfileList.hpp"
-#include "MidiCIDevice.hpp"
+#include "../midicci.hpp"
 
 namespace midicci {
+
+class MidiCIDevice;
+class ClientConnection;
 
 class ProfileClientFacade {
 public:

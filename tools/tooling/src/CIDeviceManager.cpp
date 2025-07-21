@@ -3,9 +3,6 @@
 #include "midicci/tooling/MidiDeviceManager.hpp"
 #include "midicci/tooling/CIDeviceModel.hpp"
 #include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
 #include "MidiDeviceManager.hpp"

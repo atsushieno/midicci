@@ -1,7 +1,4 @@
-#include "midicci/details/commonproperties/FoundationalResources.hpp"
-#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/details/PropertyCommonRules.hpp"
-#include "midicci/details/MidiCIConverter.hpp"
+#include "midicci/midicci.hpp"
 #include <stdexcept>
 #include <algorithm>
 #include <optional>

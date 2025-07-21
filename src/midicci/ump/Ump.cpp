@@ -1,4 +1,4 @@
-#include "midicci/details/ump/Ump.hpp"
+#include "midicci/midicci.hpp"
 #include <cstring>
 
 namespace midicci {

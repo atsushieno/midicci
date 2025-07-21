@@ -1,4 +1,4 @@
-#include "midicci/details/ObservableProfileList.hpp"
+#include "midicci/midicci.hpp"
 #include <algorithm>
 #include <mutex>
 

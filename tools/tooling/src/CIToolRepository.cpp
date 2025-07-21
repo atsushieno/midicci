@@ -2,7 +2,6 @@
 #include "MidiDeviceManager.hpp"
 #include "CIDeviceManager.hpp"
 #include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
 #include <random>
 #include <fstream>
 #include <iostream>

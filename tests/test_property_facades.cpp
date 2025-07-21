@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include "TestCIMediator.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/PropertyCommonRules.hpp"
+#include <midicci/midicci.hpp>
 
 using namespace midicci::commonproperties;
 using namespace midicci;

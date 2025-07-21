@@ -1,6 +1,4 @@
-#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/details/PropertyCommonRules.hpp"
-#include "midicci/details/Json.hpp"
+#include "midicci/midicci.hpp"
 #include <algorithm>
 
 namespace midicci::commonproperties {

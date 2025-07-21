@@ -1,12 +1,4 @@
-#include "midicci/details/PropertyClientFacade.hpp"
-#include "midicci/details/PropertyHostFacade.hpp"
-#include "midicci/details/commonproperties//CommonRulesPropertyClient.hpp"
-#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/details/ObservablePropertyList.hpp"
-#include "midicci/details/PropertyCommonRules.hpp"
-#include "midicci/details/MidiCIDevice.hpp"
-#include "midicci/details/ClientConnection.hpp"
-#include "midicci/details/Message.hpp"
+#include "midicci/midicci.hpp"
 #include <mutex>
 #include <map>
 #include <unordered_map>

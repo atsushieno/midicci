@@ -1,5 +1,4 @@
-#include "midicci/details/CIFactory.hpp"
-#include "midicci/details/MidiCIConstants.hpp"
+#include "midicci/midicci.hpp"
 #include <algorithm>
 
 namespace midicci {

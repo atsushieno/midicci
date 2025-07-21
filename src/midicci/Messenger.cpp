@@ -1,15 +1,4 @@
-#include "midicci/details/Messenger.hpp"
-#include "midicci/details/Message.hpp"
-#include "midicci/details/MidiCIDevice.hpp"
-#include "midicci/details/MidiCIConstants.hpp"
-#include "midicci/details/CIFactory.hpp"
-#include "midicci/details/MidiCIDeviceConfiguration.hpp"
-#include "midicci/details/ClientConnection.hpp"
-#include "midicci/details/CIRetrieval.hpp"
-#include "midicci/details/ProfileClientFacade.hpp"
-#include "midicci/details/ProfileHostFacade.hpp"
-#include "midicci/details/PropertyClientFacade.hpp"
-#include "midicci/details/PropertyHostFacade.hpp"
+#include "midicci/midicci.hpp"
 #include <mutex>
 #include <vector>
 #include <functional>

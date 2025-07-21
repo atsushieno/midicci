@@ -1,8 +1,5 @@
 #include <gtest/gtest.h>
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIConstants.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/CIFactory.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/Message.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIProfile.hpp"
+#include <midicci/midicci.hpp>
 #include <vector>
 #include <cstdint>
 

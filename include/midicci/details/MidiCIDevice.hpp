@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
-#include "midicci/details/Messenger.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 class ProfileHostFacade;
@@ -13,7 +13,6 @@ class ProfileClientFacade;
 class PropertyHostFacade;
 class PropertyClientFacade;
 class ClientConnection;
-struct MidiCIDeviceConfiguration;
 
 class MidiCIDevice {
 public:

@@ -1,10 +1,6 @@
 #pragma once
 
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIDevice.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/ClientConnection.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/PropertyHostFacade.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/ProfileHostFacade.hpp"
-#include <midicci/midicci.hpp>  // was: midicci/MidiCIDeviceConfiguration.hpp"
+#include <midicci/midicci.hpp>
 #include <memory>
 #include <vector>
 #include <cstdint>

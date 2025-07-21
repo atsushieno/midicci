@@ -6,8 +6,7 @@
 #include <functional>
 #include <optional>
 #include "Json.hpp"
-#include "ProfileClientFacade.hpp"
-#include "PropertyClientFacade.hpp"
+#include "../midicci.hpp"
 
 namespace midicci {
 

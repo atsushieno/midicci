@@ -1,9 +1,6 @@
 #include "CIDeviceModel.hpp"
 #include "CIDeviceManager.hpp"
 #include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
-#include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
 #include <random>

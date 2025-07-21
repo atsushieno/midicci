@@ -1,10 +1,4 @@
-#include "midicci/details/commonproperties/CommonRulesPropertyService.hpp"
-#include "midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp"
-#include "midicci/details/commonproperties/FoundationalResources.hpp"
-#include "midicci/details/PropertyCommonRules.hpp"
-#include "midicci/details/Json.hpp"
-#include "midicci/details/MidiCIConstants.hpp"
-#include "midicci/details/MidiCIDeviceConfiguration.hpp"
+#include "midicci/midicci.hpp"
 #include <sstream>
 #include <algorithm>
 #include <random>

@@ -1,7 +1,4 @@
-#include "midicci/details/musicdevice/MidiCISession.hpp"
-#include "midicci/details/MidiCIConstants.hpp"
-#include "midicci/details/ump/Ump.hpp"
-#include "midicci/details/ump/UmpRetriever.hpp"
+#include "midicci/midicci.hpp"
 #include <random>
 #include <iomanip>
 #include <sstream>

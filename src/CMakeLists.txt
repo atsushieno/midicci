@@ -21,6 +21,7 @@ set(MIDICCI_SOURCES
         midicci/commonproperties/FoundationalResources.cpp
         midicci/commonproperties/StandardProperties.cpp
         midicci/ump/Ump.cpp
+        midicci/ump/UmpFactory.cpp
         midicci/ump/UmpRetriever.cpp
         midicci/musicdevice/MidiMachineMessageReporter.cpp
         midicci/musicdevice/MidiCISession.cpp

@@ -1,4 +1,5 @@
 #include "midicci/midicci.hpp"
+#include "midicci/details/ump/UmpFactory.hpp"
 #include <random>
 #include <iomanip>
 #include <sstream>
@@ -22,9 +23,17 @@ std::unique_ptr<MidiCISession> create_midi_ci_session(
     // Set up MIDI-CI output sender
     device->set_sysex_sender([source](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         if (source.transport_protocol == MidiTransportProtocol::UMP) {
-            // TODO: Implement UMP SysEx7 processing when UmpFactory is available
-            // For now, send as is
-            source.output_sender(data.data(), 0, data.size(), 0);
+            // Convert SysEx data to UMP SysEx7 packets
+            auto ump_packets = ump::UmpFactory::sysex7(group, data);
+            
+            // Send each UMP packet
+            for (const auto& packet : ump_packets) {
+                uint8_t packet_data[8]; // SysEx7 uses 8-byte packets
+                *reinterpret_cast<uint32_t*>(&packet_data[0]) = packet.int1;
+                *reinterpret_cast<uint32_t*>(&packet_data[4]) = packet.int2;
+                
+                source.output_sender(packet_data, 0, packet.get_size_in_bytes(), 0);
+            }
         } else {
             // MIDI 1.0: add SysEx start byte
             std::vector<uint8_t> midi1_data;

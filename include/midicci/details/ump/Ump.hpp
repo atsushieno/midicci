@@ -36,6 +36,8 @@ struct Ump {
     MessageType get_message_type() const;
     uint8_t get_group() const;
     uint8_t get_status_code() const;
+    uint8_t get_status_byte() const;
+    BinaryChunkStatus get_binary_chunk_status() const;
     uint8_t get_sysex7_size() const;
     uint8_t get_sysex8_size() const;
     size_t get_size_in_bytes() const;

@@ -16,6 +16,20 @@ uint8_t Ump::get_status_code() const {
     return ((int1 >> 16) & 0xFF) & 0xF0;
 }
 
+uint8_t Ump::get_status_byte() const {
+    return (int1 >> 16) & 0xFF;
+}
+
+BinaryChunkStatus Ump::get_binary_chunk_status() const {
+    uint8_t status = get_status_byte();
+    // For sysex messages, the binary chunk status is in specific bit patterns
+    if (status == 0x00) return BinaryChunkStatus::COMPLETE_PACKET;
+    if (status == 0x10) return BinaryChunkStatus::START;
+    if (status == 0x20) return BinaryChunkStatus::CONTINUE;
+    if (status == 0x30) return BinaryChunkStatus::END;
+    return BinaryChunkStatus::COMPLETE_PACKET; // Default fallback
+}
+
 uint8_t Ump::get_sysex7_size() const {
     return (int1 >> 16) & 0xF;
 }

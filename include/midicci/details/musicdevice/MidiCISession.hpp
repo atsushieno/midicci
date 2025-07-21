@@ -15,7 +15,7 @@ enum class MidiTransportProtocol : uint8_t {
 };
 
 // Callback for receiving MIDI input: (data, start, length, timestamp_ns)
-using MidiInputCallback = std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)>;
+using MidiInputCallback = std::function<void(const uint8_t*, size_t, size_t, uint64_t)>;
 
 // Callback for adding a MIDI input listener
 using MidiInputListenerAdder = std::function<void(MidiInputCallback)>;
@@ -24,12 +24,12 @@ using MidiInputListenerAdder = std::function<void(MidiInputCallback)>;
 struct MidiCISessionSource {
     MidiTransportProtocol transport_protocol;
     MidiInputListenerAdder input_listener_adder;
-    std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)> output_sender;
+    std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender;
     
     MidiCISessionSource(
         MidiTransportProtocol protocol,
         MidiInputListenerAdder input_adder,
-        std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)> output
+        std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output
     ) : transport_protocol(protocol), input_listener_adder(input_adder), output_sender(output) {}
 };
 
@@ -61,8 +61,8 @@ public:
 private:
     void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
     void log_midi_message_report_chunk(const std::vector<uint8_t>& data);
-    void process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length);
-    void process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length);
+    void process_midi1_input(const uint8_t* data, size_t start, size_t length);
+    void process_ump_input(const uint8_t* data, size_t start, size_t length);
     
     std::unique_ptr<MidiCIDevice> device_;
     bool receiving_midi_message_reports_;

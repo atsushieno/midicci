@@ -38,8 +38,8 @@ size_t Ump::get_size_in_bytes() const {
     }
 }
 
-static uint32_t get_int_from_bytes(const std::vector<uint8_t>& bytes, size_t offset) {
-    if (offset + 3 >= bytes.size()) return 0;
+static uint32_t get_int_from_bytes(const uint8_t* bytes, size_t offset, size_t max_size) {
+    if (offset + 3 >= max_size) return 0;
     
     return bytes[offset] |
            (bytes[offset + 1] << 8) |
@@ -47,13 +47,13 @@ static uint32_t get_int_from_bytes(const std::vector<uint8_t>& bytes, size_t off
            (bytes[offset + 3] << 24);
 }
 
-std::vector<Ump> parse_umps_from_bytes(const std::vector<uint8_t>& data, size_t start, size_t length) {
+std::vector<Ump> parse_umps_from_bytes(const uint8_t* data, size_t start, size_t length) {
     std::vector<Ump> result;
     size_t offset = start;
     const size_t end = start + length;
     
-    while (offset < end && offset + 3 < data.size()) {
-        uint32_t int1 = get_int_from_bytes(data, offset);
+    while (offset < end && (offset - start + 3) < length) {
+        uint32_t int1 = get_int_from_bytes(data, offset, start + length);
         MessageType msg_type = static_cast<MessageType>((int1 >> 28) & 0xF);
         
         size_t ump_size;
@@ -74,9 +74,9 @@ std::vector<Ump> parse_umps_from_bytes(const std::vector<uint8_t>& data, size_t 
         
         if (offset + ump_size > end) break;
         
-        uint32_t int2 = (ump_size > 4) ? get_int_from_bytes(data, offset + 4) : 0;
-        uint32_t int3 = (ump_size > 8) ? get_int_from_bytes(data, offset + 8) : 0;
-        uint32_t int4 = (ump_size > 12) ? get_int_from_bytes(data, offset + 12) : 0;
+        uint32_t int2 = (ump_size > 4) ? get_int_from_bytes(data, offset + 4, start + length) : 0;
+        uint32_t int3 = (ump_size > 8) ? get_int_from_bytes(data, offset + 8, start + length) : 0;
+        uint32_t int4 = (ump_size > 12) ? get_int_from_bytes(data, offset + 12, start + length) : 0;
         
         result.emplace_back(int1, int2, int3, int4);
         offset += ump_size;

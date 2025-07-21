@@ -14,7 +14,7 @@ namespace midicci::musicdevice {
 // Abstract interface for receiving MIDI input
 class MusicDeviceInputReceiver {
 public:
-    using InputCallback = std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)>;
+    using InputCallback = std::function<void(const uint8_t*, size_t, size_t, uint64_t)>;
     
     virtual ~MusicDeviceInputReceiver() = default;
     virtual void add_input_receiver(InputCallback callback) = 0;
@@ -25,7 +25,7 @@ public:
 class MusicDeviceOutputSender {
 public:
     virtual ~MusicDeviceOutputSender() = default;
-    virtual void send(const std::vector<uint8_t>& bytes, size_t offset, size_t length, uint64_t timestamp_ns) = 0;
+    virtual void send(const uint8_t* bytes, size_t offset, size_t length, uint64_t timestamp_ns) = 0;
 };
 
 // Helper implementation that wraps callback-based MIDI I/O
@@ -43,12 +43,12 @@ private:
 
 class CallbackMusicDeviceOutputSender : public MusicDeviceOutputSender {
 public:
-    explicit CallbackMusicDeviceOutputSender(std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)> output_sender);
+    explicit CallbackMusicDeviceOutputSender(std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender);
     
-    void send(const std::vector<uint8_t>& bytes, size_t offset, size_t length, uint64_t timestamp_ns) override;
+    void send(const uint8_t* bytes, size_t offset, size_t length, uint64_t timestamp_ns) override;
     
 private:
-    std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)> output_sender_;
+    std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender_;
 };
 
 // Helps determine which MIDI-CI to connect among discovered endpoints
@@ -71,7 +71,7 @@ public:
         std::chrono::milliseconds timeout = std::chrono::milliseconds(10000)
     );
     
-    void send(const std::vector<uint8_t>& data, size_t offset, size_t length, uint64_t timestamp_ns);
+    void send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns);
     
     // Configure discovery parameters
     void set_endpoint_selector(EndpointSelector selector);
@@ -115,7 +115,7 @@ public:
     // TODO: Add channel list, JSON schema, and property accessors when available
     
     // Send MIDI data
-    void send(const std::vector<uint8_t>& data, size_t offset, size_t length, uint64_t timestamp_ns);
+    void send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns);
     
 private:
     std::shared_ptr<MusicDeviceOutputSender> sender_;

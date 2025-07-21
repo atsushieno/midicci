@@ -155,7 +155,7 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
     }
     pimpl_->repository_.log("[received UMP] " + hex_str, MessageDirection::In);
     
-    auto umps = midicci::ump::parse_umps_from_bytes(data, start, length);
+    auto umps = midicci::ump::parse_umps_from_bytes(data.data(), start, length);
     
     for (const auto& ump : umps) {
         switch (ump.get_message_type()) {

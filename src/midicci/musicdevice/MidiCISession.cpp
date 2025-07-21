@@ -27,13 +27,13 @@ std::unique_ptr<MidiCISession> create_midi_ci_session(
         if (source.transport_protocol == MidiTransportProtocol::UMP) {
             // TODO: Implement UMP SysEx7 processing when UmpFactory is available
             // For now, send as is
-            source.output_sender(data, 0, data.size(), 0);
+            source.output_sender(data.data(), 0, data.size(), 0);
         } else {
             // MIDI 1.0: add SysEx start byte
             std::vector<uint8_t> midi1_data;
             midi1_data.push_back(0xF0);
             midi1_data.insert(midi1_data.end(), data.begin(), data.end());
-            source.output_sender(midi1_data, 0, midi1_data.size(), 0);
+            source.output_sender(midi1_data.data(), 0, midi1_data.size(), 0);
         }
         return true;
     });
@@ -54,7 +54,7 @@ MidiCISession::MidiCISession(
     last_chunked_message_channel_(0xFF)  // Invalid channel initially
 {
     // Set up MIDI input processing
-    input_listener_adder([this, input_protocol](const std::vector<uint8_t>& data, size_t start, size_t length, uint64_t timestamp) {
+    input_listener_adder([this, input_protocol](const uint8_t* data, size_t start, size_t length, uint64_t timestamp) {
         if (input_protocol == MidiTransportProtocol::UMP) {
             process_ump_input(data, start, length);
         } else {
@@ -95,8 +95,8 @@ void MidiCISession::log_midi_message_report_chunk(const std::vector<uint8_t>& da
     }
 }
 
-void MidiCISession::process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
-    if (data.size() <= start + 3) return;
+void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_t length) {
+    if (length <= 3) return;
     
     // Check for MIDI-CI SysEx message
     if (data[start] == 0xF0 &&
@@ -104,7 +104,7 @@ void MidiCISession::process_midi1_input(const std::vector<uint8_t>& data, size_t
         data[start + 3] == SYSEX_SUB_ID_MIDI_CI) {
         
         // Extract CI message (skip F0, include content, skip F7)
-        std::vector<uint8_t> ci_data(data.begin() + start + 1, data.begin() + start + length - 1);
+        std::vector<uint8_t> ci_data(data + start + 1, data + start + length - 1);
         process_ci_message(0, ci_data);  // Group is always 0 for MIDI 1.0
     } else {
         // May be part of MIDI Message Report
@@ -118,7 +118,7 @@ void MidiCISession::process_midi1_input(const std::vector<uint8_t>& data, size_t
                 last_chunked_message_channel_ = channel;
             }
             chunked_messages_.insert(chunked_messages_.end(), 
-                                   data.begin() + start, data.begin() + start + length);
+                                   data + start, data + start + length);
         } else {
             // Log unexpected MIDI message
             auto logger = device_->get_logger();
@@ -134,7 +134,7 @@ void MidiCISession::process_midi1_input(const std::vector<uint8_t>& data, size_t
     }
 }
 
-void MidiCISession::process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
+void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t length) {
     // Parse UMP messages from bytes
     auto umps = ump::parse_umps_from_bytes(data, start, length);
     

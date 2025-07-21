@@ -41,7 +41,7 @@ struct Ump {
     size_t get_size_in_bytes() const;
 };
 
-std::vector<Ump> parse_umps_from_bytes(const std::vector<uint8_t>& data, size_t start, size_t length);
+std::vector<Ump> parse_umps_from_bytes(const uint8_t* data, size_t start, size_t length);
 
 } // namespace ump
 } // namespace midi_ci

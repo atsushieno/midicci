@@ -10,7 +10,7 @@ CallbackMusicDeviceInputReceiver::CallbackMusicDeviceInputReceiver(MidiInputList
     : listener_adder_(listener_adder)
 {
     // Set up the main input listener that distributes to all registered receivers
-    listener_adder_([this](const std::vector<uint8_t>& data, size_t start, size_t length, uint64_t timestamp) {
+    listener_adder_([this](const uint8_t* data, size_t start, size_t length, uint64_t timestamp) {
         for (auto& receiver : input_receivers_) {
             receiver(data, start, length, timestamp);
         }
@@ -30,12 +30,12 @@ void CallbackMusicDeviceInputReceiver::remove_input_receiver(InputCallback callb
 
 // CallbackMusicDeviceOutputSender implementation
 CallbackMusicDeviceOutputSender::CallbackMusicDeviceOutputSender(
-    std::function<void(const std::vector<uint8_t>&, size_t, size_t, uint64_t)> output_sender)
+    std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender)
     : output_sender_(output_sender)
 {
 }
 
-void CallbackMusicDeviceOutputSender::send(const std::vector<uint8_t>& bytes, size_t offset, size_t length, uint64_t timestamp_ns) {
+void CallbackMusicDeviceOutputSender::send(const uint8_t* bytes, size_t offset, size_t length, uint64_t timestamp_ns) {
     output_sender_(bytes, offset, length, timestamp_ns);
 }
 
@@ -94,7 +94,7 @@ std::unique_ptr<MusicDevice> MusicDeviceConnector::connect(std::chrono::millisec
     }
 }
 
-void MusicDeviceConnector::send(const std::vector<uint8_t>& data, size_t offset, size_t length, uint64_t timestamp_ns) {
+void MusicDeviceConnector::send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns) {
     sender_->send(data, offset, length, timestamp_ns);
 }
 
@@ -135,7 +135,7 @@ std::optional<DeviceInfo> MusicDevice::get_device_info() const {
     return std::nullopt;
 }
 
-void MusicDevice::send(const std::vector<uint8_t>& data, size_t offset, size_t length, uint64_t timestamp_ns) {
+void MusicDevice::send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns) {
     sender_->send(data, offset, length, timestamp_ns);
 }
 

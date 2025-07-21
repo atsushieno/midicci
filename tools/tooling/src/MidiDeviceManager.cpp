@@ -97,7 +97,7 @@ void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<
 std::vector<std::string> MidiDeviceManager::get_available_input_devices() const {
     std::vector<std::string> devices;
     try {
-        libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+        libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
         for(const libremidi::input_port& port : obs.get_input_ports()) {
             devices.push_back(port.port_name);
         }
@@ -110,7 +110,7 @@ std::vector<std::string> MidiDeviceManager::get_available_input_devices() const 
 std::vector<std::string> MidiDeviceManager::get_available_output_devices() const {
     std::vector<std::string> devices;
     try {
-        libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+        libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
         for(const libremidi::output_port& port : obs.get_output_ports()) {
             devices.push_back(port.port_name);
         }
@@ -130,7 +130,7 @@ bool MidiDeviceManager::set_input_device(const std::string& device_id) {
     
     if (!device_id.empty()) {
         try {
-            libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+            libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
             auto input_ports = obs.get_input_ports();
             
             for (const auto& port : input_ports) {
@@ -182,7 +182,7 @@ bool MidiDeviceManager::set_output_device(const std::string& device_id) {
     
     if (!device_id.empty()) {
         try {
-            libremidi::observer obs({ .track_hardware = true, .track_virtual = true});
+            libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
             auto output_ports = obs.get_output_ports();
             
             for (const auto& port : output_ports) {

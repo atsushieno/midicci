@@ -145,9 +145,11 @@ void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t 
                 buffered_sysex7_.clear();
             }
             
-            // TODO: Extract SysEx7 data when UmpRetriever methods are available
-            // For now, this is a placeholder
-            
+            midicci::ump::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
+                buffered_sysex7_.insert(buffered_sysex7_.end(), data.begin(), data.end());
+            }};
+            midicci::ump::UmpRetriever::get_sysex7_data(outputter, {ump});
+
             if (status == ump::BinaryChunkStatus::END || 
                 status == ump::BinaryChunkStatus::COMPLETE_PACKET) {
                 
@@ -168,8 +170,11 @@ void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t 
                 buffered_sysex8_.clear();
             }
             
-            // TODO: Extract SysEx8 data when UmpRetriever methods are available
-            
+            midicci::ump::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
+                buffered_sysex8_.insert(buffered_sysex8_.end(), data.begin(), data.end());
+            }};
+            midicci::ump::UmpRetriever::get_sysex8_data(outputter, {ump});
+
             if (status == ump::BinaryChunkStatus::END || 
                 status == ump::BinaryChunkStatus::COMPLETE_PACKET) {
                 

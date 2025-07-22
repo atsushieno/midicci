@@ -5,6 +5,12 @@
 #include <functional>
 #include <string>
 #include <cstdint>
+#include <mutex>
+
+namespace libremidi {
+class midi_in;
+class midi_out;
+}
 
 namespace midicci::tooling {
 
@@ -44,8 +50,19 @@ public:
     void add_output_opened_callback(std::function<void()> callback);
     
 private:
-    class Impl;
-    std::unique_ptr<Impl> pimpl_;
+    bool initialized_;
+    SysExCallback sysex_callback_;
+    CIOutputSender ci_output_sender_;
+    std::string current_input_device_;
+    std::string current_output_device_;
+    
+    std::unique_ptr<libremidi::midi_in> midi_input_;
+    std::unique_ptr<libremidi::midi_out> midi_output_;
+    
+    std::vector<std::function<void()>> midi_input_opened_;
+    std::vector<std::function<void()>> midi_output_opened_;
+    
+    mutable std::recursive_mutex mutex_;
 };
 
 } // namespace ci_tool

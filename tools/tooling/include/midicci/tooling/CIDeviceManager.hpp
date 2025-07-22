@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
+#include <mutex>
 #include <midicci/midicci.hpp>
 
 namespace midicci {
@@ -41,8 +42,14 @@ public:
     void log_midi_message_report_chunk(const std::vector<uint8_t>& data);
     
 private:
-    class Impl;
-    std::unique_ptr<Impl> pimpl_;
+    CIToolRepository& repository_;
+    MidiCIDeviceConfiguration& config_;
+    std::shared_ptr<MidiDeviceManager> midi_device_manager_;
+    std::shared_ptr<CIDeviceModel> device_model_;
+    mutable std::recursive_mutex mutex_;
+    
+    std::vector<uint8_t> buffered_sysex7_;
+    std::vector<uint8_t> buffered_sysex8_;
 };
 
 } // namespace ci_tool

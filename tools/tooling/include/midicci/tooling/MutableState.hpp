@@ -71,8 +71,8 @@ public:
     
     MutableStateList& operator=(MutableStateList&& other) noexcept {
         if (this != &other) {
-            std::lock_guard<std::mutex> lock1(mutex_);
-            std::lock_guard<std::mutex> lock2(other.mutex_);
+            std::lock_guard<std::recursive_mutex> lock1(mutex_);
+            std::lock_guard<std::recursive_mutex> lock2(other.mutex_);
             items_ = std::move(other.items_);
             handler_ = std::move(other.handler_);
         }

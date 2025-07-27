@@ -22,7 +22,7 @@ public:
     typedef std::function<bool(uint8_t group, const std::vector<uint8_t>& data)> CIOutputSender;
     typedef std::function<void(const std::string&, bool)> LoggerFunction;
     
-    MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration&& config, LoggerFunction logger = LoggerFunction{});
+    MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();
     
     MidiCIDevice(const MidiCIDevice&) = delete;

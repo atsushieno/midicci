@@ -16,7 +16,7 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     prop1->canSubscribe = true;
     
     auto& host = device2.get_property_host_facade();
-    host.add_property(std::move(prop1));
+    host.addMetadata(std::move(prop1));
     
     JsonValue fooValue("FOO");
     std::string fooJson = fooValue.serialize();
@@ -42,7 +42,11 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     
     client.send_set_property_data(id, "", barBytes);
     
-    EXPECT_EQ(barBytes, host.getProperty(id)) << "Host property value not updated";
+    auto values = host.get_properties().getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+        [&id](const PropertyValue& pv) { return pv.id == id; });
+    ASSERT_NE(it, values.end()) << "Property " << id << " not found";
+    EXPECT_EQ(barBytes, it->body) << "Host property value not updated";
 
     client.send_subscribe_property(id, "", "");
     EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host";

@@ -75,11 +75,9 @@ public:
     void notify_subscription_changed(const std::string& property_id);
     
     // Legacy compatibility methods
-    void add_property(std::unique_ptr<PropertyMetadata> property);
     void remove_property(const std::string& property_id);
     void update_property(const std::string& property_id, const std::vector<uint8_t>& data);
     void update_property_metadata(const std::string& property_id, std::unique_ptr<PropertyMetadata> new_metadata);
-    std::vector<uint8_t> getProperty(const std::string& property_id) const;
     const PropertyMetadata* get_property_metadata(const std::string& property_id) const;
     
 private:

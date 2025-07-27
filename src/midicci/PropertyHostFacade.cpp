@@ -409,12 +409,6 @@ void PropertyHostFacade::terminateSubscriptionsToAllSubscribers(uint8_t group) {
     }
 }
 
-// Legacy compatibility methods (delegate to new implementation)
-void PropertyHostFacade::add_property(std::unique_ptr<PropertyMetadata> property) {
-    if (property)
-        get_properties().addMetadata(std::move(property));
-}
-
 void PropertyHostFacade::remove_property(const std::string& property_id) {
     removeProperty(property_id);
 }
@@ -429,19 +423,6 @@ void PropertyHostFacade::update_property_metadata(const std::string& property_id
     }
 }
 
-// Legacy compatibility methods
-std::vector<uint8_t> PropertyHostFacade::getProperty(const std::string& property_id) const {
-    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    auto values = pimpl_->properties_->getValues();
-    auto it = std::find_if(values.begin(), values.end(),
-        [&property_id](const PropertyValue& pv) { return pv.id == property_id; });
-    
-    if (it != values.end()) {
-        return it->body;
-    }
-    return {};
-}
 
 
 const PropertyMetadata* PropertyHostFacade::get_property_metadata(const std::string& property_id) const {

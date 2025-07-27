@@ -27,7 +27,7 @@ public:
     Messenger messenger_;
 };
 
-MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration&& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, std::move(config), muid)) {
+MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, std::move(config), muid)) {
     if (logger) {
         set_logger(std::move(logger));
     }

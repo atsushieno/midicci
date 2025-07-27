@@ -37,8 +37,8 @@ namespace midicci {
         }
     }
 
-    ClientObservablePropertyList::ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client)
-            : logger_(std::move(logger)), property_client_(property_client) {
+    ClientObservablePropertyList::ClientObservablePropertyList(MidiCIClientPropertyRules* property_client)
+            : property_client_(property_client) {
 
         auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
         if (common_rules_client) {

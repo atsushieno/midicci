@@ -10,8 +10,7 @@ class PropertyClientFacade::Impl {
 public:
     Impl(MidiCIDevice& device, ClientConnection& conn) : device_(device), conn_(conn), 
           property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {
-        properties_ = std::make_unique<ClientObservablePropertyList>(
-            device.get_logger(), property_rules_.get());
+        properties_ = std::make_unique<ClientObservablePropertyList>(property_rules_.get());
     }
     
     MidiCIDevice& device_;

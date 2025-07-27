@@ -94,9 +94,7 @@ private:
 
 class ClientObservablePropertyList : public ObservablePropertyList {
 public:
-    using LoggerFunction = std::function<void(const std::string&, bool)>;
-    
-    ClientObservablePropertyList(LoggerFunction logger, MidiCIClientPropertyRules* property_client);
+    explicit ClientObservablePropertyList(MidiCIClientPropertyRules* property_client);
     ~ClientObservablePropertyList() override = default;
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
@@ -106,7 +104,6 @@ public:
     std::string updateValue(const SubscribeProperty& msg);
     
 private:
-    LoggerFunction logger_;
     MidiCIClientPropertyRules* property_client_;
     std::map<std::string, PropertyValue> values_;
     mutable std::recursive_mutex mutex_;
@@ -114,8 +111,6 @@ private:
 
 class ServiceObservablePropertyList : public ObservablePropertyList {
 public:
-    using LoggerFunction = std::function<void(const std::string&, bool)>;
-    
     ServiceObservablePropertyList(std::vector<PropertyValue>& internalValues, MidiCIServicePropertyRules& propertyService);
     ~ServiceObservablePropertyList() override = default;
     

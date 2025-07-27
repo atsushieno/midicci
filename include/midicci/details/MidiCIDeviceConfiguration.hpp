@@ -57,7 +57,7 @@ struct MidiCIDeviceConfiguration {
     std::vector<std::unique_ptr<PropertyMetadata>> property_metadata_list;
     
     // Constructor with backward compatibility for existing usage
-    MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE,
+    explicit MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE,
                              int max_chunk = DEFAULT_MAX_PROPERTY_CHUNK_SIZE,
                              const std::string& prod_id = "cpp-midi-ci", 
                              uint8_t group = 0)

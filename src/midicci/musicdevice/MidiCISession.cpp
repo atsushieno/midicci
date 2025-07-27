@@ -9,7 +9,7 @@ namespace midicci::musicdevice {
 std::unique_ptr<MidiCISession> create_midi_ci_session(
     const MidiCISessionSource& source,
     uint32_t muid,
-    const MidiCIDeviceConfiguration& config,
+    MidiCIDeviceConfiguration&& config,
     MidiCIDevice::LoggerFunction logger
 ) {
     if (muid == 0) {
@@ -19,7 +19,7 @@ std::unique_ptr<MidiCISession> create_midi_ci_session(
         muid = dis(gen);
     }
     
-    auto device = std::make_unique<MidiCIDevice>(muid, const_cast<MidiCIDeviceConfiguration&>(config), logger);
+    auto device = std::make_unique<MidiCIDevice>(muid, std::move(config), logger);
     
     // Set up MIDI-CI output sender
     device->set_sysex_sender([source](uint8_t group, const std::vector<uint8_t>& data) -> bool {

@@ -6,14 +6,14 @@ namespace midicci {
 
 class MidiCIDevice::Impl {
 public:
-    Impl(MidiCIDevice& device, MidiCIDeviceConfiguration& config, uint32_t muid) : device_id_(0x7F), config_(config), muid_(muid),
+    Impl(MidiCIDevice& device, MidiCIDeviceConfiguration&& config, uint32_t muid) : device_id_(0x7F), config_(std::move(config)), muid_(muid),
         profile_host_facade_(std::make_unique<ProfileHostFacade>(device)),
         messenger_(device) {
         property_host_facade_ = std::make_unique<PropertyHostFacade>(device, config);
     }
     
     uint8_t device_id_;
-    MidiCIDeviceConfiguration& config_;
+    MidiCIDeviceConfiguration config_;
     uint32_t muid_;
     MessageCallback message_callback_;
     MessageReceivedCallback message_received_callback_;
@@ -27,7 +27,7 @@ public:
     Messenger messenger_;
 };
 
-MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, config, muid)) {
+MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration&& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, std::move(config), muid)) {
     if (logger) {
         set_logger(std::move(logger));
     }

@@ -3,11 +3,77 @@
 namespace midicci {
 namespace commonproperties {
 
-MidiCIState::MidiCIState(const std::string& title, const std::string& stateId,
-                         const std::optional<std::string>& stateRev,
-                         const std::optional<int64_t>& timestamp,
-                         const std::optional<std::string>& description,
-                         const std::optional<int32_t>& size)
+// Static metadata initialization
+CommonRulesPropertyMetadata StandardProperties::stateListMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE_LIST);
+    metadata.canSet = PropertySetAccess::NONE;
+    metadata.canSubscribe = false;
+    metadata.canPaginate = false;
+    metadata.columns = {
+        {StatePropertyNames::TITLE, "", "State Title"},
+        {StatePropertyNames::STATE_ID, "", "State ID"},
+        {StatePropertyNames::STATE_REV, "", "State Revision"},
+        {StatePropertyNames::TIMESTAMP, "", "UNIX Timestamp"},
+        {StatePropertyNames::DESCRIPTION, "", "Description"},
+        {StatePropertyNames::SIZE, "", "Byte Size"}
+    };
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata StandardProperties::stateMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
+    metadata.canSubscribe = false;
+    metadata.requireResId = true;
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata StandardProperties::allCtrlListMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::ALL_CTRL_LIST);
+    metadata.columns = getCtrlListColumns();
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata StandardProperties::chCtrlListMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CH_CTRL_LIST);
+    metadata.columns = getCtrlListColumns();
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata StandardProperties::programListMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::PROGRAM_LIST);
+    metadata.columns = {
+        {ProgramPropertyNames::TITLE, "", "Program Title"},
+        {ProgramPropertyNames::BANK_PC, "", "Bank MSB, LSB and Program Change"},
+        {ProgramPropertyNames::CATEGORY, "", "Categories"},
+        {ProgramPropertyNames::TAGS, "", "Meta-tags"}
+    };
+    return metadata;
+}();
+
+std::vector<PropertyResourceColumn> StandardProperties::getCtrlListColumns() {
+    return {
+        {ControlPropertyNames::TITLE, "", "Active Controller Title"},
+        {ControlPropertyNames::DESCRIPTION, "", "Description"},
+        {ControlPropertyNames::CTRL_TYPE, "", "Type"},
+        {ControlPropertyNames::CTRL_INDEX, "", "Controller Message index"},
+        {ControlPropertyNames::CHANNEL, "", "MIDI Channel"},
+        {ControlPropertyNames::PRIORITY, "", "Priority"},
+        {ControlPropertyNames::DEFAULT, "", "Default Value"},
+        {ControlPropertyNames::TRANSMIT, "", "Transmit"},
+        {ControlPropertyNames::RECOGNIZE, "", "Recognize"},
+        {ControlPropertyNames::NUM_SIG_BITS, "", "Number of significant bits"},
+        {ControlPropertyNames::TYPE_HINT, "", "Type Hint"},
+        {ControlPropertyNames::CTRL_MAP_ID, "", "Control Map Id"},
+        {ControlPropertyNames::STEP_COUNT, "", "Step Count"},
+        {ControlPropertyNames::MIN_MAX, "", "Min/Max"}
+    };
+}
+
+MidiCIStateEntry::MidiCIStateEntry(const std::string& title, const std::string& stateId,
+                                   const std::optional<std::string>& stateRev,
+                                   const std::optional<int64_t>& timestamp,
+                                   const std::optional<std::string>& description,
+                                   const std::optional<int32_t>& size)
     : title(title), stateId(stateId), stateRev(stateRev), timestamp(timestamp), 
       description(description), size(size) {}
 
@@ -36,8 +102,8 @@ MidiCIProgram::MidiCIProgram(const std::string& title, const std::vector<uint8_t
                              const std::optional<std::vector<std::string>>& tags)
     : title(title), bankPC(bankPC), category(category), tags(tags) {}
 
-std::vector<MidiCIState> StandardProperties::parseStateList(const std::vector<uint8_t>& data) {
-    std::vector<MidiCIState> result;
+std::vector<MidiCIStateEntry> StandardProperties::parseStateList(const std::vector<uint8_t>& data) {
+    std::vector<MidiCIStateEntry> result;
     
     try {
         std::string json_str(data.begin(), data.end());
@@ -322,7 +388,7 @@ std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vecto
     return result;
 }
 
-std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIState>& stateList) {
+std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIStateEntry>& stateList) {
     JsonArray json_array;
     
     for (const auto& state : stateList) {
@@ -454,7 +520,7 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIProgram>
 // Implementation of MidiCIDevice extension methods
 namespace StandardPropertiesExtensions {
 
-std::optional<std::vector<commonproperties::MidiCIState>> getStateList(const MidiCIDevice& device) {
+std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const MidiCIDevice& device) {
     auto &props = device.get_property_host_facade().get_properties();
     auto values = props.getValues();
     auto it = std::find_if(values.begin(), values.end(),
@@ -494,8 +560,8 @@ std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const
     return std::nullopt;
 }
 
-void setStateList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIState>& stateList) {
-    auto json_data = commonproperties::StandardProperties::toJson(stateList);
+void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
+    auto json_data = commonproperties::StandardProperties::toJson(stateList.value_or(std::vector<commonproperties::MidiCIStateEntry>{}));
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::STATE_LIST, 
         "", // empty resId
@@ -504,8 +570,8 @@ void setStateList(MidiCIDevice& device, const std::vector<commonproperties::Midi
     );
 }
 
-void setAllCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList) {
-    auto json_data = commonproperties::StandardProperties::toJson(controlList);
+void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
         "", // empty resId
@@ -514,8 +580,8 @@ void setAllCtrlList(MidiCIDevice& device, const std::vector<commonproperties::Mi
     );
 }
 
-void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIControl>& controlList) {
-    auto json_data = commonproperties::StandardProperties::toJson(controlList);
+void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
         "", // empty resId
@@ -524,12 +590,33 @@ void setChCtrlList(MidiCIDevice& device, const std::vector<commonproperties::Mid
     );
 }
 
-void setProgramList(MidiCIDevice& device, const std::vector<commonproperties::MidiCIProgram>& programList) {
-    auto json_data = commonproperties::StandardProperties::toJson(programList);
+void setProgramList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
+    auto json_data = commonproperties::StandardProperties::toJson(programList.value_or(std::vector<commonproperties::MidiCIProgram>{}));
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::PROGRAM_LIST, 
         "", // empty resId
         json_data, 
+        false // not partial
+    );
+}
+
+std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const std::string& stateId) {
+    auto &props = device.get_property_host_facade().get_properties();
+    auto values = props.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [&stateId](const PropertyValue& pv) { 
+                               return pv.id == commonproperties::StandardPropertyNames::STATE && pv.resId == stateId; 
+                           });
+    if (it != values.end())
+        return it->body;
+    return std::nullopt;
+}
+
+void setState(MidiCIDevice& device, const std::string& stateId, const std::vector<uint8_t>& data) {
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::STATE,
+        stateId,
+        data,
         false // not partial
     );
 }

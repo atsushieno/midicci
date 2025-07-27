@@ -324,28 +324,32 @@ std::vector<uint8_t> CIFactory::midiCIPropertyExchangeCapabilities(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
     uint8_t max_simultaneous_requests) {
     
-    dst.resize(std::max(dst.size(), size_t(14)));
+    dst.resize(std::max(dst.size(), size_t(16)));
     
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_INQUIRY),
                        MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = max_simultaneous_requests;
-    
-    return std::vector<uint8_t>(dst.begin(), dst.begin() + 14);
+    dst[14] = PROPERTY_EXCHANGE_MAJOR_VERSION;
+    dst[15] = PROPERTY_EXCHANGE_MINOR_VERSION;
+
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 16);
 }
 
 std::vector<uint8_t> CIFactory::midiCIPropertyExchangeCapabilitiesReply(
     std::vector<uint8_t>& dst, uint8_t address, uint32_t source_muid, uint32_t destination_muid,
     uint8_t max_simultaneous_requests) {
     
-    dst.resize(std::max(dst.size(), size_t(14)));
+    dst.resize(std::max(dst.size(), size_t(16)));
     
     midiCIMessageCommon(dst, address, static_cast<uint8_t>(CISubId2::PROPERTY_EXCHANGE_CAPABILITIES_REPLY),
                        MIDI_CI_VERSION_1_2, source_muid, destination_muid);
     
     dst[13] = max_simultaneous_requests;
-    
-    return std::vector<uint8_t>(dst.begin(), dst.begin() + 14);
+    dst[14] = PROPERTY_EXCHANGE_MAJOR_VERSION;
+    dst[15] = PROPERTY_EXCHANGE_MINOR_VERSION;
+
+    return std::vector<uint8_t>(dst.begin(), dst.begin() + 16);
 }
 
 std::vector<uint8_t> CIFactory::midiCIProcessInquiryCapabilities(

@@ -26,15 +26,16 @@ std::unique_ptr<MidiCISession> create_midi_ci_session(
         if (source.transport_protocol == MidiTransportProtocol::UMP) {
             // Convert SysEx data to UMP SysEx7 packets
             auto ump_packets = ump::UmpFactory::sysex7(group, data);
-            
+
             // Send each UMP packet
             for (const auto& packet : ump_packets) {
                 uint8_t packet_data[8]; // SysEx7 uses 8-byte packets
-                *reinterpret_cast<uint32_t*>(&packet_data[0]) = packet.int1;
-                *reinterpret_cast<uint32_t*>(&packet_data[4]) = packet.int2;
-                
+                *(uint32_t*)(&packet_data[0]) = packet.int1;
+                *(uint32_t*)(&packet_data[4]) = packet.int2;
+
                 source.output_sender(packet_data, 0, packet.get_size_in_bytes(), 0);
             }
+            source.output_sender((uint8_t*) (void*) ump_packets.data(), 0, ump_packets.size() * sizeof(uint32_t), 0);
         } else {
             // MIDI 1.0: add SysEx start byte
             std::vector<uint8_t> midi1_data;

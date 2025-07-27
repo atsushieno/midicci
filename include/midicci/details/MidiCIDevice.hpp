@@ -16,11 +16,11 @@ class ClientConnection;
 
 class MidiCIDevice {
 public:
-    using MessageCallback = std::function<void(const Message&)>;
-    using MessageReceivedCallback = std::function<void(const Message&)>;
-    using ConnectionsChangedCallback = std::function<void()>;
-    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
-    using LoggerFunction = std::function<void(const std::string&, bool)>;
+    typedef std::function<void(const Message&)> MessageCallback;
+    typedef std::function<void(const Message&)> MessageReceivedCallback;
+    typedef std::function<void()> ConnectionsChangedCallback;
+    typedef std::function<bool(uint8_t group, const std::vector<uint8_t>& data)> CIOutputSender;
+    typedef std::function<void(const std::string&, bool)> LoggerFunction;
     
     MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();

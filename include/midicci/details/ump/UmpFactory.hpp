@@ -33,7 +33,8 @@ public:
 private:
     // Helper method for packet creation shared by SysEx7 and SysEx8
     static Ump sysex_get_packet_of(MessageType message_type, uint8_t group,
-                                   const std::vector<uint8_t>& src_data, int packet_index, int radix);
+                                   const std::vector<uint8_t>& src_data, int packet_index, int radix,
+                                   bool hasStreamId, uint8_t streamId);
     
     // Constants
     static constexpr int SYSEX7_RADIX = 6; // SysEx7 can contain up to 6 bytes per packet

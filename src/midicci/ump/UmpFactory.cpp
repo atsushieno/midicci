@@ -35,7 +35,7 @@ int UmpFactory::sysex7_get_packet_count(const std::vector<uint8_t>& src_data) {
 }
 
 Ump UmpFactory::sysex7_get_packet_of(uint8_t group, const std::vector<uint8_t>& src_data, int packet_index) {
-    return sysex_get_packet_of(MessageType::SYSEX7, group, src_data, packet_index, SYSEX7_RADIX);
+    return sysex_get_packet_of(MessageType::SYSEX7, group, src_data, packet_index, SYSEX7_RADIX, false, 0);
 }
 
 void UmpFactory::sysex7_process(uint8_t group, const std::vector<uint8_t>& src_data, 
@@ -55,7 +55,7 @@ std::vector<Ump> UmpFactory::sysex7(uint8_t group, const std::vector<uint8_t>& s
 }
 
 Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
-                                    const std::vector<uint8_t>& src_data, int packet_index, int radix) {
+                                    const std::vector<uint8_t>& src_data, int packet_index, int radix, bool hasStreamId, uint8_t streamId) {
     int sysex_length = sysex7_get_sysex_length(src_data);
     int packet_count = (sysex_length + radix - 1) / radix;
     
@@ -83,12 +83,17 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
     uint32_t int1 = (static_cast<uint32_t>(message_type) << 28) |
                     (static_cast<uint32_t>(group & 0xF) << 24) |
                     (static_cast<uint32_t>(status) << 16) |
-                    (static_cast<uint32_t>(packet_bytes & 0xF) << 12);
-    
+                    (static_cast<uint32_t>(packet_bytes & 0xF) << 16);
+    if (packet_bytes > 0)
+        int1 |= src_data[data_pos] << 8;
+    if (packet_bytes > 1)
+        int1 |= src_data[data_pos + 1];
+
     uint32_t int2 = 0;
-    for (int i = 0; i < packet_bytes && i < 4; i++) {
+    uint8_t start = hasStreamId ? 1 : 2;
+    for (int i = start; i < packet_bytes && i < start + 4; i++) {
         if (data_pos + i < static_cast<int>(src_data.size())) {
-            int2 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - i * 8);
+            int2 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - start) * 8);
         }
     }
     
@@ -100,12 +105,13 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
     // For SysEx8 (if needed later), we would use 4 32-bit words (16 bytes total)
     uint32_t int3 = 0;
     uint32_t int4 = 0;
-    for (int i = 4; i < packet_bytes && i < radix; i++) {
+    start = hasStreamId ? 5 : 6;
+    for (int i = start; i < packet_bytes && i < radix; i++) {
         if (data_pos + i < static_cast<int>(src_data.size())) {
-            if (i < 8) {
-                int3 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - 4) * 8);
+            if (i < start + 4) {
+                int3 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - start) * 8);
             } else {
-                int4 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - 8) * 8);
+                int4 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - start - 4) * 8);
             }
         }
     }

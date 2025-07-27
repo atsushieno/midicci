@@ -37,7 +37,8 @@ struct MidiCISessionSource {
 std::unique_ptr<class MidiCISession> create_midi_ci_session(
     const MidiCISessionSource& source,
     uint32_t muid = 0,  // Will be randomly generated if 0
-    const MidiCIDeviceConfiguration& config = MidiCIDeviceConfiguration{}
+    const MidiCIDeviceConfiguration& config = MidiCIDeviceConfiguration{},
+    MidiCIDevice::LoggerFunction logger = {}
 );
 
 class MidiCISession {

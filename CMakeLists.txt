@@ -14,7 +14,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if (WINDOWS) #MSVC
+if (WIN32) #MSVC
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall")
 else ()
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")

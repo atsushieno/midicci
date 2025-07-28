@@ -1,8 +1,8 @@
 ## What is this project?
 
-It is an agentic coding experiment to port ktmidi-ci and ktmidi-ci-tool to C++ so that I can build a fully featured MICI-CI library bassed on existing implementation.
+It is an agentic coding experiment to port [ktmidi-ci](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci) and [ktmidi-ci-tool](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci-tool) to C++ so that I can build a fully featured MICI-CI library based on the existing implementation.
 
-So far it is partially successful. It's not really working at various parts. Though the GUI application (based on Qt) can communicate with ktmidi-ci-tool
+So far it is fairly successful. It's still not working at various parts, but it provides MIDI-CI integration feature in my [uapmd](https://github.com/atsushieno/uapmd) project, and the GUI application (based on Qt) can communicate with ktmidi-ci-tool
 to some extent.
 
 ## dependencies
@@ -13,7 +13,6 @@ We use Qt for the GUI, after various attempts to let Devin and Claude Code to wr
 
 ## management
 
-It is so far not much more than an agentic coding experiment. Code quality is as low as generated. But also I make changes by myself too to avoid silly requests to them.
+It is not much more than an agentic coding experiment. Code quality is as low as generated. But also I make changes by myself too to avoid silly requests to them.
 
 Initially I used Devin to instruct it to generate code, but now I switched to Claude Code and fixed a lot of mistakes by Devin, and I fix various issues by myself.
-

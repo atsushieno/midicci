@@ -668,119 +668,91 @@ PropertyGetCapabilitiesReply Messenger::getPropertyCapabilitiesReplyFor(const Pr
 }
 
 void Messenger::processDiscoveryReply(const DiscoveryReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     handleNewEndpoint(msg);
 }
 
 void Messenger::processEndpointReply(const EndpointInquiry& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processInvalidateMUID(const InvalidateMUID& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     pimpl_->device_.remove_connection(msg.get_source_muid());
 }
 
 void Messenger::processProfileReply(const ProfileReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_reply(msg);
     });
 }
 
 void Messenger::processProfileAddedReport(const ProfileAdded& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_added_report(msg);
     });
 }
 
 void Messenger::processProfileRemovedReport(const ProfileRemoved& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_removed_report(msg);
     });
 }
 
 void Messenger::processProfileEnabledReport(const ProfileEnabled& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_enabled_report(msg);
     });
 }
 
 void Messenger::processProfileDisabledReport(const ProfileDisabled& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_disabled_report(msg);
     });
 }
 
 void Messenger::processProfileDetailsReply(const ProfileDetailsReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_profile_client_facade().process_profile_details_reply(msg);
     });
 }
 
 void Messenger::processPropertyCapabilitiesReply(const PropertyGetCapabilitiesReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_property_capabilities_reply(msg);
     });
 }
 
 void Messenger::processGetDataReply(const GetPropertyDataReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_get_data_reply(msg);
     });
 }
 
 void Messenger::processSetDataReply(const SetPropertyDataReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_set_data_reply(msg);
     });
 }
 
 void Messenger::processSubscribePropertyReply(const SubscribePropertyReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_subscribe_property_reply(msg);
     });
 }
 
 void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     
     onClient(msg, [&](std::shared_ptr<ClientConnection> conn) {
         conn->get_property_client_facade().process_subscribe_property(msg);
@@ -788,29 +760,21 @@ void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
 }
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processDiscovery(const DiscoveryInquiry& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     send_discovery_reply(msg.get_common().group, msg.get_source_muid());
 }
 
 void Messenger::processEndpointMessage(const EndpointInquiry& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     send(getEndpointReplyForInquiry(msg));
 }
 
 void Messenger::processProfileInquiry(const ProfileInquiry& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     auto replies = getProfileRepliesForInquiry(msg);
     for (const auto& reply : replies) {
         send(reply);
@@ -818,50 +782,36 @@ void Messenger::processProfileInquiry(const ProfileInquiry& msg) {
 }
 
 void Messenger::processSetProfileOn(const SetProfileOn& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processSetProfileOff(const SetProfileOff& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processProfileDetailsInquiry(const ProfileDetailsReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processPropertyCapabilitiesInquiry(const PropertyGetCapabilities& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     send(getPropertyCapabilitiesReplyFor(msg));
 }
 
 void Messenger::processGetPropertyData(const GetPropertyData& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     auto reply = pimpl_->device_.get_property_host_facade().process_get_property_data(msg);
     send(reply);
 }
 
 void Messenger::processSetPropertyData(const SetPropertyData& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     auto reply = pimpl_->device_.get_property_host_facade().process_set_property_data(msg);
     send(reply);
 }
 
 void Messenger::processSubscribeProperty(const SubscribeProperty& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     
     // Both initiator and recipient can receive SubscribeProperty.
     auto& property_host = pimpl_->device_.get_property_host_facade();
@@ -912,9 +862,7 @@ void Messenger::processSubscribeProperty(const SubscribeProperty& msg) {
 }
 
 void Messenger::processProcessInquiry(const ProcessInquiryCapabilities& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
     send(getProcessInquiryReplyFor(msg));
 }
 
@@ -922,27 +870,19 @@ void Messenger::processUnknownCIMessage(const Common& common, const std::vector<
 }
 
 void Messenger::processMidiMessageReport(const MidiMessageReportInquiry& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processMidiMessageReportReply(const MidiMessageReportReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processEndOfMidiMessageReport(const MidiMessageReportNotifyEnd& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processEndpointReply(const EndpointReply& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 void Messenger::processAck(uint32_t source_muid, uint32_t dest_muid, uint8_t original_sub_id, uint8_t status_code, uint8_t status_data, const std::vector<uint8_t>& details, uint16_t message_length, const std::vector<uint8_t>& message_text) {
@@ -952,9 +892,7 @@ void Messenger::processNak(uint32_t source_muid, uint32_t dest_muid, uint8_t ori
 }
 
 void Messenger::processProfileSpecificData(const ProfileSpecificData& msg) {
-    for (const auto& callback : pimpl_->callbacks_) {
-        callback(msg);
-    }
+    pimpl_->notify_callbacks(msg);
 }
 
 } // namespace midi_ci

@@ -48,7 +48,6 @@ void Messenger::send(const Message& message) {
             uint8_t group = message.get_common().group;
             ci_output_sender(group, part);
         }
-        pimpl_->notify_callbacks(message);
     }
 }
 

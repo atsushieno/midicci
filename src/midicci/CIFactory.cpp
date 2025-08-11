@@ -451,7 +451,7 @@ std::vector<uint8_t> CIFactory::midiCIAckNak(
 }
 
 uint32_t CIFactory::midiCI32to28(uint32_t value) {
-    return ((value >> 24) << 21) +
+    return (((value >> 24) & 0x7F) << 21) +
            (((value >> 16) & 0x7F) << 14) +
            (((value >> 8) & 0x7F) << 7) +
            (value & 0x7F);

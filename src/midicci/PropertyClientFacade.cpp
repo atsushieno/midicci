@@ -179,12 +179,11 @@ void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& ms
     if (it != pimpl_->open_requests_.end()) {
         const auto& data = it->second;
         if (data.size() >= 16) {
-            // FIXME: this should reuse our common header parser.
-            uint32_t source_muid = data[5] | (data[6] << 8) | (data[7] << 16) | (data[8] << 24);
-            uint32_t dest_muid = data[9] | (data[10] << 8) | (data[11] << 16) | (data[12] << 24);
+            // Use CIRetrieval methods to properly parse the stored request data
+            uint32_t source_muid = CIRetrieval::get_source_muid(data);
+            uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
             uint8_t request_id = data[13];
-            uint16_t header_size = data[14] | (data[15] << 7);
-            std::vector<uint8_t> header(data.begin() + 16, data.begin() + 16 + header_size);
+            std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
             
             Common common(source_muid, dest_muid, 0x7F, 0);
             GetPropertyData stored_request(common, request_id, header);
@@ -224,13 +223,12 @@ void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& ms
     if (it != pimpl_->open_requests_.end()) {
         const auto& data = it->second;
         if (data.size() >= 18) {
-            uint32_t source_muid = data[5] | (data[6] << 7) | (data[7] << 14) | (data[8] << 21);
-            uint32_t dest_muid = data[9] | (data[10] << 7) | (data[11] << 14) | (data[12] << 21);
+            // Use CIRetrieval methods to properly parse the stored request data
+            uint32_t source_muid = CIRetrieval::get_source_muid(data);
+            uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
             uint8_t request_id = data[13];
-            uint16_t header_size = data[14] | (data[15] << 7);
-            uint16_t body_size = data[16] | (data[17] << 7);
-            std::vector<uint8_t> header(data.begin() + 18, data.begin() + 18 + header_size);
-            std::vector<uint8_t> body(data.begin() + 18 + header_size, data.begin() + 18 + header_size + body_size);
+            std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
+            std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
             
             Common common(source_muid, dest_muid, 0x7F, 0);
             SetPropertyData stored_request(common, request_id, header, body);

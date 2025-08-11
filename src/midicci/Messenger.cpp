@@ -800,6 +800,7 @@ void Messenger::processPropertyCapabilitiesInquiry(const PropertyGetCapabilities
 
 void Messenger::processGetPropertyData(const GetPropertyData& msg) {
     pimpl_->notify_callbacks(msg);
+    
     auto reply = pimpl_->device_.get_property_host_facade().process_get_property_data(msg);
     send(reply);
 }

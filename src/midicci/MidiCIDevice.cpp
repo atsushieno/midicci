@@ -8,8 +8,13 @@ class MidiCIDevice::Impl {
 public:
     Impl(MidiCIDevice& device, MidiCIDeviceConfiguration&& config, uint32_t muid) : device_id_(0x7F), config_(std::move(config)), muid_(muid),
         profile_host_facade_(std::make_unique<ProfileHostFacade>(device)),
+        logger_(create_nop_logger()),
         messenger_(device) {
         property_host_facade_ = std::make_unique<PropertyHostFacade>(device, config);
+    }
+
+    static LoggerFunction create_nop_logger() {
+        return [](const std::string&, bool) { /* NOP */ };
     }
     
     uint8_t device_id_;
@@ -142,7 +147,7 @@ const PropertyHostFacade& MidiCIDevice::get_property_host_facade() const {
 
 void MidiCIDevice::set_logger(LoggerFunction logger) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->logger_ = std::move(logger);
+    pimpl_->logger_ = logger ? std::move(logger) : pimpl_->create_nop_logger();
 }
 
 MidiCIDevice::LoggerFunction MidiCIDevice::get_logger() const {

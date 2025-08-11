@@ -14,6 +14,15 @@ set(GTEST_SOURCES
     test_property_common_converter.cpp
     TestCIMediator.cpp
     test_ci_device_model_properties.cpp
+    #test_final_correlation.cpp
+    test_message_serialization.cpp
+    test_property_callback.cpp
+    test_property_fix.cpp
+    test_request_id_correlation.cpp
+    test_request_id_correlation_advanced.cpp
+    test_request_id_debug.cpp
+    test_request_id_valid_muid.cpp
+    test_resource_list.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})

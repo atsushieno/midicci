@@ -5,18 +5,20 @@
 #include <atomic>
 #include <algorithm>
 #include <set>
+#include <chrono>
 
 namespace midicci {
 
 class Messenger::Impl {
 public:
     explicit Impl(MidiCIDevice& device)
-        : device_(device), request_id_counter_(0) {}
+        : device_(device), request_id_counter_(0), local_chunk_manager_() {}
 
     MidiCIDevice& device_;
     std::vector<MessageCallback> callbacks_;
     mutable std::recursive_mutex mutex_;
     std::atomic<uint8_t> request_id_counter_;
+    PropertyChunkManager local_chunk_manager_;
 
     void notify_callbacks(const Message& message) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -325,9 +327,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
-                GetPropertyDataReply reply(common, request_id, header, body);
-                pimpl_->log_message(reply, false);
-                processGetDataReply(reply);
+                uint16_t num_chunks = CIRetrieval::get_property_total_chunks(data);
+                uint16_t chunk_index = CIRetrieval::get_property_chunk_index(data);
+                
+                handleChunk(common, request_id, chunk_index, num_chunks, header, body,
+                    [this, common, request_id](const std::vector<uint8_t>& complete_header, const std::vector<uint8_t>& complete_body) {
+                        GetPropertyDataReply reply(common, request_id, complete_header, complete_body);
+                        pimpl_->log_message(reply, false);
+                        processGetDataReply(reply);
+                    });
             }
             break;
         }
@@ -357,9 +365,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
-                SubscribeProperty notify(common, request_id, header, body);
-                pimpl_->log_message(notify, false);
-                processPropertyNotify(notify);
+                uint16_t num_chunks = CIRetrieval::get_property_total_chunks(data);
+                uint16_t chunk_index = CIRetrieval::get_property_chunk_index(data);
+                
+                handleChunk(common, request_id, chunk_index, num_chunks, header, body,
+                    [this, common, request_id](const std::vector<uint8_t>& complete_header, const std::vector<uint8_t>& complete_body) {
+                        SubscribeProperty notify(common, request_id, complete_header, complete_body);
+                        pimpl_->log_message(notify, false);
+                        processPropertyNotify(notify);
+                    });
             }
             break;
         }
@@ -437,9 +451,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
-                SubscribeProperty inquiry(common, request_id, header, body);
-                pimpl_->log_message(inquiry, false);
-                processSubscribeProperty(inquiry);
+                uint16_t num_chunks = CIRetrieval::get_property_total_chunks(data);
+                uint16_t chunk_index = CIRetrieval::get_property_chunk_index(data);
+                
+                handleChunk(common, request_id, chunk_index, num_chunks, header, body,
+                    [this, common, request_id](const std::vector<uint8_t>& complete_header, const std::vector<uint8_t>& complete_body) {
+                        SubscribeProperty inquiry(common, request_id, complete_header, complete_body);
+                        pimpl_->log_message(inquiry, false);
+                        processSubscribeProperty(inquiry);
+                    });
             }
             break;
         }
@@ -894,6 +914,50 @@ void Messenger::processNak(uint32_t source_muid, uint32_t dest_muid, uint8_t ori
 
 void Messenger::processProfileSpecificData(const ProfileSpecificData& msg) {
     pimpl_->notify_callbacks(msg);
+}
+
+void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t chunk_index, uint16_t num_chunks,
+                           const std::vector<uint8_t>& header, const std::vector<uint8_t>& body,
+                           std::function<void(const std::vector<uint8_t>&, const std::vector<uint8_t>&)> on_complete) {
+    // Get the appropriate chunk manager (either from client connection or use local one)
+    PropertyChunkManager* chunk_manager = &pimpl_->local_chunk_manager_;
+    auto connection = pimpl_->device_.get_connection(common.source_muid);
+    if (connection) {
+        auto& property_client = connection->get_property_client_facade();
+        // Note: PropertyClientFacade would need to expose its chunk manager for this to work
+        // For now, we'll use the local one
+    }
+    
+    if (chunk_index < num_chunks) {
+        // This is not the final chunk - store it for later assembly
+        chunk_manager->add_pending_chunk(
+            std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count(),
+            common.source_muid,
+            request_id,
+            header,
+            body
+        );
+    } else {
+        // This is the final chunk - assemble and process the complete message
+        std::vector<uint8_t> complete_header;
+        std::vector<uint8_t> complete_body;
+        
+        if (chunk_index > 1) {
+            // Multi-chunk message - get assembled data
+            auto result = chunk_manager->finish_pending_chunk(common.source_muid, request_id, body);
+            complete_header = result.first;
+            complete_body = result.second;
+        } else {
+            // Single chunk message
+            complete_header = header;
+            complete_body = body;
+        }
+        
+        // Call the completion callback with the complete message
+        on_complete(complete_header, complete_body);
+    }
 }
 
 } // namespace midi_ci

@@ -114,6 +114,10 @@ private:
     ProcessInquiryCapabilitiesReply getProcessInquiryReplyFor(const ProcessInquiryCapabilities& msg);
     PropertyGetCapabilitiesReply getPropertyCapabilitiesReplyFor(const PropertyGetCapabilities& msg);
     
+    void handleChunk(const Common& common, uint8_t request_id, uint16_t chunk_index, uint16_t num_chunks,
+                     const std::vector<uint8_t>& header, const std::vector<uint8_t>& body,
+                     std::function<void(const std::vector<uint8_t>&, const std::vector<uint8_t>&)> on_complete);
+    
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };

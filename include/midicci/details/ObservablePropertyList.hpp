@@ -76,6 +76,10 @@ public:
     virtual std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const = 0;
     virtual std::vector<PropertyValue> getValues() const = 0;
     
+    // Pure virtual method for setting property values - to be implemented by derived classes
+    virtual void setPropertyValue(const std::string& propertyId, const std::string& resId, 
+                                  const std::vector<uint8_t>& data, bool isPartial = false) = 0;
+    
     void addPropertyUpdatedCallback(PropertyUpdatedCallback callback);
     void addPropertyCatalogUpdatedCallback(PropertyCatalogUpdatedCallback callback);
     
@@ -99,6 +103,9 @@ public:
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
+    
+    void setPropertyValue(const std::string& propertyId, const std::string& resId, 
+                          const std::vector<uint8_t>& data, bool isPartial = false) override;
 
     void updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType = "application/json");
     std::string updateValue(const SubscribeProperty& msg);
@@ -116,6 +123,9 @@ public:
     
     std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const override;
     std::vector<PropertyValue> getValues() const override;
+    
+    void setPropertyValue(const std::string& propertyId, const std::string& resId, 
+                          const std::vector<uint8_t>& data, bool isPartial = false) override;
 
     // Safer method to get metadata by property ID without ownership transfer
     const PropertyMetadata* getMetadata(const std::string& property_id) const;

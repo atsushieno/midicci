@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include "../MidiCIDevice.hpp"
+#include "../ObservablePropertyList.hpp"
 #include "CommonRulesPropertyMetadata.hpp"
 
 using namespace midicci;
@@ -164,23 +164,19 @@ private:
     static std::vector<PropertyResourceColumn> getCtrlListColumns();
 };
 
-// Extension methods for MidiCIDevice (similar to Kotlin extension properties)
 namespace StandardPropertiesExtensions {
-    // Getter extensions (delegate to ObservablePropertyList getters)
-    std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const MidiCIDevice& device);
-    std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device);
-    std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device);
-    std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device);
+    std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const ObservablePropertyList& properties);
+    std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const ObservablePropertyList& properties);
+    std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const ObservablePropertyList& properties);
+    std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const ObservablePropertyList& properties);
     
-    // Setter extensions (use PropertyHostFacade setPropertyValue)
-    void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList);
-    void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList);
-    void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList);
-    void setProgramList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList);
+    std::optional<std::vector<uint8_t>> getState(const ObservablePropertyList& properties, const std::string& stateId);
     
-    // New state management functions
-    std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const std::string& stateId);
-    void setState(MidiCIDevice& device, const std::string& stateId, const std::vector<uint8_t>& data);
+    void setStateList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList);
+    void setAllCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList);
+    void setChCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList);
+    void setProgramList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList);
+    void setState(ObservablePropertyList& properties, const std::string& stateId, const std::vector<uint8_t>& data);
 }
 
 } // namespace commonproperties

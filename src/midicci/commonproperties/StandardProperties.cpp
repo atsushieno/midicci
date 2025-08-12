@@ -517,12 +517,10 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIProgram>
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
-// Implementation of MidiCIDevice extension methods
 namespace StandardPropertiesExtensions {
 
-std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
-    auto values = props.getValues();
+std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const ObservablePropertyList& properties) {
+    auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
                            [](const PropertyValue &pv) { return pv.id == commonproperties::StandardPropertyNames::STATE_LIST; });
     if (it != values.end())
@@ -530,9 +528,8 @@ std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(cons
     return std::nullopt;
 }
 
-std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
-    auto values = props.getValues();
+std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const ObservablePropertyList& properties) {
+    auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
                            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::ALL_CTRL_LIST; });
     if (it != values.end())
@@ -540,9 +537,8 @@ std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const
     return std::nullopt;
 }
 
-std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
-    auto values = props.getValues();
+std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const ObservablePropertyList& properties) {
+    auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
                            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::CH_CTRL_LIST; });
     if (it != values.end())
@@ -550,9 +546,8 @@ std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const 
     return std::nullopt;
 }
 
-std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
-    auto values = props.getValues();
+std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const ObservablePropertyList& properties) {
+    auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
                            [](const PropertyValue& pv) { return pv.id == commonproperties::StandardPropertyNames::PROGRAM_LIST; });
     if (it != values.end())
@@ -560,49 +555,8 @@ std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const
     return std::nullopt;
 }
 
-void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
-    auto json_data = commonproperties::StandardProperties::toJson(stateList.value_or(std::vector<commonproperties::MidiCIStateEntry>{}));
-    device.get_property_host_facade().setPropertyValue(
-        commonproperties::StandardPropertyNames::STATE_LIST, 
-        "", // empty resId
-        json_data, 
-        false // not partial
-    );
-}
-
-void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
-    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    device.get_property_host_facade().setPropertyValue(
-        commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
-        "", // empty resId
-        json_data, 
-        false // not partial
-    );
-}
-
-void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
-    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    device.get_property_host_facade().setPropertyValue(
-        commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
-        "", // empty resId
-        json_data, 
-        false // not partial
-    );
-}
-
-void setProgramList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
-    auto json_data = commonproperties::StandardProperties::toJson(programList.value_or(std::vector<commonproperties::MidiCIProgram>{}));
-    device.get_property_host_facade().setPropertyValue(
-        commonproperties::StandardPropertyNames::PROGRAM_LIST, 
-        "", // empty resId
-        json_data, 
-        false // not partial
-    );
-}
-
-std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const std::string& stateId) {
-    auto &props = device.get_property_host_facade().get_properties();
-    auto values = props.getValues();
+std::optional<std::vector<uint8_t>> getState(const ObservablePropertyList& properties, const std::string& stateId) {
+    auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
                            [&stateId](const PropertyValue& pv) { 
                                return pv.id == commonproperties::StandardPropertyNames::STATE && pv.resId == stateId; 
@@ -612,8 +566,48 @@ std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const s
     return std::nullopt;
 }
 
-void setState(MidiCIDevice& device, const std::string& stateId, const std::vector<uint8_t>& data) {
-    device.get_property_host_facade().setPropertyValue(
+void setStateList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
+    auto json_data = commonproperties::StandardProperties::toJson(stateList.value_or(std::vector<commonproperties::MidiCIStateEntry>{}));
+    properties.setPropertyValue(
+        commonproperties::StandardPropertyNames::STATE_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setAllCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
+    properties.setPropertyValue(
+        commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setChCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
+    properties.setPropertyValue(
+        commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setProgramList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
+    auto json_data = commonproperties::StandardProperties::toJson(programList.value_or(std::vector<commonproperties::MidiCIProgram>{}));
+    properties.setPropertyValue(
+        commonproperties::StandardPropertyNames::PROGRAM_LIST, 
+        "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setState(ObservablePropertyList& properties, const std::string& stateId, const std::vector<uint8_t>& data) {
+    properties.setPropertyValue(
         commonproperties::StandardPropertyNames::STATE,
         stateId,
         data,
@@ -621,7 +615,7 @@ void setState(MidiCIDevice& device, const std::string& stateId, const std::vecto
     );
 }
 
-} // namespace StandardPropertiesExtensions
+}
 
 } // namespace commonproperties
 } // namespace midicci

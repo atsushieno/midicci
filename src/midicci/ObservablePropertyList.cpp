@@ -89,6 +89,24 @@ namespace midicci {
         return result;
     }
 
+    void ClientObservablePropertyList::setPropertyValue(const std::string& propertyId, const std::string& resId, 
+                                                        const std::vector<uint8_t>& data, bool isPartial) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        
+        // For client property list, we use a default media type of application/json
+        // and don't handle partial updates (following the pattern from existing updateValue method)
+        auto it = values_.find(propertyId);
+        if (it != values_.end()) {
+            it->second.resId = resId;
+            it->second.body = data;
+            it->second.mediaType = "application/json";
+        } else {
+            values_.emplace(propertyId, PropertyValue(propertyId, resId, "application/json", data));
+        }
+
+        notifyPropertyUpdated(propertyId);
+    }
+
     void ClientObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
@@ -177,6 +195,13 @@ namespace midicci {
 
     std::vector<PropertyValue>& ServiceObservablePropertyList::getMutableValues() {
         return internal_values_;
+    }
+
+    void ServiceObservablePropertyList::setPropertyValue(const std::string& propertyId, const std::string& resId, 
+                                                         const std::vector<uint8_t>& data, bool isPartial) {
+        // For service property list, delegate to the existing updateValue method
+        // Use default media type of application/json, and ignore the isPartial parameter for now
+        updateValue(propertyId, resId, "application/json", data);
     }
 
     void ServiceObservablePropertyList::addMetadata(std::unique_ptr<PropertyMetadata> metadata) {

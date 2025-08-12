@@ -53,7 +53,11 @@ void PropertyClientFacade::send_get_property_data(const std::string& resource, c
     if (paginate_limit >= 0) fields["limit"] = std::to_string(paginate_limit);
     
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
-    
+    if (header.empty()) {
+        pimpl_->device_.get_logger()("Failed to create request header for resource: " + resource, true);
+        return;
+    }
+
     GetPropertyData msg(
         Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
         pimpl_->device_.get_messenger().get_next_request_id(), header

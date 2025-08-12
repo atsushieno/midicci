@@ -566,9 +566,36 @@ std::optional<std::vector<uint8_t>> getState(const ObservablePropertyList& prope
     return std::nullopt;
 }
 
-void setStateList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
+// MidiCIDevice getters (delegate to ObservablePropertyList getters)
+std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const MidiCIDevice& device) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getStateList(props);
+}
+
+std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getAllCtrlList(props);
+}
+
+std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getChCtrlList(props);
+}
+
+std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getProgramList(props);
+}
+
+std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const std::string& stateId) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getState(props, stateId);
+}
+
+// MidiCIDevice setters (use PropertyHostFacade setPropertyValue)
+void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
     auto json_data = commonproperties::StandardProperties::toJson(stateList.value_or(std::vector<commonproperties::MidiCIStateEntry>{}));
-    properties.setPropertyValue(
+    device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::STATE_LIST, 
         "", // empty resId
         json_data, 
@@ -576,9 +603,9 @@ void setStateList(ObservablePropertyList& properties, const std::optional<std::v
     );
 }
 
-void setAllCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
     auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    properties.setPropertyValue(
+    device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
         "", // empty resId
         json_data, 
@@ -586,9 +613,9 @@ void setAllCtrlList(ObservablePropertyList& properties, const std::optional<std:
     );
 }
 
-void setChCtrlList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
+void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
     auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    properties.setPropertyValue(
+    device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
         "", // empty resId
         json_data, 
@@ -596,9 +623,9 @@ void setChCtrlList(ObservablePropertyList& properties, const std::optional<std::
     );
 }
 
-void setProgramList(ObservablePropertyList& properties, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
+void setProgramList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
     auto json_data = commonproperties::StandardProperties::toJson(programList.value_or(std::vector<commonproperties::MidiCIProgram>{}));
-    properties.setPropertyValue(
+    device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::PROGRAM_LIST, 
         "", // empty resId
         json_data, 
@@ -606,8 +633,8 @@ void setProgramList(ObservablePropertyList& properties, const std::optional<std:
     );
 }
 
-void setState(ObservablePropertyList& properties, const std::string& stateId, const std::vector<uint8_t>& data) {
-    properties.setPropertyValue(
+void setState(MidiCIDevice& device, const std::string& stateId, const std::vector<uint8_t>& data) {
+    device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::STATE,
         stateId,
         data,

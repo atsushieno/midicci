@@ -39,6 +39,16 @@ CommonRulesPropertyMetadata StandardProperties::chCtrlListMetadata = []() {
     return metadata;
 }();
 
+CommonRulesPropertyMetadata StandardProperties::ctrlMapListMetadata = []() {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CTRL_MAP_LIST);
+    metadata.requireResId = true;
+    metadata.columns = {
+        {ControlMapPropertyNames::VALUE, "", "Value"},
+        {ControlMapPropertyNames::TITLE, "", "Title"}
+    };
+    return metadata;
+}();
+
 CommonRulesPropertyMetadata StandardProperties::programListMetadata = []() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::PROGRAM_LIST);
     metadata.columns = {
@@ -96,6 +106,9 @@ MidiCIControl::MidiCIControl(const std::string& title, const std::string& ctrlTy
       channel(channel), priority(priority), defaultValue(defaultValue), transmit(transmit),
       recognize(recognize), numSigBits(numSigBits), paramPath(paramPath), typeHint(typeHint),
       ctrlMapId(ctrlMapId), stepCount(stepCount), minMax(minMax), defaultCCMap(defaultCCMap) {}
+
+MidiCIControlMap::MidiCIControlMap(uint32_t value, const std::string& title)
+    : value(value), title(title) {}
 
 MidiCIProgram::MidiCIProgram(const std::string& title, const std::vector<uint8_t>& bankPC,
                              const std::optional<std::vector<std::string>>& category,
@@ -388,6 +401,47 @@ std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vecto
     return result;
 }
 
+std::vector<MidiCIControlMap> StandardProperties::parseControlMapList(const std::vector<uint8_t>& data) {
+    std::vector<MidiCIControlMap> result;
+    
+    try {
+        std::string json_str(data.begin(), data.end());
+        auto json = JsonValue::parse(json_str);
+        
+        if (!json.is_array()) {
+            return result;
+        }
+        
+        const auto& json_array = json.as_array();
+        for (const auto& item : json_array) {
+            if (!item.is_object()) {
+                continue;
+            }
+            
+            const auto& obj = item.as_object();
+            
+            uint32_t value = 0;
+            std::string title;
+            
+            auto it = obj.find(ControlMapPropertyNames::VALUE);
+            if (it != obj.end() && it->second.is_number()) {
+                value = static_cast<uint32_t>(it->second.as_number());
+            }
+            
+            it = obj.find(ControlMapPropertyNames::TITLE);
+            if (it != obj.end() && it->second.is_string()) {
+                title = it->second.as_string();
+            }
+            
+            result.emplace_back(value, title);
+        }
+    } catch (...) {
+        // Return empty result on parse error
+    }
+    
+    return result;
+}
+
 std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIStateEntry>& stateList) {
     JsonArray json_array;
     
@@ -480,6 +534,22 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
     return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
+std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControlMap>& controlMapList) {
+    JsonArray json_array;
+    
+    for (const auto& controlMap : controlMapList) {
+        JsonObject obj;
+        obj[ControlMapPropertyNames::VALUE] = JsonValue(static_cast<double>(controlMap.value));
+        obj[ControlMapPropertyNames::TITLE] = JsonValue(controlMap.title);
+        
+        json_array.push_back(JsonValue(obj));
+    }
+    
+    JsonValue root(json_array);
+    std::string json_str = root.serialize();
+    return std::vector<uint8_t>(json_str.begin(), json_str.end());
+}
+
 std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIProgram>& programList) {
     JsonArray json_array;
     
@@ -555,6 +625,17 @@ std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const
     return std::nullopt;
 }
 
+std::optional<std::vector<commonproperties::MidiCIControlMap>> getCtrlMapList(const ObservablePropertyList& properties, const std::string& control) {
+    auto values = properties.getValues();
+    auto it = std::find_if(values.begin(), values.end(),
+                           [&control](const PropertyValue& pv) { 
+                               return pv.id == commonproperties::StandardPropertyNames::CTRL_MAP_LIST && pv.resId == control; 
+                           });
+    if (it != values.end())
+        return commonproperties::StandardProperties::parseControlMapList(it->body);
+    return std::nullopt;
+}
+
 std::optional<std::vector<uint8_t>> getState(const ObservablePropertyList& properties, const std::string& stateId) {
     auto values = properties.getValues();
     auto it = std::find_if(values.begin(), values.end(),
@@ -580,6 +661,11 @@ std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const
 std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
     auto &props = device.get_property_host_facade().get_properties();
     return getChCtrlList(props);
+}
+
+std::optional<std::vector<commonproperties::MidiCIControlMap>> getCtrlMapList(const MidiCIDevice& device, const std::string& control) {
+    auto &props = device.get_property_host_facade().get_properties();
+    return getCtrlMapList(props, control);
 }
 
 std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
@@ -618,6 +704,16 @@ void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonp
     device.get_property_host_facade().setPropertyValue(
         commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
         "", // empty resId
+        json_data, 
+        false // not partial
+    );
+}
+
+void setCtrlMapList(MidiCIDevice& device, const std::string& control, const std::optional<std::vector<commonproperties::MidiCIControlMap>>& controlMapList) {
+    auto json_data = commonproperties::StandardProperties::toJson(controlMapList.value_or(std::vector<commonproperties::MidiCIControlMap>{}));
+    device.get_property_host_facade().setPropertyValue(
+        commonproperties::StandardPropertyNames::CTRL_MAP_LIST, 
+        control,
         json_data, 
         false // not partial
     );

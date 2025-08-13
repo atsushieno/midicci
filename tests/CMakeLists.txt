@@ -23,6 +23,7 @@ set(GTEST_SOURCES
     test_request_id_debug.cpp
     test_request_id_valid_muid.cpp
     test_resource_list.cpp
+    test_standard_properties_ctrlmaplist.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})

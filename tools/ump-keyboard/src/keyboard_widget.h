@@ -98,7 +98,6 @@ private:
     QComboBox* outputDeviceCombo;
     QPushButton* refreshButton;
     QHBoxLayout* controlsLayout;
-    QLabel* titleLabel;
     QLabel* velocityLabel;
     QProgressBar* velocityBar;
     

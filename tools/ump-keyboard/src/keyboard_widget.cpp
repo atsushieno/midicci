@@ -88,11 +88,6 @@ void KeyboardWidget::setupUI() {
     mainLayout->setContentsMargins(10, 10, 10, 10);
     mainLayout->setSpacing(10);
     
-    // Title
-    titleLabel = new QLabel("MIDI 2.0 Virtual Keyboard");
-    titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;");
-    mainLayout->addWidget(titleLabel);
     
     // Create main splitter for resizable layout
     mainSplitter = new QSplitter(Qt::Vertical, this);

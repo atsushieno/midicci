@@ -5,6 +5,7 @@
 #include <memory>
 #include <cstdint>
 #include <string>
+#include <cstdio>
 
 namespace midicci {
 
@@ -19,8 +20,11 @@ namespace midicci {
 
         std::string to_string() const {
             std::string result;
-            for (auto byte : data) {
-                result += std::to_string(byte) + " ";
+            for (size_t i = 0; i < data.size(); ++i) {
+                if (i > 0) result += ":";
+                char hex[3];
+                std::snprintf(hex, sizeof(hex), "%02X", data[i]);
+                result += hex;
             }
             return result;
         }

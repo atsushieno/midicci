@@ -3,9 +3,8 @@
 #include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
 #include <midicci/midicci.hpp>
+#include <algorithm>
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QGridLayout>
 #include <QSplitter>
 #include <QGroupBox>
@@ -316,10 +315,6 @@ void ResponderWidget::onAddProfileTarget()
     
     // Parse the selected profile to get the profile ID
     QString profileIdStr = m_selectedProfile;
-    int parenIndex = profileIdStr.indexOf(" (");
-    if (parenIndex > 0) {
-        profileIdStr = profileIdStr.left(parenIndex);
-    }
     
     QStringList parts = profileIdStr.split(":");
     if (parts.size() != 5) {
@@ -364,14 +359,39 @@ void ResponderWidget::onAddProfileTarget()
         return;
     }
     
+    // Preserve the current selection BEFORE adding (which will trigger callbacks)
+    QString selectedProfile = m_selectedProfile;
+    
     // Create and add the profile
     auto profile = MidiCIProfile(profileId, 0, address, false, numChannels); // group=0, disabled initially
     deviceModel->add_local_profile(profile);
+    auto& profiles = deviceModel->get_local_profile_states();
     
     m_repository->log(QString("Added profile target: address=%1, channels=%2").arg(address).arg(numChannels).toStdString(), tooling::MessageDirection::Out);
     
-    // Update the profile details view
-    updateProfileDetails();
+    // Force immediate refresh of profile list (this may have already happened via callbacks)
+    updateProfileList();
+    
+    // Restore the selection
+    if (!selectedProfile.isEmpty()) {
+        for (int i = 0; i < m_profileList->count(); ++i) {
+            if (m_profileList->item(i)->text() == selectedProfile) {
+                m_profileList->setCurrentRow(i);
+                m_selectedProfile = selectedProfile; // Ensure the member variable is set
+                break;
+            }
+        }
+    }
+    
+    // Ensure m_selectedProfile is set to the preserved value if we had one
+    if (!selectedProfile.isEmpty()) {
+        m_selectedProfile = selectedProfile;
+    }
+    
+    // Now refresh the details with the restored selection
+    if (!selectedProfile.isEmpty()) {
+        updateProfileDetails();
+    }
 }
 
 void ResponderWidget::onPropertySelectionChanged()
@@ -550,16 +570,21 @@ void ResponderWidget::updateProfileList()
         return;
     }
     
+    // Get unique profile IDs while preserving order
+    std::vector<std::string> uniqueProfiles;
     auto& localProfiles = deviceModel->get_local_profile_states();
     for (const auto& profile : localProfiles) {
         if (profile) {
-            auto profileId = profile->get_profile();
-            QString profileText = QString("%1 (G%2 A%3)")
-                .arg(QString::fromStdString(profileId.to_string()))
-                .arg(profile->group().get())
-                .arg(profile->address().get());
-            m_profileList->addItem(profileText);
+            std::string profileId = profile->get_profile().to_string();
+            if (std::find(uniqueProfiles.begin(), uniqueProfiles.end(), profileId) == uniqueProfiles.end()) {
+                uniqueProfiles.push_back(profileId);
+            }
         }
+    }
+    
+    // Add each unique profile ID to the list
+    for (const auto& profileId : uniqueProfiles) {
+        m_profileList->addItem(QString::fromStdString(profileId));
     }
 }
 
@@ -582,10 +607,6 @@ void ResponderWidget::updateProfileDetails()
     
     // Parse the selected profile to get the profile ID
     QString profileIdStr = m_selectedProfile;
-    int parenIndex = profileIdStr.indexOf(" (");
-    if (parenIndex > 0) {
-        profileIdStr = profileIdStr.left(parenIndex);
-    }
     
     QStringList parts = profileIdStr.split(":");
     if (parts.size() != 5) {
@@ -633,8 +654,19 @@ void ResponderWidget::updateProfileDetails()
             // Column 1: Group
             m_profileTargetsTable->setItem(row, 1, new QTableWidgetItem(QString::number(profileState->group().get())));
             
-            // Column 2: Address
-            m_profileTargetsTable->setItem(row, 2, new QTableWidgetItem(QString::number(profileState->address().get())));
+            // Column 2: Address (with meaningful display)
+            uint8_t address = profileState->address().get();
+            QString addressText;
+            if (address == 0x7F) {
+                addressText = "Function Block";
+            } else if (address == 0x7E) {
+                addressText = "Group";
+            } else if (address <= 15) {
+                addressText = QString("Ch. %1").arg(address + 1); // Display as 1-16 instead of 0-15
+            } else {
+                addressText = QString::number(address);
+            }
+            m_profileTargetsTable->setItem(row, 2, new QTableWidgetItem(addressText));
             
             // Column 3: Channels
             m_profileTargetsTable->setItem(row, 3, new QTableWidgetItem(QString::number(profileState->num_channels_requested().get())));
@@ -822,11 +854,19 @@ void ResponderWidget::setupEventBridge()
     auto profileStates = &deviceModel->get_local_profile_states();
     profileStates->set_collection_changed_handler([this](auto action, auto& item) {
         updateProfileList();
+        // Also refresh profile details if we have a profile selected
+        if (!m_selectedProfile.isEmpty()) {
+            updateProfileDetails();
+        }
     });
     
     deviceModel->add_profiles_updated_callback([this]() {
         QMetaObject::invokeMethod(this, [this]() {
             updateProfileList();
+            // Also refresh profile details if we have a profile selected
+            if (!m_selectedProfile.isEmpty()) {
+                updateProfileDetails();
+            }
             emit localProfilesChanged();
         }, Qt::QueuedConnection);
     });

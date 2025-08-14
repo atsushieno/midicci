@@ -101,7 +101,7 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
                 auto it = std::find_if(resource_list_.begin(), resource_list_.end(),
                     [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == PropertyResourceNames::DEVICE_INFO; });
                 if (it != resource_list_.end()) {
-                    conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, (*it)->getEncoding());
+                    conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, "");
                 }
             }
         } catch (const std::exception& ex) {

@@ -47,18 +47,15 @@ std::vector<uint8_t> CommonRulesPropertyHelper::create_subscribe_header_bytes(
 }
 
 std::string CommonRulesPropertyHelper::get_property_identifier_internal(const std::vector<uint8_t>& header) const {
-    try {
-        std::string header_str(header.begin(), header.end());
-        auto json_header = JsonValue::parse(header_str);
-        
-        if (json_header.is_object()) {
-            const auto& obj = json_header.as_object();
-            auto it = obj.find(PropertyCommonHeaderKeys::RESOURCE);
-            if (it != obj.end() && it->second.is_string()) {
-                return it->second.as_string();
-            }
+    std::string header_str(header.begin(), header.end());
+    auto json_header = JsonValue::parse(header_str);
+
+    if (json_header.is_object()) {
+        const auto& obj = json_header.as_object();
+        auto it = obj.find(PropertyCommonHeaderKeys::RESOURCE);
+        if (it != obj.end() && it->second.is_string()) {
+            return it->second.as_string();
         }
-    } catch (...) {
     }
     return "";
 }

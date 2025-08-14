@@ -37,6 +37,7 @@ private slots:
     void onEditProfile();
     void onDeleteProfile();
     void onAddTestProfiles();
+    void onAddProfileTarget();
     void onPropertySelectionChanged();
     void onAddProperty();
     void onDeleteProperty();

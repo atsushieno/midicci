@@ -179,6 +179,7 @@ void ResponderWidget::setupConnections()
     connect(m_editProfileButton, &QPushButton::clicked, this, &ResponderWidget::onEditProfile);
     connect(m_deleteProfileButton, &QPushButton::clicked, this, &ResponderWidget::onDeleteProfile);
     connect(m_addTestProfilesButton, &QPushButton::clicked, this, &ResponderWidget::onAddTestProfiles);
+    connect(m_addProfileTargetButton, &QPushButton::clicked, this, &ResponderWidget::onAddProfileTarget);
     
     connect(m_propertyList, &QListWidget::currentRowChanged, this, &ResponderWidget::onPropertySelectionChanged);
     connect(m_addPropertyButton, &QPushButton::clicked, this, &ResponderWidget::onAddProperty);
@@ -219,7 +220,40 @@ void ResponderWidget::onAddProfile()
     bool ok;
     QString profileId = QInputDialog::getText(this, "Add Profile", "Profile ID (format: XX:XX:XX:XX:XX):", QLineEdit::Normal, "00:00:00:00:00", &ok);
     if (ok && !profileId.isEmpty()) {
-        m_profileList->addItem(profileId);
+        if (!m_repository || !m_repository->get_ci_device_manager()) {
+            return;
+        }
+        
+        auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+        if (!deviceModel) {
+            return;
+        }
+        
+        // Parse the profile ID string (XX:XX:XX:XX:XX)
+        QStringList parts = profileId.split(":");
+        if (parts.size() != 5) {
+            QMessageBox::warning(this, "Invalid Profile ID", "Profile ID must be in format XX:XX:XX:XX:XX (5 hex bytes)");
+            return;
+        }
+        
+        std::vector<uint8_t> profileBytes;
+        for (const QString& part : parts) {
+            bool valid;
+            uint8_t byte = part.toUInt(&valid, 16);
+            if (!valid || part.length() != 2) {
+                QMessageBox::warning(this, "Invalid Profile ID", "Each byte must be 2 hex digits (00-FF)");
+                return;
+            }
+            profileBytes.push_back(byte);
+        }
+        
+        // Create MidiCIProfileId and MidiCIProfile
+        auto midiProfileId = MidiCIProfileId(profileBytes);
+        auto midiProfile = MidiCIProfile(midiProfileId, 0, 127, false, 1); // group=0, address=127 (function block), disabled, 1 channel
+        
+        // Add to device model (this will trigger UI update via callbacks)
+        deviceModel->add_local_profile(midiProfile);
+        
         m_repository->log(QString("Added profile: %1").arg(profileId).toStdString(), tooling::MessageDirection::Out);
     }
 }
@@ -262,6 +296,82 @@ void ResponderWidget::onAddTestProfiles()
     
     deviceModel->add_test_profile_items();
     m_repository->log("Added test profile items", tooling::MessageDirection::Out);
+}
+
+void ResponderWidget::onAddProfileTarget()
+{
+    if (m_selectedProfile.isEmpty()) {
+        QMessageBox::information(this, "No Profile Selected", "Please select a profile first before adding a target.");
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    // Parse the selected profile to get the profile ID
+    QString profileIdStr = m_selectedProfile;
+    int parenIndex = profileIdStr.indexOf(" (");
+    if (parenIndex > 0) {
+        profileIdStr = profileIdStr.left(parenIndex);
+    }
+    
+    QStringList parts = profileIdStr.split(":");
+    if (parts.size() != 5) {
+        QMessageBox::warning(this, "Invalid Profile", "Cannot parse selected profile ID");
+        return;
+    }
+    
+    std::vector<uint8_t> profileBytes;
+    for (const QString& part : parts) {
+        bool valid;
+        uint8_t byte = part.toUInt(&valid, 16);
+        if (!valid) {
+            QMessageBox::warning(this, "Invalid Profile", "Cannot parse selected profile ID");
+            return;
+        }
+        profileBytes.push_back(byte);
+    }
+    
+    auto profileId = MidiCIProfileId(profileBytes);
+    
+    // Show dialog to get target parameters
+    bool ok;
+    QString addressStr = QInputDialog::getText(this, "Add Profile Target", "Target Address (0-127):", QLineEdit::Normal, "127", &ok);
+    if (!ok || addressStr.isEmpty()) {
+        return;
+    }
+    
+    uint8_t address = addressStr.toUInt(&ok);
+    if (!ok || address > 127) {
+        QMessageBox::warning(this, "Invalid Address", "Address must be between 0 and 127");
+        return;
+    }
+    
+    QString channelsStr = QInputDialog::getText(this, "Add Profile Target", "Number of Channels (1-16):", QLineEdit::Normal, "1", &ok);
+    if (!ok || channelsStr.isEmpty()) {
+        return;
+    }
+    
+    uint16_t numChannels = channelsStr.toUInt(&ok);
+    if (!ok || numChannels < 1 || numChannels > 16) {
+        QMessageBox::warning(this, "Invalid Channels", "Number of channels must be between 1 and 16");
+        return;
+    }
+    
+    // Create and add the profile
+    auto profile = MidiCIProfile(profileId, 0, address, false, numChannels); // group=0, disabled initially
+    deviceModel->add_local_profile(profile);
+    
+    m_repository->log(QString("Added profile target: address=%1, channels=%2").arg(address).arg(numChannels).toStdString(), tooling::MessageDirection::Out);
+    
+    // Update the profile details view
+    updateProfileDetails();
 }
 
 void ResponderWidget::onPropertySelectionChanged()
@@ -456,13 +566,111 @@ void ResponderWidget::updateProfileList()
 void ResponderWidget::updateProfileDetails()
 {
     m_profileTargetsTable->setRowCount(0);
-    if (!m_selectedProfile.isEmpty()) {
+    
+    if (m_selectedProfile.isEmpty()) {
+        return;
+    }
+    
+    if (!m_repository || !m_repository->get_ci_device_manager()) {
+        return;
+    }
+    
+    auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+    if (!deviceModel) {
+        return;
+    }
+    
+    // Parse the selected profile to get the profile ID
+    QString profileIdStr = m_selectedProfile;
+    int parenIndex = profileIdStr.indexOf(" (");
+    if (parenIndex > 0) {
+        profileIdStr = profileIdStr.left(parenIndex);
+    }
+    
+    QStringList parts = profileIdStr.split(":");
+    if (parts.size() != 5) {
+        return;
+    }
+    
+    std::vector<uint8_t> profileBytes;
+    for (const QString& part : parts) {
+        bool valid;
+        uint8_t byte = part.toUInt(&valid, 16);
+        if (!valid) {
+            return;
+        }
+        profileBytes.push_back(byte);
+    }
+    
+    auto profileId = MidiCIProfileId(profileBytes);
+    
+    // Find all profile states that match this profile ID
+    auto& localProfiles = deviceModel->get_local_profile_states();
+    int row = 0;
+    
+    for (const auto& profileState : localProfiles) {
+        if (profileState && profileState->get_profile().to_string() == profileId.to_string()) {
+            m_profileTargetsTable->insertRow(row);
+            
+            // Column 0: Enabled checkbox
+            auto* enabledCheckbox = new QCheckBox();
+            enabledCheckbox->setChecked(profileState->enabled().get());
+            
+            // Connect checkbox to update the profile state
+            connect(enabledCheckbox, &QCheckBox::toggled, [this, profileState, deviceModel](bool checked) {
+                uint8_t group = profileState->group().get();
+                uint8_t address = profileState->address().get();
+                uint16_t numChannels = profileState->num_channels_requested().get();
+                
+                deviceModel->update_local_profile_target(profileState, address, checked, numChannels);
+                m_repository->log(QString("Profile target %1: enabled=%2")
+                    .arg(QString::fromStdString(profileState->get_profile().to_string()))
+                    .arg(checked ? "true" : "false").toStdString(), tooling::MessageDirection::Out);
+            });
+            
+            m_profileTargetsTable->setCellWidget(row, 0, enabledCheckbox);
+            
+            // Column 1: Group
+            m_profileTargetsTable->setItem(row, 1, new QTableWidgetItem(QString::number(profileState->group().get())));
+            
+            // Column 2: Address
+            m_profileTargetsTable->setItem(row, 2, new QTableWidgetItem(QString::number(profileState->address().get())));
+            
+            // Column 3: Channels
+            m_profileTargetsTable->setItem(row, 3, new QTableWidgetItem(QString::number(profileState->num_channels_requested().get())));
+            
+            // Column 4: Delete button
+            auto* deleteButton = new QPushButton("Delete");
+            connect(deleteButton, &QPushButton::clicked, [this, profileState, deviceModel]() {
+                int ret = QMessageBox::question(this, "Delete Profile Target", 
+                    QString("Delete profile target at address %1?")
+                    .arg(profileState->address().get()));
+                if (ret == QMessageBox::Yes) {
+                    uint8_t group = profileState->group().get();
+                    uint8_t address = profileState->address().get();
+                    auto profileId = profileState->get_profile();
+                    
+                    deviceModel->remove_local_profile(group, address, profileId);
+                    m_repository->log(QString("Deleted profile target: %1 at address %2")
+                        .arg(QString::fromStdString(profileId.to_string()))
+                        .arg(address).toStdString(), tooling::MessageDirection::Out);
+                    
+                    // Refresh the table
+                    updateProfileDetails();
+                }
+            });
+            
+            m_profileTargetsTable->setCellWidget(row, 4, deleteButton);
+            
+            row++;
+        }
+    }
+    
+    // If no targets found, show a placeholder row
+    if (row == 0) {
         m_profileTargetsTable->insertRow(0);
-        m_profileTargetsTable->setItem(0, 0, new QTableWidgetItem("Enabled"));
-        m_profileTargetsTable->setItem(0, 1, new QTableWidgetItem("0"));
-        m_profileTargetsTable->setItem(0, 2, new QTableWidgetItem("Function Block"));
-        m_profileTargetsTable->setItem(0, 3, new QTableWidgetItem("1"));
-        m_profileTargetsTable->setItem(0, 4, new QTableWidgetItem("Delete"));
+        m_profileTargetsTable->setItem(0, 0, new QTableWidgetItem("No targets configured"));
+        m_profileTargetsTable->setSpan(0, 0, 1, 5); // Span across all columns
     }
 }
 

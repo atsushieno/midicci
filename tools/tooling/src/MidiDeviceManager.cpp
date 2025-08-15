@@ -45,7 +45,7 @@ void MidiDeviceManager::set_ci_output_sender(CIOutputSender sender) {
     ci_output_sender_ = std::move(sender);
 }
 
-bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& data) {
+bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (ci_output_sender_) {
         return ci_output_sender_(group, data);
@@ -53,21 +53,17 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint8_t>& da
     
     if (midi_output_) {
         try {
-            std::vector<uint8_t> midi1_data;
-            midi1_data.reserve(data.size() + 2);
-            midi1_data.push_back(0xF0);
-            midi1_data.insert(midi1_data.end(), data.begin(), data.end());
-            midi1_data.push_back(0xF7);
-            midi_output_->send_message(midi1_data);
+            // Send UMP data directly
+            midi_output_->send_ump(data.data(), data.size());
             return true;
         } catch (const std::exception& e) {
-            std::cerr << "Error sending MIDI message: " << e.what() << std::endl;
+            std::cerr << "Error sending UMP message: " << e.what() << std::endl;
         }
     }
     return false;
 }
 
-void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& data) {
+void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<uint32_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (sysex_callback_) {
         sysex_callback_(group, data);
@@ -115,13 +111,13 @@ bool MidiDeviceManager::set_input_device(const std::string& device_id) {
             
             for (const auto& port : input_ports) {
                 if (port.port_name == device_id) {
-                    libremidi::input_configuration config{
-                        .on_message = [this](const libremidi::message& message) {
-                            std::vector<uint8_t> data(message.bytes.begin(), message.bytes.end());
+                    libremidi::ump_input_configuration config{
+                        .on_message = [this](libremidi::ump&& ump_packet) {
+                            std::vector<uint32_t> data{ump_packet.data[0], ump_packet.data[1], ump_packet.data[2], ump_packet.data[3]};
                             process_incoming_sysex(0, data);
-                        },
-                        .ignore_sysex = false
+                        }
                     };
+                    config.ignore_sysex = false;
                     
                     midi_input_ = std::make_unique<libremidi::midi_in>(config);
                     

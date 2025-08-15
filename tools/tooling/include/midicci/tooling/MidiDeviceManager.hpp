@@ -16,8 +16,8 @@ namespace midicci::tooling {
 
 class MidiDeviceManager {
 public:
-    using SysExCallback = std::function<void(uint8_t group, const std::vector<uint8_t>& data)>;
-    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
+    using SysExCallback = std::function<void(uint8_t group, const std::vector<uint32_t>& data)>;
+    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint32_t>& data)>;
     
     MidiDeviceManager();
     ~MidiDeviceManager();
@@ -31,9 +31,9 @@ public:
     void set_sysex_callback(SysExCallback callback);
     void set_ci_output_sender(CIOutputSender sender);
     
-    bool send_sysex(uint8_t group, const std::vector<uint8_t>& data);
+    bool send_sysex(uint8_t group, const std::vector<uint32_t>& data);
     
-    void process_incoming_sysex(uint8_t group, const std::vector<uint8_t>& data);
+    void process_incoming_sysex(uint8_t group, const std::vector<uint32_t>& data);
     
     std::vector<std::string> get_available_input_devices() const;
     std::vector<std::string> get_available_output_devices() const;

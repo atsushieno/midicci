@@ -33,6 +33,9 @@ struct Ump {
     Ump(uint32_t i1, uint32_t i2 = 0, uint32_t i3 = 0, uint32_t i4 = 0)
         : int1(i1), int2(i2), int3(i3), int4(i4) {}
     
+    explicit Ump(uint64_t value) : int1(static_cast<uint32_t>(value >> 32)), int2(static_cast<uint32_t>(value & 0xFFFFFFFF)), int3(0), int4(0) {}
+    
+    // Basic properties
     MessageType get_message_type() const;
     uint8_t get_group() const;
     uint8_t get_status_code() const;
@@ -41,6 +44,40 @@ struct Ump {
     uint8_t get_sysex7_size() const;
     uint8_t get_sysex8_size() const;
     size_t get_size_in_bytes() const;
+    
+    // MIDI1 accessors
+    uint8_t get_midi1_msb() const;
+    uint8_t get_midi1_lsb() const;
+    uint8_t get_channel_in_group() const;
+    
+    // MIDI2 accessors
+    uint8_t get_midi2_note() const;
+    uint16_t get_midi2_velocity16() const;
+    uint32_t get_midi2_paf_data() const;
+    uint8_t get_midi2_cc_index() const;
+    uint32_t get_midi2_cc_data() const;
+    uint8_t get_midi2_program_options() const;
+    uint8_t get_midi2_program_program() const;
+    uint8_t get_midi2_program_bank_msb() const;
+    uint8_t get_midi2_program_bank_lsb() const;
+    uint32_t get_midi2_caf_data() const;
+    uint32_t get_midi2_pitch_bend_data() const;
+    uint8_t get_midi2_rpn_msb() const;
+    uint8_t get_midi2_rpn_lsb() const;
+    uint32_t get_midi2_rpn_data() const;
+    uint8_t get_midi2_nrpn_msb() const;
+    uint8_t get_midi2_nrpn_lsb() const;
+    uint32_t get_midi2_nrpn_data() const;
+    
+    // Timing accessors  
+    bool is_delta_clockstamp() const;
+    bool is_jr_timestamp() const;
+    uint32_t get_delta_clockstamp() const;
+    uint16_t get_jr_timestamp() const;
+    
+    // Data conversion
+    std::vector<uint8_t> to_platform_bytes() const;
+    static std::vector<Ump> from_bytes(const std::vector<uint8_t>& bytes, size_t start, size_t length);
 };
 
 std::vector<Ump> parse_umps_from_bytes(const uint8_t* data, size_t start, size_t length);

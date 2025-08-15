@@ -52,6 +52,105 @@ size_t Ump::get_size_in_bytes() const {
     }
 }
 
+// MIDI1 accessors
+uint8_t Ump::get_midi1_msb() const {
+    return (int1 >> 8) & 0x7F;
+}
+
+uint8_t Ump::get_midi1_lsb() const {
+    return int1 & 0x7F;
+}
+
+uint8_t Ump::get_channel_in_group() const {
+    return (int1 >> 16) & 0xF;
+}
+
+// MIDI2 accessors
+uint8_t Ump::get_midi2_note() const {
+    return (int1 >> 8) & 0x7F;
+}
+
+uint16_t Ump::get_midi2_velocity16() const {
+    return (int2 >> 16) & 0xFFFF;
+}
+
+uint32_t Ump::get_midi2_paf_data() const {
+    return int2;
+}
+
+uint8_t Ump::get_midi2_cc_index() const {
+    return (int1 >> 8) & 0x7F;
+}
+
+uint32_t Ump::get_midi2_cc_data() const {
+    return int2;
+}
+
+uint8_t Ump::get_midi2_program_options() const {
+    return int1 & 0x1;
+}
+
+uint8_t Ump::get_midi2_program_program() const {
+    return (int2 >> 24) & 0x7F;
+}
+
+uint8_t Ump::get_midi2_program_bank_msb() const {
+    return (int2 >> 8) & 0x7F;
+}
+
+uint8_t Ump::get_midi2_program_bank_lsb() const {
+    return int2 & 0x7F;
+}
+
+uint32_t Ump::get_midi2_caf_data() const {
+    return int2;
+}
+
+uint32_t Ump::get_midi2_pitch_bend_data() const {
+    return int2;
+}
+
+uint8_t Ump::get_midi2_rpn_msb() const {
+    return (int1 >> 8) & 0x7F;
+}
+
+uint8_t Ump::get_midi2_rpn_lsb() const {
+    return int1 & 0x7F;
+}
+
+uint32_t Ump::get_midi2_rpn_data() const {
+    return int2;
+}
+
+uint8_t Ump::get_midi2_nrpn_msb() const {
+    return (int1 >> 8) & 0x7F;
+}
+
+uint8_t Ump::get_midi2_nrpn_lsb() const {
+    return int1 & 0x7F;
+}
+
+uint32_t Ump::get_midi2_nrpn_data() const {
+    return int2;
+}
+
+// Timing accessors  
+bool Ump::is_delta_clockstamp() const {
+    return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x10;
+}
+
+bool Ump::is_jr_timestamp() const {
+    return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x20;
+}
+
+uint32_t Ump::get_delta_clockstamp() const {
+    return int1 & 0xFFFF;
+}
+
+uint16_t Ump::get_jr_timestamp() const {
+    return int1 & 0xFFFF;
+}
+
 static uint32_t get_int_from_bytes(const uint8_t* bytes, size_t offset, size_t max_size) {
     if (offset + 3 >= max_size) return 0;
     

@@ -55,3 +55,4 @@
 #include <midicci/details/ump/Ump.hpp>
 #include <midicci/details/ump/UmpRetriever.hpp>
 #include <midicci/details/ump/UmpFactory.hpp>
+#include <midicci/details/ump/UmpTranslator.hpp>

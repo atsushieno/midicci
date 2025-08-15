@@ -24,6 +24,10 @@ set(GTEST_SOURCES
     test_request_id_valid_muid.cpp
     test_resource_list.cpp
     test_standard_properties_ctrlmaplist.cpp
+    test_ump_factory.cpp
+    test_ump_retriever.cpp
+    test_ump.cpp
+    test_ump_translator.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})

@@ -4,7 +4,8 @@
 #include <libremidi/ump.hpp>
 #include <cmidi2.h>
 
-KeyboardController::KeyboardController() {
+KeyboardController::KeyboardController(midicci::keyboard::MessageLogger* logger) 
+    : logger_(logger) {
     resetMidiConnections();
 }
 
@@ -286,6 +287,16 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     std::cout << "[SYSEX INPUT] Ignoring our own outgoing SysEx message (exact match)" << std::endl;
                     recentOutgoingSysEx.erase(sysex_buffer_); // Remove from tracking set
                 } else {
+                    // Log the incoming SysEx message
+                    if (logger_) {
+                        std::string hex_str = "SysEx In: ";
+                        for (size_t i = 0; i < std::min(sysex_buffer_.size(), size_t(16)); ++i) {
+                            hex_str += std::to_string(sysex_buffer_[i]) + " ";
+                        }
+                        if (sysex_buffer_.size() > 16) hex_str += "...";
+                        logger_->log(hex_str, midicci::keyboard::MessageDirection::In);
+                    }
+                    
                     // Check if this might be a legitimate MIDI-CI message (starts with F0 7E ... 0D)
                     if (sysex_buffer_.size() >= 4 && 
                         sysex_buffer_[0] == 0xF0 && sysex_buffer_[1] == 0x7E && sysex_buffer_[3] == 0x0D) {
@@ -347,6 +358,16 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     std::cout << "[SYSEX INPUT] Ignoring our own outgoing SysEx message (exact match, multi-packet)" << std::endl;
                     recentOutgoingSysEx.erase(sysex_buffer_); // Remove from tracking set
                 } else {
+                    // Log the incoming SysEx message
+                    if (logger_) {
+                        std::string hex_str = "SysEx In (multi-packet): ";
+                        for (size_t i = 0; i < std::min(sysex_buffer_.size(), size_t(16)); ++i) {
+                            hex_str += std::to_string(sysex_buffer_[i]) + " ";
+                        }
+                        if (sysex_buffer_.size() > 16) hex_str += "...";
+                        logger_->log(hex_str, midicci::keyboard::MessageDirection::In);
+                    }
+                    
                     // Check if this might be a legitimate MIDI-CI message (starts with F0 7E ... 0D)
                     if (sysex_buffer_.size() >= 4 && 
                         sysex_buffer_[0] == 0xF0 && sysex_buffer_[1] == 0x7E && sysex_buffer_[3] == 0x0D) {
@@ -476,7 +497,7 @@ void KeyboardController::initializeMidiCI() {
             midiCIManager.reset();
         }
         
-        midiCIManager = std::make_unique<MidiCIManager>();
+        midiCIManager = std::make_unique<MidiCIManager>(logger_);
         
         // Set up logging callback
         midiCIManager->setLogCallback([](const std::string& message) {
@@ -570,6 +591,16 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
     }
     
     try {
+        // Log the outgoing SysEx message
+        if (logger_) {
+            std::string hex_str = "SysEx Out: ";
+            for (size_t i = 0; i < std::min(data.size(), size_t(16)); ++i) {
+                hex_str += std::to_string(data[i]) + " ";
+            }
+            if (data.size() > 16) hex_str += "...";
+            logger_->log(hex_str, midicci::keyboard::MessageDirection::Out);
+        }
+        
         // Track this outgoing message to avoid processing it as input
         recentOutgoingSysEx.insert(data);
         // Keep only recent messages to prevent memory growth

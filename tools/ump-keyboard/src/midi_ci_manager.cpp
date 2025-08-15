@@ -8,8 +8,8 @@
 
 using namespace midicci::commonproperties;
 
-MidiCIManager::MidiCIManager() 
-    : muid_(0), initialized_(false) {
+MidiCIManager::MidiCIManager(midicci::keyboard::MessageLogger* logger) 
+    : muid_(0), initialized_(false), logger_(logger) {
 }
 
 MidiCIManager::~MidiCIManager() {
@@ -381,6 +381,13 @@ void MidiCIManager::setupCallbacks() {
 void MidiCIManager::log(const std::string& message, bool is_outgoing) {
     std::string prefix = is_outgoing ? "[MIDI-CI OUT] " : "[MIDI-CI IN] ";
     std::string full_message = prefix + message;
+    
+    // Log to logger if available
+    if (logger_) {
+        auto direction = is_outgoing ? midicci::keyboard::MessageDirection::Out : 
+                                      midicci::keyboard::MessageDirection::In;
+        logger_->log(full_message, direction);
+    }
     
     if (log_callback_) {
         log_callback_(full_message);

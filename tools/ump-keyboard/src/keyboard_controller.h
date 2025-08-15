@@ -7,10 +7,11 @@
 #include <string>
 #include <set>
 #include "midi_ci_manager.h"
+#include "message_logger.h"
 
 class KeyboardController {
 public:
-    KeyboardController();
+    KeyboardController(midicci::keyboard::MessageLogger* logger = nullptr);
     ~KeyboardController();
     
     bool resetMidiConnections();
@@ -89,4 +90,6 @@ private:
     // SysEx reconstruction state for multi-packet UMP SysEx7
     std::vector<uint8_t> sysex_buffer_;
     bool sysex_in_progress_ = false;
+    
+    midicci::keyboard::MessageLogger* logger_;
 };

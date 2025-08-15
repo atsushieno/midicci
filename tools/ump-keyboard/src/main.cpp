@@ -1,15 +1,17 @@
 
 #include <QtWidgets/QApplication>
 #include <QMetaObject>
-#include "keyboard_widget.h"
+#include "main_window.h"
 #include "keyboard_controller.h"
 #include <iostream>
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
     
-    KeyboardWidget keyboard;
-    KeyboardController controller;
+    midicci::keyboard::MainWindow mainWindow;
+    auto& keyboard = *mainWindow.findChild<KeyboardWidget*>();
+    auto* logger = mainWindow.getLogger();
+    KeyboardController controller(logger);
     
     // Set up callbacks
     keyboard.setKeyPressedCallback([&controller](int note) {
@@ -138,7 +140,7 @@ int main(int argc, char** argv) {
     );
     keyboard.updateMidiCIDevices(controller.getMidiCIDeviceDetails());
     
-    keyboard.show();
+    mainWindow.show();
     
     return app.exec();
 }

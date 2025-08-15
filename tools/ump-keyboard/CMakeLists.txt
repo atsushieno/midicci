@@ -31,6 +31,9 @@ add_library(midicci-keyboard-core
     src/midi_ci_manager.cpp
     src/keyboard_widget.cpp
     src/virtualized_control_list.cpp
+    src/main_window.cpp
+    src/log_widget.cpp
+    src/message_logger.cpp
 )
 
 # Link required libraries to the core library

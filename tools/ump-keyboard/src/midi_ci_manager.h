@@ -10,6 +10,7 @@
 #include <mutex>
 #include <midicci/midicci.hpp>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
+#include "message_logger.h"
 
 struct MidiCIDeviceInfo {
     uint32_t muid;
@@ -42,7 +43,7 @@ public:
     using SysExSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     using DevicesChangedCallback = std::function<void()>;
     
-    MidiCIManager();
+    MidiCIManager(midicci::keyboard::MessageLogger* logger = nullptr);
     ~MidiCIManager();
     
     // Initialization and cleanup
@@ -87,6 +88,8 @@ private:
     std::function<void(uint32_t)> properties_changed_callback_;
     uint32_t muid_;
     bool initialized_;
+    
+    midicci::keyboard::MessageLogger* logger_;
     
     std::vector<MidiCIDeviceInfo> discovered_devices_;
     

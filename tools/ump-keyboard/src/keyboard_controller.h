@@ -68,6 +68,7 @@ private:
     std::function<void(uint32_t)> midiCIPropertiesChangedCallback;
     std::function<void()> midiCIDevicesChangedCallback;
     bool initialized = false;
+    uint32_t local_app_muid = 0;  // Store local application MUID across reinitializations
     
     // Track outgoing SysEx messages to avoid feedback loops
     std::set<std::vector<uint8_t>> recentOutgoingSysEx;

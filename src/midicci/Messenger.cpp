@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <set>
 #include <chrono>
+#include <iostream>
 
 namespace midicci {
 
@@ -54,7 +55,8 @@ void Messenger::send(const Message& message) {
 }
 
 void Messenger::send_discovery_inquiry(uint8_t ciCategorySupported) {
-    Common common(pimpl_->device_.get_muid(), BROADCAST_MUID, MIDI_CI_ADDRESS_FUNCTION_BLOCK, pimpl_->device_.get_config().group);
+    uint32_t our_muid = pimpl_->device_.get_muid();
+    Common common(our_muid, BROADCAST_MUID, MIDI_CI_ADDRESS_FUNCTION_BLOCK, pimpl_->device_.get_config().group);
     auto deviceInfo = pimpl_->device_.get_device_info();
     DeviceDetails details{deviceInfo.manufacturer_id, deviceInfo.family_id, deviceInfo.model_id, deviceInfo.version_id};
 

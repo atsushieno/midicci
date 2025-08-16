@@ -487,6 +487,10 @@ void KeyboardController::initializeMidiCI() {
         // Ensure any existing manager is properly shut down first
         if (midiCIManager) {
             std::cout << "[MIDI-CI] Reinitializing MIDI-CI manager" << std::endl;
+            // Preserve the MUID from the existing manager
+            if (local_app_muid == 0) {
+                local_app_muid = midiCIManager->getMuid();
+            }
             midiCIManager->shutdown();
             midiCIManager.reset();
         }
@@ -505,10 +509,14 @@ void KeyboardController::initializeMidiCI() {
         });
         
         // Initialize the MIDI-CI manager (will now use the SysEx sender)
-        if (!midiCIManager->initialize()) {
+        if (!midiCIManager->initialize(local_app_muid)) {
             std::cerr << "Failed to initialize MIDI-CI manager" << std::endl;
             midiCIManager.reset();
         } else {
+            // Store the MUID if this is the first initialization
+            if (local_app_muid == 0) {
+                local_app_muid = midiCIManager->getMuid();
+            }
             // Set up stored callbacks after successful initialization
             if (midiCIPropertiesChangedCallback) {
                 midiCIManager->setPropertiesChangedCallback(midiCIPropertiesChangedCallback);

@@ -27,7 +27,7 @@ bool MidiCIManager::initialize(uint32_t muid) {
         if (muid == 0) {
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_int_distribution<uint32_t> dis(1, 0xFFFFFF); // Avoid 0 and reserved values
+            std::uniform_int_distribution<uint32_t> dis(0, 0xFFFFFFFF);
             muid_ = dis(gen) & 0x7F7F7F7F;
         } else {
             muid_ = muid;

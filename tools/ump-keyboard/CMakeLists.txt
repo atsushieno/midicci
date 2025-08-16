@@ -18,7 +18,7 @@ FetchContent_MakeAvailable(libremidi)
 # cmidi2 for UMP support
 FetchContent_Declare(cmidi2
         GIT_REPOSITORY https://github.com/atsushieno/cmidi2
-        GIT_TAG        0.7
+        GIT_TAG        55fc50a
         EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(cmidi2)

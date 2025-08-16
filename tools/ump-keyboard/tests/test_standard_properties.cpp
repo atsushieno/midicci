@@ -43,7 +43,7 @@ TEST_F(StandardPropertiesTest, TestGetAllCtrlList) {
         
         // Wait for discovery process to complete
         std::cout << "[TEST] Waiting 3 seconds for discovery to complete..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         
         // Get discovered MIDI-CI devices with their MUIDs
         std::cout << "[TEST] Getting discovered MIDI-CI devices..." << std::endl;
@@ -65,7 +65,14 @@ TEST_F(StandardPropertiesTest, TestGetAllCtrlList) {
                       << std::hex << device.muid << std::dec << ")" << std::endl;
             
             auto ctrlList = controller->getAllCtrlList(device.muid);
-            
+
+            if (!ctrlList.has_value() || ctrlList->empty()) {
+                std::cout << "[TEST] Waiting 3 seconds for GetPropertyData(AllCtrlList) to complete..." << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                // retry.
+                ctrlList = controller->getAllCtrlList(device.muid);
+            }
+
             if (ctrlList.has_value()) {
                 std::cout << "[TEST] SUCCESS: getAllCtrlList returned " << ctrlList->size() << " items:" << std::endl;
                 foundValidResponse = true;

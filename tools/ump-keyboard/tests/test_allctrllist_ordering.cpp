@@ -17,6 +17,16 @@ protected:
         controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid) {
             std::cout << "[TEST-CALLBACK] Properties updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             properties_updated_muids.insert(muid);
+            
+            // Immediately check if AllCtrlList data is now available
+            auto ctrlList = controller->getAllCtrlList(muid);
+            if (ctrlList.has_value()) {
+                std::cout << "[TEST-CALLBACK] AllCtrlList now available with " << ctrlList->size() << " controls" << std::endl;
+                data_received_muid = muid;
+                data_received = true;
+            } else {
+                std::cout << "[TEST-CALLBACK] AllCtrlList still not available after callback" << std::endl;
+            }
         });
     }
     
@@ -28,6 +38,8 @@ protected:
     
     std::unique_ptr<KeyboardController> controller;
     std::unordered_set<uint32_t> properties_updated_muids;
+    std::atomic<bool> data_received{false};
+    std::atomic<uint32_t> data_received_muid{0};
     
     // Helper function to find matching input/output device pairs
     std::vector<std::pair<std::string, std::string>> findMatchingDevicePairs() {
@@ -146,7 +158,7 @@ TEST_F(AllCtrlListOrderingTest, TestAllCtrlListOrdering) {
     
     // Wait for discovery process to complete
     std::cout << "[TEST] Waiting 5 seconds for discovery to complete..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     
     // Get discovered MIDI-CI devices
     auto devices = controller->getMidiCIDeviceDetails();
@@ -173,42 +185,62 @@ TEST_F(AllCtrlListOrderingTest, TestAllCtrlListOrdering) {
         std::cout << "[TEST] Version: " << device.version << std::endl;
         std::cout << "[TEST] ========================================" << std::endl;
         
+        // Reset tracking variables for this device
+        data_received = false;
+        data_received_muid = 0;
+        
         // Request AllCtrlList property
         std::cout << "[TEST] Requesting AllCtrlList for MUID: 0x" << std::hex << device.muid << std::dec << std::endl;
         
-        // First call triggers the property request
+        // First call triggers the property request - this will send GetPropertyData message
         auto ctrlList = controller->getAllCtrlList(device.muid);
         
-        if (!ctrlList.has_value()) {
-            std::cout << "[TEST] Initial request returned no data (expected - request sent), waiting for GetPropertyDataReply..." << std::endl;
+        // The first call should return nullopt because the data isn't available yet
+        if (ctrlList.has_value()) {
+            std::cout << "[TEST] Immediate data available with " << ctrlList->size() << " controls (cached from previous request)" << std::endl;
+        } else {
+            std::cout << "[TEST] No immediate data - GetPropertyData request sent, waiting for GetPropertyDataReply..." << std::endl;
             
-            // Wait for GetPropertyDataReply to arrive and be processed
+            // Wait for the GetPropertyDataReply to arrive and trigger our callback
             bool receivedReply = false;
-            int maxWaitSeconds = 10;
-            int waitedSeconds = 0;
+            int maxWaitSeconds = 15;
             
-            while (!receivedReply && waitedSeconds < maxWaitSeconds) {
+            for (int waitedSeconds = 1; waitedSeconds <= maxWaitSeconds; waitedSeconds++) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-                waitedSeconds++;
                 
-                // Check if we received the property data
-                ctrlList = controller->getAllCtrlList(device.muid);
-                if (ctrlList.has_value()) {
-                    receivedReply = true;
-                    std::cout << "[TEST] GetPropertyDataReply received after " << waitedSeconds << " seconds" << std::endl;
+                // Check if our callback detected data availability
+                if (data_received.load() && data_received_muid.load() == device.muid) {
+                    // Verify data is actually available
+                    ctrlList = controller->getAllCtrlList(device.muid);
+                    if (ctrlList.has_value()) {
+                        receivedReply = true;
+                        std::cout << "[TEST] SUCCESS: GetPropertyDataReply processed after " << waitedSeconds << " seconds" << std::endl;
+                        std::cout << "[TEST] Received " << ctrlList->size() << " controls" << std::endl;
+                        break;
+                    } else {
+                        std::cout << "[TEST] WARNING: Callback fired but data still not available" << std::endl;
+                    }
                 }
                 
-                // Check if we got a property update callback
-                if (properties_updated_muids.count(device.muid) > 0) {
-                    std::cout << "[TEST] Property update callback triggered for MUID: 0x" << std::hex << device.muid << std::dec << std::endl;
+                // Log progress every few seconds
+                if (waitedSeconds % 3 == 0) {
+                    std::cout << "[TEST] Still waiting after " << waitedSeconds << "s" 
+                              << " (callbacks: " << properties_updated_muids.size() 
+                              << ", data_received: " << data_received.load() << ")" << std::endl;
                 }
             }
             
             if (!receivedReply) {
-                std::cout << "[TEST] No GetPropertyDataReply received after " << maxWaitSeconds << " seconds" << std::endl;
+                std::cout << "[TEST] ERROR: No GetPropertyDataReply received after " << maxWaitSeconds << " seconds" << std::endl;
+                std::cout << "[TEST] Property update callbacks received: " << properties_updated_muids.size() << std::endl;
+                std::cout << "[TEST] data_received flag: " << data_received.load() << std::endl;
+                
+                // Final attempt to get data
+                ctrlList = controller->getAllCtrlList(device.muid);
+                if (ctrlList.has_value()) {
+                    std::cout << "[TEST] UNEXPECTED: Data became available without callback notification!" << std::endl;
+                }
             }
-        } else {
-            std::cout << "[TEST] Property data already available (cached from previous request)" << std::endl;
         }
         
         if (ctrlList.has_value() && !ctrlList->empty()) {
@@ -291,10 +323,46 @@ TEST_F(AllCtrlListOrderingTest, TestRepeatedPropertyRequests) {
     for (int attempt = 1; attempt <= 3; ++attempt) {
         std::cout << "[TEST] Request attempt " << attempt << std::endl;
         
+        // Reset for this attempt
+        data_received = false;
+        data_received_muid = 0;
+        
         auto ctrlList = controller->getAllCtrlList(device.muid);
+        
+        // For first attempt, we expect to wait for the reply
+        // For subsequent attempts, data should be cached (unless we force a new request)
         if (!ctrlList.has_value()) {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-            ctrlList = controller->getAllCtrlList(device.muid);
+            std::cout << "[TEST] Attempt " << attempt << " - no immediate data, waiting for GetPropertyDataReply..." << std::endl;
+            
+            // Wait for the GetPropertyDataReply to be processed
+            bool receivedData = false;
+            for (int wait = 1; wait <= 10; ++wait) { // Wait up to 10 seconds
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                
+                // Check if callback fired and data is available
+                if (data_received.load() && data_received_muid.load() == device.muid) {
+                    ctrlList = controller->getAllCtrlList(device.muid);
+                    if (ctrlList.has_value()) {
+                        receivedData = true;
+                        std::cout << "[TEST] Attempt " << attempt << " - data received after " << wait << " seconds via callback" << std::endl;
+                        break;
+                    }
+                }
+                
+                // Also try direct check (in case callback missed)
+                ctrlList = controller->getAllCtrlList(device.muid);
+                if (ctrlList.has_value()) {
+                    receivedData = true;
+                    std::cout << "[TEST] Attempt " << attempt << " - data received after " << wait << " seconds (direct check)" << std::endl;
+                    break;
+                }
+            }
+            
+            if (!receivedData) {
+                std::cout << "[TEST] Attempt " << attempt << " - no data received after waiting" << std::endl;
+            }
+        } else {
+            std::cout << "[TEST] Attempt " << attempt << " - data immediately available (cached)" << std::endl;
         }
         
         if (ctrlList.has_value()) {
@@ -304,8 +372,10 @@ TEST_F(AllCtrlListOrderingTest, TestRepeatedPropertyRequests) {
             std::cout << "[TEST] Attempt " << attempt << " returned no data" << std::endl;
         }
         
-        // Small delay between requests
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // Short delay between attempts
+        if (attempt < 3) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
     }
     
     if (results.size() < 2) {

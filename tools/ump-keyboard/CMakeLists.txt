@@ -86,6 +86,10 @@ add_executable(ump_keyboard_tests
     tests/test_standard_properties.cpp
     tests/test_properties_parsing.cpp
     tests/test_end_to_end_properties.cpp
+    tests/test_allctrllist_ordering.cpp
+    tests/test_blank_titles_issue.cpp
+    tests/test_allctrllist_timing.cpp
+    tests/test_ordering_bug_analysis.cpp
 )
 
 target_link_libraries(ump_keyboard_tests

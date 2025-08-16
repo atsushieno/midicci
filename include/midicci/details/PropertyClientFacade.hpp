@@ -7,6 +7,7 @@
 #include <map>
 #include "Message.hpp"
 #include "MidiCIDevice.hpp"
+#include "PropertyChunkManager.hpp"
 
 namespace midicci {
 class ClientConnection;
@@ -53,6 +54,9 @@ public:
     
     std::vector<ClientSubscription> get_subscriptions() const;
     ClientObservablePropertyList* get_properties();
+    
+    PropertyChunkManager& get_pending_chunk_manager();
+    const PropertyChunkManager& get_pending_chunk_manager() const;
     
     void add_subscription_update_callback(SubscriptionUpdateCallback callback);
     void remove_subscription_update_callback(const SubscriptionUpdateCallback& callback);

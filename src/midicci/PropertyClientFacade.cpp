@@ -22,6 +22,7 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<ClientSubscription> subscriptions_;
     std::vector<PropertyClientFacade::SubscriptionUpdateCallback> subscription_update_callbacks_;
+    PropertyChunkManager pending_chunk_manager_;
     mutable std::recursive_mutex mutex_;
 };
 
@@ -481,6 +482,16 @@ void PropertyClientFacade::remove_subscription_update_callback(const Subscriptio
     // Note: Removing std::function by comparison is tricky, typically done by storing ID or using a registry
     // For now, we'll leave this as a placeholder
     // TODO: Implement proper callback removal mechanism if needed
+}
+
+PropertyChunkManager& PropertyClientFacade::get_pending_chunk_manager() {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->pending_chunk_manager_;
+}
+
+const PropertyChunkManager& PropertyClientFacade::get_pending_chunk_manager() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->pending_chunk_manager_;
 }
 
 void PropertyClientFacade::notify_subscription_updated(const ClientSubscription& subscription) {

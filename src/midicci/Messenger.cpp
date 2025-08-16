@@ -926,8 +926,7 @@ void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t c
     auto connection = pimpl_->device_.get_connection(common.source_muid);
     if (connection) {
         auto& property_client = connection->get_property_client_facade();
-        // Note: PropertyClientFacade would need to expose its chunk manager for this to work
-        // For now, we'll use the local one
+        chunk_manager = &property_client.get_pending_chunk_manager();
     }
     
     if (chunk_index < num_chunks) {
@@ -943,18 +942,14 @@ void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t c
         );
     } else {
         // This is the final chunk - assemble and process the complete message
-        std::vector<uint8_t> complete_header;
-        std::vector<uint8_t> complete_body;
+        std::vector<uint8_t> complete_header = header;
+        std::vector<uint8_t> complete_body = body;
         
         if (chunk_index > 1) {
             // Multi-chunk message - get assembled data
             auto result = chunk_manager->finish_pending_chunk(common.source_muid, request_id, body);
             complete_header = result.first;
             complete_body = result.second;
-        } else {
-            // Single chunk message
-            complete_header = header;
-            complete_body = body;
         }
         
         // Call the completion callback with the complete message

@@ -72,8 +72,7 @@ TEST_F(PropertiesParsingTest, TestParseControlListWithValidJSON) {
 
 TEST_F(PropertiesParsingTest, TestParseControlListWithWrappedJSON) {
     // Test with the format that might be coming from actual devices - wrapped in ctrlList
-    std::string wrappedJson = R"({
-        "ctrlList": [
+    std::string wrappedJson = R"([
             {
                 "title": "Modulation",
                 "ctrlType": "cc",
@@ -88,8 +87,7 @@ TEST_F(PropertiesParsingTest, TestParseControlListWithWrappedJSON) {
                 "ctrlIndex": [7],
                 "channel": 1
             }
-        ]
-    })";
+        ])";
     
     std::vector<uint8_t> data(wrappedJson.begin(), wrappedJson.end());
     

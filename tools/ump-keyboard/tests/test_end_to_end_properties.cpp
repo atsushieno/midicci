@@ -51,8 +51,7 @@ TEST_F(EndToEndPropertiesTest, TestBothParsingFormats) {
     EXPECT_EQ(directResult.size(), 2);
     
     // Test wrapped object format
-    std::string wrappedJson = R"({
-        "ctrlList": [
+    std::string wrappedJson = R"([
             {
                 "title": "Modulation",
                 "ctrlType": "cc",
@@ -67,8 +66,7 @@ TEST_F(EndToEndPropertiesTest, TestBothParsingFormats) {
                 "ctrlIndex": [7],
                 "channel": 1
             }
-        ]
-    })";
+        ])";
     
     std::vector<uint8_t> wrappedData(wrappedJson.begin(), wrappedJson.end());
     auto wrappedResult = midicci::commonproperties::StandardProperties::parseControlList(wrappedData);
@@ -110,8 +108,7 @@ TEST_F(EndToEndPropertiesTest, TestProgramListParsing) {
     EXPECT_EQ(directProgramResult.size(), 2);
     
     // Test wrapped object format for programs
-    std::string wrappedProgramJson = R"({
-        "programList": [
+    std::string wrappedProgramJson = R"([
             {
                 "title": "Piano 1",
                 "bankPC": [0, 0, 1],
@@ -124,8 +121,7 @@ TEST_F(EndToEndPropertiesTest, TestProgramListParsing) {
                 "category": ["Piano"],
                 "tags": ["electric", "vintage"]
             }
-        ]
-    })";
+        ])";
     
     std::vector<uint8_t> wrappedProgramData(wrappedProgramJson.begin(), wrappedProgramJson.end());
     auto wrappedProgramResult = midicci::commonproperties::StandardProperties::parseProgramList(wrappedProgramData);

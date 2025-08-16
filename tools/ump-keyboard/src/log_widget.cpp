@@ -1,5 +1,6 @@
 #include "log_widget.h"
 #include "message_logger.h"
+#include "midicci/midicci.hpp"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -30,8 +31,8 @@ void LogWidget::setupUI()
     
     mainLayout->addLayout(buttonLayout);
     
-    m_logTable = new QTableWidget(0, 4, this);
-    m_logTable->setHorizontalHeaderLabels({"Time", "Direction", "Type", "Message"});
+    m_logTable = new QTableWidget(0, 6, this);
+    m_logTable->setHorizontalHeaderLabels({"Time", "Direction", "Type", "Source MUID", "Dest MUID", "Message"});
     m_logTable->horizontalHeader()->setStretchLastSection(true);
     m_logTable->setAlternatingRowColors(true);
     m_logTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -92,7 +93,18 @@ void LogWidget::updateLogDisplay()
         }
         
         m_logTable->setItem(i, 2, new QTableWidgetItem(messageType));
-        m_logTable->setItem(i, 3, new QTableWidgetItem(QString::fromStdString(entry.message)));
+        
+        // Display source MUID (convert from 7-bit encoded to actual 28-bit value)
+        QString sourceMuidStr = entry.source_muid == 0 ? "-" : 
+            QString("0x%1").arg(QString::number(midicci::CIFactory::midiCI32to28(entry.source_muid), 16).toUpper(), 7, QChar('0'));
+        m_logTable->setItem(i, 3, new QTableWidgetItem(sourceMuidStr));
+        
+        // Display destination MUID (convert from 7-bit encoded to actual 28-bit value)
+        QString destMuidStr = entry.destination_muid == 0 ? "-" : 
+            QString("0x%1").arg(QString::number(midicci::CIFactory::midiCI32to28(entry.destination_muid), 16).toUpper(), 7, QChar('0'));
+        m_logTable->setItem(i, 4, new QTableWidgetItem(destMuidStr));
+        
+        m_logTable->setItem(i, 5, new QTableWidgetItem(QString::fromStdString(entry.message)));
     }
     
     m_logTable->scrollToBottom();

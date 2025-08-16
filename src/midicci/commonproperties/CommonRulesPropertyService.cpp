@@ -258,7 +258,7 @@ std::optional<SubscribePropertyReply> CommonRulesPropertyService::subscribe_prop
         Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
         return SubscribePropertyReply(common, msg.get_request_id(), reply_header, reply_body);
     } catch (const std::exception& e) {
-        device_.get_logger()("Error processing SubscribeProperty: " + std::string(e.what()), true);
+        device_.get_logger()(LogData("Error processing SubscribeProperty: " + std::string(e.what()), true));
         return std::nullopt;
     }
 }
@@ -429,7 +429,7 @@ JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue
     if (header.set_partial.has_value() && header.set_partial.value()) {
         auto existing_it = property_values_.find(header.resource);
         if (existing_it == property_values_.end()) {
-            device_.get_logger()("Partial update is specified but there is no existing value for property " + header.resource, true);
+            device_.get_logger()(LogData("Partial update is specified but there is no existing value for property " + header.resource, true));
         } else {
             // For simplicity, just overwrite for now - full partial update logic would need JSON merging
             property_values_[header.resource] = body;

@@ -30,7 +30,7 @@ public:
     void log_message(const Message& message, bool is_outgoing) {
         auto logger = device_.get_logger();
         if (logger) {
-            logger(message.get_log_message(), is_outgoing);
+            logger(LogData(message, is_outgoing));
         }
     }
 };

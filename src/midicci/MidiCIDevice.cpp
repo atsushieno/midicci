@@ -14,7 +14,7 @@ public:
     }
 
     static LoggerFunction create_nop_logger() {
-        return [](const std::string&, bool) { /* NOP */ };
+        return [](const LogData&) { /* NOP */ };
     }
     
     uint8_t device_id_;

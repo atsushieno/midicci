@@ -12,7 +12,7 @@ class CIDeviceModel::Impl {
 public:
     explicit Impl(CIDeviceManager& parent, MidiCIDeviceConfiguration& config, uint32_t muid,
                   CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
-                  std::function<void(const std::string&, bool)> logger)
+                  MidiCIDevice::LoggerFunction logger)
         : parent_(parent), config_(config), muid_(muid),
           ci_output_sender_(ci_sender), midi_message_report_sender_(mmr_sender),
           logger_(logger),
@@ -23,7 +23,7 @@ public:
     uint32_t muid_;
     CIOutputSender ci_output_sender_;
     MidiMessageReportSender midi_message_report_sender_;
-    std::function<void(const std::string&, bool)> logger_;
+    MidiCIDevice::LoggerFunction logger_;
     
     std::shared_ptr<MidiCIDevice> device_;
     MutableStateList<std::shared_ptr<ClientConnectionModel>> connections_;
@@ -43,7 +43,7 @@ public:
 CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, MidiCIDeviceConfiguration& config,
                              uint32_t muid, CIOutputSender ci_output_sender,
                              MidiMessageReportSender midi_message_report_sender,
-                             std::function<void(const std::string&, bool)> logger)
+                             MidiCIDevice::LoggerFunction logger)
     : pimpl_(std::make_unique<Impl>(parent, config, muid, ci_output_sender, midi_message_report_sender, logger)) {
     receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;
     last_chunked_message_channel = pimpl_->last_chunked_message_channel_;

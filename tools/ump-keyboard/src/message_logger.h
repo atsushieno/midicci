@@ -7,6 +7,11 @@
 #include <chrono>
 #include <mutex>
 
+// Forward declaration for MIDI-CI message
+namespace midicci {
+    class Message;
+}
+
 namespace midicci::keyboard {
 
 enum class MessageDirection {
@@ -18,8 +23,10 @@ struct LogEntry {
     std::chrono::system_clock::time_point timestamp;
     MessageDirection direction;
     std::string message;
+    uint32_t source_muid;
+    uint32_t destination_muid;
     
-    LogEntry(MessageDirection dir, const std::string& msg);
+    LogEntry(MessageDirection dir, const std::string& msg, uint32_t src_muid = 0, uint32_t dest_muid = 0);
 };
 
 class MessageLogger {
@@ -32,7 +39,8 @@ public:
     MessageLogger(const MessageLogger&) = delete;
     MessageLogger& operator=(const MessageLogger&) = delete;
     
-    void log(const std::string& message, MessageDirection direction);
+    void log(const std::string& message, MessageDirection direction, uint32_t source_muid = 0, uint32_t destination_muid = 0);
+    void log_midi_ci_message(const midicci::Message& message, MessageDirection direction);
     void add_log_callback(LogCallback callback);
     void remove_log_callback(LogCallback callback);
     

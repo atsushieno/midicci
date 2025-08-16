@@ -20,8 +20,10 @@ struct LogEntry {
     std::chrono::system_clock::time_point timestamp;
     MessageDirection direction;
     std::string message;
+    uint32_t source_muid;
+    uint32_t destination_muid;
     
-    LogEntry(MessageDirection dir, const std::string& msg);
+    LogEntry(MessageDirection dir, const std::string& msg, uint32_t src_muid = 0, uint32_t dest_muid = 0);
 };
 
 class CIToolRepository {
@@ -34,7 +36,7 @@ public:
     CIToolRepository(const CIToolRepository&) = delete;
     CIToolRepository& operator=(const CIToolRepository&) = delete;
     
-    void log(const std::string& message, MessageDirection direction);
+    void log(const std::string& message, MessageDirection direction, uint32_t source_muid = 0, uint32_t destination_muid = 0);
     void add_log_callback(LogCallback callback);
     void remove_log_callback(LogCallback callback);
     

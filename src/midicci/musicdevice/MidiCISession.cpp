@@ -85,7 +85,7 @@ void MidiCISession::process_ci_message(uint8_t group, const std::vector<uint8_t>
         for (uint8_t byte : data) {
             ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
         }
-        logger(ss.str(), true);  // true for incoming message
+        logger(LogData(ss.str(), true));  // true for incoming message
     }
     
     device_->processInput(group, data);
@@ -99,7 +99,7 @@ void MidiCISession::log_midi_message_report_chunk(const std::vector<uint8_t>& da
         for (uint8_t byte : data) {
             ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
         }
-        logger(ss.str(), true);
+        logger(LogData(ss.str(), true));
     }
 }
 
@@ -136,7 +136,7 @@ void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_
                 for (size_t i = start; i < start + length; ++i) {
                     ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
                 }
-                logger(ss.str(), true);
+                logger(LogData(ss.str(), true));
             }
         }
     }
@@ -226,7 +226,7 @@ void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t 
                 for (size_t i = start; i < start + length; ++i) {
                     ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
                 }
-                logger(ss.str(), true);
+                logger(LogData(ss.str(), true));
             }
         }
     }

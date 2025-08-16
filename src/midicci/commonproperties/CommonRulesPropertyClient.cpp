@@ -105,7 +105,7 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
                 }
             }
         } catch (const std::exception& ex) {
-            device_.get_logger()("Error parsing resource list: " + std::string(ex.what()), true);
+            device_.get_logger()(LogData("Error parsing resource list: " + std::string(ex.what()), true));
         }
     }
     // Note: DeviceInfo, ChannelList, and JsonSchema are now handled via FoundationalResources
@@ -171,7 +171,7 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyClient::get_me
     try {
         return FoundationalResources::parseResourceList(body);
     } catch (const std::exception& ex) {
-        device_.get_logger()("Error parsing metadata list: " + std::string(ex.what()), true);
+        device_.get_logger()(LogData("Error parsing metadata list: " + std::string(ex.what()), true));
         return std::vector<std::unique_ptr<PropertyMetadata>>();
     }
 }

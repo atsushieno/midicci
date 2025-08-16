@@ -36,13 +36,27 @@ bool MidiCIManager::initialize(uint32_t muid) {
         // Create device configuration
         setupDeviceConfiguration();
         
-        // Create MIDI-CI device
+        // Create MIDI-CI device with logger callback that handles both strings and Messages
         device_ = std::make_unique<midicci::MidiCIDevice>(
             muid_, 
             *config_,
-            [this](const std::string& message, bool is_outgoing) {
-                // Use our log method with proper parameter semantics
-                log(message, is_outgoing);
+            [this](const midicci::LogData& log_data) {
+                if (logger_) {
+                    if (log_data.has_message()) {
+                        // Log structured MIDI-CI message with proper MUID extraction
+                        const auto& message = log_data.get_message();
+                        auto direction = log_data.is_outgoing ? 
+                            midicci::keyboard::MessageDirection::Out : 
+                            midicci::keyboard::MessageDirection::In;
+                        logger_->log_midi_ci_message(message, direction);
+                    } else {
+                        // Log plain string message
+                        auto direction = log_data.is_outgoing ? 
+                            midicci::keyboard::MessageDirection::Out : 
+                            midicci::keyboard::MessageDirection::In;
+                        logger_->log(log_data.get_string(), direction);
+                    }
+                }
             }
         );
         
@@ -247,14 +261,12 @@ void MidiCIManager::setupCallbacks() {
             case midicci::MessageType::GetPropertyDataReply: msgTypeName = "GetPropertyDataReply"; break;
             default: msgTypeName = "Unknown(" + std::to_string(static_cast<int>(message.get_type())) + ")"; break;
         }
-        log("MIDI-CI Message sent: " + msgTypeName, true); // outgoing
         std::cout << "[MIDI-CI SENT] " << msgTypeName << " to MUID: 0x" << std::hex << message.get_destination_muid() << std::dec << std::endl;
     });
     
     // Set up message received callback
     device_->set_message_received_callback([this](const midicci::Message& message) {
         std::cout << "[UMP-KEYBOARD RECV] Message type: " << static_cast<int>(message.get_type()) << std::endl;
-        log("MIDI-CI Message received: " + std::to_string(static_cast<int>(message.get_type())), false); // incoming
         
         // Handle Endpoint Reply messages to populate device combobox
         if (message.get_type() == midicci::MessageType::EndpointReply) {

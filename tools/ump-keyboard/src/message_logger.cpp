@@ -1,10 +1,11 @@
 #include "message_logger.h"
+#include "midicci/midicci.hpp"
 #include <algorithm>
 
 namespace midicci::keyboard {
 
-LogEntry::LogEntry(MessageDirection dir, const std::string& msg)
-    : timestamp(std::chrono::system_clock::now()), direction(dir), message(msg) {}
+LogEntry::LogEntry(MessageDirection dir, const std::string& msg, uint32_t src_muid, uint32_t dest_muid)
+    : timestamp(std::chrono::system_clock::now()), direction(dir), message(msg), source_muid(src_muid), destination_muid(dest_muid) {}
 
 class MessageLogger::Impl {
 public:
@@ -18,14 +19,22 @@ MessageLogger::MessageLogger() : pimpl_(std::make_unique<Impl>()) {
 
 MessageLogger::~MessageLogger() = default;
 
-void MessageLogger::log(const std::string& message, MessageDirection direction) {
+void MessageLogger::log(const std::string& message, MessageDirection direction, uint32_t source_muid, uint32_t destination_muid) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
-    LogEntry entry(direction, message);
+    LogEntry entry(direction, message, source_muid, destination_muid);
     pimpl_->logs_.push_back(entry);
     
     for (const auto& callback : pimpl_->log_callbacks_) {
         callback(entry);
     }
+}
+
+void MessageLogger::log_midi_ci_message(const midicci::Message& message, MessageDirection direction) {
+    std::string log_message = message.get_log_message();
+    uint32_t source_muid = message.get_source_muid();
+    uint32_t destination_muid = message.get_destination_muid();
+    
+    log(log_message, direction, source_muid, destination_muid);
 }
 
 void MessageLogger::add_log_callback(LogCallback callback) {

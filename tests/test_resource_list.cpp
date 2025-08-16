@@ -13,7 +13,7 @@ protected:
         
         // Create device with a simple logging callback
         device = std::make_shared<MidiCIDevice>(0x12345678, *config, 
-            [](const std::string& msg, bool is_error) {
+            [](const LogData& log_data) {
                 // Log messages are handled by gtest framework
             });
         

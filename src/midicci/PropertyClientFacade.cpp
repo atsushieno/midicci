@@ -54,7 +54,7 @@ void PropertyClientFacade::send_get_property_data(const std::string& resource, c
     
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     if (header.empty()) {
-        pimpl_->device_.get_logger()("Failed to create request header for resource: " + resource, true);
+        pimpl_->device_.get_logger()(LogData("Failed to create request header for resource: " + resource, true));
         return;
     }
 

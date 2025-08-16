@@ -1,5 +1,6 @@
 #include "LogWidget.hpp"
 #include <midicci/tooling/CIToolRepository.hpp>
+#include <midicci/midicci.hpp>
 #include "AppModel.hpp"
 
 #include <QVBoxLayout>
@@ -31,8 +32,8 @@ void LogWidget::setupUI()
     
     mainLayout->addLayout(buttonLayout);
     
-    m_logTable = new QTableWidget(0, 4, this);
-    m_logTable->setHorizontalHeaderLabels({"Time", "Direction", "Source/Dest", "Message"});
+    m_logTable = new QTableWidget(0, 6, this);
+    m_logTable->setHorizontalHeaderLabels({"Time", "Direction", "Type", "Source MUID", "Dest MUID", "Message"});
     m_logTable->horizontalHeader()->setStretchLastSection(true);
     m_logTable->setAlternatingRowColors(true);
     m_logTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -82,8 +83,29 @@ void LogWidget::updateLogDisplay()
         m_logTable->setItem(i, 0, new QTableWidgetItem(QString::fromStdString(time_str)));
         m_logTable->setItem(i, 1, new QTableWidgetItem(
                 entry.direction == midicci::tooling::MessageDirection::In ? "In" : "Out"));
-        m_logTable->setItem(i, 2, new QTableWidgetItem("MIDI"));
-        m_logTable->setItem(i, 3, new QTableWidgetItem(QString::fromStdString(entry.message)));
+        
+        // Try to determine if this is a MIDI-CI message or SysEx
+        QString messageType = "SysEx";
+        if (entry.message.find("MIDI-CI") != std::string::npos || 
+            entry.message.find("Discovery") != std::string::npos ||
+            entry.message.find("Property") != std::string::npos ||
+            entry.message.find("Profile") != std::string::npos) {
+            messageType = "MIDI-CI";
+        }
+        
+        m_logTable->setItem(i, 2, new QTableWidgetItem(messageType));
+        
+        // Display source MUID (convert from 7-bit encoded to actual 28-bit value)
+        QString sourceMuidStr = entry.source_muid == 0 ? "-" : 
+            QString("0x%1").arg(QString::number(midicci::CIFactory::midiCI32to28(entry.source_muid), 16).toUpper(), 7, QChar('0'));
+        m_logTable->setItem(i, 3, new QTableWidgetItem(sourceMuidStr));
+        
+        // Display destination MUID (convert from 7-bit encoded to actual 28-bit value)
+        QString destMuidStr = entry.destination_muid == 0 ? "-" : 
+            QString("0x%1").arg(QString::number(midicci::CIFactory::midiCI32to28(entry.destination_muid), 16).toUpper(), 7, QChar('0'));
+        m_logTable->setItem(i, 4, new QTableWidgetItem(destMuidStr));
+        
+        m_logTable->setItem(i, 5, new QTableWidgetItem(QString::fromStdString(entry.message)));
     }
     
     m_logTable->scrollToBottom();

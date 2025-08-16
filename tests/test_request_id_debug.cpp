@@ -44,11 +44,19 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         auto server_device = std::make_shared<MidiCIDevice>(0x87654321, server_config);
         
         // Set up debug loggers
-        client_device->set_logger([this](const std::string& message, bool is_outgoing) {
-            this->debug_logger(message, is_outgoing);
+        client_device->set_logger([this](const LogData& log_data) {
+            if (log_data.has_message()) {
+                this->debug_logger(log_data.get_message().get_log_message(), log_data.is_outgoing);
+            } else {
+                this->debug_logger(log_data.get_string(), log_data.is_outgoing);
+            }
         });
-        server_device->set_logger([this](const std::string& message, bool is_outgoing) {
-            this->debug_logger(message, is_outgoing);
+        server_device->set_logger([this](const LogData& log_data) {
+            if (log_data.has_message()) {
+                this->debug_logger(log_data.get_message().get_log_message(), log_data.is_outgoing);
+            } else {
+                this->debug_logger(log_data.get_string(), log_data.is_outgoing);
+            }
         });
         
         // Set up mock transports

@@ -283,7 +283,7 @@ SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const Subs
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (!pimpl_->property_service_) {
-        pimpl_->device_.get_logger()("No property service available for subscription", true);
+        pimpl_->device_.get_logger()(LogData("No property service available for subscription", true));
         return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
     }
     
@@ -312,7 +312,7 @@ SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const Subs
         return std::move(reply.value());
     }
     else {
-        pimpl_->device_.get_logger()("Incoming SubscribeProperty message resulted in an error", true);
+        pimpl_->device_.get_logger()(LogData("Incoming SubscribeProperty message resulted in an error", true));
     }
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
@@ -352,7 +352,7 @@ SubscribeProperty PropertyHostFacade::createShutdownSubscriptionMessage(uint32_t
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (!pimpl_->property_service_) {
-        pimpl_->device_.get_logger()("No property service available for shutdown message", true);
+        pimpl_->device_.get_logger()(LogData("No property service available for shutdown message", true));
         Common common(pimpl_->device_.get_muid(), destination_muid, ADDRESS_FUNCTION_BLOCK, group);
         std::vector<uint8_t> empty_header, empty_body;
         return SubscribeProperty(common, request_id, empty_header, empty_body);

@@ -71,9 +71,17 @@ void CIDeviceManager::initialize() {
         return midi_device_manager_->send_sysex(group, ump_data);
     };
     
-    auto logger_wrapper = [this](const std::string& message, bool is_outgoing) {
-        MessageDirection direction = is_outgoing ? MessageDirection::Out : MessageDirection::In;
-        repository_.log(message, direction);
+    auto logger_wrapper = [this](const LogData& log_data) {
+        MessageDirection direction = log_data.is_outgoing ? MessageDirection::Out : MessageDirection::In;
+        if (log_data.has_message()) {
+            // For structured messages, extract MUIDs and use the message's log string
+            const auto& message = log_data.get_message();
+            repository_.log(message.get_log_message(), direction, 
+                          message.get_source_muid(), message.get_destination_muid());
+        } else {
+            // For plain string messages, no MUID information
+            repository_.log(log_data.get_string(), direction);
+        }
     };
     
     device_model_ = std::make_shared<CIDeviceModel>(

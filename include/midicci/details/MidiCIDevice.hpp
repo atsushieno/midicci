@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <variant>
 #include "midicci/midicci.hpp"
 
 namespace midicci {
@@ -14,13 +15,26 @@ class PropertyHostFacade;
 class PropertyClientFacade;
 class ClientConnection;
 
+// Log data that can contain either a plain string or a structured MIDI-CI message
+struct LogData {
+    std::variant<std::string, std::reference_wrapper<const Message>> data;
+    bool is_outgoing;
+    
+    LogData(const std::string& str, bool outgoing) : data(str), is_outgoing(outgoing) {}
+    LogData(const Message& msg, bool outgoing) : data(std::cref(msg)), is_outgoing(outgoing) {}
+    
+    bool has_message() const { return std::holds_alternative<std::reference_wrapper<const Message>>(data); }
+    const Message& get_message() const { return std::get<std::reference_wrapper<const Message>>(data); }
+    const std::string& get_string() const { return std::get<std::string>(data); }
+};
+
 class MidiCIDevice {
 public:
     typedef std::function<void(const Message&)> MessageCallback;
     typedef std::function<void(const Message&)> MessageReceivedCallback;
     typedef std::function<void()> ConnectionsChangedCallback;
     typedef std::function<bool(uint8_t group, const std::vector<uint8_t>& data)> CIOutputSender;
-    typedef std::function<void(const std::string&, bool)> LoggerFunction;
+    typedef std::function<void(const LogData&)> LoggerFunction;
     
     MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();

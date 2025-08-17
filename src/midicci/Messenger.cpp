@@ -331,7 +331,9 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
                 uint16_t num_chunks = CIRetrieval::get_property_total_chunks(data);
                 uint16_t chunk_index = CIRetrieval::get_property_chunk_index(data);
-                
+                std::string msg = std::format("GetPropertyDataReply Part: {} / {}", chunk_index, num_chunks);
+                pimpl_->device_.get_logger()(LogData{msg, false});
+
                 handleChunk(common, request_id, chunk_index, num_chunks, header, body,
                     [this, common, request_id](const std::vector<uint8_t>& complete_header, const std::vector<uint8_t>& complete_body) {
                         GetPropertyDataReply reply(common, request_id, complete_header, complete_body);

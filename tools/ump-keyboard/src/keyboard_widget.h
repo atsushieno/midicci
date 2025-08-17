@@ -118,6 +118,7 @@ private:
     QListWidget* programListWidget;
     
     uint32_t selectedDeviceMuid;
+    bool propertiesRequested;
     
     QList<PianoKey*> whiteKeys;
     QList<PianoKey*> blackKeys;

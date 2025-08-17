@@ -77,6 +77,9 @@ public:
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
     void setPropertiesChangedCallback(std::function<void(uint32_t)> callback);
+    
+    // Instrumentation - for debugging performance issues
+    void instrumentation_print_statistics() const;
 
 private:
     std::unique_ptr<midicci::MidiCIDevice> device_;
@@ -122,4 +125,12 @@ private:
     
     // Thread synchronization for cross-thread access
     mutable std::recursive_mutex midi_ci_mutex_;
+    
+    // Instrumentation fields for tracking call patterns
+    mutable int instrumentation_call_counter_;
+    mutable std::map<std::pair<uint32_t, std::string>, int> instrumentation_property_call_counts_;
+    mutable std::map<std::pair<uint32_t, std::string>, std::chrono::steady_clock::time_point> instrumentation_last_call_time_;
+    
+    // Instrumentation functions
+    void instrumentation_log_property_call(uint32_t muid, const std::string& property_name, const std::string& caller) const;
 };

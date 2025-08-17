@@ -9,7 +9,7 @@
 using namespace midicci::commonproperties;
 
 MidiCIManager::MidiCIManager(midicci::keyboard::MessageLogger* logger) 
-    : muid_(0), initialized_(false), logger_(logger) {
+    : muid_(0), initialized_(false), logger_(logger), instrumentation_call_counter_(0) {
 }
 
 MidiCIManager::~MidiCIManager() {
@@ -413,6 +413,8 @@ void MidiCIManager::log(const std::string& message, bool is_outgoing) {
 std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManager::getAllCtrlList(uint32_t muid) {
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     
+    instrumentation_log_property_call(muid, "AllCtrlList", "getAllCtrlList");
+    
     if (!initialized_ || !device_) {
         std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
         return std::nullopt;
@@ -456,6 +458,8 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
 
 std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManager::getProgramList(uint32_t muid) {
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    
+    instrumentation_log_property_call(muid, "ProgramList", "getProgramList");
     
     if (!initialized_ || !device_) {
         std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
@@ -623,5 +627,42 @@ void MidiCIManager::clearDiscoveredDevices() {
     if (devices_changed_callback_) {
         devices_changed_callback_();
     }
+}
+
+void MidiCIManager::instrumentation_log_property_call(uint32_t muid, const std::string& property_name, const std::string& caller) const {
+    instrumentation_call_counter_++;
+    auto key = std::make_pair(muid, property_name);
+    instrumentation_property_call_counts_[key]++;
+    auto now = std::chrono::steady_clock::now();
+    
+    auto prev_time_it = instrumentation_last_call_time_.find(key);
+    std::string time_since = "FIRST";
+    if (prev_time_it != instrumentation_last_call_time_.end()) {
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - prev_time_it->second);
+        time_since = std::to_string(duration.count()) + "ms";
+    }
+    
+    instrumentation_last_call_time_[key] = now;
+    
+    std::cout << "[INSTRUMENTATION #" << instrumentation_call_counter_ << "] " 
+              << caller << " -> " << property_name 
+              << " (MUID: 0x" << std::hex << muid << std::dec << ") "
+              << "Count: " << instrumentation_property_call_counts_[key] 
+              << ", Time since last: " << time_since << std::endl;
+}
+
+void MidiCIManager::instrumentation_print_statistics() const {
+    std::cout << "\n[INSTRUMENTATION STATS] Total property calls: " << instrumentation_call_counter_ << std::endl;
+    std::cout << "[INSTRUMENTATION STATS] Call counts by property:" << std::endl;
+    
+    for (const auto& entry : instrumentation_property_call_counts_) {
+        uint32_t muid = entry.first.first;
+        const std::string& property = entry.first.second;
+        int count = entry.second;
+        
+        std::cout << "  MUID 0x" << std::hex << muid << std::dec 
+                  << " -> " << property << ": " << count << " calls" << std::endl;
+    }
+    std::cout << std::endl;
 }
 

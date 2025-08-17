@@ -565,9 +565,13 @@ void KeyboardWidget::updateMidiCIDevices(const std::vector<MidiCIDeviceInfo>& di
         }
         
         if (selectedIndex >= 0) {
-            // Previously selected device is still available, reselect it
-            std::cout << "[UI] Reselecting previously selected device" << std::endl;
-            midiCIDeviceCombo->setCurrentIndex(selectedIndex);
+            // Previously selected device is still available, reselect it only if not already selected
+            if (midiCIDeviceCombo->currentIndex() != selectedIndex) {
+                std::cout << "[UI] Reselecting previously selected device" << std::endl;
+                midiCIDeviceCombo->setCurrentIndex(selectedIndex);
+            } else {
+                std::cout << "[UI] Device already selected in combobox, skipping setCurrentIndex" << std::endl;
+            }
         } else if (midiCIDeviceCombo->count() == 1 && selectedDeviceMuid == 0) {
             // Auto-select first device if no device was previously selected and only one is available
             std::cout << "[UI] Auto-selecting first endpoint-ready device" << std::endl;
@@ -680,8 +684,13 @@ void KeyboardWidget::updateProperties(uint32_t muid) {
 }
 
 void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
+    static int instrumentation_ui_call_counter = 0;
+    instrumentation_ui_call_counter++;
+    std::cout << "[INSTRUMENTATION UI #" << instrumentation_ui_call_counter << "] updatePropertiesOnMainThread called for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+    
     // Update control list using virtualized widget
     if (ctrlListProvider) {
+        std::cout << "[INSTRUMENTATION UI] Calling ctrlListProvider for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         auto controls_opt = ctrlListProvider(muid);
         
         if (!controls_opt.has_value()) {
@@ -696,6 +705,7 @@ void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
     
     // Update program list
     if (programListProvider) {
+        std::cout << "[INSTRUMENTATION UI] Calling programListProvider for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         auto programs_opt = programListProvider(muid);
         programListWidget->clear();
         
@@ -733,6 +743,9 @@ void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
 }
 
 void KeyboardWidget::onPropertiesUpdated(uint32_t muid) {
+    static int instrumentation_callback_counter = 0;
+    instrumentation_callback_counter++;
+    std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec << std::endl;
     updateProperties(muid);
 }
 

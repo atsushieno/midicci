@@ -54,6 +54,13 @@ protected:
         for (const auto& input : inputDevices) {
             for (const auto& output : outputDevices) {
                 if (input.second == output.second) {
+                    // Skip MIDI Through ports on Linux as they're loopback ports without MIDI-CI
+                    if (input.second.find("MIDI Through") != std::string::npos ||
+                        input.second.find("Midi Through") != std::string::npos) {
+                        std::cout << "[TEST] Skipping MIDI Through port: " << input.second << std::endl;
+                        continue;
+                    }
+                    
                     pairs.emplace_back(input.first, output.first);
                     std::cout << "[TEST] Found matching pair: " << input.second << std::endl;
                 }

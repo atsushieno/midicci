@@ -39,7 +39,7 @@ FetchContent_MakeAvailable(googletest)
 FetchContent_Declare(
   libremidi
   GIT_REPOSITORY https://github.com/celtera/libremidi.git
-  GIT_TAG v5.2.0
+  GIT_TAG v5.3.1
 )
 FetchContent_MakeAvailable(libremidi)
 

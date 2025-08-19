@@ -15,6 +15,7 @@
 #include <functional>
 #include "midi_ci_manager.h"
 #include "virtualized_control_list.h"
+#include <midicci/details/commonproperties/StandardProperties.hpp>
 
 class PianoKey;
 
@@ -34,6 +35,7 @@ public:
     void setNRPNCallback(std::function<void(int,int,int,uint32_t)> callback); // channel, msb, lsb, value
     void setPerNoteControlCallback(std::function<void(int,int,int,uint32_t)> callback); // channel, note, controller, value
     void setPerNoteAftertouchCallback(std::function<void(int,int,uint32_t)> callback); // channel, note, value
+    void setProgramChangeCallback(std::function<void(int,uint8_t,uint8_t,uint8_t)> callback); // channel, program, bankMSB, bankLSB
     
     void updateMidiDevices(const std::vector<std::pair<std::string, std::string>>& inputDevices,
                           const std::vector<std::pair<std::string, std::string>>& outputDevices);
@@ -63,6 +65,7 @@ private slots:
     void sendMidiCIDiscovery();
     void onMidiCIDeviceSelected(int index);
     void refreshProperties();
+    void onProgramSelected(int row);
 
 public slots:
     void onPropertiesUpdated(uint32_t muid);
@@ -86,6 +89,7 @@ private:
     std::function<void(int,int,int,int)> nrpnCallback;
     std::function<void(int,int,int,int)> perNoteControlCallback;
     std::function<void(int,int,int)> perNoteAftertouchCallback;
+    std::function<void(int,uint8_t,uint8_t,uint8_t)> programChangeCallback;
     std::function<MidiCIDeviceInfo*(uint32_t)> midiCIDeviceProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlListProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> programListProvider;
@@ -119,6 +123,9 @@ private:
     
     uint32_t selectedDeviceMuid;
     bool propertiesRequested;
+    
+    // Store current program list for reference when selected
+    std::vector<midicci::commonproperties::MidiCIProgram> currentPrograms;
     
     QList<PianoKey*> whiteKeys;
     QList<PianoKey*> blackKeys;

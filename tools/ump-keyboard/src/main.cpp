@@ -116,6 +116,10 @@ int main(int argc, char** argv) {
         controller.sendPerNoteAftertouch(channel, note, value);
     });
     
+    keyboard.setProgramChangeCallback([&controller](int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB) {
+        controller.sendProgramChange(channel, program, bankMSB, bankLSB);
+    });
+    
     // Connect device selection signals
     QObject::connect(&keyboard, &KeyboardWidget::midiInputDeviceChanged,
                     [&controller](const QString& deviceId) {

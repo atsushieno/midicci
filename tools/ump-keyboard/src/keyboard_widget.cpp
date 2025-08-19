@@ -298,6 +298,10 @@ void KeyboardWidget::setPerNoteAftertouchCallback(std::function<void(int,int,uin
     perNoteAftertouchCallback = callback;
 }
 
+void KeyboardWidget::setProgramChangeCallback(std::function<void(int,uint8_t,uint8_t,uint8_t)> callback) {
+    programChangeCallback = callback;
+}
+
 void KeyboardWidget::updateMidiDevices(
     const std::vector<std::pair<std::string, std::string>>& inputDevices,
     const std::vector<std::pair<std::string, std::string>>& outputDevices) {
@@ -481,6 +485,9 @@ void KeyboardWidget::setupPropertiesPanel() {
     programListWidget->addItem("No device selected");
     programListWidget->setEnabled(false);
     programLayout->addWidget(programListWidget);
+    
+    // Connect program selection signal
+    connect(programListWidget, &QListWidget::currentRowChanged, this, &KeyboardWidget::onProgramSelected);
     listsLayout->addLayout(programLayout);
     
     propertiesLayout->addLayout(listsLayout);
@@ -710,10 +717,13 @@ void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
         programListWidget->clear();
         
         if (!programs_opt.has_value()) {
+            currentPrograms.clear();
             programListWidget->addItem("Loading programs...");
             programListWidget->setEnabled(false);
         } else {
             auto programs = programs_opt.value();
+            currentPrograms = programs; // Store for selection reference
+            
             if (programs.empty()) {
                 programListWidget->addItem("No programs available");
                 programListWidget->setEnabled(false);
@@ -747,6 +757,31 @@ void KeyboardWidget::onPropertiesUpdated(uint32_t muid) {
     instrumentation_callback_counter++;
     std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec << std::endl;
     updateProperties(muid);
+}
+
+void KeyboardWidget::onProgramSelected(int row) {
+    // Check if we have valid program data and the row is valid
+    if (row < 0 || row >= (int)currentPrograms.size() || !programChangeCallback) {
+        return;
+    }
+    
+    const auto& selectedProgram = currentPrograms[row];
+    
+    // Check if we have valid bank/PC data (should be 3 elements: bankMSB, bankLSB, program)
+    if (selectedProgram.bankPC.size() < 3) {
+        std::cerr << "Invalid program data - missing bank/PC information" << std::endl;
+        return;
+    }
+    
+    uint8_t bankMSB = selectedProgram.bankPC[0];
+    uint8_t bankLSB = selectedProgram.bankPC[1]; 
+    uint8_t program = selectedProgram.bankPC[2];
+    
+    // Send program change on channel 0 (could be made configurable)
+    programChangeCallback(0, program, bankMSB, bankLSB);
+    
+    std::cout << "[PROGRAM SELECTION] Selected: " << selectedProgram.title 
+              << " [Bank MSB:" << (int)bankMSB << " Bank LSB:" << (int)bankLSB << " PC:" << (int)program << "]" << std::endl;
 }
 
 #include "keyboard_widget.moc"

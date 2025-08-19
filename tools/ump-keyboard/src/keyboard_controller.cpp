@@ -722,6 +722,22 @@ void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t v
     }
 }
 
+void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB) {
+    if (!midiOut || !initialized) return;
+    
+    try {
+        // Create MIDI 2.0 UMP Program Change with bank select
+        auto pc = cmidi2_ump_midi2_program(0, channel, CMIDI2_PROGRAM_CHANGE_OPTION_BANK_VALID, program, bankMSB, bankLSB);
+        libremidi::ump packet(pc >> 32, pc & 0xFFFFFFFF, 0, 0);
+        midiOut->send_ump(packet);
+        
+        std::cout << "[MIDI OUT] Program Change Ch:" << channel << " Program:" << (int)program 
+                  << " Bank MSB:" << (int)bankMSB << " Bank LSB:" << (int)bankLSB << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending program change: " << e.what() << std::endl;
+    }
+}
+
 void KeyboardController::updateUIConnectionState() {
     bool currentConnectionState = hasValidMidiPair();
     

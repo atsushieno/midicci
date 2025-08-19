@@ -50,6 +50,7 @@ public:
     void sendNRPN(int channel, int msb, int lsb, uint32_t value);
     void sendPerNoteControlChange(int channel, int note, int controller, uint32_t value);
     void sendPerNoteAftertouch(int channel, int note, uint32_t value);
+    void sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB);
     
     // MIDI connection state
     bool hasValidMidiPair() const;

@@ -52,16 +52,16 @@ void CIFactory::memcpy(std::vector<uint8_t>& dst, size_t dst_offset, const std::
 std::vector<uint8_t> CIFactory::midiCIMessageCommon(
     std::vector<uint8_t>& dst, uint8_t address, uint8_t sub_id_2,
     uint8_t version_and_format, uint32_t source_muid, uint32_t destination_muid) {
-    
+
     dst.resize(std::max(dst.size(), size_t(13)));
     dst[0] = MIDI_CI_UNIVERSAL_SYSEX_ID;
     dst[1] = address;
     dst[2] = MIDI_CI_SUB_ID_1;
     dst[3] = sub_id_2;
     dst[4] = version_and_format;
-    midiCI7bitInt28At(dst, 5, midiCI32to28(source_muid));
-    midiCI7bitInt28At(dst, 9, midiCI32to28(destination_muid));
-    
+    midiCiDirectUint32At(dst, 5, source_muid);
+    midiCiDirectUint32At(dst, 9, destination_muid);
+
     return std::vector<uint8_t>(dst.begin(), dst.begin() + 13);
 }
 
@@ -122,7 +122,7 @@ std::vector<uint8_t> CIFactory::midiCIPropertyCommon(
     const std::vector<uint8_t>& header, uint16_t num_chunks,
     uint16_t chunk_index, const std::vector<uint8_t>& chunk_data) {
     
-    size_t required_size = 21 + header.size() + chunk_data.size();
+    size_t required_size = 22 + header.size() + chunk_data.size();
     dst.resize(std::max(dst.size(), required_size));
     
     midiCIMessageCommon(dst, address, sub_id_2, MIDI_CI_VERSION_1_2, source_muid, destination_muid);
@@ -161,22 +161,22 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
     std::vector<uint8_t>& dst, uint32_t max_chunk_size, uint8_t sub_id_2,
     uint32_t source_muid, uint32_t destination_muid, uint8_t request_id,
     const std::vector<uint8_t>& header, const std::vector<uint8_t>& data) {
-    
+
     std::vector<std::vector<uint8_t>> result;
-    
+
     if (data.empty()) {
         auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
                                                source_muid, destination_muid, request_id, header, 1, 1, data);
         result.push_back(packet);
         return result;
     }
-    
+
     size_t num_chunks = (data.size() + max_chunk_size - 1) / max_chunk_size;
     for (size_t i = 0; i < num_chunks; ++i) {
         size_t start = i * max_chunk_size;
         size_t end = std::min(start + max_chunk_size, data.size());
         std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
-        
+
         auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
                                                source_muid, destination_muid, request_id, header,
                                                static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);

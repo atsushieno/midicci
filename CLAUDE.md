@@ -32,3 +32,9 @@ Always ensure that this CMake build passes.
 
 - Use `#pragma once` in the headers. We expect this works in all modern C++ compilers.
 - Use shorthand namespace notation `namespace Foo::Bar::Baz { ... }` (NOTE: `Foo::Bar::Baz` is not THE NAMESPACE you use).
+
+# Related specifications
+
+MIDI-CI: https://drive.google.com/file/d/1PDhak0-sWUEVscsz_4SSRRRQo94h1lX4/view
+UMP: https://drive.google.com/file/d/1l2L5ALHj4K9hw_LalQ2jJZBMXDxc9Uel/view
+

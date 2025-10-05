@@ -25,6 +25,7 @@ set(GTEST_SOURCES
     test_resource_list.cpp
     test_standard_properties_ctrlmaplist.cpp
     test_allctrllist_parser.cpp
+    test_allctrllist_messaging.cpp
     test_ump_factory.cpp
     test_ump_retriever.cpp
     test_ump.cpp

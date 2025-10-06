@@ -1,8 +1,7 @@
 # UMP Keyboard Tool
 # A Qt-based MIDI keyboard application with MIDI-CI support
 
-# Find Qt6 for GUI components
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 COMPONENTS Core Widgets)
 
 # Add external dependencies
 include(FetchContent)
@@ -17,35 +16,52 @@ FetchContent_MakeAvailable(cmidi2)
 
 qt6_standard_project_setup()
 
-# Create a library from the main source files (excluding main.cpp)
-add_library(midicci-keyboard-core 
+# Create a Qt-independent core library with business logic
+add_library(midicci-keyboard-core
     src/keyboard_controller.cpp
     src/midi_ci_manager.cpp
-    src/keyboard_widget.cpp
-    src/virtualized_control_list.cpp
-    src/main_window.cpp
-    src/log_widget.cpp
     src/message_logger.cpp
 )
 
-# Link required libraries to the core library
-target_link_libraries(midicci-keyboard-core 
-    PRIVATE
-    Qt6::Core 
-    Qt6::Widgets
+# Link required libraries to the core library (no Qt dependencies)
+target_link_libraries(midicci-keyboard-core
+    PUBLIC
     libremidi
     midicci
 )
 
-# Set up Qt for the core library
-set_target_properties(midicci-keyboard-core PROPERTIES
+# Include directories for the core library
+target_include_directories(midicci-keyboard-core
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${cmidi2_SOURCE_DIR}
+)
+
+# Create a Qt-specific GUI library
+add_library(midicci-keyboard-qt-gui
+    src/keyboard_widget.cpp
+    src/virtualized_control_list.cpp
+    src/main_window.cpp
+    src/log_widget.cpp
+)
+
+# Link Qt and core to the GUI library
+target_link_libraries(midicci-keyboard-qt-gui
+    PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+    midicci-keyboard-core
+)
+
+# Set up Qt for the GUI library
+set_target_properties(midicci-keyboard-qt-gui PROPERTIES
     AUTOMOC ON
     AUTOUIC ON
     AUTORCC ON
 )
 
-# Include directories for the core library
-target_include_directories(midicci-keyboard-core 
+# Include directories for the GUI library
+target_include_directories(midicci-keyboard-qt-gui
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${cmidi2_SOURCE_DIR}
@@ -56,12 +72,11 @@ add_executable(midicci-keyboard
     src/main.cpp
 )
 
-target_link_libraries(midicci-keyboard 
+target_link_libraries(midicci-keyboard
     Qt6::Core
     Qt6::Widgets
+    midicci-keyboard-qt-gui
     midicci-keyboard-core
-    libremidi
-    midicci
 )
 
 target_include_directories(midicci-keyboard PRIVATE

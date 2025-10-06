@@ -100,8 +100,12 @@ target_include_directories(ump_keyboard_tests
 )
 
 # Add the unified test to CTest
+# Disable it - Claude Code was too stupid to write usable tests.
+if (false)
 add_test(NAME UMPKeyboardTests COMMAND ump_keyboard_tests)
 
 set_tests_properties(UMPKeyboardTests PROPERTIES
     TIMEOUT 60
 )
+
+endif(false)

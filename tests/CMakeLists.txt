@@ -50,3 +50,5 @@ target_include_directories(midicci-gtest
 )
 
 target_compile_features(midicci-gtest PRIVATE cxx_std_20)
+
+add_test(NAME tests COMMAND midicci-gtest)

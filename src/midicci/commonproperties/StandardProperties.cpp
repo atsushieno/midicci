@@ -496,10 +496,13 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
         if (control.priority.has_value()) {
             obj[ControlPropertyNames::PRIORITY] = JsonValue(static_cast<double>(control.priority.value()));
         }
-        
-        obj[ControlPropertyNames::DEFAULT] = JsonValue(static_cast<double>(control.defaultValue));
-        obj[ControlPropertyNames::TRANSMIT] = JsonValue(control.transmit);
-        obj[ControlPropertyNames::RECOGNIZE] = JsonValue(control.recognize);
+
+        if (control.defaultValue)
+            obj[ControlPropertyNames::DEFAULT] = JsonValue(static_cast<double>(control.defaultValue));
+        if (!control.transmit.empty())
+            obj[ControlPropertyNames::TRANSMIT] = JsonValue(control.transmit);
+        if (!control.recognize.empty())
+            obj[ControlPropertyNames::RECOGNIZE] = JsonValue(control.recognize);
         obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));
         
         if (control.paramPath.has_value()) {
@@ -523,8 +526,9 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
             minmax_array.push_back(JsonValue(static_cast<double>(val)));
         }
         obj[ControlPropertyNames::MIN_MAX] = JsonValue(minmax_array);
-        
-        obj[ControlPropertyNames::DEFAULT_CC_MAP] = JsonValue(control.defaultCCMap);
+
+        if (control.defaultCCMap)
+            obj[ControlPropertyNames::DEFAULT_CC_MAP] = JsonValue(control.defaultCCMap);
         
         json_array.push_back(JsonValue(obj));
     }

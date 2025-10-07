@@ -505,26 +505,35 @@ void ResponderWidget::onUpdatePropertyMetadata()
             m_repository->log(QString("Updated property metadata for: %1 (simulated for predefined property)").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
             return;
         }
-        
+
         if (!m_repository || !m_repository->get_ci_device_manager()) {
             return;
         }
-        
+
         auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
         if (!deviceModel) {
             return;
         }
-        
+
+        // Preserve the current selection BEFORE updating (which will trigger callbacks)
+        QString selectedProperty = m_selectedProperty;
+
+        // Get the new resource name from UI (user might have changed it)
+        QString newPropertyId = m_resourceEdit->text();
+        if (newPropertyId.isEmpty()) {
+            newPropertyId = selectedProperty;
+        }
+
         // Create new metadata with values from UI
-        auto newMetadata = midicci::commonproperties::CommonRulesPropertyMetadata(m_selectedProperty.toStdString());
-        
+        auto newMetadata = midicci::commonproperties::CommonRulesPropertyMetadata(newPropertyId.toStdString());
+
         // Set metadata from UI fields
         newMetadata.canGet = m_canGetCheck->isChecked();
         newMetadata.canSet = m_canSetCombo->currentText().toStdString();
         newMetadata.canSubscribe = m_canSubscribeCheck->isChecked();
         newMetadata.requireResId = m_requireResIdCheck->isChecked();
         newMetadata.canPaginate = m_canPaginateCheck->isChecked();
-        
+
         // Parse media types (comma-separated)
         QStringList mediaTypesList = m_mediaTypesEdit->toPlainText().split(",", Qt::SkipEmptyParts);
         newMetadata.mediaTypes.clear();
@@ -534,7 +543,7 @@ void ResponderWidget::onUpdatePropertyMetadata()
         if (newMetadata.mediaTypes.empty()) {
             newMetadata.mediaTypes.push_back("application/json");
         }
-        
+
         // Parse encodings (comma-separated)
         QStringList encodingsList = m_encodingsEdit->toPlainText().split(",", Qt::SkipEmptyParts);
         newMetadata.encodings.clear();
@@ -544,16 +553,40 @@ void ResponderWidget::onUpdatePropertyMetadata()
         if (newMetadata.encodings.empty()) {
             newMetadata.encodings.push_back("ASCII");
         }
-        
+
         newMetadata.schema = m_schemaEdit->toPlainText().toStdString();
         if (newMetadata.schema.empty()) {
             newMetadata.schema = "{}";
         }
-        
+
         // Update the property metadata in business logic
-        deviceModel->update_property_metadata(m_selectedProperty.toStdString(), newMetadata);
-        
-        m_repository->log(QString("Updated property metadata for: %1").arg(m_selectedProperty).toStdString(), tooling::MessageDirection::Out);
+        deviceModel->update_property_metadata(selectedProperty.toStdString(), newMetadata);
+
+        m_repository->log(QString("Updated property metadata for: %1").arg(selectedProperty).toStdString(), tooling::MessageDirection::Out);
+
+        // Force immediate refresh of property list (this may have already happened via callbacks)
+        updatePropertyList();
+
+        // Restore the selection to the property (using the new property ID if it was renamed)
+        if (!newPropertyId.isEmpty()) {
+            for (int i = 0; i < m_propertyList->count(); ++i) {
+                if (m_propertyList->item(i)->text() == newPropertyId) {
+                    m_propertyList->setCurrentRow(i);
+                    m_selectedProperty = newPropertyId;
+                    break;
+                }
+            }
+        }
+
+        // Ensure m_selectedProperty is set to the new property ID
+        if (!newPropertyId.isEmpty()) {
+            m_selectedProperty = newPropertyId;
+        }
+
+        // Now refresh the details with the restored selection
+        if (!m_selectedProperty.isEmpty()) {
+            updatePropertyDetails();
+        }
     }
 }
 

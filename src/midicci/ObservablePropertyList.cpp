@@ -215,11 +215,45 @@ namespace midicci {
     void ServiceObservablePropertyList::updateMetadata(const std::string& propertyId, PropertyMetadata* metadata) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        // FIXME: implement
-        /*
+        // Following Kotlin implementation: remove old property, then add new property
+        // First, preserve the current property data (value) if it exists
+        std::vector<uint8_t> existing_data;
+        auto* old_metadata = getMetadata(propertyId);
+        if (old_metadata) {
+            existing_data = old_metadata->getData();
+        }
+
+        // Remove the old metadata from the service
         property_service_.remove_metadata(propertyId);
-        property_service_.add_metadata(std::make_unique(metadata));
-         */
+
+        // Create a new metadata object by copying from the provided metadata
+        // We need to create a new CommonRulesPropertyMetadata with the updated values
+        auto* common_rules_metadata = dynamic_cast<CommonRulesPropertyMetadata*>(metadata);
+        if (common_rules_metadata) {
+            auto new_metadata = std::make_unique<CommonRulesPropertyMetadata>();
+            new_metadata->resource = common_rules_metadata->resource;
+            new_metadata->canGet = common_rules_metadata->canGet;
+            new_metadata->canSet = common_rules_metadata->canSet;
+            new_metadata->canSubscribe = common_rules_metadata->canSubscribe;
+            new_metadata->requireResId = common_rules_metadata->requireResId;
+            new_metadata->canPaginate = common_rules_metadata->canPaginate;
+            new_metadata->mediaTypes = common_rules_metadata->mediaTypes;
+            new_metadata->encodings = common_rules_metadata->encodings;
+            new_metadata->schema = common_rules_metadata->schema;
+            new_metadata->originator = common_rules_metadata->originator;
+
+            // Preserve the existing data if we had it, otherwise use the new metadata's data
+            if (!existing_data.empty()) {
+                new_metadata->data = existing_data;
+            } else {
+                new_metadata->data = common_rules_metadata->data;
+            }
+
+            // Add the new metadata to the service
+            property_service_.add_metadata(std::move(new_metadata));
+        }
+        // Note: The property_catalog_updated callback will be triggered by add_metadata,
+        // which will in turn call notifyPropertyCatalogUpdated()
     }
 
     void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {

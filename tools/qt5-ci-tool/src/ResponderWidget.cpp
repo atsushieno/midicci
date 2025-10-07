@@ -792,8 +792,19 @@ void ResponderWidget::updatePropertyDetails()
             // Get actual property metadata
             auto* metadata = deviceModel->get_local_property_metadata(m_selectedProperty.toStdString());
             if (metadata) {
-            // Display actual property value
-            auto data = metadata->getData();
+            // Display actual property value from PropertyHostFacade (not metadata default)
+            auto& propertyFacade = deviceModel->get_device()->get_property_host_facade();
+            auto propertyValues = propertyFacade.get_properties().getValues();
+            auto propertyIt = std::find_if(propertyValues.begin(), propertyValues.end(),
+                [this](const midicci::PropertyValue& pv) { return pv.id == m_selectedProperty.toStdString(); });
+
+            std::vector<uint8_t> data;
+            if (propertyIt != propertyValues.end()) {
+                data = propertyIt->body;
+            } else {
+                // Fallback to metadata default if not found in values
+                data = metadata->getData();
+            }
             QString valueText = QString::fromUtf8(reinterpret_cast<const char*>(data.data()), data.size());
             m_propertyValueEdit->setText(valueText);
             

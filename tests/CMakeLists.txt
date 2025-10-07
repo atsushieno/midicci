@@ -13,6 +13,7 @@ set(GTEST_SOURCES
     test_json.cpp
     test_property_common_converter.cpp
     TestCIMediator.cpp
+    TestCITransport.cpp
     test_ci_device_model_properties.cpp
     #test_final_correlation.cpp
     test_message_serialization.cpp
@@ -30,14 +31,16 @@ set(GTEST_SOURCES
     test_ump_retriever.cpp
     test_ump.cpp
     test_ump_translator.cpp
+    test_transport_property_exchange.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})
 
 target_link_libraries(midicci-gtest
-    PRIVATE 
+    PRIVATE
         midicci
         midicci-tooling
+        libremidi
         gtest_main
         gtest
         Threads::Threads

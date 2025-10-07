@@ -208,6 +208,8 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
                     }
                     buffered_sysex7_.clear();
                 }
+                else
+                    repository_.log(std::format("[received non-CI SysEx7] {} {} {}", buffered_sysex7_.size(), buffered_sysex7_[0], buffered_sysex7_[1]), MessageDirection::In);
             }
             break;
         }

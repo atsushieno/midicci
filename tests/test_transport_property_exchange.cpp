@@ -55,13 +55,15 @@ TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
     transport.processMessages(std::chrono::milliseconds(500));
 
     // Step 3: Verify the property value was received
-    bool property_received = transport.waitForCondition([&client, &property_id]() {
+    bool property_received = transport.waitForCondition([&client, &property_id, &initial_bytes]() {
         auto* properties = client.get_properties();
         auto values = properties->getValues();
-        return std::any_of(values.begin(), values.end(),
-                          [&property_id](const PropertyValue& pv) {
-                              return pv.id == property_id;
-                          });
+        auto it = std::find_if(values.begin(), values.end(),
+                              [&property_id](const PropertyValue& pv) {
+                                  return pv.id == property_id;
+                              });
+        // Wait until we have the property AND it has body data
+        return it != values.end() && it->body == initial_bytes;
     }, std::chrono::milliseconds(2000));
 
     ASSERT_TRUE(property_received) << "Property data was not received over transport";
@@ -186,13 +188,15 @@ TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
     transport.processMessages(std::chrono::milliseconds(1000));
 
     // Verify the large property was received correctly
-    bool property_received = transport.waitForCondition([&client, &property_id]() {
+    bool property_received = transport.waitForCondition([&client, &property_id, &large_bytes]() {
         auto* properties = client.get_properties();
         auto values = properties->getValues();
-        return std::any_of(values.begin(), values.end(),
-                          [&property_id](const PropertyValue& pv) {
-                              return pv.id == property_id;
-                          });
+        auto it = std::find_if(values.begin(), values.end(),
+                              [&property_id](const PropertyValue& pv) {
+                                  return pv.id == property_id;
+                              });
+        // Wait until we have the property AND it has the complete body data
+        return it != values.end() && it->body.size() == large_bytes.size() && it->body == large_bytes;
     }, std::chrono::milliseconds(5000));
 
     ASSERT_TRUE(property_received) << "Large property data was not received";

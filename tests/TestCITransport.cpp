@@ -17,7 +17,9 @@ TestCITransport::TestCITransport() {
     device1_output_ = std::make_unique<libremidi::midi_out>(out1_conf, libremidi::midi2::out_default_configuration());
     auto out1_err = device1_output_->open_virtual_port(device1_output_port_name_);
     if (out1_err != stdx::error{}) {
-        throw std::runtime_error("Failed to create virtual output port for Device1");
+        std::cerr << "Failed to create virtual output port for Device1. Maybe your're running this test on the CI server where the platform MIDI API is not available.";
+        runnable = false;
+        return;
     }
 
     device2_output_port_name_ = "TestCITransport_Device2_Out_" + std::to_string(instance_id);
@@ -25,7 +27,9 @@ TestCITransport::TestCITransport() {
     device2_output_ = std::make_unique<libremidi::midi_out>(out2_conf, libremidi::midi2::out_default_configuration());
     auto out2_err = device2_output_->open_virtual_port(device2_output_port_name_);
     if (out2_err != stdx::error{}) {
-        throw std::runtime_error("Failed to create virtual output port for Device2");
+        std::cerr << "Failed to create virtual output port for Device2. Maybe your're running this test on the CI server where the platform MIDI API is not available.";
+        runnable = false;
+        return;
     }
 
     // Wait for ports to register in the system

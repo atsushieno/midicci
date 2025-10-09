@@ -43,6 +43,8 @@ public:
     const std::string& getDevice2InputPortName() const { return device2_input_port_name_; }
     const std::string& getDevice2OutputPortName() const { return device2_output_port_name_; }
 
+    bool isRunnable() { return runnable; }
+
 private:
     void setupDevice1();
     void setupDevice2();
@@ -50,6 +52,8 @@ private:
 
     void device1_send_ump(const std::vector<uint32_t>& ump_data);
     void device2_send_ump(const std::vector<uint32_t>& ump_data);
+
+    bool runnable{true};
 
     MidiCIDeviceConfiguration config1_;
     MidiCIDeviceConfiguration config2_;

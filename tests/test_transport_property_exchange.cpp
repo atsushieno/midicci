@@ -14,6 +14,8 @@ using namespace midicci::commonproperties;
 
 TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 
@@ -81,6 +83,8 @@ TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
 
 TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 
@@ -144,6 +148,8 @@ TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
 
 TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 
@@ -215,6 +221,8 @@ TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
 
 TEST(TransportPropertyExchangeTest, MultiplePropertyRequestsOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 
@@ -288,6 +296,8 @@ TEST(TransportPropertyExchangeTest, MultiplePropertyRequestsOverTransport) {
 
 TEST(TransportPropertyExchangeTest, PropertySubscriptionOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 
@@ -345,6 +355,8 @@ TEST(TransportPropertyExchangeTest, PropertySubscriptionOverTransport) {
 
 TEST(TransportPropertyExchangeTest, StandardPropertyChannelListOverTransport) {
     TestCITransport transport;
+    if (!transport.isRunnable())
+        return;
     auto& device1 = transport.getDevice1();
     auto& device2 = transport.getDevice2();
 

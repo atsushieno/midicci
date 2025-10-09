@@ -180,15 +180,31 @@ TestCITransport::TestCITransport() {
         std::vector<uint8_t> sysex_payload(sysex_with_markers.begin() + 1, sysex_with_markers.end() - 1);
         auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
 
+        // Send UMP packets in chunks to avoid overwhelming the buffer
+        // Each UMP is 16 bytes (4 uint32_t), chunk every ~128 UMPs (2048 bytes)
+        const size_t UMPS_PER_CHUNK = 128;
         std::vector<uint32_t> ump_data;
+        size_t ump_count = 0;
+
         for (const auto& ump : umps) {
             ump_data.push_back(ump.int1);
             ump_data.push_back(ump.int2);
             ump_data.push_back(ump.int3);
             ump_data.push_back(ump.int4);
+            ump_count++;
+
+            if (ump_count >= UMPS_PER_CHUNK) {
+                device1_send_ump(ump_data);
+                ump_data.clear();
+                ump_count = 0;
+            }
         }
 
-        device1_send_ump(ump_data);
+        // Send remaining UMPs
+        if (!ump_data.empty()) {
+            device1_send_ump(ump_data);
+        }
+
         return true;
     });
 
@@ -201,15 +217,31 @@ TestCITransport::TestCITransport() {
         std::vector<uint8_t> sysex_payload(sysex_with_markers.begin() + 1, sysex_with_markers.end() - 1);
         auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
 
+        // Send UMP packets in chunks to avoid overwhelming the buffer
+        // Each UMP is 16 bytes (4 uint32_t), chunk every ~128 UMPs (2048 bytes)
+        const size_t UMPS_PER_CHUNK = 128;
         std::vector<uint32_t> ump_data;
+        size_t ump_count = 0;
+
         for (const auto& ump : umps) {
             ump_data.push_back(ump.int1);
             ump_data.push_back(ump.int2);
             ump_data.push_back(ump.int3);
             ump_data.push_back(ump.int4);
+            ump_count++;
+
+            if (ump_count >= UMPS_PER_CHUNK) {
+                device2_send_ump(ump_data);
+                ump_data.clear();
+                ump_count = 0;
+            }
         }
 
-        device2_send_ump(ump_data);
+        // Send remaining UMPs
+        if (!ump_data.empty()) {
+            device2_send_ump(ump_data);
+        }
+
         return true;
     });
 
@@ -268,6 +300,7 @@ void TestCITransport::device2_send_ump(const std::vector<uint32_t>& ump_data) {
     if (device2_output_ && device2_output_->is_port_open()) {
         try {
             device2_output_->send_ump(ump_data.data(), ump_data.size());
+            std::this_thread::sleep_for(std::chrono::microseconds(1000));
         } catch (const std::exception& e) {
             std::cerr << "Device2 send error: " << e.what() << std::endl;
         }

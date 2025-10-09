@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <set>
 #include <chrono>
+#include <thread>
 #include <iostream>
 
 namespace midicci {
@@ -45,11 +46,15 @@ void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
 
     auto parts = message.serialize_multi(pimpl_->device_.get_config());
-    for (auto& part : parts) {
+    for (size_t i = 0; i < parts.size(); i++) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
         if (ci_output_sender) {
             uint8_t group = message.get_common().group;
-            ci_output_sender(group, part);
+            ci_output_sender(group, parts[i]);
+        }
+        if (i < parts.size() - 1 && parts.size() > 1) {
+            // FIXME: make it configurable
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
     }
 }
@@ -923,16 +928,14 @@ void Messenger::processProfileSpecificData(const ProfileSpecificData& msg) {
 void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t chunk_index, uint16_t num_chunks,
                            const std::vector<uint8_t>& header, const std::vector<uint8_t>& body,
                            std::function<void(const std::vector<uint8_t>&, const std::vector<uint8_t>&)> on_complete) {
-    // Get the appropriate chunk manager (either from client connection or use local one)
     PropertyChunkManager* chunk_manager = &pimpl_->local_chunk_manager_;
     auto connection = pimpl_->device_.get_connection(common.source_muid);
     if (connection) {
         auto& property_client = connection->get_property_client_facade();
         chunk_manager = &property_client.get_pending_chunk_manager();
     }
-    
+
     if (chunk_index < num_chunks) {
-        // This is not the final chunk - store it for later assembly
         chunk_manager->add_pending_chunk(
             std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()
@@ -943,18 +946,15 @@ void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t c
             body
         );
     } else {
-        // This is the final chunk - assemble and process the complete message
         std::vector<uint8_t> complete_header = header;
         std::vector<uint8_t> complete_body = body;
-        
-        if (chunk_index > 1) {
-            // Multi-chunk message - get assembled data
+
+        if (chunk_manager->has_pending_chunk(common.source_muid, request_id)) {
             auto result = chunk_manager->finish_pending_chunk(common.source_muid, request_id, body);
             complete_header = result.first;
             complete_body = result.second;
         }
-        
-        // Call the completion callback with the complete message
+
         on_complete(complete_header, complete_body);
     }
 }

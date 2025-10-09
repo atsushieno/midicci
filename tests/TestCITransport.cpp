@@ -1,17 +1,18 @@
 #include "TestCITransport.hpp"
 #include <iostream>
+#include <atomic>
 #include <midicci/details/ump/Ump.hpp>
 #include <midicci/details/ump/UmpFactory.hpp>
 #include <midicci/details/ump/UmpRetriever.hpp>
 
 namespace midicci::test {
 
-TestCITransport::TestCITransport() {
-    // Strategy: Create virtual ports that other devices can connect to,
-    // then open those ports from the opposite device to create the loopback
+static std::atomic<int> port_counter{0};
 
-    // Device1 creates a virtual output port
-    device1_output_port_name_ = "TestCITransport_Device1_Out";
+TestCITransport::TestCITransport() {
+    int instance_id = port_counter.fetch_add(1);
+
+    device1_output_port_name_ = "TestCITransport_Device1_Out_" + std::to_string(instance_id);
     libremidi::output_configuration out1_conf;
     device1_output_ = std::make_unique<libremidi::midi_out>(out1_conf, libremidi::midi2::out_default_configuration());
     auto out1_err = device1_output_->open_virtual_port(device1_output_port_name_);
@@ -19,8 +20,7 @@ TestCITransport::TestCITransport() {
         throw std::runtime_error("Failed to create virtual output port for Device1");
     }
 
-    // Device2 creates a virtual output port
-    device2_output_port_name_ = "TestCITransport_Device2_Out";
+    device2_output_port_name_ = "TestCITransport_Device2_Out_" + std::to_string(instance_id);
     libremidi::output_configuration out2_conf;
     device2_output_ = std::make_unique<libremidi::midi_out>(out2_conf, libremidi::midi2::out_default_configuration());
     auto out2_err = device2_output_->open_virtual_port(device2_output_port_name_);
@@ -52,7 +52,7 @@ TestCITransport::TestCITransport() {
 
             libremidi::ump_input_configuration in2_conf{
                 .on_message = [this](libremidi::ump&& packet) {
-                    if (!running_) return;
+                    if (!running_ || !device2_) return;
 
                     std::vector<midicci::ump::Ump> umps;
                     umps.emplace_back(packet.data[0], packet.data[1], packet.data[2], packet.data[3]);
@@ -108,7 +108,7 @@ TestCITransport::TestCITransport() {
 
             libremidi::ump_input_configuration in1_conf{
                 .on_message = [this](libremidi::ump&& packet) {
-                    if (!running_) return;
+                    if (!running_ || !device1_) return;
 
                     std::vector<midicci::ump::Ump> umps;
                     umps.emplace_back(packet.data[0], packet.data[1], packet.data[2], packet.data[3]);
@@ -221,28 +221,43 @@ TestCITransport::TestCITransport() {
 TestCITransport::~TestCITransport() {
     running_ = false;
 
-    // Close all ports
-    if (device1_input_ && device1_input_->is_port_open()) {
-        device1_input_->close_port();
-    }
-    if (device1_output_ && device1_output_->is_port_open()) {
-        device1_output_->close_port();
-    }
-    if (device2_input_ && device2_input_->is_port_open()) {
-        device2_input_->close_port();
-    }
-    if (device2_output_ && device2_output_->is_port_open()) {
-        device2_output_->close_port();
-    }
-
     device1_.reset();
     device2_.reset();
+
+    if (device1_input_) {
+        if (device1_input_->is_port_open()) {
+            device1_input_->close_port();
+        }
+        device1_input_.reset();
+    }
+    if (device1_output_) {
+        if (device1_output_->is_port_open()) {
+            device1_output_->close_port();
+        }
+        device1_output_.reset();
+    }
+    if (device2_input_) {
+        if (device2_input_->is_port_open()) {
+            device2_input_->close_port();
+        }
+        device2_input_.reset();
+    }
+    if (device2_output_) {
+        if (device2_output_->is_port_open()) {
+            device2_output_->close_port();
+        }
+        device2_output_.reset();
+    }
+
+    device1_sysex_buffer_.clear();
+    device2_sysex_buffer_.clear();
 }
 
 void TestCITransport::device1_send_ump(const std::vector<uint32_t>& ump_data) {
     if (device1_output_ && device1_output_->is_port_open()) {
         try {
             device1_output_->send_ump(ump_data.data(), ump_data.size());
+            std::this_thread::sleep_for(std::chrono::microseconds(1000));
         } catch (const std::exception& e) {
             std::cerr << "Device1 send error: " << e.what() << std::endl;
         }

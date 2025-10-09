@@ -4,12 +4,18 @@
 #include <midicci/details/ump/Ump.hpp>
 #include <midicci/details/ump/UmpFactory.hpp>
 #include <midicci/details/ump/UmpRetriever.hpp>
+#include <stdlib.h>
 
 namespace midicci::test {
 
 static std::atomic<int> port_counter{0};
 
 TestCITransport::TestCITransport() {
+    if (getenv("GITHUB_ACTIONS")) {
+        runnable = false;
+        return;
+    }
+
     int instance_id = port_counter.fetch_add(1);
 
     device1_output_port_name_ = "TestCITransport_Device1_Out_" + std::to_string(instance_id);

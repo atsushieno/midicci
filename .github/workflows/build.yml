@@ -95,7 +95,7 @@ jobs:
     - name: Run Tests (Dynamic)
       run: |
         cd build-shared
-        ctest --output-on-failure -C Debug
+        ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Create artifact directories
       run: |

@@ -46,15 +46,12 @@ void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
 
     auto parts = message.serialize_multi(pimpl_->device_.get_config());
-    for (size_t i = 0; i < parts.size(); i++) {
+    for (auto & part : parts) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
         if (ci_output_sender) {
             uint8_t group = message.get_common().group;
-            ci_output_sender(group, parts[i]);
-        }
-        if (i < parts.size() - 1 && parts.size() > 1) {
-            // FIXME: make it configurable
-            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            if (!ci_output_sender(group, part))
+                throw std::runtime_error("Failed to send MIDI-CI message");
         }
     }
 }

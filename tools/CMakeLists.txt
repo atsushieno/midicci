@@ -12,4 +12,3 @@ else()
     message(STATUS "Qt6 not found, skipping ump-keyboard")
 endif()
 
-add_subdirectory(midicci-keyboard-imgui)

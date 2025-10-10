@@ -476,44 +476,26 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
     try {
         // Clean up expired requests first
         cleanupExpiredPropertyRequests();
-        
-        // Check if we already have a pending request for this property
-        if (isPropertyRequestPending(muid, StandardPropertyNames::PROGRAM_LIST)) {
-            std::cout << "[PROPERTY ACCESS] ProgramList request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            return std::nullopt;
-        }
-        
-        // Access the property client facade for this connection
-        auto& property_client = connection->get_property_client_facade();
-        auto* properties = property_client.get_properties();
-        
-        // Look for ProgramList in the client's property values
-        auto values = properties->getValues();
-        auto it = std::find_if(values.begin(), values.end(),
-                               [](const midicci::PropertyValue& pv) { 
-                                   return pv.id == StandardPropertyNames::PROGRAM_LIST; 
-                               });
-        
-        if (it != values.end()) {
-            // Parse the property data
-            auto program_list = StandardProperties::parseProgramList(it->body);
-            std::cout << "[PROPERTY ACCESS] Retrieved " << program_list.size() << " programs for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            
-            // Remove from pending requests since we got a successful response
-            removePendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
-            
-            return program_list;
-        } else {
-            std::cout << "[PROPERTY ACCESS] ProgramList not found in client properties for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            
+
+        auto* properties = connection->get_property_client_facade().get_properties();
+        auto ret = StandardPropertiesExtensions::getProgramList(*properties);
+
+        // If we have no data OR we have valid but empty data, we need to request it
+        if (!ret || (ret.has_value() && ret->empty())) {
+            // Check if we already have a pending request for this property
+            if (isPropertyRequestPending(muid, StandardPropertyNames::PROGRAM_LIST)) {
+                std::cout << "[PROPERTY ACCESS] PROGRAM_LIST request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+                return std::nullopt;
+            }
+
             // Add to pending requests to prevent duplicates
             addPendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
-            
-            // Try to request the property if not already available
+
+            auto& property_client = connection->get_property_client_facade();
+
             property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
-            std::cout << "[PROPERTY ACCESS] Requested ProgramList from remote device" << std::endl;
-            return std::nullopt;
         }
+        return ret;
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] Failed to get ProgramList for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
         return std::nullopt;

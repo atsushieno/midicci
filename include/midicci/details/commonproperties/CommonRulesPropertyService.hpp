@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 
 namespace midicci {
 namespace commonproperties {
@@ -70,15 +71,18 @@ private:
     std::map<std::string, std::vector<uint8_t>> property_values_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<SubscriptionEntry> subscriptions_;
-    
+
     // Property catalog update callbacks (following Kotlin propertyCatalogUpdated)
     std::vector<std::function<void()>> property_catalog_updated_callbacks_;
-    
+
     // Subscription update callbacks (following Kotlin subscruotionsUpdated)
     std::vector<std::function<void(const SubscriptionEntry&, bool)>> subscription_updated_callbacks_;
-    
+
     // Linked resources map (following Kotlin linkedResources)
     std::map<std::string, std::vector<uint8_t>> linked_resources_;
+
+    // Thread safety for concurrent property requests
+    mutable std::recursive_mutex mutex_;
     
     std::vector<uint8_t> create_device_info_json() const;
     std::vector<uint8_t> create_channel_list_json() const;

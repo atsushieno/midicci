@@ -11,6 +11,7 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
 
 
 void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::vector<uint8_t>& data) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     property_values_[property_id] = data;
 }
 
@@ -41,8 +42,10 @@ std::vector<uint8_t> CommonRulesPropertyService::create_update_notification_head
 }
 
 std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyService::get_metadata_list() {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+
     std::vector<std::unique_ptr<PropertyMetadata>> result;
-    
+
     for (const auto& metadata : metadata_list_) {
         // Create copies of the metadata instead of raw pointers
         auto* common_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get());
@@ -50,16 +53,18 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyService::get_m
             result.push_back(std::make_unique<CommonRulesPropertyMetadata>(*common_metadata));
         }
     }
-    
+
     return result;
 }
 
 GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetPropertyData& msg) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+
     std::string property_id = helper_->get_property_identifier_internal(msg.get_header());
-    
+
     JsonObject header_obj;
     header_obj[PropertyCommonHeaderKeys::RESOURCE] = JsonValue(property_id);
-    
+
     std::vector<uint8_t> body_data;
     
     if (property_id == PropertyResourceNames::DEVICE_INFO) {
@@ -206,6 +211,7 @@ std::vector<uint8_t> CommonRulesPropertyService::decode_body(const std::vector<u
 }
 
 void CommonRulesPropertyService::add_metadata(std::unique_ptr<PropertyMetadata> property) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     metadata_list_.push_back(std::move(property));
     // Trigger property catalog updated callbacks (following Kotlin)
     for (const auto& callback : property_catalog_updated_callbacks_) {
@@ -214,6 +220,7 @@ void CommonRulesPropertyService::add_metadata(std::unique_ptr<PropertyMetadata> 
 }
 
 void CommonRulesPropertyService::remove_metadata(const std::string& property_id) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     metadata_list_.erase(
         std::remove_if(metadata_list_.begin(), metadata_list_.end(),
             [&property_id](const std::unique_ptr<PropertyMetadata>& metadata) {
@@ -228,6 +235,8 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
 }
 
 std::optional<SubscribePropertyReply> CommonRulesPropertyService::subscribe_property(const SubscribeProperty& msg) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+
     try {
         std::string header_str(msg.get_header().begin(), msg.get_header().end());
         JsonValue header_json = JsonValue::parse(header_str);

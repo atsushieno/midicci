@@ -4,63 +4,8 @@ namespace midicci {
 namespace commonproperties {
 
 // Static metadata initialization
-CommonRulesPropertyMetadata StandardProperties::stateListMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE_LIST);
-    metadata.canSet = PropertySetAccess::NONE;
-    metadata.canSubscribe = false;
-    metadata.canPaginate = false;
-    metadata.columns = {
-        {StatePropertyNames::TITLE, "", "State Title"},
-        {StatePropertyNames::STATE_ID, "", "State ID"},
-        {StatePropertyNames::STATE_REV, "", "State Revision"},
-        {StatePropertyNames::TIMESTAMP, "", "UNIX Timestamp"},
-        {StatePropertyNames::DESCRIPTION, "", "Description"},
-        {StatePropertyNames::SIZE, "", "Byte Size"}
-    };
-    return metadata;
-}
 
-CommonRulesPropertyMetadata StandardProperties::stateMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
-    metadata.canSubscribe = false;
-    metadata.requireResId = true;
-    return metadata;
-}
-
-CommonRulesPropertyMetadata StandardProperties::allCtrlListMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::ALL_CTRL_LIST);
-    metadata.columns = getCtrlListColumns();
-    return metadata;
-}
-
-CommonRulesPropertyMetadata StandardProperties::chCtrlListMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CH_CTRL_LIST);
-    metadata.columns = getCtrlListColumns();
-    return metadata;
-}
-
-CommonRulesPropertyMetadata StandardProperties::ctrlMapListMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CTRL_MAP_LIST);
-    metadata.requireResId = true;
-    metadata.columns = {
-        {ControlMapPropertyNames::VALUE, "", "Value"},
-        {ControlMapPropertyNames::TITLE, "", "Title"}
-    };
-    return metadata;
-}
-
-CommonRulesPropertyMetadata StandardProperties::programListMetadata() {
-    CommonRulesPropertyMetadata metadata(StandardPropertyNames::PROGRAM_LIST);
-    metadata.columns = {
-        {ProgramPropertyNames::TITLE, "", "Program Title"},
-        {ProgramPropertyNames::BANK_PC, "", "Bank MSB, LSB and Program Change"},
-        {ProgramPropertyNames::CATEGORY, "", "Categories"},
-        {ProgramPropertyNames::TAGS, "", "Meta-tags"}
-    };
-    return metadata;
-}
-
-std::vector<PropertyResourceColumn> StandardProperties::getCtrlListColumns() {
+std::vector<PropertyResourceColumn> getCtrlListColumns() {
     return {
         {ControlPropertyNames::TITLE, "", "Active Controller Title"},
         {ControlPropertyNames::DESCRIPTION, "", "Description"},
@@ -77,6 +22,86 @@ std::vector<PropertyResourceColumn> StandardProperties::getCtrlListColumns() {
         {ControlPropertyNames::STEP_COUNT, "", "Step Count"},
         {ControlPropertyNames::MIN_MAX, "", "Min/Max"}
     };
+}
+
+auto state_list_metadata = [] {
+    CommonRulesPropertyMetadata metadata{StandardPropertyNames::STATE_LIST};
+    metadata.canSet = PropertySetAccess::NONE;
+    metadata.canSubscribe = false;
+    metadata.canPaginate = false;
+    metadata.columns = {
+        {StatePropertyNames::TITLE, "", "State Title"},
+        {StatePropertyNames::STATE_ID, "", "State ID"},
+        {StatePropertyNames::STATE_REV, "", "State Revision"},
+        {StatePropertyNames::TIMESTAMP, "", "UNIX Timestamp"},
+        {StatePropertyNames::DESCRIPTION, "", "Description"},
+        {StatePropertyNames::SIZE, "", "Byte Size"}
+    };
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::stateListMetadata() {
+    return state_list_metadata;
+}
+
+auto state_metadata = [] {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
+    metadata.canSubscribe = false;
+    metadata.requireResId = true;
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::stateMetadata() {
+    return state_metadata;
+}
+
+auto all_ctrl_list_metadata = [] {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::ALL_CTRL_LIST);
+    metadata.columns = getCtrlListColumns();
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::allCtrlListMetadata() {
+    return all_ctrl_list_metadata;
+}
+
+auto ch_ctrl_list_metadata = [] {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CH_CTRL_LIST);
+    metadata.columns = getCtrlListColumns();
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::chCtrlListMetadata() {
+    return ch_ctrl_list_metadata;
+}
+
+auto ctrl_map_list_metadata = [] {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::CTRL_MAP_LIST);
+    metadata.requireResId = true;
+    metadata.columns = {
+        {ControlMapPropertyNames::VALUE, "", "Value"},
+        {ControlMapPropertyNames::TITLE, "", "Title"}
+    };
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::ctrlMapListMetadata() {
+    return ctrl_map_list_metadata;
+}
+
+auto program_list_metadata = [] {
+    CommonRulesPropertyMetadata metadata(StandardPropertyNames::PROGRAM_LIST);
+    metadata.columns = {
+        {ProgramPropertyNames::TITLE, "", "Program Title"},
+        {ProgramPropertyNames::BANK_PC, "", "Bank MSB, LSB and Program Change"},
+        {ProgramPropertyNames::CATEGORY, "", "Categories"},
+        {ProgramPropertyNames::TAGS, "", "Meta-tags"}
+    };
+    return metadata;
+}();
+
+CommonRulesPropertyMetadata& StandardProperties::programListMetadata() {
+    return program_list_metadata;
 }
 
 MidiCIStateEntry::MidiCIStateEntry(const std::string& title, const std::string& stateId,

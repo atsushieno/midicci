@@ -3,10 +3,6 @@
 
 namespace midicci::commonproperties {
 
-const std::string CommonRulesPropertyMetadata::default_media_type = "application/json";
-const std::string CommonRulesPropertyMetadata::default_encoding = "ASCII";
-const std::vector<uint8_t> CommonRulesPropertyMetadata::empty_data = {};
-
 CommonRulesPropertyMetadata::CommonRulesPropertyMetadata() {
 }
 

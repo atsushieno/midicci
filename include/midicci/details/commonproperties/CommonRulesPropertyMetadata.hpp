@@ -51,9 +51,9 @@ public:
     midicci::JsonValue toJsonValue() const;
 
 private:
-    static const std::string default_media_type;
-    static const std::string default_encoding;
-    static const std::vector<uint8_t> empty_data;
+    const std::string default_media_type = "application/json";
+    const std::string default_encoding = "ASCII";
+    const std::vector<uint8_t> empty_data = {};
 };
 
 } // namespace

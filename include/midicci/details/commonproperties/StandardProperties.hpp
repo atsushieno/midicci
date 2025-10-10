@@ -170,13 +170,13 @@ public:
     static std::vector<uint8_t> toJson(const std::vector<MidiCIProgram>& programList);
     
     // Metadata properties
-    static CommonRulesPropertyMetadata stateListMetadata;
-    static CommonRulesPropertyMetadata stateMetadata;
-    static CommonRulesPropertyMetadata allCtrlListMetadata;
-    static CommonRulesPropertyMetadata chCtrlListMetadata;
-    static CommonRulesPropertyMetadata ctrlMapListMetadata;
-    static CommonRulesPropertyMetadata programListMetadata;
-    
+    static CommonRulesPropertyMetadata stateListMetadata();
+    static CommonRulesPropertyMetadata stateMetadata();
+    static CommonRulesPropertyMetadata allCtrlListMetadata();
+    static CommonRulesPropertyMetadata chCtrlListMetadata();
+    static CommonRulesPropertyMetadata ctrlMapListMetadata();
+    static CommonRulesPropertyMetadata programListMetadata();
+
 private:
     static std::vector<PropertyResourceColumn> getCtrlListColumns();
 };

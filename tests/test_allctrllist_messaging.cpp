@@ -31,7 +31,7 @@ TEST_F(AllCtrlListMessagingTest, ClientServerPropertyExchange) {
 
     // Add the AllCtrlList metadata to the server's property host
     auto& host = server.get_property_host_facade();
-    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata);
+    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
     // Set the AllCtrlList on the server device
@@ -118,7 +118,7 @@ TEST_F(AllCtrlListMessagingTest, MultiplePropertyExchanges) {
 
     // Add the AllCtrlList metadata to the server's property host
     auto& host = server.get_property_host_facade();
-    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata);
+    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
     // Set the AllCtrlList on the server device
@@ -170,7 +170,7 @@ TEST_F(AllCtrlListMessagingTest, EmptyAllCtrlList) {
 
     // Add the AllCtrlList metadata to the server's property host
     auto& host = server.get_property_host_facade();
-    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata);
+    auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
     // Set an empty AllCtrlList on the server

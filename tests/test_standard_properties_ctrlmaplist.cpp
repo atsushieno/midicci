@@ -66,10 +66,10 @@ TEST_F(StandardPropertiesCtrlMapListTest, DeviceExtensionFunctions) {
 
 TEST_F(StandardPropertiesCtrlMapListTest, CtrlMapListMetadata) {
     // Test metadata
-    EXPECT_TRUE(StandardProperties::ctrlMapListMetadata.requireResId);
-    EXPECT_EQ(StandardProperties::ctrlMapListMetadata.columns.size(), 2);
-    EXPECT_EQ(StandardProperties::ctrlMapListMetadata.columns[0].property, "value");
-    EXPECT_EQ(StandardProperties::ctrlMapListMetadata.columns[1].property, "title");
+    EXPECT_TRUE(StandardProperties::ctrlMapListMetadata().requireResId);
+    EXPECT_EQ(StandardProperties::ctrlMapListMetadata().columns.size(), 2);
+    EXPECT_EQ(StandardProperties::ctrlMapListMetadata().columns[0].property, "value");
+    EXPECT_EQ(StandardProperties::ctrlMapListMetadata().columns[1].property, "title");
 }
 
 TEST_F(StandardPropertiesCtrlMapListTest, ParseEmptyControlMapList) {

@@ -4,7 +4,7 @@ namespace midicci {
 namespace commonproperties {
 
 // Static metadata initialization
-CommonRulesPropertyMetadata StandardProperties::stateListMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::stateListMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE_LIST);
     metadata.canSet = PropertySetAccess::NONE;
     metadata.canSubscribe = false;
@@ -18,28 +18,28 @@ CommonRulesPropertyMetadata StandardProperties::stateListMetadata = []() {
         {StatePropertyNames::SIZE, "", "Byte Size"}
     };
     return metadata;
-}();
+}
 
-CommonRulesPropertyMetadata StandardProperties::stateMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::stateMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
     metadata.canSubscribe = false;
     metadata.requireResId = true;
     return metadata;
-}();
+}
 
-CommonRulesPropertyMetadata StandardProperties::allCtrlListMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::allCtrlListMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::ALL_CTRL_LIST);
     metadata.columns = getCtrlListColumns();
     return metadata;
-}();
+}
 
-CommonRulesPropertyMetadata StandardProperties::chCtrlListMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::chCtrlListMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::CH_CTRL_LIST);
     metadata.columns = getCtrlListColumns();
     return metadata;
-}();
+}
 
-CommonRulesPropertyMetadata StandardProperties::ctrlMapListMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::ctrlMapListMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::CTRL_MAP_LIST);
     metadata.requireResId = true;
     metadata.columns = {
@@ -47,9 +47,9 @@ CommonRulesPropertyMetadata StandardProperties::ctrlMapListMetadata = []() {
         {ControlMapPropertyNames::TITLE, "", "Title"}
     };
     return metadata;
-}();
+}
 
-CommonRulesPropertyMetadata StandardProperties::programListMetadata = []() {
+CommonRulesPropertyMetadata StandardProperties::programListMetadata() {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::PROGRAM_LIST);
     metadata.columns = {
         {ProgramPropertyNames::TITLE, "", "Program Title"},
@@ -58,7 +58,7 @@ CommonRulesPropertyMetadata StandardProperties::programListMetadata = []() {
         {ProgramPropertyNames::TAGS, "", "Meta-tags"}
     };
     return metadata;
-}();
+}
 
 std::vector<PropertyResourceColumn> StandardProperties::getCtrlListColumns() {
     return {

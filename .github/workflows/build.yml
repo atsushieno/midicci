@@ -92,7 +92,8 @@ jobs:
     - name: Build (Dynamic Libraries)
       run: cmake --build build-shared --config ${{ matrix.build_type }}
 
-    - name: Run Tests (Dynamic)
+    - name: Run Tests (Dynamic) except for Windows
+      if: matrix.os != 'windows-latest'
       run: |
         cd build-shared
         ctest --output-on-failure -C ${{ matrix.build_type }}

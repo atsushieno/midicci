@@ -117,7 +117,6 @@ jobs:
         # Dynamic libraries
         find build-shared -name "*.so*" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
         # Executables
-        find build-static -name "midicci-cui" -executable -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
         find build-static -name "midicci-gui" -executable -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
 
     - name: Copy artifacts (macOS)
@@ -128,7 +127,6 @@ jobs:
         # Dynamic libraries
         find build-shared -name "*.dylib" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
         # Executables
-        find build-static -name "midicci-cui" -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
         find build-static -name "midicci-gui" -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
 
     - name: Copy artifacts (Windows)

@@ -25,9 +25,6 @@ set(MIDICCI_TOOLING_SOURCES
     src/MidiCIProfileState.cpp
 )
 
-set(MIDICCI_CUI_SOURCES
-    src/main.cpp
-)
 
 add_library(midicci-tooling STATIC ${MIDICCI_TOOLING_SOURCES})
 target_link_libraries(midicci-tooling 
@@ -35,16 +32,6 @@ target_link_libraries(midicci-tooling
         midicci
         libremidi
 )
-
-add_executable(midicci-cui ${MIDICCI_CUI_SOURCES})
-
-target_link_libraries(midicci-cui
-    PRIVATE
-        midicci
-        midicci-tooling
-)
-
-add_dependencies(midicci-cui midicci)
 
 target_compile_features(midicci-tooling PRIVATE cxx_std_20)
 

@@ -2,30 +2,32 @@
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QSlider>
+#include <QtWidgets/QApplication>
 #include <QtCore/QThread>
 #include <QtCore/QMetaObject>
+#include <QtCore/QEvent>
+#include <QtGui/QEnterEvent>
+#include <QtGui/QMouseEvent>
 #include <iostream>
 
 class PianoKey : public QPushButton {
     Q_OBJECT
 public:
-    PianoKey(int note, bool isBlack = false, QWidget* parent = nullptr) 
-        : QPushButton(parent), noteValue(note), isBlackKey(isBlack) {
+    PianoKey(int note, bool isBlack = false, QWidget* parent = nullptr)
+        : QPushButton(parent), noteValue(note), isBlackKey(isBlack), visuallyPressed_(false) {
+        // Make keys transparent to mouse events so the container handles all mouse input
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setupKey();
     }
-    
+
     int getNote() const { return noteValue; }
     bool isBlack() const { return isBlackKey; }
 
-protected:
-    void mousePressEvent(QMouseEvent* event) override {
-        QPushButton::mousePressEvent(event);
-        emit keyPressed(noteValue);
-    }
-    
-    void mouseReleaseEvent(QMouseEvent* event) override {
-        QPushButton::mouseReleaseEvent(event);
-        emit keyReleased(noteValue);
+    void setVisuallyPressed(bool pressed) {
+        if (visuallyPressed_ != pressed) {
+            visuallyPressed_ = pressed;
+            updateVisualState();
+        }
     }
 
 signals:
@@ -34,37 +36,181 @@ signals:
 
 private:
     void setupKey() {
+        updateVisualState();
+    }
+
+    void updateVisualState() {
         if (isBlackKey) {
             setFixedSize(30, 80);
-            setStyleSheet(
-                "QPushButton {"
-                "  background-color: #1a1a1a;"
-                "  border: 1px solid #333;"
-                "  border-radius: 4px;"
-                "  color: white;"
-                "}"
-                "QPushButton:pressed {"
-                "  background-color: #404040;"
-                "}"
-            );
+            if (visuallyPressed_) {
+                setStyleSheet(
+                    "QPushButton {"
+                    "  background-color: #404040;"
+                    "  border: 1px solid #333;"
+                    "  border-radius: 4px;"
+                    "  color: white;"
+                    "}"
+                );
+            } else {
+                setStyleSheet(
+                    "QPushButton {"
+                    "  background-color: #1a1a1a;"
+                    "  border: 1px solid #333;"
+                    "  border-radius: 4px;"
+                    "  color: white;"
+                    "}"
+                );
+            }
         } else {
             setFixedSize(50, 120);
-            setStyleSheet(
-                "QPushButton {"
-                "  background-color: white;"
-                "  border: 1px solid #333;"
-                "  border-radius: 4px;"
-                "  color: black;"
-                "}"
-                "QPushButton:pressed {"
-                "  background-color: #f0f0f0;"
-                "}"
-            );
+            if (visuallyPressed_) {
+                setStyleSheet(
+                    "QPushButton {"
+                    "  background-color: #c8c8ff;"
+                    "  border: 1px solid #333;"
+                    "  border-radius: 4px;"
+                    "  color: black;"
+                    "}"
+                );
+            } else {
+                setStyleSheet(
+                    "QPushButton {"
+                    "  background-color: white;"
+                    "  border: 1px solid #333;"
+                    "  border-radius: 4px;"
+                    "  color: black;"
+                    "}"
+                );
+            }
         }
     }
-    
+
     int noteValue;
     bool isBlackKey;
+    bool visuallyPressed_;
+};
+
+// Container widget for keyboard that handles centralized mouse tracking
+class KeyboardContainer : public QWidget {
+    Q_OBJECT
+public:
+    explicit KeyboardContainer(QWidget* parent = nullptr)
+        : QWidget(parent), mouseDownKey_(-1) {
+        setMouseTracking(true);
+        setFixedSize(850, 140);
+        pressedKeys_.resize(128, false);
+        keyWidgets_.resize(128, nullptr);
+    }
+
+    void addKey(PianoKey* key) {
+        keys_.append(key);
+        key->setParent(this);
+        // Map note number to key widget for visual updates
+        int note = key->getNote();
+        if (note >= 0 && note < 128) {
+            keyWidgets_[note] = key;
+        }
+    }
+
+    void setKeyEventCallback(std::function<void(int, bool)> callback) {
+        onKeyEvent_ = callback;
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent* event) override {
+        QWidget::mousePressEvent(event);
+        int hoveredNote = getNoteFromPosition(event->pos());
+        if (hoveredNote != -1 && mouseDownKey_ != hoveredNote) {
+            if (mouseDownKey_ != -1) {
+                releaseKey(mouseDownKey_);
+            }
+            pressKey(hoveredNote);
+            mouseDownKey_ = hoveredNote;
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        QWidget::mouseMoveEvent(event);
+        if (event->buttons() & Qt::LeftButton) {
+            int hoveredNote = getNoteFromPosition(event->pos());
+            if (hoveredNote != mouseDownKey_) {
+                // Release the previous key if one was held
+                if (mouseDownKey_ != -1) {
+                    releaseKey(mouseDownKey_);
+                }
+                // Press the new key if we're over a valid key
+                if (hoveredNote != -1) {
+                    pressKey(hoveredNote);
+                }
+                mouseDownKey_ = hoveredNote;
+            }
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent* event) override {
+        QWidget::mouseReleaseEvent(event);
+        if (mouseDownKey_ != -1) {
+            releaseKey(mouseDownKey_);
+            mouseDownKey_ = -1;
+        }
+    }
+
+private:
+    int getNoteFromPosition(const QPoint& pos) {
+        // Check black keys first (they're on top)
+        for (PianoKey* key : keys_) {
+            if (key->isBlack()) {
+                QRect keyRect(key->pos(), key->size());
+                if (keyRect.contains(pos)) {
+                    return key->getNote();
+                }
+            }
+        }
+
+        // Check white keys
+        for (PianoKey* key : keys_) {
+            if (!key->isBlack()) {
+                QRect keyRect(key->pos(), key->size());
+                if (keyRect.contains(pos)) {
+                    return key->getNote();
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    void pressKey(int note) {
+        if (note >= 0 && note < 128 && !pressedKeys_[note]) {
+            pressedKeys_[note] = true;
+            // Update visual state
+            if (keyWidgets_[note]) {
+                keyWidgets_[note]->setVisuallyPressed(true);
+            }
+            if (onKeyEvent_) {
+                onKeyEvent_(note, true);
+            }
+        }
+    }
+
+    void releaseKey(int note) {
+        if (note >= 0 && note < 128 && pressedKeys_[note]) {
+            pressedKeys_[note] = false;
+            // Update visual state
+            if (keyWidgets_[note]) {
+                keyWidgets_[note]->setVisuallyPressed(false);
+            }
+            if (onKeyEvent_) {
+                onKeyEvent_(note, false);
+            }
+        }
+    }
+
+    QList<PianoKey*> keys_;
+    std::vector<bool> pressedKeys_;
+    std::vector<PianoKey*> keyWidgets_;  // Map from note number to key widget
+    int mouseDownKey_;
+    std::function<void(int, bool)> onKeyEvent_;
 };
 
 KeyboardWidget::KeyboardWidget(QWidget* parent) 
@@ -189,9 +335,8 @@ void KeyboardWidget::setupKeyboard() {
 }
 
 QWidget* KeyboardWidget::createKeyboardWidget() {
-    QWidget* container = new QWidget();
-    container->setFixedSize(850, 140);
-    
+    KeyboardContainer* container = new KeyboardContainer();
+
     // Create all keys
     struct KeyInfo {
         int note;
@@ -199,7 +344,7 @@ QWidget* KeyboardWidget::createKeyboardWidget() {
         QString label;
         int whiteKeyIndex; // For positioning black keys
     };
-    
+
     // Define two octaves of keys (C4 to B5)
     std::vector<KeyInfo> keyInfos = {
         {60, false, "C", 0},   // C4
@@ -227,42 +372,41 @@ QWidget* KeyboardWidget::createKeyboardWidget() {
         {82, true, "", 12},    // A#5
         {83, false, "B", 13},  // B5
     };
-    
+
     // Create white keys first
     for (const auto& keyInfo : keyInfos) {
         if (!keyInfo.isBlack) {
-            PianoKey* key = new PianoKey(keyInfo.note, false, container);
+            PianoKey* key = new PianoKey(keyInfo.note, false);
             key->setText(keyInfo.label);
             key->move(keyInfo.whiteKeyIndex * 52, 20);
-            
-            connect(key, &PianoKey::keyPressed, pressMapper, QOverload<>::of(&QSignalMapper::map));
-            connect(key, &PianoKey::keyReleased, releaseMapper, QOverload<>::of(&QSignalMapper::map));
-            pressMapper->setMapping(key, keyInfo.note);
-            releaseMapper->setMapping(key, keyInfo.note);
-            
+            container->addKey(key);
             whiteKeys.append(key);
         }
     }
-    
+
     // Create black keys on top
     for (const auto& keyInfo : keyInfos) {
         if (keyInfo.isBlack) {
-            PianoKey* key = new PianoKey(keyInfo.note, true, container);
-            
+            PianoKey* key = new PianoKey(keyInfo.note, true);
+
             // Position black keys between white keys
             int xPos = keyInfo.whiteKeyIndex * 52 + 37; // 52 is white key width + spacing, 37 centers the black key
             key->move(xPos, 20);
             key->raise(); // Bring black keys to front
-            
-            connect(key, &PianoKey::keyPressed, pressMapper, QOverload<>::of(&QSignalMapper::map));
-            connect(key, &PianoKey::keyReleased, releaseMapper, QOverload<>::of(&QSignalMapper::map));
-            pressMapper->setMapping(key, keyInfo.note);
-            releaseMapper->setMapping(key, keyInfo.note);
-            
+            container->addKey(key);
             blackKeys.append(key);
         }
     }
-    
+
+    // Connect container's key events to our callbacks
+    container->setKeyEventCallback([this](int note, bool isPressed) {
+        if (isPressed) {
+            onKeyPressed(note);
+        } else {
+            onKeyReleased(note);
+        }
+    });
+
     return container;
 }
 

@@ -6,12 +6,15 @@
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QSpinBox>
+#include <QComboBox>
 #include <QWidget>
 #include <vector>
 #include <functional>
+#include <optional>
 
 namespace midicci::commonproperties {
     struct MidiCIControl;
+    struct MidiCIControlMap;
 }
 
 class ControlParameterWidget : public QWidget {
@@ -19,8 +22,9 @@ class ControlParameterWidget : public QWidget {
 
 public:
     explicit ControlParameterWidget(QWidget* parent = nullptr);
-    
-    void updateFromControl(const midicci::commonproperties::MidiCIControl& control, int controlIndex, uint32_t currentValue);
+
+    void updateFromControl(const midicci::commonproperties::MidiCIControl& control, int controlIndex, uint32_t currentValue,
+                          const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps = nullptr);
     void setValueChangeCallback(std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> callback);
     void setValueUpdateCallback(std::function<void(int, uint32_t)> callback);  // Callback to update stored values
     void updateValue(uint32_t value);  // Update slider value without triggering MIDI callback
@@ -35,22 +39,27 @@ protected:
 
 private slots:
     void onSliderValueChanged(int value);
+    void onComboBoxSelectionChanged(int index);
 
 private:
     QLabel* m_titleLabel;
     QSlider* m_slider;
     QLabel* m_valueLabel;
     QSpinBox* m_noteSpinBox;  // For per-note controls
+    QComboBox* m_comboBox;    // For enumerated values
     QHBoxLayout* m_layout;
-    
+
     int m_controlIndex;
     midicci::commonproperties::MidiCIControl* m_currentControl;
     std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> m_valueChangeCallback;
     std::function<void(int, uint32_t)> m_valueUpdateCallback;  // Callback to update stored values
-    
+
     // Store original MIDI range for conversion
     uint32_t m_midiMin, m_midiMax;
     bool m_needsScaling;
+
+    // Store control maps for enumerated values
+    std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> m_controlMaps;
 };
 
 class VirtualizedControlList : public QListWidget {
@@ -58,9 +67,10 @@ class VirtualizedControlList : public QListWidget {
 
 public:
     explicit VirtualizedControlList(QWidget* parent = nullptr);
-    
+
     void setControls(const std::vector<midicci::commonproperties::MidiCIControl>& controls);
     void setValueChangeCallback(std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> callback);
+    void setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(const std::string&)> provider);
     uint32_t getControlValue(int controlIndex) const;  // Get stored value for a control
 
 protected:
@@ -75,11 +85,12 @@ private:
     int getVisibleItemCount() const;
     int getFirstVisibleIndex() const;
     void updateStoredValue(int controlIndex, uint32_t value);  // Update stored value for a control
-    
+
     std::vector<midicci::commonproperties::MidiCIControl> m_controls;
     std::vector<uint32_t> m_controlValues;  // Store current values for each control
     std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> m_valueChangeCallback;
-    
+    std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(const std::string&)> m_controlMapProvider;
+
     static constexpr int ITEM_HEIGHT = 35;
     static constexpr int BUFFER_ITEMS = 5;  // Extra items to render above/below visible area
 };

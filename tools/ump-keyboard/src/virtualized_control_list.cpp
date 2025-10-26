@@ -33,7 +33,11 @@ ControlParameterWidget::ControlParameterWidget(QWidget* parent)
     m_noteSpinBox->setValue(60);  // Middle C
     m_noteSpinBox->setFixedWidth(60);
     m_noteSpinBox->setVisible(false);  // Hidden by default
-    
+
+    m_comboBox = new QComboBox();
+    m_comboBox->setFixedWidth(150);
+    m_comboBox->setVisible(false);  // Hidden by default
+
     // SIMPLIFIED: Direct slider without complex container
     m_slider = new QSlider(Qt::Horizontal);
     m_slider->blockSignals(true);  // Block during initialization
@@ -78,10 +82,12 @@ ControlParameterWidget::ControlParameterWidget(QWidget* parent)
     
     m_layout->addWidget(m_titleLabel);
     m_layout->addWidget(m_noteSpinBox);
+    m_layout->addWidget(m_comboBox);
     m_layout->addWidget(m_slider);
     m_layout->addWidget(m_valueLabel);
-    
+
     connect(m_slider, &QSlider::valueChanged, this, &ControlParameterWidget::onSliderValueChanged);
+    connect(m_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ControlParameterWidget::onComboBoxSelectionChanged);
     
     // DEBUG: Add event filter to slider to see if it receives mouse events
     m_slider->installEventFilter(this);
@@ -94,10 +100,16 @@ ControlParameterWidget::ControlParameterWidget(QWidget* parent)
     setStyleSheet("ControlParameterWidget { background-color: lightgray; border: 2px solid red; }");
 }
 
-void ControlParameterWidget::updateFromControl(const midicci::commonproperties::MidiCIControl& control, int controlIndex, uint32_t currentValue) {
+void ControlParameterWidget::updateFromControl(const midicci::commonproperties::MidiCIControl& control, int controlIndex, uint32_t currentValue,
+                                               const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps) {
     m_controlIndex = controlIndex;
     m_currentControl = const_cast<midicci::commonproperties::MidiCIControl*>(&control);
-    
+    if (controlMaps) {
+        m_controlMaps = *controlMaps;
+    } else {
+        m_controlMaps = std::nullopt;
+    }
+
     QString ctrlType = QString::fromStdString(control.ctrlType);
     QString title = QString::fromStdString(control.title);
     
@@ -121,9 +133,29 @@ void ControlParameterWidget::updateFromControl(const midicci::commonproperties::
     
     // Show/hide note spinbox for per-note controls
     m_noteSpinBox->setVisible(ctrlType == "pnrc" || ctrlType == "pnac");
-    
+
     m_titleLabel->setText(displayText);
-    
+
+    // Set up combobox for enumerated values if control maps are provided
+    m_comboBox->blockSignals(true);
+    m_comboBox->clear();
+    if (m_controlMaps.has_value() && !m_controlMaps->empty()) {
+        m_comboBox->setVisible(true);
+        for (const auto& map : *m_controlMaps) {
+            m_comboBox->addItem(QString::fromStdString(map.title), QVariant(map.value));
+        }
+        // Select the current value in combobox
+        for (int i = 0; i < m_comboBox->count(); ++i) {
+            if (m_comboBox->itemData(i).toUInt() == currentValue) {
+                m_comboBox->setCurrentIndex(i);
+                break;
+            }
+        }
+    } else {
+        m_comboBox->setVisible(false);
+    }
+    m_comboBox->blockSignals(false);
+
     // Set slider range and update value label with JSON data
     // Block signals to prevent MIDI messages during initialization
     m_slider->blockSignals(true);
@@ -153,8 +185,14 @@ void ControlParameterWidget::updateFromControl(const midicci::commonproperties::
     
     m_slider->setRange(sliderMin, sliderMax);
     m_slider->setValue(sliderDefault);
-    m_valueLabel->setText(QString::number(defaultVal));
-    
+
+    // Display normalized float value (0.0 to 1.0)
+    float normalizedValue = 0.0f;
+    if (m_midiMax > m_midiMin) {
+        normalizedValue = static_cast<float>(defaultVal - m_midiMin) / static_cast<float>(m_midiMax - m_midiMin);
+    }
+    m_valueLabel->setText(QString::number(normalizedValue, 'f', 3));
+
     // Force UI updates to ensure initial state renders correctly
     m_slider->update();      // Update slider visual (green fill)
     m_valueLabel->update();  // Update value label display
@@ -175,21 +213,26 @@ void ControlParameterWidget::updateValue(uint32_t value) {
     if (!m_slider || !m_valueLabel) {
         return;
     }
-    
+
     // Block signals to prevent MIDI callback during programmatic update
     m_slider->blockSignals(true);
-    
-    // Update slider and label
+
+    // Update slider and label with normalized float value
     m_slider->setValue(static_cast<int>(value));
-    m_valueLabel->setText(QString::number(value));
-    
+
+    float normalizedValue = 0.0f;
+    if (m_midiMax > m_midiMin) {
+        normalizedValue = static_cast<float>(value - m_midiMin) / static_cast<float>(m_midiMax - m_midiMin);
+    }
+    m_valueLabel->setText(QString::number(normalizedValue, 'f', 3));
+
     // Force UI refresh
     m_slider->update();      // Update slider visual (green fill)
     m_valueLabel->update();  // Update value label display
-    
+
     // Re-enable signals
     m_slider->blockSignals(false);
-    
+
 }
 
 void ControlParameterWidget::mousePressEvent(QMouseEvent* event) {
@@ -206,6 +249,46 @@ void ControlParameterWidget::mouseMoveEvent(QMouseEvent* event) {
 bool ControlParameterWidget::eventFilter(QObject* obj, QEvent* event) {
     // Don't filter the event, let it continue normally
     return QWidget::eventFilter(obj, event);
+}
+
+void ControlParameterWidget::onComboBoxSelectionChanged(int index) {
+    if (index < 0 || !m_comboBox) {
+        return;
+    }
+
+    // Get the MIDI value from the combobox item data
+    uint32_t midiValue = m_comboBox->itemData(index).toUInt();
+
+    // Update slider to match (block signals to prevent loop)
+    m_slider->blockSignals(true);
+    int sliderValue;
+    if (m_needsScaling) {
+        double scale = 2147483647.0 / static_cast<double>(m_midiMax);
+        sliderValue = static_cast<int>(midiValue * scale);
+    } else {
+        sliderValue = static_cast<int>(midiValue);
+    }
+    m_slider->setValue(sliderValue);
+    m_slider->update();
+    m_slider->blockSignals(false);
+
+    // Update value label with normalized float
+    float normalizedValue = 0.0f;
+    if (m_midiMax > m_midiMin) {
+        normalizedValue = static_cast<float>(midiValue - m_midiMin) / static_cast<float>(m_midiMax - m_midiMin);
+    }
+    m_valueLabel->setText(QString::number(normalizedValue, 'f', 3));
+    m_valueLabel->update();
+
+    // Update the stored value
+    if (m_valueUpdateCallback) {
+        m_valueUpdateCallback(m_controlIndex, midiValue);
+    }
+
+    // Send MIDI message
+    if (m_valueChangeCallback && m_controlIndex >= 0 && m_currentControl) {
+        m_valueChangeCallback(m_controlIndex, *m_currentControl, midiValue);
+    }
 }
 
 void ControlParameterWidget::onSliderValueChanged(int value) {
@@ -236,12 +319,28 @@ void ControlParameterWidget::onSliderValueChanged(int value) {
         return;
     }
     
-    // Update UI with the actual MIDI value (not the scaled slider value)
-    m_valueLabel->setText(QString::number(midiValue));
+    // Update UI with normalized float value (0.0 to 1.0)
+    float normalizedValue = 0.0f;
+    if (m_midiMax > m_midiMin) {
+        normalizedValue = static_cast<float>(midiValue - m_midiMin) / static_cast<float>(m_midiMax - m_midiMin);
+    }
+    m_valueLabel->setText(QString::number(normalizedValue, 'f', 3));
     m_valueLabel->update();  // Force immediate repaint of value label
-    
+
     // Ensure slider visual state is updated (green fill should reflect new value)
     m_slider->update();  // Force immediate repaint of slider
+
+    // Update combobox selection to match slider value if there are enum values
+    if (m_comboBox->isVisible() && m_controlMaps.has_value()) {
+        m_comboBox->blockSignals(true);
+        for (int i = 0; i < m_comboBox->count(); ++i) {
+            if (m_comboBox->itemData(i).toUInt() == midiValue) {
+                m_comboBox->setCurrentIndex(i);
+                break;
+            }
+        }
+        m_comboBox->blockSignals(false);
+    }
     
     // Update the stored value in the parent list
     if (m_valueUpdateCallback) {
@@ -346,16 +445,27 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
     for (size_t i = 0; i < controls.size(); ++i) {
         QListWidgetItem* item = new QListWidgetItem();
         addItem(item);
-        
+
         ControlParameterWidget* widget = new ControlParameterWidget();
         widget->setValueChangeCallback(m_valueChangeCallback);
         widget->setValueUpdateCallback([this](int index, uint32_t value) {
             updateStoredValue(index, value);
         });
-        widget->updateFromControl(controls[i], static_cast<int>(i), m_controlValues[i]);
-        
+
+        // Fetch control maps if control has ctrlMapId
+        const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps = nullptr;
+        std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> controlMapsOpt;
+        if (m_controlMapProvider && controls[i].ctrlMapId.has_value()) {
+            controlMapsOpt = m_controlMapProvider(controls[i].ctrlMapId.value());
+            if (controlMapsOpt.has_value()) {
+                controlMaps = &(*controlMapsOpt);
+            }
+        }
+
+        widget->updateFromControl(controls[i], static_cast<int>(i), m_controlValues[i], controlMaps);
+
         setItemWidget(item, widget);
-        
+
         // Force the item size to match our widget
         item->setSizeHint(QSize(widget->width(), 35));
     }
@@ -363,6 +473,10 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
 
 void VirtualizedControlList::setValueChangeCallback(std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> callback) {
     m_valueChangeCallback = callback;
+}
+
+void VirtualizedControlList::setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(const std::string&)> provider) {
+    m_controlMapProvider = provider;
 }
 
 void VirtualizedControlList::resizeEvent(QResizeEvent* event) {
@@ -404,7 +518,7 @@ void VirtualizedControlList::updateVisibleItems() {
     for (int i = startIndex; i <= endIndex; ++i) {
         QListWidgetItem* listItem = item(i);
         if (!listItem) continue;
-        
+
         ControlParameterWidget* widget = qobject_cast<ControlParameterWidget*>(itemWidget(listItem));
         if (!widget) {
             widget = new ControlParameterWidget();
@@ -414,8 +528,18 @@ void VirtualizedControlList::updateVisibleItems() {
             });
             setItemWidget(listItem, widget);
         }
-        
-        widget->updateFromControl(m_controls[i], i, m_controlValues[i]);
+
+        // Fetch control maps if control has ctrlMapId
+        const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps = nullptr;
+        std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> controlMapsOpt;
+        if (m_controlMapProvider && m_controls[i].ctrlMapId.has_value()) {
+            controlMapsOpt = m_controlMapProvider(m_controls[i].ctrlMapId.value());
+            if (controlMapsOpt.has_value()) {
+                controlMaps = &(*controlMapsOpt);
+            }
+        }
+
+        widget->updateFromControl(m_controls[i], i, m_controlValues[i], controlMaps);
     }
 }
 

@@ -595,7 +595,7 @@ void KeyboardWidget::setupPropertiesPanel() {
     controlListWidget->setValueChangeCallback([this](int controlIndex, const midicci::commonproperties::MidiCIControl& control, uint32_t value) {
         QString ctrlType = QString::fromStdString(control.ctrlType);
         int channel = control.channel.value_or(0);
-        
+
         if (ctrlType == "cc" && controlChangeCallback) {
             uint8_t ccNum = control.ctrlIndex.empty() ? 0 : control.ctrlIndex[0];
             controlChangeCallback(channel, ccNum, value);
@@ -614,6 +614,14 @@ void KeyboardWidget::setupPropertiesPanel() {
                 perNoteAftertouchCallback(channel, note, value);
             }
         }
+    });
+
+    // Set up control map provider for enumerated values
+    controlListWidget->setControlMapProvider([this](const std::string& ctrlMapId) -> std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> {
+        if (controlMapProvider && selectedDeviceMuid != 0) {
+            return controlMapProvider(selectedDeviceMuid, ctrlMapId);
+        }
+        return std::nullopt;
     });
     
     listsLayout->addLayout(controlLayout);
@@ -797,6 +805,10 @@ void KeyboardWidget::setPropertyDataProvider(std::function<std::optional<std::ve
                                             std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> progProvider) {
     ctrlListProvider = ctrlProvider;
     programListProvider = progProvider;
+}
+
+void KeyboardWidget::setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> provider) {
+    controlMapProvider = provider;
 }
 
 void KeyboardWidget::refreshProperties() {

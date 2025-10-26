@@ -76,6 +76,7 @@ public:
     // Property management - simplified API using StandardPropertiesExtensions
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
+    std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
     void setPropertiesChangedCallback(std::function<void(uint32_t)> callback);
     
     // Instrumentation - for debugging performance issues

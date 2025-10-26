@@ -42,6 +42,7 @@ public:
     // MIDI-CI Property functionality - simplified API using PropertyClientFacade
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
+    std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
     void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t)> callback);
     
     // MIDI control sending

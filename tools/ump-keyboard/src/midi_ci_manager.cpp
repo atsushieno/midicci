@@ -502,6 +502,53 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
     }
 }
 
+std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIManager::getCtrlMapList(uint32_t muid, const std::string& ctrlMapId) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+
+    instrumentation_log_property_call(muid, "CtrlMapList", "getCtrlMapList");
+
+    if (!initialized_ || !device_) {
+        std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
+        return std::nullopt;
+    }
+
+    // Get connection to the remote device
+    auto connection = device_->get_connection(muid);
+    if (!connection) {
+        std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        return std::nullopt;
+    }
+
+    try {
+        // Clean up expired requests first
+        cleanupExpiredPropertyRequests();
+
+        auto* properties = connection->get_property_client_facade().get_properties();
+        auto ret = StandardPropertiesExtensions::getCtrlMapList(*properties, ctrlMapId);
+
+        // If we have no data, request it
+        if (!ret) {
+            // Check if we already have a pending request for this property
+            std::string requestKey = std::string(StandardPropertyNames::CTRL_MAP_LIST) + ":" + ctrlMapId;
+            if (isPropertyRequestPending(muid, requestKey)) {
+                std::cout << "[PROPERTY ACCESS] CtrlMapList[" << ctrlMapId << "] request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+                return std::nullopt;
+            }
+
+            // Add to pending requests to prevent duplicates
+            addPendingPropertyRequest(muid, requestKey);
+
+            auto& property_client = connection->get_property_client_facade();
+
+            property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+        }
+        return ret;
+    } catch (const std::exception& e) {
+        std::cerr << "[MIDI-CI ERROR] Failed to get CtrlMapList[" << ctrlMapId << "] for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
+        return std::nullopt;
+    }
+}
+
 void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
     if (!initialized_ || !device_) {
         std::cerr << "[PROPERTY CALLBACKS] Cannot setup callbacks - not initialized" << std::endl;

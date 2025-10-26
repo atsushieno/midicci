@@ -63,7 +63,12 @@ int main(int argc, char** argv) {
         [&controller](uint32_t muid) { return controller.getAllCtrlList(muid); },
         [&controller](uint32_t muid) { return controller.getProgramList(muid); }
     );
-    
+
+    // Set up control map provider for enumerated values
+    keyboard.setControlMapProvider(
+        [&controller](uint32_t muid, const std::string& ctrlMapId) { return controller.getCtrlMapList(muid, ctrlMapId); }
+    );
+
     // Set up properties changed callback
     controller.setMidiCIPropertiesChangedCallback([&keyboard](uint32_t muid) {
         std::cout << "Properties updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;

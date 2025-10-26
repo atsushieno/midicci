@@ -49,6 +49,7 @@ public:
     // Property management - updated for simplified API
     void setPropertyDataProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlProvider,
                                 std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> progProvider);
+    void setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> provider);
     void updateProperties(uint32_t muid);
     void updatePropertiesOnMainThread(uint32_t muid);
 
@@ -93,6 +94,7 @@ private:
     std::function<MidiCIDeviceInfo*(uint32_t)> midiCIDeviceProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlListProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> programListProvider;
+    std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> controlMapProvider;
     
     QVBoxLayout* mainLayout;
     QWidget* keyboardWidget;

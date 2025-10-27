@@ -434,8 +434,8 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
         auto* properties = connection->get_property_client_facade().get_properties();
         auto ret = StandardPropertiesExtensions::getAllCtrlList(*properties);
 
-        // If we have no data OR we have valid but empty data, we need to request it
-        if (!ret || (ret.has_value() && ret->empty())) {
+        // Only request if we have NO data at all. Empty data is valid (device has no controls).
+        if (!ret) {
             // Check if we already have a pending request for this property
             if (isPropertyRequestPending(muid, StandardPropertyNames::ALL_CTRL_LIST)) {
                 std::cout << "[PROPERTY ACCESS] AllCtrlList request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
@@ -444,7 +444,7 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
 
             // Add to pending requests to prevent duplicates
             addPendingPropertyRequest(muid, StandardPropertyNames::ALL_CTRL_LIST);
-            
+
             auto& property_client = connection->get_property_client_facade();
 
             property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
@@ -480,8 +480,8 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
         auto* properties = connection->get_property_client_facade().get_properties();
         auto ret = StandardPropertiesExtensions::getProgramList(*properties);
 
-        // If we have no data OR we have valid but empty data, we need to request it
-        if (!ret || (ret.has_value() && ret->empty())) {
+        // Only request if we have NO data at all. Empty data is valid (device has no programs).
+        if (!ret) {
             // Check if we already have a pending request for this property
             if (isPropertyRequestPending(muid, StandardPropertyNames::PROGRAM_LIST)) {
                 std::cout << "[PROPERTY ACCESS] PROGRAM_LIST request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;

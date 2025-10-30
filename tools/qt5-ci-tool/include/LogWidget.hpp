@@ -37,6 +37,7 @@ private:
 
     midicci::tooling::CIToolRepository* m_repository;
     bool m_fullTextMode = false;
+    size_t m_lastRowCount = 0;
 };
 
 class LogWidget : public QWidget

@@ -982,19 +982,16 @@ void InitiatorWidget::updateCurrentPropertyValue()
                         
                         for (const auto& property : properties_vec) {
                             if (property.id == m_selectedProperty.toStdString()) {
+                                const auto size_bytes = property.body.size();
+                                m_repository->log(QString("updateCurrentPropertyValue: Found property '%1' via PropertyClientFacade, size=%2 bytes")
+                                    .arg(QString::fromStdString(property.id))
+                                    .arg(size_bytes)
+                                    .toStdString(), tooling::MessageDirection::In);
+
                                 QString propertyText = QString::fromStdString(
                                     std::string(property.body.begin(), property.body.end()));
-                                
-                                m_repository->log(QString("updateCurrentPropertyValue: Found property '%1' via PropertyClientFacade, updating display with %2 bytes")
-                                    .arg(QString::fromStdString(property.id))
-                                    .arg(property.body.size())
-                                    .toStdString(), tooling::MessageDirection::In);
-                                
                                 m_propertyValueText.set(propertyText);
                                 
-                                m_repository->log(QString("updateCurrentPropertyValue: Successfully updated UI for property '%1'")
-                                    .arg(QString::fromStdString(property.id))
-                                    .toStdString(), tooling::MessageDirection::In);
                                 return; // Found and updated, exit the method
                             }
                         }

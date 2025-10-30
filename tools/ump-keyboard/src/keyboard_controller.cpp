@@ -281,9 +281,13 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                 // Check if this is one of our own outgoing messages to avoid feedback loop
                 // But be more intelligent - only block exact matches, not legitimate responses
                 if (recentOutgoingSysEx.find(sysex_buffer_) != recentOutgoingSysEx.end()) {
-                    throw std::runtime_error("This should not happen at all");
-                    std::cout << "[SYSEX INPUT] Ignoring our own outgoing SysEx message (exact match)" << std::endl;
+                    std::cerr << "[SYSEX ERROR] Echoed SysEx received; invalid per MIDI-CI. Ignoring." << std::endl;
+                    if (logger_) {
+                        logger_->log("ERROR: Echoed SysEx received; ignoring (invalid per MIDI-CI).", midicci::keyboard::MessageDirection::In);
+                    }
                     recentOutgoingSysEx.erase(sysex_buffer_); // Remove from tracking set
+                    sysex_in_progress_ = false;
+                    return;
                 } else {
                     // Log the incoming SysEx message
                     if (logger_) {
@@ -298,10 +302,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     if (sysex_buffer_.size() >= 4 && 
                         sysex_buffer_[0] == 0x7E && sysex_buffer_[2] == 0x0D) {
                         std::cout << "[SYSEX INPUT] Processing legitimate MIDI-CI message" << std::endl;
-                        processSysExForMidiCI(sysex_buffer_);
+                        processSysExForMidiCI(group, sysex_buffer_);
                     } else {
                         std::cout << "[SYSEX INPUT] Processing SysEx message (not MIDI-CI or not in recent outgoing)" << std::endl;
-                        processSysExForMidiCI(sysex_buffer_);
+                        processSysExForMidiCI(group, sysex_buffer_);
                     }
                 }
                 sysex_in_progress_ = false;
@@ -349,9 +353,13 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                 // Check if this is one of our own outgoing messages to avoid feedback loop
                 // But be more intelligent - only block exact matches, not legitimate responses
                 if (recentOutgoingSysEx.find(sysex_buffer_) != recentOutgoingSysEx.end()) {
-                    throw std::runtime_error("This should not happen at all");
-                    std::cout << "[SYSEX INPUT] Ignoring our own outgoing SysEx message (exact match, multi-packet)" << std::endl;
+                    std::cerr << "[SYSEX ERROR] Echoed SysEx received (multi-packet); invalid per MIDI-CI. Ignoring." << std::endl;
+                    if (logger_) {
+                        logger_->log("ERROR: Echoed SysEx received (multi-packet); ignoring (invalid per MIDI-CI).", midicci::keyboard::MessageDirection::In);
+                    }
                     recentOutgoingSysEx.erase(sysex_buffer_); // Remove from tracking set
+                    sysex_in_progress_ = false;
+                    return;
                 } else {
                     // Log the incoming SysEx message
                     if (logger_) {
@@ -366,10 +374,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     if (sysex_buffer_.size() >= 4 && 
                         sysex_buffer_[0] == 0x7E && sysex_buffer_[2] == 0x0D) {
                         std::cout << "[SYSEX INPUT] Processing legitimate MIDI-CI message (multi-packet)" << std::endl;
-                        processSysExForMidiCI(sysex_buffer_);
+                        processSysExForMidiCI(group, sysex_buffer_);
                     } else {
                         std::cout << "[SYSEX INPUT] Processing SysEx message (not MIDI-CI or not in recent outgoing, multi-packet)" << std::endl;
-                        processSysExForMidiCI(sysex_buffer_);
+                        processSysExForMidiCI(group, sysex_buffer_);
                     }
                 }
                 sysex_in_progress_ = false;
@@ -473,7 +481,19 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> Keyboard
     return std::nullopt;
 }
 
-void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t)> callback) {
+void KeyboardController::requestAllCtrlList(uint32_t muid) {
+    if (midiCIManager && midiCIManager->isInitialized()) {
+        midiCIManager->requestAllCtrlList(muid);
+    }
+}
+
+void KeyboardController::requestProgramList(uint32_t muid) {
+    if (midiCIManager && midiCIManager->isInitialized()) {
+        midiCIManager->requestProgramList(muid);
+    }
+}
+
+void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
     midiCIPropertiesChangedCallback = callback;
     if (midiCIManager) {
         midiCIManager->setPropertiesChangedCallback(callback);
@@ -541,7 +561,7 @@ void KeyboardController::initializeMidiCI() {
     }
 }
 
-void KeyboardController::processSysExForMidiCI(const std::vector<uint8_t>& sysex_data) {
+void KeyboardController::processSysExForMidiCI(uint8_t group, const std::vector<uint8_t>& sysex_data) {
     std::cout << "[MIDI-CI CHECK] Processing SysEx for MIDI-CI, size: " << sysex_data.size() << std::endl;
     
     if (midiCIManager && midiCIManager->isInitialized()) {
@@ -560,7 +580,8 @@ void KeyboardController::processSysExForMidiCI(const std::vector<uint8_t>& sysex
                 std::cout << std::endl;
             }
             
-            // Strip F0 start and F7 end bytes - midicci expects payload only
+            // Strip F0 start and F7 end bytes if present (MIDI 1.0),
+            // but UMP SysEx7 does not include them so this usually keeps the buffer unchanged.
             std::vector<uint8_t> payload_data;
             if (sysex_data.size() >= 2) {
                 // Skip F0 at start, and F7 at end if present
@@ -580,7 +601,8 @@ void KeyboardController::processSysExForMidiCI(const std::vector<uint8_t>& sysex
                     }
                     std::cout << std::dec << std::endl;
                     
-                    midiCIManager->processMidi1SysEx(payload_data);
+                    // UMP-aware processing (preserve group)
+                    midiCIManager->processUmpSysEx(group, payload_data);
                 } else {
                     std::cout << "[MIDI-CI ERROR] Invalid SysEx payload after stripping F0/F7" << std::endl;
                 }

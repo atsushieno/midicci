@@ -198,7 +198,7 @@ void MidiCIManager::setDevicesChangedCallback(DevicesChangedCallback callback) {
     devices_changed_callback_ = callback;
 }
 
-void MidiCIManager::setPropertiesChangedCallback(std::function<void(uint32_t)> callback) {
+void MidiCIManager::setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
     properties_changed_callback_ = callback;
 }
 
@@ -376,17 +376,22 @@ void MidiCIManager::setupCallbacks() {
     device_->set_connections_changed_callback([this]() {
         log("MIDI-CI Connections changed", false); // incoming change notification
         
-        // Set up property callbacks for all connected devices
-        auto& connections = device_->get_connections();
-        for (const auto& conn_pair : connections) {
-            uint32_t muid = conn_pair.first;
-            std::cout << "[CONNECTIONS CHANGED] Setting up property callbacks for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            setupPropertyCallbacks(muid);
-        }
-        
-        if (devices_changed_callback_) {
-            devices_changed_callback_();
-        }
+        // Defer device access to avoid potential re-entrancy or lock inversion
+        std::thread([this]() {
+            try {
+                auto& connections = device_->get_connections();
+                for (const auto& conn_pair : connections) {
+                    uint32_t muid = conn_pair.first;
+                    std::cout << "[CONNECTIONS CHANGED] Setting up property callbacks for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+                    setupPropertyCallbacks(muid);
+                }
+                if (devices_changed_callback_) {
+                    devices_changed_callback_();
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[MIDI-CI ERROR] connections_changed handling failed: " << e.what() << std::endl;
+            }
+        }).detach();
     });
 }
 
@@ -411,9 +416,7 @@ void MidiCIManager::log(const std::string& message, bool is_outgoing) {
 
 // Property management methods using PropertyClientFacade for remote device access
 std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManager::getAllCtrlList(uint32_t muid) {
-    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
-    
-    instrumentation_log_property_call(muid, "AllCtrlList", "getAllCtrlList");
+    instrumentation_log_property_call(muid, "AllCtrlList(read)", "getAllCtrlList");
     
     if (!initialized_ || !device_) {
         std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
@@ -428,27 +431,12 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
     }
     
     try {
-        // Clean up expired requests first
-        cleanupExpiredPropertyRequests();
-        
         auto* properties = connection->get_property_client_facade().get_properties();
-        auto ret = StandardPropertiesExtensions::getAllCtrlList(*properties);
-
-        // Only request if we have NO data at all. Empty data is valid (device has no controls).
-        if (!ret) {
-            // Check if we already have a pending request for this property
-            if (isPropertyRequestPending(muid, StandardPropertyNames::ALL_CTRL_LIST)) {
-                std::cout << "[PROPERTY ACCESS] AllCtrlList request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-                return std::nullopt;
-            }
-
-            // Add to pending requests to prevent duplicates
-            addPendingPropertyRequest(muid, StandardPropertyNames::ALL_CTRL_LIST);
-
-            auto& property_client = connection->get_property_client_facade();
-
-            property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+        if (!properties) {
+            std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return std::nullopt;
         }
+        auto ret = StandardPropertiesExtensions::getAllCtrlList(*properties);
         return ret;
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] Failed to get AllCtrlList for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -457,9 +445,7 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
 }
 
 std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManager::getProgramList(uint32_t muid) {
-    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
-    
-    instrumentation_log_property_call(muid, "ProgramList", "getProgramList");
+    instrumentation_log_property_call(muid, "ProgramList(read)", "getProgramList");
     
     if (!initialized_ || !device_) {
         std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
@@ -474,27 +460,12 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
     }
     
     try {
-        // Clean up expired requests first
-        cleanupExpiredPropertyRequests();
-
         auto* properties = connection->get_property_client_facade().get_properties();
-        auto ret = StandardPropertiesExtensions::getProgramList(*properties);
-
-        // Only request if we have NO data at all. Empty data is valid (device has no programs).
-        if (!ret) {
-            // Check if we already have a pending request for this property
-            if (isPropertyRequestPending(muid, StandardPropertyNames::PROGRAM_LIST)) {
-                std::cout << "[PROPERTY ACCESS] PROGRAM_LIST request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-                return std::nullopt;
-            }
-
-            // Add to pending requests to prevent duplicates
-            addPendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
-
-            auto& property_client = connection->get_property_client_facade();
-
-            property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
+        if (!properties) {
+            std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return std::nullopt;
         }
+        auto ret = StandardPropertiesExtensions::getProgramList(*properties);
         return ret;
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] Failed to get ProgramList for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -503,8 +474,6 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
 }
 
 std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIManager::getCtrlMapList(uint32_t muid, const std::string& ctrlMapId) {
-    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
-
     instrumentation_log_property_call(muid, "CtrlMapList", "getCtrlMapList");
 
     if (!initialized_ || !device_) {
@@ -520,9 +489,6 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIMa
     }
 
     try {
-        // Clean up expired requests first
-        cleanupExpiredPropertyRequests();
-
         auto* properties = connection->get_property_client_facade().get_properties();
         auto ret = StandardPropertiesExtensions::getCtrlMapList(*properties, ctrlMapId);
 
@@ -539,13 +505,56 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIMa
             addPendingPropertyRequest(muid, requestKey);
 
             auto& property_client = connection->get_property_client_facade();
-
+            // Explicit log: some property sends do not trigger device message_callback
+            std::cout << "[MIDI-CI SENT] GetPropertyData(CtrlMapList:'" << ctrlMapId << "') to MUID: 0x" << std::hex << muid << std::dec << std::endl;
             property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
         }
         return ret;
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] Failed to get CtrlMapList[" << ctrlMapId << "] for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
         return std::nullopt;
+    }
+}
+
+void MidiCIManager::requestAllCtrlList(uint32_t muid) {
+    try {
+        auto connection = device_->get_connection(muid);
+        if (!connection) {
+            std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return;
+        }
+        // Avoid duplicate in-flight requests
+        if (isPropertyRequestPending(muid, StandardPropertyNames::ALL_CTRL_LIST)) {
+            std::cout << "[PROPERTY REQUEST] AllCtrlList already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return;
+        }
+        addPendingPropertyRequest(muid, StandardPropertyNames::ALL_CTRL_LIST);
+        auto& property_client = connection->get_property_client_facade();
+        std::cout << "[MIDI-CI SENT] GetPropertyData(AllCtrlList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+    } catch (const std::exception& e) {
+        std::cerr << "[MIDI-CI ERROR] requestAllCtrlList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
+    }
+}
+
+void MidiCIManager::requestProgramList(uint32_t muid) {
+    try {
+        auto connection = device_->get_connection(muid);
+        if (!connection) {
+            std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return;
+        }
+        // Avoid duplicate in-flight requests
+        if (isPropertyRequestPending(muid, StandardPropertyNames::PROGRAM_LIST)) {
+            std::cout << "[PROPERTY REQUEST] ProgramList already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return;
+        }
+        addPendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
+        auto& property_client = connection->get_property_client_facade();
+        std::cout << "[MIDI-CI SENT] GetPropertyData(ProgramList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
+    } catch (const std::exception& e) {
+        std::cerr << "[MIDI-CI ERROR] requestProgramList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
 }
 
@@ -579,10 +588,12 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
             
             // Clear any pending requests for this specific property
             this->removePendingPropertyRequest(muid, propertyId);
+            // Mark property as fetched at least once
+            this->mark_property_fetched(muid, propertyId);
             
-            // Notify UI about property changes
+            // Notify UI about this specific property change
             if (this->properties_changed_callback_) {
-                this->properties_changed_callback_(muid);
+                this->properties_changed_callback_(muid, propertyId);
             }
         });
         
@@ -592,7 +603,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
             
             // Notify UI about property changes
             if (this->properties_changed_callback_) {
-                this->properties_changed_callback_(muid);
+                this->properties_changed_callback_(muid, "");
             }
         });
         
@@ -604,6 +615,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
 }
 
 bool MidiCIManager::isPropertyRequestPending(uint32_t muid, const std::string& property_name) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     return std::any_of(pending_property_requests_.begin(), pending_property_requests_.end(),
                        [muid, &property_name](const PendingPropertyRequest& req) {
                            return req.muid == muid && req.property_name == property_name;
@@ -611,8 +623,13 @@ bool MidiCIManager::isPropertyRequestPending(uint32_t muid, const std::string& p
 }
 
 void MidiCIManager::addPendingPropertyRequest(uint32_t muid, const std::string& property_name) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     // First check if it already exists to avoid duplicates
-    if (!isPropertyRequestPending(muid, property_name)) {
+    auto exists = std::any_of(pending_property_requests_.begin(), pending_property_requests_.end(),
+                              [muid, &property_name](const PendingPropertyRequest& req) {
+                                  return req.muid == muid && req.property_name == property_name;
+                              });
+    if (!exists) {
         pending_property_requests_.emplace_back(muid, property_name);
         std::cout << "[PROPERTY REQUEST] Added pending request for MUID: 0x" << std::hex << muid << std::dec 
                   << ", property: " << property_name << std::endl;
@@ -620,6 +637,7 @@ void MidiCIManager::addPendingPropertyRequest(uint32_t muid, const std::string& 
 }
 
 void MidiCIManager::removePendingPropertyRequest(uint32_t muid, const std::string& property_name) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     auto it = std::remove_if(pending_property_requests_.begin(), pending_property_requests_.end(),
                             [muid, &property_name](const PendingPropertyRequest& req) {
                                 return req.muid == muid && req.property_name == property_name;
@@ -632,6 +650,7 @@ void MidiCIManager::removePendingPropertyRequest(uint32_t muid, const std::strin
 }
 
 void MidiCIManager::cleanupExpiredPropertyRequests() {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     const auto now = std::chrono::steady_clock::now();
     const auto timeout = std::chrono::seconds(30); // 30 second timeout
     
@@ -647,10 +666,21 @@ void MidiCIManager::cleanupExpiredPropertyRequests() {
     }
 }
 
+bool MidiCIManager::has_property_been_fetched(uint32_t muid, const std::string& property_name) const {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    return fetched_properties_.find({muid, property_name}) != fetched_properties_.end();
+}
+
+void MidiCIManager::mark_property_fetched(uint32_t muid, const std::string& property_name) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    fetched_properties_.insert({muid, property_name});
+}
+
 void MidiCIManager::clearDiscoveredDevices() {
     std::cout << "[MIDI-CI] Clearing all discovered devices and pending property requests" << std::endl;
     discovered_devices_.clear();
     pending_property_requests_.clear();
+    fetched_properties_.clear();
     
     // Notify UI about device list change
     if (devices_changed_callback_) {
@@ -659,6 +689,7 @@ void MidiCIManager::clearDiscoveredDevices() {
 }
 
 void MidiCIManager::instrumentation_log_property_call(uint32_t muid, const std::string& property_name, const std::string& caller) const {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     instrumentation_call_counter_++;
     auto key = std::make_pair(muid, property_name);
     instrumentation_property_call_counts_[key]++;
@@ -694,4 +725,3 @@ void MidiCIManager::instrumentation_print_statistics() const {
     }
     std::cout << std::endl;
 }
-

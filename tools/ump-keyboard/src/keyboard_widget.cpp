@@ -297,34 +297,49 @@ void KeyboardWidget::setupUI() {
 
 void KeyboardWidget::setupDeviceSelectors() {
     deviceGroup = new QGroupBox("MIDI 2.0 Devices");
-    deviceLayout = new QHBoxLayout(deviceGroup);
+    deviceLayout = new QVBoxLayout(deviceGroup);
+    deviceLayout->setSpacing(6);
     
+    // Row 1: Input/Output selectors + Refresh
+    QHBoxLayout* deviceRow = new QHBoxLayout();
     // Input device selector
     QLabel* inputLabel = new QLabel("Input:");
     inputDeviceCombo = new QComboBox();
-    inputDeviceCombo->setMinimumWidth(200);
+    inputDeviceCombo->setMinimumWidth(220);
     connect(inputDeviceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &KeyboardWidget::onInputDeviceChanged);
-    
     // Output device selector
     QLabel* outputLabel = new QLabel("Output:");
     outputDeviceCombo = new QComboBox();
-    outputDeviceCombo->setMinimumWidth(200);
+    outputDeviceCombo->setMinimumWidth(220);
     connect(outputDeviceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &KeyboardWidget::onOutputDeviceChanged);
-    
     // Refresh button
     refreshButton = new QPushButton("Refresh");
-    refreshButton->setMaximumWidth(80);
+    refreshButton->setFixedWidth(90);
     connect(refreshButton, &QPushButton::clicked, this, &KeyboardWidget::refreshDevices);
     
-    deviceLayout->addWidget(inputLabel);
-    deviceLayout->addWidget(inputDeviceCombo);
-    deviceLayout->addSpacing(20);
-    deviceLayout->addWidget(outputLabel);
-    deviceLayout->addWidget(outputDeviceCombo);
-    deviceLayout->addWidget(refreshButton);
-    deviceLayout->addStretch();
+    deviceRow->addWidget(inputLabel);
+    deviceRow->addWidget(inputDeviceCombo);
+    deviceRow->addSpacing(20);
+    deviceRow->addWidget(outputLabel);
+    deviceRow->addWidget(outputDeviceCombo);
+    deviceRow->addSpacing(8);
+    deviceRow->addWidget(refreshButton);
+    deviceRow->addStretch();
+    deviceLayout->addLayout(deviceRow);
+
+    // Row 2: Start MIDI-CI Session button
+    QHBoxLayout* startSessionRow = new QHBoxLayout();
+    midiCIDiscoveryButton = new QPushButton("Start MIDI-CI Session");
+    midiCIDiscoveryButton->setEnabled(false);
+    midiCIDiscoveryButton->setMinimumWidth(200); // avoid clipping the label
+    // Let the button expand if there is room, but don't clip text
+    midiCIDiscoveryButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    connect(midiCIDiscoveryButton, &QPushButton::clicked, this, &KeyboardWidget::sendMidiCIDiscovery);
+    startSessionRow->addWidget(midiCIDiscoveryButton);
+    startSessionRow->addStretch();
+    deviceLayout->addLayout(startSessionRow);
     
     mainLayout->addWidget(deviceGroup);
 }
@@ -526,15 +541,7 @@ void KeyboardWidget::setupMidiCIControls() {
     deviceNameLayout->addStretch();
     midiCILayout->addLayout(deviceNameLayout);
     
-    // Discovery button
-    QHBoxLayout* discoveryLayout = new QHBoxLayout();
-    midiCIDiscoveryButton = new QPushButton("Send Discovery");
-    midiCIDiscoveryButton->setEnabled(false);
-    midiCIDiscoveryButton->setMaximumWidth(120);
-    connect(midiCIDiscoveryButton, &QPushButton::clicked, this, &KeyboardWidget::sendMidiCIDiscovery);
-    discoveryLayout->addWidget(midiCIDiscoveryButton);
-    discoveryLayout->addStretch();
-    midiCILayout->addLayout(discoveryLayout);
+    // Discovery button moved under device list
     
     // Device selection combobox
     QHBoxLayout* deviceSelectionLayout = new QHBoxLayout();
@@ -562,19 +569,12 @@ void KeyboardWidget::setupPropertiesPanel() {
     QVBoxLayout* propertiesLayout = new QVBoxLayout(propertiesGroup);
     propertiesLayout->setSpacing(10);
     
-    // Header with refresh button
+    // Header
     QHBoxLayout* headerLayout = new QHBoxLayout();
     QLabel* headerLabel = new QLabel("Standard Properties");
     headerLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
     headerLayout->addWidget(headerLabel);
     headerLayout->addStretch();
-    
-    refreshPropertiesButton = new QPushButton("Refresh Properties");
-    refreshPropertiesButton->setEnabled(false);
-    refreshPropertiesButton->setMaximumWidth(150);
-    refreshPropertiesButton->setToolTip("Click to request properties again (forces new requests)");
-    connect(refreshPropertiesButton, &QPushButton::clicked, this, &KeyboardWidget::refreshProperties);
-    headerLayout->addWidget(refreshPropertiesButton);
     propertiesLayout->addLayout(headerLayout);
     
     // Create horizontal layout for the two property lists
@@ -582,9 +582,19 @@ void KeyboardWidget::setupPropertiesPanel() {
     
     // Control List section
     QVBoxLayout* controlLayout = new QVBoxLayout();
+    // Control header with Refresh button
+    QHBoxLayout* controlHeader = new QHBoxLayout();
     QLabel* controlLabel = new QLabel("All Controls");
     controlLabel->setStyleSheet("font-weight: bold;");
-    controlLayout->addWidget(controlLabel);
+    controlHeader->addWidget(controlLabel);
+    controlHeader->addSpacing(8);
+    getControlListButton = new QPushButton("Refresh");
+    getControlListButton->setEnabled(false);
+    getControlListButton->setFixedWidth(100);
+    connect(getControlListButton, &QPushButton::clicked, this, &KeyboardWidget::onRequestControlList);
+    controlHeader->addWidget(getControlListButton);
+    controlHeader->addStretch();
+    controlLayout->addLayout(controlHeader);
     
     controlListWidget = new VirtualizedControlList();
     controlListWidget->setMinimumHeight(150);
@@ -628,9 +638,19 @@ void KeyboardWidget::setupPropertiesPanel() {
     
     // Program List section
     QVBoxLayout* programLayout = new QVBoxLayout();
+    // Program header with Refresh button
+    QHBoxLayout* programHeader = new QHBoxLayout();
     QLabel* programLabel = new QLabel("Programs");
     programLabel->setStyleSheet("font-weight: bold;");
-    programLayout->addWidget(programLabel);
+    programHeader->addWidget(programLabel);
+    programHeader->addSpacing(8);
+    getProgramListButton = new QPushButton("Refresh");
+    getProgramListButton->setEnabled(false);
+    getProgramListButton->setFixedWidth(100);
+    connect(getProgramListButton, &QPushButton::clicked, this, &KeyboardWidget::onRequestProgramList);
+    programHeader->addWidget(getProgramListButton);
+    programHeader->addStretch();
+    programLayout->addLayout(programHeader);
     
     programListWidget = new QListWidget();
     programListWidget->setMinimumHeight(150);
@@ -689,7 +709,8 @@ void KeyboardWidget::updateMidiCIDevices(const std::vector<MidiCIDeviceInfo>& di
         if (selectedDeviceMuid != 0) {
             std::cout << "[UI] Clearing selected device - no ready devices available" << std::endl;
             selectedDeviceMuid = 0;
-            refreshPropertiesButton->setEnabled(false);
+            if (getControlListButton) getControlListButton->setEnabled(false);
+            if (getProgramListButton) getProgramListButton->setEnabled(false);
             controlListWidget->setControls({});
             controlListWidget->setEnabled(false);
             programListWidget->clear();
@@ -716,7 +737,8 @@ void KeyboardWidget::updateMidiCIDevices(const std::vector<MidiCIDeviceInfo>& di
             std::cout << "[UI] Previously selected device (MUID: 0x" << std::hex << selectedDeviceMuid << std::dec 
                       << ") is no longer available, clearing selection" << std::endl;
             selectedDeviceMuid = 0;
-            refreshPropertiesButton->setEnabled(false);
+            if (getControlListButton) getControlListButton->setEnabled(false);
+            if (getProgramListButton) getProgramListButton->setEnabled(false);
             controlListWidget->setControls({});
             controlListWidget->setEnabled(false);
             programListWidget->clear();
@@ -786,18 +808,11 @@ void KeyboardWidget::onMidiCIDeviceSelected(int index) {
     uint32_t previousDeviceMuid = selectedDeviceMuid;
     selectedDeviceMuid = muid;
     
-    // Enable property refresh button
-    refreshPropertiesButton->setEnabled(true);
+    // Enable property request buttons
+    getControlListButton->setEnabled(true);
+    getProgramListButton->setEnabled(true);
     
-    // Only automatically refresh properties if this is a different device
-    if (muid != previousDeviceMuid && muid != 0) {
-        std::cout << "[UI] Auto-refreshing properties for newly selected device MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        refreshProperties();
-    } else if (muid == previousDeviceMuid) {
-        std::cout << "[UI] Same device selected, not auto-refreshing properties" << std::endl;
-        // Just update the display with existing data
-        updateProperties(muid);
-    }
+    // Do not auto-request properties; leave lists unchanged until user requests
 }
 
 // Property management methods - updated for simplified API
@@ -809,6 +824,12 @@ void KeyboardWidget::setPropertyDataProvider(std::function<std::optional<std::ve
 
 void KeyboardWidget::setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> provider) {
     controlMapProvider = provider;
+}
+
+void KeyboardWidget::setPropertyRequesters(std::function<void(uint32_t)> requestCtrl,
+                                           std::function<void(uint32_t)> requestProg) {
+    requestAllCtrlListCallback = requestCtrl;
+    requestProgramListCallback = requestProg;
 }
 
 void KeyboardWidget::refreshProperties() {
@@ -844,6 +865,18 @@ void KeyboardWidget::updateProperties(uint32_t muid) {
     }
     
     updatePropertiesOnMainThread(muid);
+}
+
+void KeyboardWidget::onRequestControlList() {
+    if (selectedDeviceMuid != 0 && requestAllCtrlListCallback) {
+        requestAllCtrlListCallback(selectedDeviceMuid);
+    }
+}
+
+void KeyboardWidget::onRequestProgramList() {
+    if (selectedDeviceMuid != 0 && requestProgramListCallback) {
+        requestProgramListCallback(selectedDeviceMuid);
+    }
 }
 
 void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
@@ -908,11 +941,16 @@ void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
     }
 }
 
-void KeyboardWidget::onPropertiesUpdated(uint32_t muid) {
+void KeyboardWidget::onPropertiesUpdated(uint32_t muid, const QString& propertyId) {
     static int instrumentation_callback_counter = 0;
     instrumentation_callback_counter++;
-    std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-    updateProperties(muid);
+    std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec
+              << ", propertyId='" << propertyId.toStdString() << "'" << std::endl;
+    // Only update lists for explicit property replies
+    if (propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::ALL_CTRL_LIST) ||
+        propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST)) {
+        updateProperties(muid);
+    }
 }
 
 void KeyboardWidget::onProgramSelected(int row) {

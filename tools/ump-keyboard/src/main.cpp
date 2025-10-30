@@ -58,10 +58,16 @@ int main(int argc, char** argv) {
         return controller.getMidiCIDeviceByMuid(muid);
     });
     
-    // Set up property data providers - simplified API automatically handles requests
+    // Set up property data providers - read-only; explicit buttons send requests
     keyboard.setPropertyDataProvider(
         [&controller](uint32_t muid) { return controller.getAllCtrlList(muid); },
         [&controller](uint32_t muid) { return controller.getProgramList(muid); }
+    );
+
+    // Set up explicit property requesters
+    keyboard.setPropertyRequesters(
+        [&controller](uint32_t muid) { controller.requestAllCtrlList(muid); },
+        [&controller](uint32_t muid) { controller.requestProgramList(muid); }
     );
 
     // Set up control map provider for enumerated values
@@ -70,34 +76,22 @@ int main(int argc, char** argv) {
     );
 
     // Set up properties changed callback
-    controller.setMidiCIPropertiesChangedCallback([&keyboard](uint32_t muid) {
-        std::cout << "Properties updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+    controller.setMidiCIPropertiesChangedCallback([&keyboard](uint32_t muid, const std::string& propertyId) {
+        std::cout << "Property updated for MUID: 0x" << std::hex << muid << std::dec << ", id='" << propertyId << "'" << std::endl;
         
-        // Ensure UI updates happen on the main Qt thread
-        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid]() {
-            keyboard.onPropertiesUpdated(muid);
+        // Ensure UI updates happen on the main Qt thread, pass property id
+        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, propertyId]() {
+            keyboard.onPropertiesUpdated(muid, QString::fromStdString(propertyId));
         }, Qt::QueuedConnection);
     });
     
     
     // Set up MIDI connection state change callback for auto-discovery
     controller.setMidiConnectionChangedCallback([&controller, &keyboard](bool hasValidPair) {
-        if (hasValidPair && controller.isMidiCIInitialized()) {
-            std::cout << "Valid MIDI pair established - sending MIDI-CI Discovery" << std::endl;
-            controller.sendMidiCIDiscovery();
-            
-            // Ensure UI updates happen on the main Qt thread
-            QMetaObject::invokeMethod(&keyboard, [&controller, &keyboard]() {
-                keyboard.updateMidiCIDevices(controller.getMidiCIDeviceDetails());
-            }, Qt::QueuedConnection);
-        } else if (!hasValidPair) {
-            std::cout << "MIDI pair disconnected - clearing MIDI-CI device list" << std::endl;
-            
-            // Ensure UI updates happen on the main Qt thread
-            QMetaObject::invokeMethod(&keyboard, [&controller, &keyboard]() {
-                keyboard.updateMidiCIDevices(controller.getMidiCIDeviceDetails());
-            }, Qt::QueuedConnection);
-        }
+        // Do not auto-start MIDI-CI session; just update UI
+        QMetaObject::invokeMethod(&keyboard, [&controller, &keyboard]() {
+            keyboard.updateMidiCIDevices(controller.getMidiCIDeviceDetails());
+        }, Qt::QueuedConnection);
     });
     
     // Set up control change callbacks
@@ -153,4 +147,3 @@ int main(int argc, char** argv) {
     
     return app.exec();
 }
-

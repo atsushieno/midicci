@@ -8,6 +8,7 @@
 #include <map>
 #include <chrono>
 #include <mutex>
+#include <set>
 #include <midicci/midicci.hpp>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
 #include "message_logger.h"
@@ -77,7 +78,10 @@ public:
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
-    void setPropertiesChangedCallback(std::function<void(uint32_t)> callback);
+    // Explicit request APIs (do not rely on cache heuristics)
+    void requestAllCtrlList(uint32_t muid);
+    void requestProgramList(uint32_t muid);
+    void setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
     
     // Instrumentation - for debugging performance issues
     void instrumentation_print_statistics() const;
@@ -89,7 +93,7 @@ private:
     SysExSender sysex_sender_;
     LogCallback log_callback_;
     DevicesChangedCallback devices_changed_callback_;
-    std::function<void(uint32_t)> properties_changed_callback_;
+    std::function<void(uint32_t, const std::string&)> properties_changed_callback_;
     uint32_t muid_;
     bool initialized_;
     
@@ -107,6 +111,8 @@ private:
             : muid(m), property_name(prop), request_time(std::chrono::steady_clock::now()) {}
     };
     std::vector<PendingPropertyRequest> pending_property_requests_;
+    // Track properties that have received at least one update from the peer
+    std::set<std::pair<uint32_t, std::string>> fetched_properties_;
     
     // Note: Remote device access is now handled through ClientConnection objects
     // obtained via device_->get_connection(muid) - no need for separate storage
@@ -120,6 +126,8 @@ private:
     void addPendingPropertyRequest(uint32_t muid, const std::string& property_name);
     void removePendingPropertyRequest(uint32_t muid, const std::string& property_name);
     void cleanupExpiredPropertyRequests();
+    bool has_property_been_fetched(uint32_t muid, const std::string& property_name) const;
+    void mark_property_fetched(uint32_t muid, const std::string& property_name);
     
     // Logging helper
     void log(const std::string& message, bool is_outgoing = false);

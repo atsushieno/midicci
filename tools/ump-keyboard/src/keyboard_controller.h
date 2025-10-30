@@ -43,7 +43,11 @@ public:
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
-    void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t)> callback);
+    void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
+
+    // Explicit property requests (user-triggered)
+    void requestAllCtrlList(uint32_t muid);
+    void requestProgramList(uint32_t muid);
     
     // MIDI control sending
     void sendControlChange(int channel, int controller, uint32_t value);
@@ -67,7 +71,7 @@ private:
     std::string currentOutputDeviceId;
     
     std::function<void(bool)> midiConnectionChangedCallback;
-    std::function<void(uint32_t)> midiCIPropertiesChangedCallback;
+    std::function<void(uint32_t, const std::string&)> midiCIPropertiesChangedCallback;
     std::function<void()> midiCIDevicesChangedCallback;
     bool initialized = false;
     uint32_t local_app_muid = 0;  // Store local application MUID across reinitializations
@@ -83,7 +87,7 @@ private:
     
     // MIDI-CI helper methods
     void initializeMidiCI();
-    void processSysExForMidiCI(const std::vector<uint8_t>& sysex_data);
+    void processSysExForMidiCI(uint8_t group, const std::vector<uint8_t>& sysex_data);
     bool sendSysExViaMidi(uint8_t group, const std::vector<uint8_t>& data);
     
     // Connection state helpers

@@ -37,6 +37,7 @@ private:
 
     MessageLogger* m_logger;
     bool m_fullTextMode = false;
+    size_t m_lastRowCount = 0;
 };
 
 class LogWidget : public QWidget

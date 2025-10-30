@@ -51,13 +51,22 @@ void SimpleLogWidget::updateLogs()
     
     auto logs = m_logger->get_logs();
     bool wasAtBottom = (verticalScrollBar()->value() == verticalScrollBar()->maximum());
-    
-    setRowCount(logs.size());
-    
-    for (size_t i = 0; i < logs.size(); ++i) {
-        createLogRow(i, logs[i]);
+
+    const size_t oldCount = m_lastRowCount;
+    const size_t newCount = logs.size();
+    if (newCount <= oldCount) {
+        return; // nothing new
     }
-    
+
+    setUpdatesEnabled(false);
+    setRowCount(static_cast<int>(newCount));
+    for (size_t i = oldCount; i < newCount; ++i) {
+        createLogRow(static_cast<int>(i), logs[i]);
+    }
+    setUpdatesEnabled(true);
+
+    m_lastRowCount = newCount;
+
     if (wasAtBottom) {
         scrollToBottom();
     }
@@ -69,13 +78,22 @@ void SimpleLogWidget::clearLogs()
         m_logger->clear_logs();
     }
     setRowCount(0);
+    m_lastRowCount = 0;
 }
 
 void SimpleLogWidget::setFullTextMode(bool enabled)
 {
     if (m_fullTextMode != enabled) {
         m_fullTextMode = enabled;
-        updateLogs();
+        // Force full rebuild once, then resume append-only
+        auto logs = m_logger ? m_logger->get_logs() : std::vector<LogEntry>{};
+        setRowCount(0);
+        m_lastRowCount = 0;
+        setRowCount(static_cast<int>(logs.size()));
+        for (size_t i = 0; i < logs.size(); ++i) {
+            createLogRow(static_cast<int>(i), logs[i]);
+        }
+        m_lastRowCount = logs.size();
     }
 }
 

@@ -4,8 +4,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
-#include "midicci/details/MidiCIDevice.hpp"
-#include "midicci/details/musicdevice/MidiMachineMessageReporter.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci::musicdevice {
 

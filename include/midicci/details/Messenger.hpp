@@ -4,8 +4,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
-#include "Message.hpp"
-#include "MidiCIConstants.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 class MidiCIDevice;

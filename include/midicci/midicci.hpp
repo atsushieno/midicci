@@ -14,37 +14,42 @@
 #include <midicci/details/CIRetrieval.hpp>
 #include <midicci/details/MidiCIConverter.hpp>
 
+#include <midicci/details/Message.hpp>
+#include <midicci/details/Messenger.hpp>
+
+#include <midicci/details/PropertyValue.hpp>
+#include <midicci/details/commonproperties/PropertyMetadata.hpp>
+
 #include <midicci/details/ObservableProfileList.hpp>
-#include <midicci/details/ObservablePropertyList.hpp>
 
 #include <midicci/details/MidiCIDeviceConfiguration.hpp>
 
-#include <midicci/details/Message.hpp>
-#include <midicci/details/Messenger.hpp>
+#include <midicci/details/MidiCIDevice.hpp>
+#include <midicci/details/ClientConnection.hpp>
 
 #include <midicci/details/ProfileClientFacade.hpp>
 #include <midicci/details/ProfileHostFacade.hpp>
 
-#include <midicci/details/ClientConnection.hpp>
-#include <midicci/details/MidiCIDevice.hpp>
-
 // Property management
 #include <midicci/details/PropertyChunkManager.hpp>
-#include <midicci/details/PropertyClientFacade.hpp>
 #include <midicci/details/PropertyCommonRules.hpp>
-#include <midicci/details/PropertyHostFacade.hpp>
 
 // Common profiles
 #include <midicci/details/commonprofiles/ProfileCommonRules.hpp>
 
 // Common properties
-#include <midicci/details/commonproperties/CommonRulesPropertyClient.hpp>
+#include <midicci/details/PropertyClientFacade.hpp>
 #include <midicci/details/commonproperties/CommonRulesPropertyHelper.hpp>
+#include <midicci/details/commonproperties/CommonRulesPropertyClient.hpp>
 #include <midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp>
-#include <midicci/details/commonproperties/CommonRulesPropertyService.hpp>
-#include <midicci/details/commonproperties/FoundationalResources.hpp>
 #include <midicci/details/commonproperties/MidiCIServicePropertyRules.hpp>
+#include <midicci/details/commonproperties/CommonRulesPropertyService.hpp>
+
+#include <midicci/details/ObservablePropertyList.hpp>
+
+#include <midicci/details/commonproperties/FoundationalResources.hpp>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
+#include <midicci/details/PropertyHostFacade.hpp>
 
 // Music device
 #include <midicci/details/musicdevice/MidiCISession.hpp>

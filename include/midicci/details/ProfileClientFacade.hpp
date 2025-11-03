@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <cstdint>
-#include "../midicci.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

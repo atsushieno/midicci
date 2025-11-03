@@ -3,8 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <utility>
-#include "MidiCIConstants.hpp"
-#include "MidiCIProfile.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

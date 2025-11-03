@@ -1,18 +1,11 @@
 #pragma once
 
-#include "../Json.hpp"
-#include "../MidiCIDevice.hpp"
-#include "../ClientConnection.hpp"
-#include "../PropertyClientFacade.hpp"
-#include "CommonRulesPropertyHelper.hpp"
-#include "../ObservablePropertyList.hpp"
-#include "FoundationalResources.hpp"
+#include "midicci/midicci.hpp"
 #include <memory>
 #include <vector>
 #include <functional>
 
-namespace midicci {
-namespace commonproperties {
+namespace midicci::commonproperties {
 
 class CommonRulesPropertyClient : public MidiCIClientPropertyRules {
 public:
@@ -60,5 +53,4 @@ private:
     std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list_for_body(const std::vector<uint8_t>& body);
 };
 
-} // namespace properties
-} // namespace midi_ci
+} // namespace

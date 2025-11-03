@@ -7,8 +7,7 @@
 #include <memory>
 #include <optional>
 
-#include "../Message.hpp"
-#include "../ObservablePropertyList.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 namespace commonproperties {

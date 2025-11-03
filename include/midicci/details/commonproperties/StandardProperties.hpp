@@ -5,9 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include "../MidiCIDevice.hpp"
-#include "../ObservablePropertyList.hpp"
-#include "CommonRulesPropertyMetadata.hpp"
+#include "midicci/midicci.hpp"
 
 using namespace midicci;
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <cstdint>
-#include "../MidiCIDevice.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 namespace commonproperties {

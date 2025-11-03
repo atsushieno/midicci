@@ -8,66 +8,19 @@
 #include <map>
 #include <mutex>
 #include <optional>
-#include "MidiCIConstants.hpp"
-#include "MidiCIChannelList.hpp"
-#include "Json.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 
 class SubscribeProperty;
 
 namespace commonproperties {
-
 class MidiCIServicePropertyRules;
-
-class PropertyMetadata {
-public:
-    virtual ~PropertyMetadata() = default;
-    
-    virtual const std::string& getPropertyId() const = 0;
-    virtual const std::string& getResourceId() const = 0;
-    virtual const std::string& getName() const = 0;
-    virtual const std::string& getMediaType() const = 0;
-    virtual const std::string& getEncoding() const = 0;
-    virtual const std::vector<uint8_t>& getData() const = 0;
-    virtual std::string getExtra(const std::string& key) const = 0;
-};
 }
 
-    using namespace midicci::commonproperties;
-
+using namespace midicci::commonproperties;
 class MidiCIClientPropertyRules;
 
-struct PropertyValue {
-    std::string id;
-    std::string resId;  // Resource ID (can be empty for properties without resource ID)
-    std::string mediaType;
-    std::vector<uint8_t> body;
-    
-    PropertyValue(const std::string& property_id, const std::string& media_type, const std::vector<uint8_t>& data)
-        : id(property_id), resId(""), mediaType(media_type), body(data) {}
-    
-    PropertyValue(const std::string& property_id, const std::string& resource_id, const std::string& media_type, const std::vector<uint8_t>& data)
-        : id(property_id), resId(resource_id), mediaType(media_type), body(data) {}
-    
-    bool operator==(const PropertyValue& other) const {
-        return id == other.id && resId == other.resId && mediaType == other.mediaType && body == other.body;
-    }
-};
-
-struct SubscriptionEntry {
-    uint32_t muid;
-    std::string resource;
-    std::string res_id;
-    std::string subscribe_id;
-    std::string encoding;
-    
-    SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, const std::string& resource_id,
-                     const std::string& sub_id, const std::string& enc);
-};
-
-using PropertyUpdatedCallback = std::function<void(const std::string&)>;
-using PropertyCatalogUpdatedCallback = std::function<void()>;
 
 class ObservablePropertyList {
 public:

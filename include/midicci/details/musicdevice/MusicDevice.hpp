@@ -5,9 +5,7 @@
 #include <functional>
 #include <memory>
 #include <chrono>
-#include "midicci/details/musicdevice/MidiCISession.hpp"
-#include "midicci/details/ClientConnection.hpp"
-#include "midicci/details/MidiCIDevice.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci::musicdevice {
 

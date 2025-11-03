@@ -4,11 +4,11 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "MidiCIConstants.hpp"
-#include "MidiCIDeviceConfiguration.hpp"
-#include "MidiCIProfile.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
+
+struct MidiCIDeviceConfiguration;
 
 enum class MessageType : uint8_t {
     DiscoveryInquiry = 0x70,

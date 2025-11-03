@@ -5,8 +5,7 @@
 #include <vector>
 #include <functional>
 #include <optional>
-#include "Json.hpp"
-#include "../midicci.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

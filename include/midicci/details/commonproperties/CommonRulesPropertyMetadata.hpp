@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../ObservablePropertyList.hpp"
-#include "../Json.hpp"
+#include "midicci/midicci.hpp"
 #include <string>
 #include <vector>
 

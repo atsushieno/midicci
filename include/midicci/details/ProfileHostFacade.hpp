@@ -3,9 +3,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
-#include "MidiCIProfile.hpp"
-#include "ObservableProfileList.hpp"
-#include "MidiCIDevice.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

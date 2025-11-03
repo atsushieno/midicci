@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../MidiCIConstants.hpp"
-#include "../MidiCIChannelList.hpp"
-#include "../Json.hpp"
-#include "../ObservablePropertyList.hpp"
+#include "midicci/midicci.hpp"
 #include <vector>
 #include <cstdint>
 #include <memory>

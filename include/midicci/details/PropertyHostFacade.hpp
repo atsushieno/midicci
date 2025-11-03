@@ -4,10 +4,7 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include "Message.hpp"
-#include "ObservablePropertyList.hpp"
-#include "commonproperties/MidiCIServicePropertyRules.hpp"
-#include "MidiCIDevice.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
     using namespace midicci::commonproperties;

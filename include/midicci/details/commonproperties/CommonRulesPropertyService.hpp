@@ -1,10 +1,6 @@
 #pragma once
 
-#include "MidiCIServicePropertyRules.hpp"
-#include "CommonRulesPropertyHelper.hpp"
-#include "FoundationalResources.hpp"
-#include "../MidiCIDevice.hpp"
-#include "../Json.hpp"
+#include "midicci/midicci.hpp"
 #include <memory>
 #include <string>
 #include <vector>

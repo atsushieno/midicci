@@ -4,10 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "MidiCIConstants.hpp"
-#include "MidiCIChannelList.hpp"
-#include "MidiCIProfile.hpp"
-#include "ObservablePropertyList.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 
@@ -54,7 +51,7 @@ struct MidiCIDeviceConfiguration {
     
     // Property exchange
     std::vector<PropertyValue> property_values;
-    std::vector<std::unique_ptr<PropertyMetadata>> property_metadata_list;
+    std::vector<std::unique_ptr<midicci::commonproperties::PropertyMetadata>> property_metadata_list;
     
     // Constructor with backward compatibility for existing usage
     explicit MidiCIDeviceConfiguration(int max_sysex = DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE,

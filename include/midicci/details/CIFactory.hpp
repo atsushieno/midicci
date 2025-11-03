@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstring>
-#include "midicci/details/MidiCIProfile.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

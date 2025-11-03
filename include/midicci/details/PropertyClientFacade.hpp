@@ -5,9 +5,7 @@
 #include <string>
 #include <functional>
 #include <map>
-#include "Message.hpp"
-#include "MidiCIDevice.hpp"
-#include "PropertyChunkManager.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 class ClientConnection;

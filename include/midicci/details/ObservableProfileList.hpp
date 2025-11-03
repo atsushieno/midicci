@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 #include <cstdint>
-#include "MidiCIProfile.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci {
 

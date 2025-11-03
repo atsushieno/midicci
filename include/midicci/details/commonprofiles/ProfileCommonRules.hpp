@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-#include "../MidiCIProfile.hpp"
-#include "../MidiCIConstants.hpp"
+#include "midicci/midicci.hpp"
 
 namespace midicci::commonprofiles {
 

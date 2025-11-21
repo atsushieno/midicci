@@ -3,9 +3,12 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
 #include <QtCore/QThread>
 #include <QtCore/QMetaObject>
 #include <QtCore/QEvent>
+#include <QtCore/QDir>
 #include <QtGui/QEnterEvent>
 #include <QtGui/QMouseEvent>
 #include <iostream>
@@ -661,8 +664,31 @@ void KeyboardWidget::setupPropertiesPanel() {
     // Connect program selection signal
     connect(programListWidget, &QListWidget::currentRowChanged, this, &KeyboardWidget::onProgramSelected);
     listsLayout->addLayout(programLayout);
-    
+
     propertiesLayout->addLayout(listsLayout);
+
+    // Save/Load State buttons
+    QHBoxLayout* saveLoadLayout = new QHBoxLayout();
+    saveLoadLayout->addStretch();
+
+    saveStatesButton = new QPushButton("Save States");
+    saveStatesButton->setEnabled(false);
+    saveStatesButton->setFixedWidth(120);
+    saveStatesButton->setStyleSheet("font-weight: bold;");
+    connect(saveStatesButton, &QPushButton::clicked, this, &KeyboardWidget::onSaveStates);
+    saveLoadLayout->addWidget(saveStatesButton);
+
+    saveLoadLayout->addSpacing(10);
+
+    loadStatesButton = new QPushButton("Load States");
+    loadStatesButton->setEnabled(false);
+    loadStatesButton->setFixedWidth(120);
+    loadStatesButton->setStyleSheet("font-weight: bold;");
+    connect(loadStatesButton, &QPushButton::clicked, this, &KeyboardWidget::onLoadStates);
+    saveLoadLayout->addWidget(loadStatesButton);
+
+    saveLoadLayout->addStretch();
+    propertiesLayout->addLayout(saveLoadLayout);
 }
 
 void KeyboardWidget::updateMidiCIStatus(bool initialized, uint32_t muid, const std::string& deviceName) {
@@ -807,11 +833,15 @@ void KeyboardWidget::onMidiCIDeviceSelected(int index) {
     // Update selected device MUID for property requests
     uint32_t previousDeviceMuid = selectedDeviceMuid;
     selectedDeviceMuid = muid;
-    
+
     // Enable property request buttons
     getControlListButton->setEnabled(true);
     getProgramListButton->setEnabled(true);
-    
+
+    // Enable save/load buttons
+    saveStatesButton->setEnabled(true);
+    loadStatesButton->setEnabled(true);
+
     // Do not auto-request properties; leave lists unchanged until user requests
 }
 
@@ -830,6 +860,12 @@ void KeyboardWidget::setPropertyRequesters(std::function<void(uint32_t)> request
                                            std::function<void(uint32_t)> requestProg) {
     requestAllCtrlListCallback = requestCtrl;
     requestProgramListCallback = requestProg;
+}
+
+void KeyboardWidget::setSaveLoadCallbacks(std::function<bool(uint32_t, const std::string&)> saveCallback,
+                                          std::function<bool(uint32_t, const std::string&)> loadCallback) {
+    saveStatesCallback = saveCallback;
+    loadStatesCallback = loadCallback;
 }
 
 void KeyboardWidget::refreshProperties() {
@@ -876,6 +912,84 @@ void KeyboardWidget::onRequestControlList() {
 void KeyboardWidget::onRequestProgramList() {
     if (selectedDeviceMuid != 0 && requestProgramListCallback) {
         requestProgramListCallback(selectedDeviceMuid);
+    }
+}
+
+void KeyboardWidget::onSaveStates() {
+    if (selectedDeviceMuid == 0 || !saveStatesCallback) {
+        return;
+    }
+
+    // Open file dialog to select save location
+    QString filename = QFileDialog::getSaveFileName(
+        this,
+        tr("Save Device States"),
+        QDir::homePath() + "/device_states.state.midi2",
+        tr("MIDI State Files (*.state.midi2);;All Files (*)")
+    );
+
+    if (filename.isEmpty()) {
+        return;  // User cancelled
+    }
+
+    // Ensure the filename has the correct extension
+    if (!filename.endsWith(".state.midi2") && !filename.endsWith(".midi2")) {
+        filename += ".state.midi2";
+    }
+
+    // Call the save callback
+    bool success = saveStatesCallback(selectedDeviceMuid, filename.toStdString());
+
+    // Show result message
+    if (success) {
+        QMessageBox::information(this, tr("Save States"),
+                                tr("Device states saved successfully to:\n%1").arg(filename));
+    } else {
+        QMessageBox::warning(this, tr("Save States"),
+                            tr("Failed to save device states.\nPlease check the console for error details."));
+    }
+}
+
+void KeyboardWidget::onLoadStates() {
+    if (selectedDeviceMuid == 0 || !loadStatesCallback) {
+        return;
+    }
+
+    // Open file dialog to select file to load
+    QString filename = QFileDialog::getOpenFileName(
+        this,
+        tr("Load Device States"),
+        QDir::homePath(),
+        tr("MIDI State Files (*.state.midi2 *.midi2);;All Files (*)")
+    );
+
+    if (filename.isEmpty()) {
+        return;  // User cancelled
+    }
+
+    // Confirm before loading
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this,
+        tr("Load States"),
+        tr("This will send SetPropertyData messages to the device.\n"
+           "Are you sure you want to load states from:\n%1").arg(filename),
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+
+    // Call the load callback
+    bool success = loadStatesCallback(selectedDeviceMuid, filename.toStdString());
+
+    // Show result message
+    if (success) {
+        QMessageBox::information(this, tr("Load States"),
+                                tr("Device states loaded successfully."));
+    } else {
+        QMessageBox::warning(this, tr("Load States"),
+                            tr("Failed to load device states.\nPlease check the console for error details."));
     }
 }
 

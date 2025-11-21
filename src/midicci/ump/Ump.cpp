@@ -134,17 +134,29 @@ uint32_t Ump::get_midi2_nrpn_data() const {
     return int2;
 }
 
-// Timing accessors  
+// Timing accessors
 bool Ump::is_delta_clockstamp() const {
-    return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x10;
+    return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x40;
 }
 
 bool Ump::is_jr_timestamp() const {
     return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x20;
 }
 
+bool Ump::is_dctpq() const {
+    return get_message_type() == MessageType::UTILITY && get_status_byte() == 0x30;
+}
+
+bool Ump::is_start_of_clip() const {
+    return get_message_type() == MessageType::UMP_STREAM && get_status_byte() == 0x20;
+}
+
+bool Ump::is_end_of_clip() const {
+    return get_message_type() == MessageType::UMP_STREAM && get_status_byte() == 0x21;
+}
+
 uint32_t Ump::get_delta_clockstamp() const {
-    return int1 & 0xFFFF;
+    return int1 & 0xFFFFF; // 20 bits
 }
 
 uint16_t Ump::get_jr_timestamp() const {

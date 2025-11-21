@@ -69,9 +69,12 @@ struct Ump {
     uint8_t get_midi2_nrpn_lsb() const;
     uint32_t get_midi2_nrpn_data() const;
     
-    // Timing accessors  
+    // Timing accessors
     bool is_delta_clockstamp() const;
     bool is_jr_timestamp() const;
+    bool is_dctpq() const;
+    bool is_start_of_clip() const;
+    bool is_end_of_clip() const;
     uint32_t get_delta_clockstamp() const;
     uint16_t get_jr_timestamp() const;
     

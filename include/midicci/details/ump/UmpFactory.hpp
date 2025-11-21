@@ -52,6 +52,8 @@ public:
     static uint32_t jrClock(double senderClockTimeSeconds);
     static uint32_t jrTimestamp(uint16_t senderClockTimestamp16);
     static uint32_t jrTimestamp(double senderClockTimestampSeconds);
+    static uint32_t dctpq(uint16_t numberOfTicksPerQuarterNote);
+    static uint32_t deltaClockstamp(uint32_t ticks20);
 
     // System Messages
     static uint32_t systemMessage(uint8_t group, uint8_t status, uint8_t midi1Byte2, uint8_t midi1Byte3);
@@ -105,6 +107,10 @@ public:
 
     // Convenience method that returns a list of Ump objects
     static std::vector<Ump> sysex7(uint8_t group, const std::vector<uint8_t>& src_data);
+
+    // UMP Stream Messages
+    static Ump startOfClip();
+    static Ump endOfClip();
 
 private:
     // Helper method for packet creation shared by SysEx7 and SysEx8

@@ -29,6 +29,14 @@ uint32_t UmpFactory::jrTimestamp(double senderClockTimestampSeconds) {
     return jrTimestamp(static_cast<uint16_t>(senderClockTimestampSeconds * JR_TIMESTAMP_TICKS_PER_SECOND));
 }
 
+uint32_t UmpFactory::dctpq(uint16_t numberOfTicksPerQuarterNote) {
+    return (0x30 << 16) + numberOfTicksPerQuarterNote;
+}
+
+uint32_t UmpFactory::deltaClockstamp(uint32_t ticks20) {
+    return (0x40 << 16) + (ticks20 & 0xFFFFF); // ticks20(bits) - 0..1048575
+}
+
 // System Messages
 uint32_t UmpFactory::systemMessage(uint8_t group, uint8_t status, uint8_t midi1Byte2, uint8_t midi1Byte3) {
     return (static_cast<uint32_t>(MessageType::SYSTEM) << 28) +
@@ -270,6 +278,15 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
     }
     
     return Ump(int1, int2, int3, int4);
+}
+
+// UMP Stream Messages
+Ump UmpFactory::startOfClip() {
+    return Ump(0xF0200000, 0, 0, 0);
+}
+
+Ump UmpFactory::endOfClip() {
+    return Ump(0xF0210000, 0, 0, 0);
 }
 
 } // namespace ump

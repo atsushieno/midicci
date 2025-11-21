@@ -48,7 +48,11 @@ public:
     // Explicit property requests (user-triggered)
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
-    
+
+    // Save/Load device states
+    bool saveStatesToFile(uint32_t muid, const std::string& filename);
+    bool loadStatesFromFile(uint32_t muid, const std::string& filename);
+
     // MIDI control sending
     void sendControlChange(int channel, int controller, uint32_t value);
     void sendRPN(int channel, int msb, int lsb, uint32_t value);

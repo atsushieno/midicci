@@ -78,9 +78,21 @@ public:
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
+    std::optional<std::vector<midicci::commonproperties::MidiCIStateEntry>> getStateList(uint32_t muid);
+    std::optional<std::vector<uint8_t>> getState(uint32_t muid, const std::string& stateId);
+
     // Explicit request APIs (do not rely on cache heuristics)
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
+    void requestStateList(uint32_t muid);
+
+    // State management
+    void sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data);
+
+    // Save/Load all device states to/from MIDI Clip File (.state.midi2)
+    bool saveStatesToFile(uint32_t muid, const std::string& filename);
+    bool loadStatesFromFile(uint32_t muid, const std::string& filename);
+
     void setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
     
     // Instrumentation - for debugging performance issues

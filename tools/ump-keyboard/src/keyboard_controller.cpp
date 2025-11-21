@@ -493,6 +493,20 @@ void KeyboardController::requestProgramList(uint32_t muid) {
     }
 }
 
+bool KeyboardController::saveStatesToFile(uint32_t muid, const std::string& filename) {
+    if (midiCIManager && midiCIManager->isInitialized()) {
+        return midiCIManager->saveStatesToFile(muid, filename);
+    }
+    return false;
+}
+
+bool KeyboardController::loadStatesFromFile(uint32_t muid, const std::string& filename) {
+    if (midiCIManager && midiCIManager->isInitialized()) {
+        return midiCIManager->loadStatesFromFile(muid, filename);
+    }
+    return false;
+}
+
 void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
     midiCIPropertiesChangedCallback = callback;
     if (midiCIManager) {

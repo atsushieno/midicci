@@ -47,6 +47,8 @@ public:
     void setMidiCIDeviceProvider(std::function<MidiCIDeviceInfo*(uint32_t)> provider);
     void setPropertyRequesters(std::function<void(uint32_t)> requestCtrl,
                                std::function<void(uint32_t)> requestProg);
+    void setSaveLoadCallbacks(std::function<bool(uint32_t, const std::string&)> saveCallback,
+                              std::function<bool(uint32_t, const std::string&)> loadCallback);
     
     // Property management - updated for simplified API
     void setPropertyDataProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlProvider,
@@ -71,6 +73,8 @@ private slots:
     void onRequestControlList();
     void onRequestProgramList();
     void onProgramSelected(int row);
+    void onSaveStates();
+    void onLoadStates();
 
 public slots:
     void onPropertiesUpdated(uint32_t muid, const QString& propertyId);
@@ -126,6 +130,8 @@ private:
     QPushButton* refreshPropertiesButton;
     QPushButton* getControlListButton;
     QPushButton* getProgramListButton;
+    QPushButton* saveStatesButton;
+    QPushButton* loadStatesButton;
     VirtualizedControlList* controlListWidget;
     QListWidget* programListWidget;
     
@@ -144,4 +150,8 @@ private:
     // Explicit request callbacks
     std::function<void(uint32_t)> requestAllCtrlListCallback;
     std::function<void(uint32_t)> requestProgramListCallback;
+
+    // Save/Load callbacks
+    std::function<bool(uint32_t, const std::string&)> saveStatesCallback;
+    std::function<bool(uint32_t, const std::string&)> loadStatesCallback;
 };

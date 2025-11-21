@@ -70,6 +70,12 @@ int main(int argc, char** argv) {
         [&controller](uint32_t muid) { controller.requestProgramList(muid); }
     );
 
+    // Set up save/load callbacks
+    keyboard.setSaveLoadCallbacks(
+        [&controller](uint32_t muid, const std::string& filename) { return controller.saveStatesToFile(muid, filename); },
+        [&controller](uint32_t muid, const std::string& filename) { return controller.loadStatesFromFile(muid, filename); }
+    );
+
     // Set up control map provider for enumerated values
     keyboard.setControlMapProvider(
         [&controller](uint32_t muid, const std::string& ctrlMapId) { return controller.getCtrlMapList(muid, ctrlMapId); }

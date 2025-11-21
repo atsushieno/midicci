@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     
     // Set up callbacks
     keyboard.setKeyPressedCallback([&controller](int note) {
-        controller.noteOn(note, 80); // Default velocity
+        controller.noteOn(note, 0xF800); // Default velocity (high velocity in MIDI 2.0 16-bit format)
         std::cout << "Note ON: " << note << std::endl;
     });
     

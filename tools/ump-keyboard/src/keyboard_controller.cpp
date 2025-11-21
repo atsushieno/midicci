@@ -392,9 +392,9 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
 
 libremidi::ump KeyboardController::createUmpNoteOn(int channel, int note, int velocity) {
     // Create MIDI 2.0 Note On UMP packet
-    // Format: [Message Type (4) | Channel (4) | Status (8) | Note (8) | Reserved (8)] [Velocity (16) | Attribute Type (8) | Velocity MSB (8)] [0] [0]
+    // Format: [Message Type (4) | Channel (4) | Status (8) | Note (8) | Reserved (8)] [Velocity (16) | Attribute Type (8) | Attribute Data (8)] [0] [0]
     uint32_t word0 = (0x4 << 28) | (channel << 24) | (0x90 << 16) | (note << 8) | 0x00;
-    uint32_t word1 = (velocity << 24) | (velocity << 16); // MIDI 2.0 uses 16-bit velocity
+    uint32_t word1 = (velocity << 16) | 0x0000; // MIDI 2.0 uses 16-bit velocity in upper 16 bits, attribute type/data in lower 16 bits
     return libremidi::ump(word0, word1, 0, 0);
 }
 

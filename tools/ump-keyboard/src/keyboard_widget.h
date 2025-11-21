@@ -111,9 +111,6 @@ private:
     QComboBox* inputDeviceCombo;
     QComboBox* outputDeviceCombo;
     QPushButton* refreshButton;
-    QHBoxLayout* controlsLayout;
-    QLabel* velocityLabel;
-    QProgressBar* velocityBar;
     
     // MIDI-CI UI elements
     QGroupBox* midiCIGroup;

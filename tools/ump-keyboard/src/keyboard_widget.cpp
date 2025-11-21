@@ -268,34 +268,8 @@ void KeyboardWidget::setupUI() {
     mainSplitter->setSizes({400, 200});
     mainSplitter->setStretchFactor(0, 1);
     mainSplitter->setStretchFactor(1, 1);
-    
+
     mainLayout->addWidget(mainSplitter);
-    
-    // Controls
-    controlsLayout = new QHBoxLayout();
-    controlsLayout->setSpacing(10);
-    
-    velocityLabel = new QLabel("Velocity:");
-    velocityLabel->setAlignment(Qt::AlignVCenter);
-    controlsLayout->addWidget(velocityLabel);
-    
-    velocityBar = new QProgressBar();
-    velocityBar->setFixedSize(200, 20);
-    velocityBar->setValue(80);
-    velocityBar->setStyleSheet(
-        "QProgressBar {"
-        "  border: 1px solid gray;"
-        "  background-color: lightgray;"
-        "  text-align: center;"
-        "}"
-        "QProgressBar::chunk {"
-        "  background-color: #4CAF50;"
-        "}"
-    );
-    controlsLayout->addWidget(velocityBar);
-    
-    controlsLayout->addStretch();
-    mainLayout->addLayout(controlsLayout);
 }
 
 void KeyboardWidget::setupDeviceSelectors() {

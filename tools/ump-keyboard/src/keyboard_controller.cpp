@@ -2,7 +2,10 @@
 #include <iostream>
 #include <algorithm>
 #include <libremidi/ump.hpp>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include <cmidi2.h>
+#pragma clang diagnostic pop
 
 KeyboardController::KeyboardController(midicci::keyboard::MessageLogger* logger) 
     : logger_(logger) {
@@ -44,16 +47,16 @@ bool KeyboardController::resetMidiConnections() {
         obsConf.notify_in_constructor = true;  // Get existing ports immediately
         
         // Add callbacks for device hotplug detection
-        obsConf.input_added = [this](const libremidi::input_port& port) {
+        obsConf.input_added = [](const libremidi::input_port& port) {
             std::cout << "MIDI Input device connected: " << port.port_name << std::endl;
         };
-        obsConf.input_removed = [this](const libremidi::input_port& port) {
+        obsConf.input_removed = [](const libremidi::input_port& port) {
             std::cout << "MIDI Input device disconnected: " << port.port_name << std::endl;
         };
-        obsConf.output_added = [this](const libremidi::output_port& port) {
+        obsConf.output_added = [](const libremidi::output_port& port) {
             std::cout << "MIDI Output device connected: " << port.port_name << std::endl;
         };
-        obsConf.output_removed = [this](const libremidi::output_port& port) {
+        obsConf.output_removed = [](const libremidi::output_port& port) {
             std::cout << "MIDI Output device disconnected: " << port.port_name << std::endl;
         };
         

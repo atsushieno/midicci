@@ -424,9 +424,9 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
     m_controls = controls;
     
     // Initialize control values with default values
-    m_controlValues.resize(controls.size());
-    for (size_t i = 0; i < controls.size(); ++i) {
-        m_controlValues[i] = controls[i].defaultValue;
+    m_controlValues.resize(m_controls.size());
+    for (size_t i = 0; i < m_controls.size(); ++i) {
+        m_controlValues[i] = m_controls[i].defaultValue;
     }
     
     // Clear existing items
@@ -442,7 +442,7 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
     setEnabled(true);
     
     // TEMP: Create widgets for ALL items (no virtualization) to test basic functionality
-    for (size_t i = 0; i < controls.size(); ++i) {
+    for (size_t i = 0; i < m_controls.size(); ++i) {
         QListWidgetItem* item = new QListWidgetItem();
         addItem(item);
 
@@ -455,14 +455,14 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
         // Fetch control maps if control has ctrlMapId
         const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps = nullptr;
         std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> controlMapsOpt;
-        if (m_controlMapProvider && controls[i].ctrlMapId.has_value()) {
-            controlMapsOpt = m_controlMapProvider(controls[i].ctrlMapId.value());
+        if (m_controlMapProvider && m_controls[i].ctrlMapId.has_value()) {
+            controlMapsOpt = m_controlMapProvider(m_controls[i].ctrlMapId.value());
             if (controlMapsOpt.has_value()) {
                 controlMaps = &(*controlMapsOpt);
             }
         }
 
-        widget->updateFromControl(controls[i], static_cast<int>(i), m_controlValues[i], controlMaps);
+        widget->updateFromControl(m_controls[i], static_cast<int>(i), m_controlValues[i], controlMaps);
 
         setItemWidget(item, widget);
 
@@ -565,4 +565,3 @@ void VirtualizedControlList::updateStoredValue(int controlIndex, uint32_t value)
         m_controlValues[controlIndex] = value;
     }
 }
-

@@ -28,13 +28,17 @@ struct MidiCIStateEntry {
     std::optional<int64_t> timestamp;
     std::optional<std::string> description;
     std::optional<int32_t> size;
-    
+
     MidiCIStateEntry(const std::string& title, const std::string& stateId,
                      const std::optional<std::string>& stateRev = std::nullopt,
                      const std::optional<int64_t>& timestamp = std::nullopt,
                      const std::optional<std::string>& description = std::nullopt,
                      const std::optional<int32_t>& size = std::nullopt);
 };
+
+namespace MidiCIStatePredefinedNames {
+    constexpr const char* FULL_STATE = "fullState";
+}
 
 namespace MidiCIControlType {
     constexpr const char* CC = "cc";

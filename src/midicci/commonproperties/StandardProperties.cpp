@@ -46,8 +46,11 @@ CommonRulesPropertyMetadata& StandardProperties::stateListMetadata() {
 
 auto state_metadata = [] {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
-    metadata.canSubscribe = false;
+    metadata.canSet = PropertySetAccess::FULL;
     metadata.requireResId = true;
+    metadata.canSubscribe = false;
+    metadata.encodings = {PropertyDataEncoding::MCODED7};
+    metadata.mediaTypes = {CommonRulesKnownMimeTypes::APPLICATION_OCTET_STREAM};
     return metadata;
 }();
 

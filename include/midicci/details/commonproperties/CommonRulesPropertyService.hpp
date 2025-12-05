@@ -112,12 +112,7 @@ public:
         };
 
 private:
-    
-    std::vector<uint8_t> create_device_info_json() const;
-    std::vector<uint8_t> create_channel_list_json() const;
-    std::vector<uint8_t> create_json_schema_json() const;
-    std::vector<uint8_t> create_resource_list_json() const;
-    
+
     // Helper methods for subscription and property management
     PropertyCommonRequestHeader get_property_header(const JsonValue& json) const;
     JsonValue get_reply_header_json(const PropertyCommonReplyHeader& src) const;

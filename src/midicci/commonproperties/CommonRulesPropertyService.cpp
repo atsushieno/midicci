@@ -55,120 +55,33 @@ std::vector<std::unique_ptr<PropertyMetadata>> CommonRulesPropertyService::get_m
 }
 
 GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetPropertyData& msg) {
-    std::string property_id = helper_->get_property_identifier_internal(msg.get_header());
-    
-    JsonObject header_obj;
-    header_obj[PropertyCommonHeaderKeys::RESOURCE] = JsonValue(property_id);
-    
-    std::vector<uint8_t> body_data;
-    
-    if (property_id == PropertyResourceNames::DEVICE_INFO) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
-        body_data = create_device_info_json();
-    } else if (property_id == PropertyResourceNames::CHANNEL_LIST) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
-        body_data = create_channel_list_json();
-    } else if (property_id == PropertyResourceNames::JSON_SCHEMA) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
-        body_data = create_json_schema_json();
-    } else if (property_id == PropertyResourceNames::RESOURCE_LIST) {
-        header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
-        header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
-        body_data = create_resource_list_json();
-    } else {
-        // Check if it's a user-defined property in our metadata list
-        auto it = std::find_if(metadata_list_.begin(), metadata_list_.end(),
-            [&property_id](const std::unique_ptr<PropertyMetadata>& metadata) {
-                return metadata->getPropertyId() == property_id;
-            });
-        
-        if (it != metadata_list_.end()) {
-            // Found user-defined property - return its data
-            header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::OK);
-            header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
-            
-            // Get the property data - first check if we have stored value, otherwise use metadata default
-            auto value_it = linked_resources_.find(property_id);
-            if (value_it != linked_resources_.end()) {
-                body_data = value_it->second;
-            } else {
-                // Use the data from metadata
-                body_data = (*it)->getData();
-            }
-        } else {
-            header_obj[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::RESOURCE_UNAVAILABLE_OR_ERROR);
-            header_obj[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Property not found: " + property_id);
-        }
+    try {
+        std::string header_str(msg.get_header().begin(), msg.get_header().end());
+        JsonValue json_inquiry = JsonValue::parse(header_str);
+
+        auto result = get_property_data_internal(json_inquiry);
+
+        std::string reply_header_str = result.first.serialize();
+        std::vector<uint8_t> reply_header(reply_header_str.begin(), reply_header_str.end());
+        const std::vector<uint8_t>& reply_body = result.second;
+
+        auto& srcCommon = msg.get_common();
+        Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
+        return GetPropertyDataReply(common, msg.get_request_id(), reply_header, reply_body);
+    } catch (const std::exception& e) {
+        // Return error response
+        JsonObject error_header;
+        error_header[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::INTERNAL_ERROR);
+        error_header[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Error: " + std::string(e.what()));
+
+        JsonValue error_json(error_header);
+        std::string error_str = error_json.serialize();
+        std::vector<uint8_t> reply_header(error_str.begin(), error_str.end());
+
+        auto& srcCommon = msg.get_common();
+        Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
+        return GetPropertyDataReply(common, msg.get_request_id(), reply_header, std::vector<uint8_t>());
     }
-    
-    JsonValue header(header_obj);
-    std::string json_str = header.serialize();
-    std::vector<uint8_t> reply_header(json_str.begin(), json_str.end());
-
-    auto& srcCommon = msg.get_common();
-    Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
-    return GetPropertyDataReply(common, msg.get_request_id(), reply_header, body_data);
-}
-
-std::vector<uint8_t> CommonRulesPropertyService::create_device_info_json() const {
-    const auto& device_info = device_.get_device_info();
-    JsonValue json = FoundationalResources::toJsonValue(device_info);
-    std::string json_str = json.serialize();
-    return std::vector<uint8_t>(json_str.begin(), json_str.end());
-}
-
-std::vector<uint8_t> CommonRulesPropertyService::create_channel_list_json() const {
-    const auto& channel_list = device_.get_config().channel_list;
-    JsonValue json = FoundationalResources::toJsonValue(channel_list);
-    std::string json_str = json.serialize();
-    return std::vector<uint8_t>(json_str.begin(), json_str.end());
-}
-
-std::vector<uint8_t> CommonRulesPropertyService::create_json_schema_json() const {
-    const auto& json_schema_string = device_.get_config().json_schema_string;
-    
-    if (json_schema_string.empty()) {
-        std::string empty_json = "{}";
-        return std::vector<uint8_t>(empty_json.begin(), empty_json.end());
-    }
-    
-    return std::vector<uint8_t>(json_schema_string.begin(), json_schema_string.end());
-}
-
-std::vector<uint8_t> CommonRulesPropertyService::create_resource_list_json() const {
-    std::vector<std::unique_ptr<PropertyMetadata>> all_metadata;
-    
-    // Add system properties
-    std::vector<std::string> system_properties = {
-        PropertyResourceNames::DEVICE_INFO,
-        PropertyResourceNames::CHANNEL_LIST,
-        PropertyResourceNames::JSON_SCHEMA
-    };
-    
-    for (const auto& property_id : system_properties) {
-        auto metadata = std::make_unique<CommonRulesPropertyMetadata>(property_id);
-        metadata->originator = CommonRulesPropertyMetadata::Originator::SYSTEM;
-        all_metadata.push_back(std::move(metadata));
-    }
-    
-    // Add user properties
-    for (const auto& metadata : metadata_list_) {
-        auto* common_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata.get());
-        if (common_metadata) {
-            all_metadata.push_back(std::make_unique<CommonRulesPropertyMetadata>(*common_metadata));
-        } else {
-            auto fallback_metadata = std::make_unique<CommonRulesPropertyMetadata>(metadata->getPropertyId());
-            fallback_metadata->originator = CommonRulesPropertyMetadata::Originator::USER;
-            all_metadata.push_back(std::move(fallback_metadata));
-        }
-    }
-    
-    JsonValue json = FoundationalResources::toJsonValue(all_metadata);
-    std::string json_str = json.serialize();
-    return std::vector<uint8_t>(json_str.begin(), json_str.end());
 }
 
 SetPropertyDataReply CommonRulesPropertyService::set_property_data(const SetPropertyData& msg) {
@@ -494,14 +407,11 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::get_property_data_js
             body = JsonValue(); // null
         }
     } else {
-        // User-defined property - use propertyBinaryGetter for dynamic retrieval
         auto binary = propertyBinaryGetter(header.resource, header.res_id);
         if (!binary.empty()) {
             std::string body_str(binary.begin(), binary.end());
             body = JsonValue::parse(body_str);
         }
-        else
-            throw std::runtime_error("Unknown property: " + header.resource + " (resId: " + header.res_id + ")");
     }
     
     // Property list pagination (Common Rules for PE 6.6.2)
@@ -549,15 +459,12 @@ std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_prope
         std::vector<uint8_t> encoded_body = helper_->encode_body(body, header.mutual_encoding);
         return std::make_pair(result.first, encoded_body);
     } else {
-        // Non-JSON media type - use propertyBinaryGetter for dynamic retrieval
         auto body = propertyBinaryGetter(header.resource, header.res_id);
-
         std::vector<uint8_t> encoded_body = helper_->encode_body(body, header.mutual_encoding);
-        
         PropertyCommonReplyHeader reply_header;
         reply_header.status = PropertyExchangeStatus::OK;
         reply_header.mutual_encoding = header.mutual_encoding;
-        
+
         return std::make_pair(get_reply_header_json(reply_header), encoded_body);
     }
 }

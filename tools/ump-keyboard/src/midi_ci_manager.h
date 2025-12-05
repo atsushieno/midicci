@@ -118,13 +118,24 @@ private:
         uint32_t muid;
         std::string property_name;
         std::chrono::steady_clock::time_point request_time;
-        
-        PendingPropertyRequest(uint32_t m, const std::string& prop) 
+
+        PendingPropertyRequest(uint32_t m, const std::string& prop)
             : muid(m), property_name(prop), request_time(std::chrono::steady_clock::now()) {}
     };
     std::vector<PendingPropertyRequest> pending_property_requests_;
     // Track properties that have received at least one update from the peer
     std::set<std::pair<uint32_t, std::string>> fetched_properties_;
+
+    // Track pending save operations (fire-and-forget)
+    struct PendingSaveOperation {
+        uint32_t muid;
+        std::string filename;
+        std::chrono::steady_clock::time_point request_time;
+
+        PendingSaveOperation(uint32_t m, const std::string& f)
+            : muid(m), filename(f), request_time(std::chrono::steady_clock::now()) {}
+    };
+    std::vector<PendingSaveOperation> pending_save_operations_;
     
     // Note: Remote device access is now handled through ClientConnection objects
     // obtained via device_->get_connection(muid) - no need for separate storage

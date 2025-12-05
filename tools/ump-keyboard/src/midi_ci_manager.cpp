@@ -1,6 +1,7 @@
 #include "midi_ci_manager.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <random>
 #include <chrono>
 #include <thread>
@@ -682,12 +683,60 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
         // Register callback for property value updates
         properties->addPropertyUpdatedCallback([this, muid](const std::string& propertyId) {
             std::cout << "[PROPERTY VALUE UPDATED] Property '" << propertyId << "' updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            
+
             // Clear any pending requests for this specific property
             this->removePendingPropertyRequest(muid, propertyId);
             // Mark property as fetched at least once
             this->mark_property_fetched(muid, propertyId);
-            
+
+            // Handle pending save operations for State property
+            if (propertyId == StandardPropertyNames::STATE) {
+                std::lock_guard<std::recursive_mutex> lock(this->midi_ci_mutex_);
+
+                // Find pending save operations for this MUID
+                auto it = std::find_if(this->pending_save_operations_.begin(), this->pending_save_operations_.end(),
+                                      [muid](const PendingSaveOperation& op) { return op.muid == muid; });
+
+                if (it != this->pending_save_operations_.end()) {
+                    std::string filename = it->filename;
+                    this->pending_save_operations_.erase(it);
+
+                    // Get the connection and properties again inside the callback
+                    auto conn = this->device_->get_connection(muid);
+                    if (conn) {
+                        auto* props = conn->get_property_client_facade().get_properties();
+                        if (props) {
+                            // Get the State data
+                            auto stateOpt = midicci::commonproperties::StandardPropertiesExtensions::getState(
+                                *props, midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE);
+
+                            if (stateOpt && !stateOpt->empty()) {
+                                std::vector<uint8_t> stateData = *stateOpt;
+                                this->log("[Save State] Received State property data (" + std::to_string(stateData.size()) + " bytes)");
+
+                                // Save the binary data directly to file
+                                this->log("[Save State] Writing binary data to file: " + filename);
+                                std::ofstream outfile(filename, std::ios::binary);
+                                if (outfile) {
+                                    outfile.write(reinterpret_cast<const char*>(stateData.data()), stateData.size());
+                                    outfile.close();
+
+                                    if (outfile.good()) {
+                                        this->log("[Save State] Save completed successfully to: " + filename);
+                                    } else {
+                                        this->log("[Save State] ERROR: Failed to write data to file: " + filename);
+                                    }
+                                } else {
+                                    this->log("[Save State] ERROR: Failed to open file for writing: " + filename);
+                                }
+                            } else {
+                                this->log("[Save State] ERROR: Received empty or invalid State property data");
+                            }
+                        }
+                    }
+                }
+            }
+
             // Notify UI about this specific property change
             if (this->properties_changed_callback_) {
                 this->properties_changed_callback_(muid, propertyId);
@@ -827,99 +876,31 @@ bool MidiCIManager::saveStatesToFile(uint32_t muid, const std::string& filename)
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
 
     try {
-        log("[Save States] Starting save operation for MUID: 0x" + std::to_string(muid));
+        log("[Save State] Starting save operation for MUID: 0x" + std::to_string(muid));
 
         // Get connection to the device
         auto connection = device_->get_connection(muid);
         if (!connection) {
-            log("[Save States] ERROR: No connection found for MUID: 0x" + std::to_string(muid));
+            log("[Save State] ERROR: No connection found for MUID: 0x" + std::to_string(muid));
             return false;
         }
 
-        // Get the property list
-        auto props = connection->get_property_client_facade().get_properties();
-        if (!props) {
-            log("[Save States] ERROR: No property list available");
-            return false;
-        }
+        // Store the filename for later use when the response arrives
+        pending_save_operations_.emplace_back(muid, filename);
+        log("[Save State] Added pending save operation for file: " + filename);
 
-        // Get StateList
-        auto stateListOpt = getStateList(muid);
-        if (!stateListOpt || stateListOpt->empty()) {
-            log("[Save States] No states available to save");
-            return false;
-        }
+        // Request State property with resId "fullState" (fire-and-forget)
+        // The encoding should be Mcoded7 as per MIDI-CI spec
+        log("[Save State] Requesting State property with resId 'fullState' (fire-and-forget)");
+        auto& property_client = connection->get_property_client_facade();
+        property_client.send_get_property_data(StandardPropertyNames::STATE,
+                                              midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE,
+                                              "Mcoded7");
 
-        auto& stateList = *stateListOpt;
-        log("[Save States] Found " + std::to_string(stateList.size()) + " states to save");
-
-        // Create MIDI Clip File
-        midicci::ump::MidiClipFile clipFile(480);  // 480 ticks per quarter note
-
-        // Get all property values from the property list
-        auto allValues = props->getValues();
-
-        // For each state in StateList, find the corresponding State property data
-        for (const auto& stateEntry : stateList) {
-            std::string stateId = stateEntry.stateId;
-            log("[Save States] Processing state: " + stateId);
-
-            // Find the corresponding PropertyValue for this state
-            midicci::PropertyValue* stateValue = nullptr;
-            for (auto& val : allValues) {
-                if (val.id == "State" && val.resId == stateId) {
-                    stateValue = &val;
-                    break;
-                }
-            }
-
-            if (!stateValue || stateValue->body.empty()) {
-                log("[Save States] WARNING: No data found for state: " + stateId + ", skipping");
-                // Note: The user should request all states before saving
-                // by calling getState(muid, stateId) for each state in StateList
-                continue;
-            }
-
-            log("[Save States] Creating SetPropertyData message for state: " + stateId +
-                " (size: " + std::to_string(stateValue->body.size()) + " bytes)");
-
-            // Create SetPropertyData message
-            // Use "Mcoded7" encoding for binary data (standard for State properties)
-            midicci::Common common(muid_, muid, 0, 0);  // source MUID, dest MUID, address, group
-            midicci::SetPropertyData setMsg(
-                common,
-                0,  // request ID
-                "State",  // resource
-                stateValue->body,  // body
-                stateId,  // resId
-                false  // not partial
-            );
-
-            // Serialize to MIDI-CI SysEx
-            auto sysexChunks = setMsg.serialize(*config_);
-
-            // Convert each SysEx chunk to UMP and add to clip file
-            for (const auto& sysexData : sysexChunks) {
-                // Convert MIDI1 SysEx to UMP SysEx8
-                midicci::ump::Midi1ToUmpTranslatorContext context(sysexData, 0, false,
-                    midicci::ump::MidiTransportProtocol::UMP, true);  // useSysex8 = true
-
-                midicci::ump::UmpTranslator::translateMidi1BytesToUmp(context);
-
-                // Add each UMP message to the clip file
-                for (const auto& ump : context.output) {
-                    clipFile.add_sequence_message(0, ump);  // delta time = 0
-                }
-            }
-        }
-
-        log("[Save States] Writing to file: " + filename);
-        clipFile.write_to_file(filename);
-        log("[Save States] Save completed successfully");
-
+        log("[Save State] Request sent - will save to file when response arrives");
         return true;
     } catch (const std::exception& e) {
-        log("[Save States] ERROR: " + std::string(e.what()));
+        log("[Save State] ERROR: " + std::string(e.what()));
         return false;
     }
 }
@@ -928,49 +909,53 @@ bool MidiCIManager::loadStatesFromFile(uint32_t muid, const std::string& filenam
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
 
     try {
-        log("[Load States] Starting load operation for MUID: 0x" + std::to_string(muid));
-        log("[Load States] Reading file: " + filename);
+        log("[Load State] Starting load operation for MUID: 0x" + std::to_string(muid));
+        log("[Load State] Reading file: " + filename);
 
-        // Read MIDI Clip File
-        auto clipFile = midicci::ump::MidiClipFile::read_from_file(filename);
-
-        if (clipFile.sequence_messages.empty()) {
-            log("[Load States] WARNING: No messages found in file");
+        // Read binary file directly
+        std::ifstream infile(filename, std::ios::binary | std::ios::ate);
+        if (!infile) {
+            log("[Load State] ERROR: Failed to open file for reading: " + filename);
             return false;
         }
 
-        log("[Load States] Found " + std::to_string(clipFile.sequence_messages.size()) +
-            " UMP messages in file");
+        // Get file size
+        std::streamsize size = infile.tellg();
+        infile.seekg(0, std::ios::beg);
 
-        // Convert UMP messages back to MIDI1 SysEx and send them
-        for (const auto& ump : clipFile.sequence_messages) {
-            // Skip DCS, Start of Clip, and End of Clip messages
-            if (ump.is_delta_clockstamp() || ump.is_start_of_clip() || ump.is_end_of_clip()) {
-                continue;
-            }
-
-            // Convert UMP to MIDI1 SysEx
-            std::vector<uint8_t> midi1Sysex;
-            int result = midicci::ump::UmpTranslator::translateSingleUmpToMidi1Bytes(
-                midi1Sysex, ump, 0, -1, nullptr);
-
-            if (result != midicci::ump::UmpTranslationResult::OK || midi1Sysex.empty()) {
-                log("[Load States] WARNING: Failed to convert UMP to MIDI1");
-                continue;
-            }
-
-            // Send the SysEx to the device
-            if (sysex_sender_) {
-                log("[Load States] Sending SetPropertyData message (" +
-                    std::to_string(midi1Sysex.size()) + " bytes)");
-                sysex_sender_(0, midi1Sysex);  // group 0
-            }
+        if (size <= 0) {
+            log("[Load State] ERROR: File is empty or cannot determine size");
+            return false;
         }
 
-        log("[Load States] Load completed successfully");
+        // Read file contents into buffer
+        std::vector<uint8_t> stateData(size);
+        if (!infile.read(reinterpret_cast<char*>(stateData.data()), size)) {
+            log("[Load State] ERROR: Failed to read file contents");
+            return false;
+        }
+        infile.close();
+
+        log("[Load State] Read " + std::to_string(stateData.size()) + " bytes from file");
+
+        // Get connection to the device
+        auto connection = device_->get_connection(muid);
+        if (!connection) {
+            log("[Load State] ERROR: No connection found for MUID: 0x" + std::to_string(muid));
+            return false;
+        }
+
+        // Send SetPropertyData for State property with resId "fullState"
+        log("[Load State] Sending SetPropertyData(State, fullState) to MUID: 0x" + std::to_string(muid));
+        auto& property_client = connection->get_property_client_facade();
+        property_client.send_set_property_data(StandardPropertyNames::STATE,
+                                              midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE,
+                                              stateData);
+
+        log("[Load State] Load completed successfully");
         return true;
     } catch (const std::exception& e) {
-        log("[Load States] ERROR: " + std::string(e.what()));
+        log("[Load State] ERROR: " + std::string(e.what()));
         return false;
     }
 }

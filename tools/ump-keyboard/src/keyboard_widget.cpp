@@ -645,7 +645,7 @@ void KeyboardWidget::setupPropertiesPanel() {
     QHBoxLayout* saveLoadLayout = new QHBoxLayout();
     saveLoadLayout->addStretch();
 
-    saveStatesButton = new QPushButton("Save States");
+    saveStatesButton = new QPushButton("Save State");
     saveStatesButton->setEnabled(false);
     saveStatesButton->setFixedWidth(120);
     saveStatesButton->setStyleSheet("font-weight: bold;");
@@ -654,7 +654,7 @@ void KeyboardWidget::setupPropertiesPanel() {
 
     saveLoadLayout->addSpacing(10);
 
-    loadStatesButton = new QPushButton("Load States");
+    loadStatesButton = new QPushButton("Load State");
     loadStatesButton->setEnabled(false);
     loadStatesButton->setFixedWidth(120);
     loadStatesButton->setStyleSheet("font-weight: bold;");
@@ -897,9 +897,9 @@ void KeyboardWidget::onSaveStates() {
     // Open file dialog to select save location
     QString filename = QFileDialog::getSaveFileName(
         this,
-        tr("Save Device States"),
-        QDir::homePath() + "/device_states.state.midi2",
-        tr("MIDI State Files (*.state.midi2);;All Files (*)")
+        tr("Save Device State"),
+        QDir::homePath() + "/device_state.midi2",
+        tr("MIDI Clip Files (*.midi2);;All Files (*)")
     );
 
     if (filename.isEmpty()) {
@@ -907,20 +907,22 @@ void KeyboardWidget::onSaveStates() {
     }
 
     // Ensure the filename has the correct extension
-    if (!filename.endsWith(".state.midi2") && !filename.endsWith(".midi2")) {
-        filename += ".state.midi2";
+    if (!filename.endsWith(".midi2")) {
+        filename += ".midi2";
     }
 
     // Call the save callback
-    bool success = saveStatesCallback(selectedDeviceMuid, filename.toStdString());
+    bool requestSent = saveStatesCallback(selectedDeviceMuid, filename.toStdString());
 
     // Show result message
-    if (success) {
-        QMessageBox::information(this, tr("Save States"),
-                                tr("Device states saved successfully to:\n%1").arg(filename));
+    if (requestSent) {
+        QMessageBox::information(this, tr("Save State"),
+                                tr("State request sent. The file will be saved when the device responds.\n"
+                                   "Target file: %1\n\n"
+                                   "Check the console for progress and any errors.").arg(filename));
     } else {
-        QMessageBox::warning(this, tr("Save States"),
-                            tr("Failed to save device states.\nPlease check the console for error details."));
+        QMessageBox::warning(this, tr("Save State"),
+                            tr("Failed to send state request.\nPlease check the console for error details."));
     }
 }
 
@@ -932,9 +934,9 @@ void KeyboardWidget::onLoadStates() {
     // Open file dialog to select file to load
     QString filename = QFileDialog::getOpenFileName(
         this,
-        tr("Load Device States"),
+        tr("Load Device State"),
         QDir::homePath(),
-        tr("MIDI State Files (*.state.midi2 *.midi2);;All Files (*)")
+        tr("MIDI Clip Files (*.midi2);;All Files (*)")
     );
 
     if (filename.isEmpty()) {
@@ -944,9 +946,9 @@ void KeyboardWidget::onLoadStates() {
     // Confirm before loading
     QMessageBox::StandardButton reply = QMessageBox::question(
         this,
-        tr("Load States"),
-        tr("This will send SetPropertyData messages to the device.\n"
-           "Are you sure you want to load states from:\n%1").arg(filename),
+        tr("Load State"),
+        tr("This will send SetPropertyData message to the device with resId 'fullState'.\n"
+           "Are you sure you want to load state from:\n%1").arg(filename),
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -959,11 +961,11 @@ void KeyboardWidget::onLoadStates() {
 
     // Show result message
     if (success) {
-        QMessageBox::information(this, tr("Load States"),
-                                tr("Device states loaded successfully."));
+        QMessageBox::information(this, tr("Load State"),
+                                tr("Device state loaded successfully."));
     } else {
-        QMessageBox::warning(this, tr("Load States"),
-                            tr("Failed to load device states.\nPlease check the console for error details."));
+        QMessageBox::warning(this, tr("Load State"),
+                            tr("Failed to load device state.\nPlease check the console for error details."));
     }
 }
 

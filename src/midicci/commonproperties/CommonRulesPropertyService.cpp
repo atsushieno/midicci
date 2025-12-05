@@ -11,7 +11,7 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
 
 
 void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::vector<uint8_t>& data) {
-    property_values_[property_id] = data;
+    linked_resources_[property_id] = data;
 }
 
 void CommonRulesPropertyService::add_property_catalog_updated_callback(std::function<void()> callback) {
@@ -91,8 +91,8 @@ GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetProp
             header_obj[PropertyCommonHeaderKeys::MEDIA_TYPE] = JsonValue(CommonRulesKnownMimeTypes::APPLICATION_JSON);
             
             // Get the property data - first check if we have stored value, otherwise use metadata default
-            auto value_it = property_values_.find(property_id);
-            if (value_it != property_values_.end()) {
+            auto value_it = linked_resources_.find(property_id);
+            if (value_it != linked_resources_.end()) {
                 body_data = value_it->second;
             } else {
                 // Use the data from metadata
@@ -220,7 +220,7 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
                 return metadata->getPropertyId() == property_id;
             }),
         metadata_list_.end());
-    property_values_.erase(property_id);
+    linked_resources_.erase(property_id);
     // Trigger property catalog updated callbacks (following Kotlin)
     for (const auto& callback : property_catalog_updated_callbacks_) {
         callback();
@@ -427,12 +427,12 @@ JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue
 
     // Handle partial updates (following Kotlin implementation)
     if (header.set_partial.has_value() && header.set_partial.value()) {
-        auto existing_it = property_values_.find(header.resource);
-        if (existing_it == property_values_.end()) {
+        auto existing_it = linked_resources_.find(header.resource);
+        if (existing_it == linked_resources_.end()) {
             device_.get_logger()(LogData("Partial update is specified but there is no existing value for property " + header.resource, true));
         } else {
             // For simplicity, just overwrite for now - full partial update logic would need JSON merging
-            property_values_[header.resource] = body;
+            linked_resources_[header.resource] = body;
         }
     } else {
         // Use propertyBinarySetter for dynamic property value setting (following Kotlin d3fc841eb)
@@ -499,19 +499,9 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::get_property_data_js
         if (!binary.empty()) {
             std::string body_str(binary.begin(), binary.end());
             body = JsonValue::parse(body_str);
-        } else {
-            auto value_it = property_values_.find(header.resource);
-            if (value_it != property_values_.end()) {
-                if (!value_it->second.empty()) {
-                    std::string body_str(value_it->second.begin(), value_it->second.end());
-                    body = JsonValue::parse(body_str);
-                } else {
-                    body = JsonValue(JsonObject{});
-                }
-            } else {
-                throw std::runtime_error("Unknown property: " + header.resource + " (resId: " + header.res_id + ")");
-            }
         }
+        else
+            throw std::runtime_error("Unknown property: " + header.resource + " (resId: " + header.res_id + ")");
     }
     
     // Property list pagination (Common Rules for PE 6.6.2)
@@ -561,12 +551,6 @@ std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_prope
     } else {
         // Non-JSON media type - use propertyBinaryGetter for dynamic retrieval
         auto body = propertyBinaryGetter(header.resource, header.res_id);
-        if (body.empty()) {
-            auto value_it = property_values_.find(header.resource);
-            if (value_it != property_values_.end()) {
-                body = value_it->second;
-            }
-        }
 
         std::vector<uint8_t> encoded_body = helper_->encode_body(body, header.mutual_encoding);
         

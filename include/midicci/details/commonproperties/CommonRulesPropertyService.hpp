@@ -52,7 +52,7 @@ public:
     
     // Additional helper methods
     void set_property_value(const std::string& property_id, const std::vector<uint8_t>& data);
-    
+
     // Property catalog update callback management (following Kotlin propertyCatalogUpdated)
     void add_property_catalog_updated_callback(std::function<void()> callback);
     void remove_property_catalog_updated_callback(const std::function<void()>& callback);
@@ -63,7 +63,6 @@ public:
 private:
     MidiCIDevice& device_;
     std::unique_ptr<CommonRulesPropertyHelper> helper_;
-    std::map<std::string, std::vector<uint8_t>> property_values_;
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<SubscriptionEntry> subscriptions_;
     
@@ -100,14 +99,14 @@ public:
                 });
 
             if (it != metadata_list_.end()) {
-                property_values_[property_id] = body;
+                linked_resources_[property_id] = body;
                 return true;
             } else {
                 // Add new property value
                 auto new_metadata = std::make_unique<CommonRulesPropertyMetadata>(property_id);
                 new_metadata->originator = CommonRulesPropertyMetadata::Originator::USER;
                 metadata_list_.push_back(std::move(new_metadata));
-                property_values_[property_id] = body;
+                linked_resources_[property_id] = body;
                 return true;
             }
         };

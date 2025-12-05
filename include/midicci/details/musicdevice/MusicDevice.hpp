@@ -114,7 +114,17 @@ public:
     
     // Send MIDI data
     void send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns);
-    
+
+    // Property binary getter accessor (following Kotlin propertyBinaryGetter)
+    using PropertyBinaryGetter = std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)>;
+    void set_property_binary_getter(PropertyBinaryGetter getter);
+    PropertyBinaryGetter get_property_binary_getter() const;
+
+    // Property binary setter accessor (following Kotlin propertyBinarySetter)
+    using PropertyBinarySetter = std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)>;
+    void set_property_binary_setter(PropertyBinarySetter setter);
+    PropertyBinarySetter get_property_binary_setter() const;
+
 private:
     std::shared_ptr<MusicDeviceOutputSender> sender_;
     uint32_t target_muid_;

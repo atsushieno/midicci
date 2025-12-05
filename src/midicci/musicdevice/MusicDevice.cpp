@@ -139,4 +139,20 @@ void MusicDevice::send(const uint8_t* data, size_t offset, size_t length, uint64
     sender_->send(data, offset, length, timestamp_ns);
 }
 
+void MusicDevice::set_property_binary_getter(PropertyBinaryGetter getter) {
+    ci_session_->get_device().get_property_host_facade().set_property_binary_getter(std::move(getter));
+}
+
+MusicDevice::PropertyBinaryGetter MusicDevice::get_property_binary_getter() const {
+    return ci_session_->get_device().get_property_host_facade().get_property_binary_getter();
+}
+
+void MusicDevice::set_property_binary_setter(PropertyBinarySetter setter) {
+    ci_session_->get_device().get_property_host_facade().set_property_binary_setter(std::move(setter));
+}
+
+MusicDevice::PropertyBinarySetter MusicDevice::get_property_binary_setter() const {
+    return ci_session_->get_device().get_property_host_facade().get_property_binary_setter();
+}
+
 } // namespace midicci::musicdevice

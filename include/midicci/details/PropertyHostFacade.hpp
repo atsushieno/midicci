@@ -64,7 +64,17 @@ public:
     void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id, const std::string& res_id);
     void terminateSubscriptionsToAllSubscribers(uint8_t group);
     SubscribeProperty createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, const std::string& res_id, uint8_t group, uint8_t request_id);
-    
+
+    // Property binary getter accessor (following Kotlin propertyBinaryGetter)
+    using PropertyBinaryGetter = std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)>;
+    void set_property_binary_getter(PropertyBinaryGetter getter);
+    PropertyBinaryGetter get_property_binary_getter() const;
+
+    // Property binary setter accessor (following Kotlin propertyBinarySetter)
+    using PropertyBinarySetter = std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)>;
+    void set_property_binary_setter(PropertyBinarySetter setter);
+    PropertyBinarySetter get_property_binary_setter() const;
+
     // Notification callbacks
     void set_property_updated_callback(PropertyUpdatedCallback callback);
     void set_subscription_changed_callback(SubscriptionChangedCallback callback);

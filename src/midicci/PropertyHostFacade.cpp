@@ -427,9 +427,47 @@ void PropertyHostFacade::update_property_metadata(const std::string& property_id
 
 const PropertyMetadata* PropertyHostFacade::get_property_metadata(const std::string& property_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     // Use the safer direct metadata access method instead of getMetadataList()
     return pimpl_->properties_->getMetadata(property_id);
+}
+
+void PropertyHostFacade::set_property_binary_getter(PropertyBinaryGetter getter) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
+        common_service->propertyBinaryGetter = std::move(getter);
+    }
+}
+
+PropertyHostFacade::PropertyBinaryGetter PropertyHostFacade::get_property_binary_getter() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
+        return common_service->propertyBinaryGetter;
+    }
+
+    // Return default empty lambda
+    return [](const std::string&, const std::string&) -> std::vector<uint8_t> { return {}; };
+}
+
+void PropertyHostFacade::set_property_binary_setter(PropertyBinarySetter setter) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
+        common_service->propertyBinarySetter = std::move(setter);
+    }
+}
+
+PropertyHostFacade::PropertyBinarySetter PropertyHostFacade::get_property_binary_setter() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
+        return common_service->propertyBinarySetter;
+    }
+
+    // Return default lambda that always fails
+    return [](const std::string&, const std::string&, const std::string&, const std::vector<uint8_t>&) -> bool { return false; };
 }
 
 } // namespace midicci

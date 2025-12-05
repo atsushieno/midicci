@@ -75,6 +75,44 @@ private:
     
     // Linked resources map (following Kotlin linkedResources)
     std::map<std::string, std::vector<uint8_t>> linked_resources_;
+
+public:
+    // Property binary getter lambda (following Kotlin propertyBinaryGetter)
+    // Allows dynamic property value retrieval (e.g., for State property)
+    std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)> propertyBinaryGetter =
+        [this](const std::string& property_id, const std::string& res_id) -> std::vector<uint8_t> {
+            if (!res_id.empty()) {
+                auto it = linked_resources_.find(res_id);
+                if (it != linked_resources_.end()) {
+                    return it->second;
+                }
+            }
+            return {};
+        };
+
+    // Property binary setter lambda (following Kotlin propertyBinarySetter)
+    // Allows dynamic property value setting (e.g., for State property)
+    std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)> propertyBinarySetter =
+        [this](const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body) -> bool {
+            auto it = std::find_if(metadata_list_.begin(), metadata_list_.end(),
+                [&property_id](const std::unique_ptr<PropertyMetadata>& metadata) {
+                    return metadata->getPropertyId() == property_id;
+                });
+
+            if (it != metadata_list_.end()) {
+                property_values_[property_id] = body;
+                return true;
+            } else {
+                // Add new property value
+                auto new_metadata = std::make_unique<CommonRulesPropertyMetadata>(property_id);
+                new_metadata->originator = CommonRulesPropertyMetadata::Originator::USER;
+                metadata_list_.push_back(std::move(new_metadata));
+                property_values_[property_id] = body;
+                return true;
+            }
+        };
+
+private:
     
     std::vector<uint8_t> create_device_info_json() const;
     std::vector<uint8_t> create_channel_list_json() const;

@@ -412,19 +412,19 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::unsubscribe(const st
 
 JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body) {
     PropertyCommonRequestHeader header = get_property_header(header_json);
-    
+
     // Check if it's a system property (read-only)
     if (header.resource == PropertyResourceNames::DEVICE_INFO ||
         header.resource == PropertyResourceNames::CHANNEL_LIST ||
         header.resource == PropertyResourceNames::JSON_SCHEMA ||
         header.resource == PropertyResourceNames::RESOURCE_LIST) {
-        
+
         PropertyCommonReplyHeader reply_header;
         reply_header.status = PropertyExchangeStatus::INTERNAL_ERROR;
         reply_header.message = "Resource is readonly: " + header.resource;
         return get_reply_header_json(reply_header);
     }
-    
+
     // Handle partial updates (following Kotlin implementation)
     if (header.set_partial.has_value() && header.set_partial.value()) {
         auto existing_it = property_values_.find(header.resource);
@@ -435,10 +435,18 @@ JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue
             property_values_[header.resource] = body;
         }
     } else {
-        // Store the property value
-        property_values_[header.resource] = body;
+        // Use propertyBinarySetter for dynamic property value setting (following Kotlin d3fc841eb)
+        bool success = propertyBinarySetter(header.resource, header.res_id,
+                                           header.media_type.empty() ? CommonRulesKnownMimeTypes::APPLICATION_JSON : header.media_type,
+                                           body);
+        if (!success) {
+            PropertyCommonReplyHeader reply_header;
+            reply_header.status = PropertyExchangeStatus::INTERNAL_ERROR;
+            reply_header.message = "Failed to set property: " + header.resource;
+            return get_reply_header_json(reply_header);
+        }
     }
-    
+
     PropertyCommonReplyHeader reply_header;
     reply_header.status = PropertyExchangeStatus::OK;
     return get_reply_header_json(reply_header);
@@ -486,10 +494,10 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::get_property_data_js
             body = JsonValue(); // null
         }
     } else {
-        // User-defined property
-        auto linked_it = linked_resources_.find(header.res_id);
-        if (linked_it != linked_resources_.end()) {
-            std::string body_str(linked_it->second.begin(), linked_it->second.end());
+        // User-defined property - use propertyBinaryGetter for dynamic retrieval
+        auto binary = propertyBinaryGetter(header.resource, header.res_id);
+        if (!binary.empty()) {
+            std::string body_str(binary.begin(), binary.end());
             body = JsonValue::parse(body_str);
         } else {
             auto value_it = property_values_.find(header.resource);
@@ -551,18 +559,15 @@ std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_prope
         std::vector<uint8_t> encoded_body = helper_->encode_body(body, header.mutual_encoding);
         return std::make_pair(result.first, encoded_body);
     } else {
-        // Non-JSON media type
-        std::vector<uint8_t> body;
-        auto linked_it = linked_resources_.find(header.res_id);
-        if (linked_it != linked_resources_.end()) {
-            body = linked_it->second;
-        } else {
+        // Non-JSON media type - use propertyBinaryGetter for dynamic retrieval
+        auto body = propertyBinaryGetter(header.resource, header.res_id);
+        if (body.empty()) {
             auto value_it = property_values_.find(header.resource);
             if (value_it != property_values_.end()) {
                 body = value_it->second;
             }
         }
-        
+
         std::vector<uint8_t> encoded_body = helper_->encode_body(body, header.mutual_encoding);
         
         PropertyCommonReplyHeader reply_header;

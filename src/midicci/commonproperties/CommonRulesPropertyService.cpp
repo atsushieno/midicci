@@ -11,7 +11,18 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
 
 
 void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::vector<uint8_t>& data) {
-    linked_resources_[property_id] = data;
+    auto& values = device_.get_config().property_values;
+    auto it = std::find_if(values.begin(), values.end(),
+        [&property_id](const PropertyValue& pv) {
+            return pv.id == property_id;
+        });
+
+    if (it != values.end()) {
+        it->body = data;
+    } else {
+        device_.get_config().property_values.push_back(
+            PropertyValue(property_id, "", CommonRulesKnownMimeTypes::APPLICATION_JSON, data));
+    }
 }
 
 void CommonRulesPropertyService::add_property_catalog_updated_callback(std::function<void()> callback) {
@@ -133,7 +144,15 @@ void CommonRulesPropertyService::remove_metadata(const std::string& property_id)
                 return metadata->getPropertyId() == property_id;
             }),
         metadata_list_.end());
-    linked_resources_.erase(property_id);
+
+    auto& values = device_.get_config().property_values;
+    values.erase(
+        std::remove_if(values.begin(), values.end(),
+            [&property_id](const PropertyValue& pv) {
+                return pv.id == property_id;
+            }),
+        values.end());
+
     // Trigger property catalog updated callbacks (following Kotlin)
     for (const auto& callback : property_catalog_updated_callbacks_) {
         callback();
@@ -340,12 +359,16 @@ JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue
 
     // Handle partial updates (following Kotlin implementation)
     if (header.set_partial.has_value() && header.set_partial.value()) {
-        auto existing_it = linked_resources_.find(header.resource);
-        if (existing_it == linked_resources_.end()) {
+        auto& values = device_.get_config().property_values;
+        auto existing_it = std::find_if(values.begin(), values.end(),
+            [&header](const PropertyValue& pv) {
+                return pv.id == header.resource;
+            });
+        if (existing_it == values.end()) {
             device_.get_logger()(LogData("Partial update is specified but there is no existing value for property " + header.resource, true));
         } else {
             // For simplicity, just overwrite for now - full partial update logic would need JSON merging
-            linked_resources_[header.resource] = body;
+            existing_it->body = body;
         }
     } else {
         // Use propertyBinarySetter for dynamic property value setting (following Kotlin d3fc841eb)

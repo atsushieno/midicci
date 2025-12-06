@@ -474,8 +474,9 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::get_property_data_js
 
 std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_property_data_internal(const JsonValue& header_json) const {
     PropertyCommonRequestHeader header = get_property_header(header_json);
-    
-    if (header.media_type.empty() || header.media_type == CommonRulesKnownMimeTypes::APPLICATION_JSON) {
+
+    if ((header.media_type.empty() || header.media_type == CommonRulesKnownMimeTypes::APPLICATION_JSON) &&
+        (header.mutual_encoding.empty() || header.mutual_encoding == PropertyDataEncoding::ASCII)) {
         auto result = get_property_data_json(header);
         std::string body_str = result.second.serialize();
         std::vector<uint8_t> body(body_str.begin(), body_str.end());

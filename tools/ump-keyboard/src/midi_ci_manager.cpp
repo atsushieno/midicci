@@ -689,7 +689,7 @@ void MidiCIManager::sendState(uint32_t muid, const std::string& stateId, const s
         auto& property_client = connection->get_property_client_facade();
         std::cout << "[MIDI-CI SENT] SetPropertyData(State, " << stateId << ") to MUID: 0x" << std::hex << muid << std::dec
                   << " (" << data.size() << " bytes)" << std::endl;
-        property_client.send_set_property_data(StandardPropertyNames::STATE, stateId, data);
+        property_client.send_set_property_data(StandardPropertyNames::STATE, stateId, data, PropertyDataEncoding::MCODED7);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] sendState failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }

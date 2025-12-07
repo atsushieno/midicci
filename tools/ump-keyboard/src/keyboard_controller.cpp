@@ -496,18 +496,23 @@ void KeyboardController::requestProgramList(uint32_t muid) {
     }
 }
 
-bool KeyboardController::saveStatesToFile(uint32_t muid, const std::string& filename) {
+void KeyboardController::requestSaveState(uint32_t muid) {
     if (midiCIManager && midiCIManager->isInitialized()) {
-        return midiCIManager->saveStatesToFile(muid, filename);
+        midiCIManager->requestSaveState(muid);
     }
-    return false;
 }
 
-bool KeyboardController::loadStatesFromFile(uint32_t muid, const std::string& filename) {
+void KeyboardController::sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data) {
     if (midiCIManager && midiCIManager->isInitialized()) {
-        return midiCIManager->loadStatesFromFile(muid, filename);
+        midiCIManager->sendState(muid, stateId, data);
     }
-    return false;
+}
+
+void KeyboardController::setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback) {
+    stateSaveCallback = callback;
+    if (midiCIManager) {
+        midiCIManager->setStateSaveCallback(callback);
+    }
 }
 
 void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
@@ -569,6 +574,10 @@ void KeyboardController::initializeMidiCI() {
             if (midiCIDevicesChangedCallback) {
                 midiCIManager->setDevicesChangedCallback(midiCIDevicesChangedCallback);
                 std::cout << "[MIDI-CI] Devices changed callback restored after initialization" << std::endl;
+            }
+            if (stateSaveCallback) {
+                midiCIManager->setStateSaveCallback(stateSaveCallback);
+                std::cout << "[MIDI-CI] State save callback restored after initialization" << std::endl;
             }
         }
         

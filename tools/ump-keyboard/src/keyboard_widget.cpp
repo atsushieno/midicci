@@ -12,6 +12,7 @@
 #include <QtGui/QEnterEvent>
 #include <QtGui/QMouseEvent>
 #include <iostream>
+#include <fstream>
 
 class PianoKey : public QPushButton {
     Q_OBJECT
@@ -831,15 +832,19 @@ void KeyboardWidget::setControlMapProvider(std::function<std::optional<std::vect
 }
 
 void KeyboardWidget::setPropertyRequesters(std::function<void(uint32_t)> requestCtrl,
-                                           std::function<void(uint32_t)> requestProg) {
+                                           std::function<void(uint32_t)> requestProg,
+                                           std::function<void(uint32_t)> requestSaveState) {
     requestAllCtrlListCallback = requestCtrl;
     requestProgramListCallback = requestProg;
+    requestSaveStateCallback = requestSaveState;
 }
 
-void KeyboardWidget::setSaveLoadCallbacks(std::function<bool(uint32_t, const std::string&)> saveCallback,
-                                          std::function<bool(uint32_t, const std::string&)> loadCallback) {
-    saveStatesCallback = saveCallback;
-    loadStatesCallback = loadCallback;
+void KeyboardWidget::setStateSendCallback(std::function<void(uint32_t, const std::string&, const std::vector<uint8_t>&)> callback) {
+    stateSendCallback = callback;
+}
+
+void KeyboardWidget::setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback) {
+    stateSaveCallback = callback;
 }
 
 void KeyboardWidget::refreshProperties() {
@@ -890,48 +895,18 @@ void KeyboardWidget::onRequestProgramList() {
 }
 
 void KeyboardWidget::onSaveStates() {
-    if (selectedDeviceMuid == 0 || !saveStatesCallback) {
+    if (selectedDeviceMuid == 0 || !requestSaveStateCallback) {
         return;
     }
 
-    // Open file dialog to select save location
-    QString filename = QFileDialog::getSaveFileName(
-        this,
-        tr("Save Device State"),
-        QDir::homePath() + "/device_state.midi2",
-        tr("MIDI Clip Files (*.midi2);;All Files (*)")
-    );
-
-    if (filename.isEmpty()) {
-        return;  // User cancelled
-    }
-
-    // Ensure the filename has the correct extension
-    if (!filename.endsWith(".midi2")) {
-        filename += ".midi2";
-    }
-
-    // Call the save callback
-    bool requestSent = saveStatesCallback(selectedDeviceMuid, filename.toStdString());
-
-    // Show result message
-    if (requestSent) {
-        QMessageBox::information(this, tr("Save State"),
-                                tr("State request sent. The file will be saved when the device responds.\n"
-                                   "Target file: %1\n\n"
-                                   "Check the console for progress and any errors.").arg(filename));
-    } else {
-        QMessageBox::warning(this, tr("Save State"),
-                            tr("Failed to send state request.\nPlease check the console for error details."));
-    }
+    requestSaveStateCallback(selectedDeviceMuid);
 }
 
 void KeyboardWidget::onLoadStates() {
-    if (selectedDeviceMuid == 0 || !loadStatesCallback) {
+    if (selectedDeviceMuid == 0 || !stateSendCallback) {
         return;
     }
 
-    // Open file dialog to select file to load
     QString filename = QFileDialog::getOpenFileName(
         this,
         tr("Load Device State"),
@@ -940,10 +915,9 @@ void KeyboardWidget::onLoadStates() {
     );
 
     if (filename.isEmpty()) {
-        return;  // User cancelled
+        return;
     }
 
-    // Confirm before loading
     QMessageBox::StandardButton reply = QMessageBox::question(
         this,
         tr("Load State"),
@@ -956,17 +930,34 @@ void KeyboardWidget::onLoadStates() {
         return;
     }
 
-    // Call the load callback
-    bool success = loadStatesCallback(selectedDeviceMuid, filename.toStdString());
-
-    // Show result message
-    if (success) {
-        QMessageBox::information(this, tr("Load State"),
-                                tr("Device state loaded successfully."));
-    } else {
+    std::ifstream infile(filename.toStdString(), std::ios::binary | std::ios::ate);
+    if (!infile) {
         QMessageBox::warning(this, tr("Load State"),
-                            tr("Failed to load device state.\nPlease check the console for error details."));
+                            tr("Failed to open file for reading: %1").arg(filename));
+        return;
     }
+
+    std::streamsize size = infile.tellg();
+    infile.seekg(0, std::ios::beg);
+
+    if (size <= 0) {
+        QMessageBox::warning(this, tr("Load State"),
+                            tr("File is empty or cannot determine size"));
+        return;
+    }
+
+    std::vector<uint8_t> stateData(size);
+    if (!infile.read(reinterpret_cast<char*>(stateData.data()), size)) {
+        QMessageBox::warning(this, tr("Load State"),
+                            tr("Failed to read file contents"));
+        return;
+    }
+    infile.close();
+
+    stateSendCallback(selectedDeviceMuid, midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE, stateData);
+
+    QMessageBox::information(this, tr("Load State"),
+                            tr("State data sent to device successfully."));
 }
 
 void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {

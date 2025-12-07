@@ -48,10 +48,11 @@ public:
     // Explicit property requests (user-triggered)
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
+    void requestSaveState(uint32_t muid);
 
-    // Save/Load device states
-    bool saveStatesToFile(uint32_t muid, const std::string& filename);
-    bool loadStatesFromFile(uint32_t muid, const std::string& filename);
+    // State management
+    void sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data);
+    void setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback);
 
     // MIDI control sending
     void sendControlChange(int channel, int controller, uint32_t value);
@@ -77,6 +78,7 @@ private:
     std::function<void(bool)> midiConnectionChangedCallback;
     std::function<void(uint32_t, const std::string&)> midiCIPropertiesChangedCallback;
     std::function<void()> midiCIDevicesChangedCallback;
+    std::function<void(uint32_t, const std::vector<uint8_t>&)> stateSaveCallback;
     bool initialized = false;
     uint32_t local_app_muid = 0;  // Store local application MUID across reinitializations
     

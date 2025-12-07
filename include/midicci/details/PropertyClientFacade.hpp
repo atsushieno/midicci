@@ -22,24 +22,29 @@ class ClientObservablePropertyList;
 class PropertyClientFacade {
 public:
     using SubscriptionUpdateCallback = std::function<void(const ClientSubscription&)>;
-    
+    using GetPropertyDataCallback = std::function<void(const GetPropertyDataReply&)>;
+    using SetPropertyDataCallback = std::function<void(const SetPropertyDataReply&)>;
+
     PropertyClientFacade(MidiCIDevice& device, ClientConnection& conn);
     ~PropertyClientFacade();
-    
+
     PropertyClientFacade(const PropertyClientFacade&) = delete;
     PropertyClientFacade& operator=(const PropertyClientFacade&) = delete;
-    
+
     PropertyClientFacade(PropertyClientFacade&&) = default;
     PropertyClientFacade& operator=(PropertyClientFacade&&) = default;
-    
+
     void set_property_rules(std::unique_ptr<MidiCIClientPropertyRules> rules);
     MidiCIClientPropertyRules* get_property_rules();
-    
-    void send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding = "", int paginate_offset = -1, int paginate_limit = -1);
+
+    uint8_t send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding = "", int paginate_offset = -1, int paginate_limit = -1);
     void send_get_property_data(const GetPropertyData& msg);
-    
-    void send_set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, const std::string& encoding = "", bool is_partial = false);
+
+    uint8_t send_set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, const std::string& encoding = "", bool is_partial = false);
     void send_set_property_data(const SetPropertyData& msg);
+
+    void get_property_data(const std::string& resource, const std::string& res_id, GetPropertyDataCallback callback, const std::string& encoding = "", int paginate_offset = -1, int paginate_limit = -1);
+    void set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, SetPropertyDataCallback callback, const std::string& encoding = "", bool is_partial = false);
     
     void send_subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding = "", const std::string& subscription_id = "");
     void send_unsubscribe_property(const std::string& property_id, const std::string& res_id);

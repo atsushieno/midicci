@@ -85,15 +85,13 @@ public:
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
     void requestStateList(uint32_t muid);
+    void requestSaveState(uint32_t muid);
 
     // State management
     void sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data);
 
-    // Save/Load all device states to/from MIDI Clip File (.state.midi2)
-    bool saveStatesToFile(uint32_t muid, const std::string& filename);
-    bool loadStatesFromFile(uint32_t muid, const std::string& filename);
-
     void setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
+    void setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback);
     
     // Instrumentation - for debugging performance issues
     void instrumentation_print_statistics() const;
@@ -106,9 +104,10 @@ private:
     LogCallback log_callback_;
     DevicesChangedCallback devices_changed_callback_;
     std::function<void(uint32_t, const std::string&)> properties_changed_callback_;
+    std::function<void(uint32_t, const std::vector<uint8_t>&)> state_save_callback_;
     uint32_t muid_;
     bool initialized_;
-    
+
     midicci::keyboard::MessageLogger* logger_;
     
     std::vector<MidiCIDeviceInfo> discovered_devices_;
@@ -126,17 +125,6 @@ private:
     // Track properties that have received at least one update from the peer
     std::set<std::pair<uint32_t, std::string>> fetched_properties_;
 
-    // Track pending save operations (fire-and-forget)
-    struct PendingSaveOperation {
-        uint32_t muid;
-        std::string filename;
-        std::chrono::steady_clock::time_point request_time;
-
-        PendingSaveOperation(uint32_t m, const std::string& f)
-            : muid(m), filename(f), request_time(std::chrono::steady_clock::now()) {}
-    };
-    std::vector<PendingSaveOperation> pending_save_operations_;
-    
     // Note: Remote device access is now handled through ClientConnection objects
     // obtained via device_->get_connection(muid) - no need for separate storage
     

@@ -8,11 +8,11 @@ namespace midicci {
 
 class PropertyClientFacade::Impl {
 public:
-    Impl(MidiCIDevice& device, ClientConnection& conn) : device_(device), conn_(conn), 
+    Impl(MidiCIDevice& device, ClientConnection& conn) : device_(device), conn_(conn),
           property_rules_(std::make_unique<CommonRulesPropertyClient>(device, conn)) {
         properties_ = std::make_unique<ClientObservablePropertyList>(property_rules_.get());
     }
-    
+
     MidiCIDevice& device_;
     ClientConnection& conn_;
     std::unique_ptr<MidiCIClientPropertyRules> property_rules_;
@@ -22,6 +22,8 @@ public:
     std::vector<std::unique_ptr<PropertyMetadata>> metadata_list_;
     std::vector<ClientSubscription> subscriptions_;
     std::vector<PropertyClientFacade::SubscriptionUpdateCallback> subscription_update_callbacks_;
+    std::unordered_map<uint8_t, PropertyClientFacade::GetPropertyDataCallback> pending_get_property_callbacks_;
+    std::unordered_map<uint8_t, PropertyClientFacade::SetPropertyDataCallback> pending_set_property_callbacks_;
     PropertyChunkManager pending_chunk_manager_;
     mutable std::recursive_mutex mutex_;
 };
@@ -41,30 +43,33 @@ MidiCIClientPropertyRules* PropertyClientFacade::get_property_rules() {
     return pimpl_->property_rules_.get();
 }
 
-void PropertyClientFacade::send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding, int paginate_offset, int paginate_limit) {
+uint8_t PropertyClientFacade::send_get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding, int paginate_offset, int paginate_limit) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    if (!pimpl_->property_rules_) return;
-    
+
+    auto request_id = pimpl_->device_.get_messenger().get_next_request_id();
+
+    if (!pimpl_->property_rules_) return request_id;
+
     std::map<std::string, std::string> fields;
     if (!res_id.empty()) fields["resId"] = res_id;
     if (!encoding.empty()) fields["mutualEncoding"] = encoding;
     fields["setPartial"] = "false";
     if (paginate_offset >= 0) fields["offset"] = std::to_string(paginate_offset);
     if (paginate_limit >= 0) fields["limit"] = std::to_string(paginate_limit);
-    
+
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     if (header.empty()) {
         pimpl_->device_.get_logger()(LogData("Failed to create request header for resource: " + resource, true));
-        return;
+        return request_id;
     }
 
     GetPropertyData msg(
         Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
-        pimpl_->device_.get_messenger().get_next_request_id(), header
+        request_id, header
     );
-    
+
     send_get_property_data(msg);
+    return request_id;
 }
 
 void PropertyClientFacade::send_get_property_data(const GetPropertyData& msg) {
@@ -74,32 +79,49 @@ void PropertyClientFacade::send_get_property_data(const GetPropertyData& msg) {
     pimpl_->device_.get_messenger().send(msg);
 }
 
-void PropertyClientFacade::send_set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, const std::string& encoding, bool is_partial) {
+uint8_t PropertyClientFacade::send_set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, const std::string& encoding, bool is_partial) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
-    if (!pimpl_->property_rules_) return;
-    
+
+    auto request_id = pimpl_->device_.get_messenger().get_next_request_id();
+
+    if (!pimpl_->property_rules_) return request_id;
+
     std::map<std::string, std::string> fields;
     if (!res_id.empty()) fields["resId"] = res_id;
     if (!encoding.empty()) fields["mutualEncoding"] = encoding;
     fields["setPartial"] = is_partial ? "true" : "false";
-    
+
     auto header = pimpl_->property_rules_->create_data_request_header(resource, fields);
     auto encoded_body = pimpl_->property_rules_->encode_body(data, encoding);
-    
+
     SetPropertyData msg(
         Common(pimpl_->device_.get_muid(), pimpl_->conn_.get_target_muid(), 0x7F, 0),
-        pimpl_->device_.get_messenger().get_next_request_id(), header, encoded_body
+        request_id, header, encoded_body
     );
-    
+
     send_set_property_data(msg);
+    return request_id;
 }
 
 void PropertyClientFacade::send_set_property_data(const SetPropertyData& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     pimpl_->open_requests_[msg.get_request_id()] = msg.serialize(pimpl_->device_.get_config())[0];
     pimpl_->device_.get_messenger().send(msg);
+}
+
+void PropertyClientFacade::get_property_data(const std::string& resource, const std::string& res_id, GetPropertyDataCallback callback, const std::string& encoding, int paginate_offset, int paginate_limit) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    auto request_id = send_get_property_data(resource, res_id, encoding, paginate_offset, paginate_limit);
+    pimpl_->pending_get_property_callbacks_[request_id] = std::move(callback);
+}
+
+void PropertyClientFacade::set_property_data(const std::string& resource, const std::string& res_id, const std::vector<uint8_t>& data, SetPropertyDataCallback callback, const std::string& encoding, bool is_partial) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+
+    auto request_id = send_set_property_data(resource, res_id, data, encoding, is_partial);
+    pimpl_->pending_set_property_callbacks_[request_id] = std::move(callback);
 }
 
 void PropertyClientFacade::send_subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding, const std::string& subscription_id) {
@@ -179,42 +201,48 @@ void PropertyClientFacade::process_property_capabilities_reply(const PropertyGet
 
 void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
     if (it != pimpl_->open_requests_.end()) {
         const auto& data = it->second;
         if (data.size() >= 16) {
-            // Use CIRetrieval methods to properly parse the stored request data
             uint32_t source_muid = CIRetrieval::get_source_muid(data);
             uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
             uint8_t request_id = data[13];
             std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
-            
+
             Common common(source_muid, dest_muid, 0x7F, 0);
             GetPropertyData stored_request(common, request_id, header);
-            
+
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
-                
+
+                auto callback_it = pimpl_->pending_get_property_callbacks_.find(msg.get_request_id());
+                if (callback_it != pimpl_->pending_get_property_callbacks_.end()) {
+                    auto callback = std::move(callback_it->second);
+                    pimpl_->pending_get_property_callbacks_.erase(callback_it);
+                    callback(msg);
+                }
+
                 if (pimpl_->property_rules_) {
                     auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
                     if (status == 200) {
                         auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
-                        
+
                         auto media_type = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "mediaType");
                         if (media_type.empty()) {
                             media_type = "application/json";
                         }
-                        
+
                         if (pimpl_->properties_) {
                             pimpl_->properties_->updateValue(property_id, msg.get_body(), media_type);
                         }
-                        
+
                         pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());
                         pimpl_->cached_properties_[property_id] = msg.get_body();
                     }
                 }
-                
+
                 pimpl_->open_requests_.erase(it);
             }
         }
@@ -223,24 +251,30 @@ void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& ms
 
 void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     auto it = pimpl_->open_requests_.find(msg.get_request_id());
     if (it != pimpl_->open_requests_.end()) {
         const auto& data = it->second;
         if (data.size() >= 18) {
-            // Use CIRetrieval methods to properly parse the stored request data
             uint32_t source_muid = CIRetrieval::get_source_muid(data);
             uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
             uint8_t request_id = data[13];
             std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
             std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
-            
+
             Common common(source_muid, dest_muid, 0x7F, 0);
             SetPropertyData stored_request(common, request_id, header, body);
-            
+
             if (stored_request.get_common().source_muid == msg.get_common().destination_muid &&
                 stored_request.get_common().destination_muid == msg.get_common().source_muid) {
-                
+
+                auto callback_it = pimpl_->pending_set_property_callbacks_.find(msg.get_request_id());
+                if (callback_it != pimpl_->pending_set_property_callbacks_.end()) {
+                    auto callback = std::move(callback_it->second);
+                    pimpl_->pending_set_property_callbacks_.erase(callback_it);
+                    callback(msg);
+                }
+
                 if (pimpl_->property_rules_) {
                     auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
                     if (status == 200) {
@@ -248,7 +282,7 @@ void PropertyClientFacade::process_set_data_reply(const SetPropertyDataReply& ms
                         pimpl_->property_rules_->property_value_updated(property_id, {});
                     }
                 }
-                
+
                 pimpl_->open_requests_.erase(it);
             }
         }

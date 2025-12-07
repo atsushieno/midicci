@@ -1,9 +1,13 @@
 
 #include <QtWidgets/QApplication>
-#include <QMetaObject>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+#include <QtCore/QMetaObject>
+#include <QtCore/QDir>
 #include "main_window.h"
 #include "keyboard_controller.h"
 #include <iostream>
+#include <fstream>
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
@@ -67,14 +71,52 @@ int main(int argc, char** argv) {
     // Set up explicit property requesters
     keyboard.setPropertyRequesters(
         [&controller](uint32_t muid) { controller.requestAllCtrlList(muid); },
-        [&controller](uint32_t muid) { controller.requestProgramList(muid); }
+        [&controller](uint32_t muid) { controller.requestProgramList(muid); },
+        [&controller](uint32_t muid) { controller.requestSaveState(muid); }
     );
 
-    // Set up save/load callbacks
-    keyboard.setSaveLoadCallbacks(
-        [&controller](uint32_t muid, const std::string& filename) { return controller.saveStatesToFile(muid, filename); },
-        [&controller](uint32_t muid, const std::string& filename) { return controller.loadStatesFromFile(muid, filename); }
+    // Set up state management callbacks
+    keyboard.setStateSendCallback(
+        [&controller](uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data) {
+            controller.sendState(muid, stateId, data);
+        }
     );
+
+    controller.setStateSaveCallback([&keyboard](uint32_t muid, const std::vector<uint8_t>& stateData) {
+        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, stateData]() {
+            QString filename = QFileDialog::getSaveFileName(
+                &keyboard,
+                QObject::tr("Save Device State"),
+                QDir::homePath() + "/device_state.midi2",
+                QObject::tr("MIDI Clip Files (*.midi2);;All Files (*)")
+            );
+
+            if (filename.isEmpty()) {
+                return;
+            }
+
+            if (!filename.endsWith(".midi2")) {
+                filename += ".midi2";
+            }
+
+            std::ofstream outfile(filename.toStdString(), std::ios::binary);
+            if (outfile) {
+                outfile.write(reinterpret_cast<const char*>(stateData.data()), stateData.size());
+                outfile.close();
+
+                if (outfile.good()) {
+                    QMessageBox::information(&keyboard, QObject::tr("Save State"),
+                                            QObject::tr("State saved successfully to:\n%1").arg(filename));
+                } else {
+                    QMessageBox::warning(&keyboard, QObject::tr("Save State"),
+                                        QObject::tr("Failed to write data to file:\n%1").arg(filename));
+                }
+            } else {
+                QMessageBox::warning(&keyboard, QObject::tr("Save State"),
+                                    QObject::tr("Failed to open file for writing:\n%1").arg(filename));
+            }
+        }, Qt::QueuedConnection);
+    });
 
     // Set up control map provider for enumerated values
     keyboard.setControlMapProvider(

@@ -99,9 +99,11 @@ std::vector<uint8_t> CIRetrieval::get_property_body_in_this_chunk(const std::vec
     size_t index = 20 + header_size;
     if (index + 2 <= sysex.size()) {
         uint16_t body_size = sysex[index] | (sysex[index + 1] << 7);
+        size_t start_pos = 22 + header_size;
+        size_t actual_size = std::min(static_cast<size_t>(body_size), sysex.size() - start_pos);
         std::vector<uint8_t> body;
-        if (22 + header_size + body_size <= sysex.size()) {
-            body.assign(sysex.begin() + 22 + header_size, sysex.begin() + 22 + header_size + body_size);
+        if (start_pos < sysex.size()) {
+            body.assign(sysex.begin() + start_pos, sysex.begin() + start_pos + actual_size);
         }
         return body;
     }

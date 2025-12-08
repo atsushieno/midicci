@@ -446,9 +446,15 @@ void Messenger::process_input(uint8_t group, const std::vector<uint8_t>& data) {
                 uint8_t request_id = data[13];
                 std::vector<uint8_t> header = CIRetrieval::get_property_header(data);
                 std::vector<uint8_t> body = CIRetrieval::get_property_body_in_this_chunk(data);
-                SetPropertyData inquiry(common, request_id, header, body);
-                pimpl_->log_message(inquiry, false);
-                processSetPropertyData(inquiry);
+                uint16_t num_chunks = CIRetrieval::get_property_total_chunks(data);
+                uint16_t chunk_index = CIRetrieval::get_property_chunk_index(data);
+
+                handleChunk(common, request_id, chunk_index, num_chunks, header, body,
+                    [this, common, request_id](const std::vector<uint8_t>& complete_header, const std::vector<uint8_t>& complete_body) {
+                        SetPropertyData inquiry(common, request_id, complete_header, complete_body);
+                        pimpl_->log_message(inquiry, false);
+                        processSetPropertyData(inquiry);
+                    });
             }
             break;
         }

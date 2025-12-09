@@ -38,6 +38,10 @@ std::vector<uint8_t> CommonRulesPropertyClient::encode_body(const std::vector<ui
     return helper_->encode_body(data, encoding);
 }
 
+std::vector<uint8_t> CommonRulesPropertyClient::decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
+    return helper_->decode_body(header, body);
+}
+
 std::string CommonRulesPropertyClient::get_property_id_for_header(const std::vector<uint8_t>& header) {
     return helper_->get_property_identifier_internal(header);
 }

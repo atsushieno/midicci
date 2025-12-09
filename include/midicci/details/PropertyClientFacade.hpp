@@ -83,6 +83,7 @@ public:
     virtual std::vector<uint8_t> create_subscription_header(const std::string& resource, const std::map<std::string, std::string>& fields) = 0;
     virtual std::vector<uint8_t> create_status_header(int status) = 0;
     virtual std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) = 0;
+    virtual std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) = 0;
     virtual std::string get_property_id_for_header(const std::vector<uint8_t>& header) = 0;
     virtual std::string get_res_id_for_header(const std::vector<uint8_t>& header) = 0;
     virtual std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) = 0;

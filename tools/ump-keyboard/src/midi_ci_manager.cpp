@@ -585,12 +585,13 @@ void MidiCIManager::requestSaveState(uint32_t muid) {
         property_client.get_property_data(
             StandardPropertyNames::STATE,
             midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE,
-            [this, muid](const GetPropertyDataReply& reply) {
+            [this, &property_client, muid](const GetPropertyDataReply& reply) {
                 this->removePendingPropertyRequest(muid, StandardPropertyNames::STATE);
                 this->log("[State Response] Received State property data reply");
 
                 if (this->state_save_callback_) {
-                    std::vector<uint8_t> stateData = reply.get_body();
+                    auto rules = property_client.get_property_rules();
+                    std::vector<uint8_t> stateData = rules->decode_body(reply.get_header(), reply.get_body());
                     this->log("[State Response] State data size: " + std::to_string(stateData.size()) + " bytes");
                     this->state_save_callback_(muid, stateData);
                 }

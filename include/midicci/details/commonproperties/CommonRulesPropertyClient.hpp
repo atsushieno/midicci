@@ -21,7 +21,9 @@ public:
     std::vector<uint8_t> create_status_header(int status) override;
     
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;
-    
+
+    std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) override;
+
     std::string get_property_id_for_header(const std::vector<uint8_t>& header) override;
     
     std::string get_res_id_for_header(const std::vector<uint8_t>& header) override;

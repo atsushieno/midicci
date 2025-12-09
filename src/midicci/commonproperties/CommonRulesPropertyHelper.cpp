@@ -104,11 +104,36 @@ int CommonRulesPropertyHelper::get_header_field_integer(const std::vector<uint8_
 }
 
 std::vector<uint8_t> CommonRulesPropertyHelper::encode_body(const std::vector<uint8_t>& data, const std::string& encoding) const {
-    return data;
+    if (encoding == PropertyDataEncoding::ASCII || encoding.empty()) {
+        return data;
+    } else if (encoding == PropertyDataEncoding::MCODED7) {
+        return PropertyCommonConverter::encode_to_mcoded7(data);
+    } else if (encoding == PropertyDataEncoding::ZLIB_MCODED7) {
+        return PropertyCommonConverter::encode_to_zlib_mcoded7(data);
+    } else {
+        auto logger = device_.get_logger();
+        if (logger) {
+            logger(LogData("Unrecognized mutualEncoding is specified: " + encoding, true));
+        }
+        return data;
+    }
 }
 
 std::vector<uint8_t> CommonRulesPropertyHelper::decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const {
-    return body;
+    auto encoding = get_header_field_string(header, PropertyCommonHeaderKeys::MUTUAL_ENCODING);
+    if (encoding == PropertyDataEncoding::ASCII || encoding.empty()) {
+        return body;
+    } else if (encoding == PropertyDataEncoding::MCODED7) {
+        return PropertyCommonConverter::decode_mcoded7(body);
+    } else if (encoding == PropertyDataEncoding::ZLIB_MCODED7) {
+        return PropertyCommonConverter::decode_zlib_mcoded7(body);
+    } else {
+        auto logger = device_.get_logger();
+        if (logger) {
+            logger(LogData("Unrecognized mutualEncoding is specified: " + encoding, true));
+        }
+        return body;
+    }
 }
 
 } // namespace properties

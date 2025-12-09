@@ -13,6 +13,7 @@ set(MIDICCI_SOURCES
         midicci/PropertyChunkManager.cpp
         midicci/PropertyClientFacade.cpp
         midicci/PropertyHostFacade.cpp
+        midicci/PropertyCommonConverter.cpp
         midicci/ObservablePropertyList.cpp
         midicci/commonproperties/CommonRulesPropertyHelper.cpp
         midicci/commonproperties/CommonRulesPropertyService.cpp
@@ -43,6 +44,9 @@ target_include_directories(${MODULE_NAME}
 )
 
 target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
+
+find_package(ZLIB REQUIRED)
+target_link_libraries(${MODULE_NAME} PRIVATE ZLIB::ZLIB)
 
 if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)

@@ -33,6 +33,7 @@
 // Property management
 #include <midicci/details/PropertyChunkManager.hpp>
 #include <midicci/details/PropertyCommonRules.hpp>
+#include <midicci/details/PropertyCommonConverter.hpp>
 
 // Common profiles
 #include <midicci/details/commonprofiles/ProfileCommonRules.hpp>

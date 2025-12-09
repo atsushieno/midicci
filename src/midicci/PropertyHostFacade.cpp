@@ -265,10 +265,7 @@ SetPropertyDataReply PropertyHostFacade::process_set_property_data(const SetProp
         // Following Kotlin implementation: check if reply is successful, then update property
         auto status = pimpl_->property_service_->get_header_field_integer(reply.get_header(), PropertyCommonHeaderKeys::STATUS);
         if (status == PropertyExchangeStatus::OK) {
-            auto property_id = pimpl_->property_service_->get_property_id_for_header(msg.get_header());
-            
-            // Update property value - this will trigger notifications automatically
-            pimpl_->properties_->updateValue(property_id, msg.get_header(), msg.get_body());
+            pimpl_->properties_->updateValue(msg.get_header(), msg.get_body());
             
             // Note: Don't call notify_property_updated here as it's already called by updateValue
         }

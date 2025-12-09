@@ -256,20 +256,15 @@ namespace midicci {
         // which will in turn call notifyPropertyCatalogUpdated()
     }
 
-    void ServiceObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
+    void ServiceObservablePropertyList::updateValue(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        // Following Kotlin implementation: extract resId and mediaType from header, decode body
+        std::string propertyId = property_service_.get_property_id_for_header(header);
         std::string resId = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::RES_ID);
         std::string mediaType = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::MEDIA_TYPE);
-        if (mediaType.empty()) {
+        if (mediaType.empty())
             mediaType = CommonRulesKnownMimeTypes::APPLICATION_JSON;
-        }
-        
-        // Decode the body using the property service
         std::vector<uint8_t> decodedBody = property_service_.decode_body(header, body);
-        
-        // Call the full updateValue method with decoded data
         updateValue(propertyId, resId, mediaType, decodedBody);
     }
 

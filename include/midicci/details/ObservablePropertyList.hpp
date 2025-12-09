@@ -88,7 +88,7 @@ public:
     
     void addMetadata(std::unique_ptr<PropertyMetadata> metadata);
     void updateMetadata(const std::string& propertyId, PropertyMetadata* metadata);
-    void updateValue(const std::string& propertyId, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
+    void updateValue(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body);
     void updateValue(const std::string& propertyId, const std::string& resId, const std::string& mediaType, const std::vector<uint8_t>& body);
     void removeMetadata(const std::string& propertyId);
     

@@ -178,7 +178,7 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
         std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
 
         auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
-                                               source_muid, destination_muid, request_id, header,
+                                               source_muid, destination_muid, request_id, i > 0 ? std::vector<uint8_t>() : header,
                                                static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);
         result.push_back(packet);
     }

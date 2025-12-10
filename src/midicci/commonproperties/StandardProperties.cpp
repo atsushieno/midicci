@@ -47,7 +47,6 @@ CommonRulesPropertyMetadata& StandardProperties::stateListMetadata() {
 auto state_metadata = [] {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::STATE);
     metadata.canSet = PropertySetAccess::FULL;
-    metadata.requireResId = true;
     metadata.canSubscribe = false;
     metadata.encodings = {PropertyDataEncoding::MCODED7};
     metadata.mediaTypes = {CommonRulesKnownMimeTypes::APPLICATION_OCTET_STREAM};
@@ -80,7 +79,6 @@ CommonRulesPropertyMetadata& StandardProperties::chCtrlListMetadata() {
 
 auto ctrl_map_list_metadata = [] {
     CommonRulesPropertyMetadata metadata(StandardPropertyNames::CTRL_MAP_LIST);
-    metadata.requireResId = true;
     metadata.columns = {
         {ControlMapPropertyNames::VALUE, "", "Value"},
         {ControlMapPropertyNames::TITLE, "", "Title"}

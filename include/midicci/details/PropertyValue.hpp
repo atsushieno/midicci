@@ -5,7 +5,7 @@
 namespace midicci {
     struct PropertyValue {
         std::string id;
-        std::string resId;  // Resource ID (can be empty for properties without resource ID)
+        std::string resId;
         std::string mediaType;
         std::vector<uint8_t> body;
 
@@ -27,7 +27,7 @@ namespace midicci {
         std::string subscribe_id;
         std::string encoding;
 
-        SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, const std::string& resource_id,
+        SubscriptionEntry(uint32_t subscriber_muid, const std::string& resource, const std::string& resid,
                           const std::string& sub_id, const std::string& enc);
     };
 

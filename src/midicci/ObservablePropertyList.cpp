@@ -294,8 +294,8 @@ namespace midicci {
         // Note: Don't call notifyPropertyCatalogUpdated() here as it will be called by the callback
     }
 
-    SubscriptionEntry::SubscriptionEntry(uint32_t subscriber_muid, const std::string& res, const std::string& resource_id,
+    SubscriptionEntry::SubscriptionEntry(uint32_t subscriber_muid, const std::string& resource, const std::string& resid,
                                          const std::string& sub_id, const std::string& enc)
-            : muid(subscriber_muid), resource(res), res_id(resource_id), subscribe_id(sub_id), encoding(enc) {}
+            : muid(subscriber_muid), resource(resource), res_id(resid), subscribe_id(sub_id), encoding(enc) {}
 
 } // namespace

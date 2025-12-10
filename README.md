@@ -11,6 +11,8 @@ We use [libremidi](https://github.com/jcelerier/libremidi) for MIDI device acces
 
 We use Qt for the GUI, after various attempts to let Devin and Claude Code to write React+Electron code as well as Flutter code. Devin generated platform channels while it should be dart FFI. Claude did not make such a mistake, but could not handle complicated interop scenarios especially beyond isolates. I didn't feel I should try similar for React with its threading model.
 
+We use [zlib-ng](https://github.com/zlib-ng/zlib-ng) for Mcoded7 compression.
+
 ## management
 
 It is not much more than an agentic coding experiment. Code quality is as low as generated. But also I make changes by myself too to avoid silly requests to them.

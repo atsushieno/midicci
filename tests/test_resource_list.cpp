@@ -37,13 +37,11 @@ TEST_F(ResourceListTest, UserDefinedPropertyInResourceList) {
     test_property->encodings = {"UTF-8"};
     test_property->schema = R"({"type": "string"})";
     
-    // Set some test data
+    facade->addMetadata(std::move(test_property));
+
     std::string test_data = R"({"message": "Hello from user property!"})";
     std::vector<uint8_t> data_bytes(test_data.begin(), test_data.end());
-    test_property->setData(data_bytes);
-    
-    // Add the property to the facade
-    facade->addMetadata(std::move(test_property));
+    facade->setPropertyValue(property_id, "", data_bytes, false);
     
     // Test ResourceList request
     Common common(0x12345678, 0x87654321, ADDRESS_FUNCTION_BLOCK, 0);
@@ -78,12 +76,11 @@ TEST_F(ResourceListTest, GetUserDefinedPropertyData) {
     test_property->encodings = {"UTF-8"};
     test_property->schema = R"({"type": "string"})";
     
-    // Set some test data
+    facade->addMetadata(std::move(test_property));
+
     std::string test_data = R"({"message": "Hello from user property!"})";
     std::vector<uint8_t> data_bytes(test_data.begin(), test_data.end());
-    test_property->setData(data_bytes);
-    
-    facade->addMetadata(std::move(test_property));
+    facade->setPropertyValue(property_id, "", data_bytes, false);
     
     // Test GetPropertyData for the user property
     Common common(0x12345678, 0x87654321, ADDRESS_FUNCTION_BLOCK, 0);

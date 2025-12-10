@@ -801,9 +801,6 @@ void ResponderWidget::updatePropertyDetails()
             std::vector<uint8_t> data;
             if (propertyIt != propertyValues.end()) {
                 data = propertyIt->body;
-            } else {
-                // Fallback to metadata default if not found in values
-                data = metadata->getData();
             }
             QString valueText = QString::fromUtf8(reinterpret_cast<const char*>(data.data()), data.size());
             m_propertyValueEdit->setText(valueText);

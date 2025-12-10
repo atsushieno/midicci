@@ -35,16 +35,8 @@ public:
     bool canPaginate = false;
     std::vector<PropertyResourceColumn> columns;
     Originator originator = Originator::USER;
-    std::vector<uint8_t> data;
-    
+
     const std::string& getPropertyId() const override { return resource; }
-    const std::string& getResourceId() const override { return resource; }
-    const std::string& getName() const override { return resource; }
-    const std::string& getMediaType() const override { return mediaTypes.empty() ? default_media_type : mediaTypes[0]; }
-    const std::string& getEncoding() const override { return encodings.empty() ? default_encoding : encodings[0]; }
-    const std::vector<uint8_t>& getData() const override { return data; }
-    void setData(const std::vector<uint8_t>& newData) { data = newData; }
-    
     std::string getExtra(const std::string& key) const override;
     
     midicci::JsonValue toJsonValue() const;

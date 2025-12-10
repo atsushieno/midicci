@@ -379,32 +379,23 @@ void InitiatorWidget::onPropertySelectionChanged()
                                 m_propertyValueText.set("Loading property value...");
                             }
                             
-                            // Display property metadata
                             auto metadata = connection->get_metadata_list();
                             for (const auto& meta : metadata) {
-                                if (meta->getResourceId() == m_selectedProperty.toStdString()) {
+                                auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
+                                if (commonMeta && commonMeta->resource == m_selectedProperty.toStdString()) {
+                                    std::string media_type = !commonMeta->mediaTypes.empty()
+                                        ? commonMeta->mediaTypes[0]
+                                        : "application/json";
+
                                     QString metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
-                                        .arg(QString::fromStdString(meta->getResourceId()))
-                                        .arg(QString::fromStdString(meta->getMediaType()))
-                                        .arg(QString::fromStdString("Unknown"))
-                                        .arg(QString::fromStdString("Unknown"))
-                                        .arg(QString::fromStdString("Unknown"));
-                                    
-                                    auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
-                                    if (commonMeta) {
-                                        metadataText = QString("Property: %1\nMedia Type: %2\nCan Set: %3\nCan Subscribe: %4\nCan Paginate: %5")
-                                            .arg(QString::fromStdString(meta->getResourceId()))
-                                            .arg(QString::fromStdString(meta->getMediaType()))
-                                            .arg(QString::fromStdString(commonMeta->canSet))
-                                            .arg(commonMeta->canSubscribe ? "Yes" : "No")
-                                            .arg(commonMeta->canPaginate ? "Yes" : "No");
-                                        
-                                        m_propertyPaginationGroup->setVisible(commonMeta->canPaginate);
-                                    } else {
-                                        m_propertyPaginationGroup->setVisible(false);
-                                    }
-                                    
+                                        .arg(QString::fromStdString(commonMeta->resource))
+                                        .arg(QString::fromStdString(media_type))
+                                        .arg(QString::fromStdString(commonMeta->canSet))
+                                        .arg(commonMeta->canSubscribe ? "Yes" : "No")
+                                        .arg(commonMeta->canPaginate ? "Yes" : "No");
+
                                     m_propertyMetadataLabel->setText(metadataText);
+                                    m_propertyPaginationGroup->setVisible(commonMeta->canPaginate);
                                     break;
                                 }
                             }
@@ -733,9 +724,9 @@ void InitiatorWidget::updatePropertyList()
         if (properties_vec.empty()) {
             auto metadata = targetConnection->get_metadata_list();
             for (const auto& meta : metadata) {
-                // Filter out ResourceList from metadata as well
-                if (meta->getResourceId() != "ResourceList") {
-                    m_propertyList->addItem(QString::fromStdString(meta->getResourceId()));
+                auto* commonMeta = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta.get());
+                if (commonMeta && commonMeta->resource != "ResourceList") {
+                    m_propertyList->addItem(QString::fromStdString(commonMeta->resource));
                 }
             }
         }

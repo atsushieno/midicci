@@ -168,14 +168,15 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
         // Update existing property value directly (following Kotlin pattern)
         it->body = data;
     } else {
-        // Property doesn't exist yet - create it
         auto* metadata = get_property_metadata(property_id);
         std::string media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
         if (metadata) {
-            media_type = metadata->getMediaType();
+            auto* common_rules_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata);
+            if (common_rules_metadata && !common_rules_metadata->mediaTypes.empty()) {
+                media_type = common_rules_metadata->mediaTypes[0];
+            }
         }
-        
-        // Add new property value to the list
+
         property_values.emplace_back(property_id, res_id, media_type, data);
     }
     

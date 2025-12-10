@@ -111,12 +111,10 @@ private:
     std::string create_new_subscription_id();
     std::pair<JsonValue, JsonValue> subscribe(uint32_t subscriber_muid, const JsonValue& header_json);
     std::pair<JsonValue, JsonValue> unsubscribe(const std::string& resource, const std::string& subscribe_id);
-    JsonValue set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body);
-    
-    // Internal helper methods following Kotlin implementation
+
+    JsonValue set_property_data(const JsonValue& header_json, const std::vector<uint8_t>& body);
     std::pair<JsonValue, JsonValue> get_property_data_json(const PropertyCommonRequestHeader& header) const;
-    std::pair<JsonValue, std::vector<uint8_t>> get_property_data_internal(const JsonValue& header_json) const;
-    std::vector<uint8_t> decode_body_internal(const std::string& mutual_encoding, const std::vector<uint8_t>& body) const;
+    std::pair<JsonValue, std::vector<uint8_t>> get_property_data_encoded(const JsonValue& header_json) const;
 };
 
 } // namespace properties

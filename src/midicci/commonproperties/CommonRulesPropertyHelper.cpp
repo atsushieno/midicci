@@ -121,16 +121,20 @@ std::vector<uint8_t> CommonRulesPropertyHelper::encode_body(const std::vector<ui
 
 std::vector<uint8_t> CommonRulesPropertyHelper::decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const {
     auto encoding = get_header_field_string(header, PropertyCommonHeaderKeys::MUTUAL_ENCODING);
-    if (encoding == PropertyDataEncoding::ASCII || encoding.empty()) {
+    return decode_body(encoding.empty() ? std::nullopt : std::optional<std::string>(encoding), body);
+}
+
+std::vector<uint8_t> CommonRulesPropertyHelper::decode_body(const std::optional<std::string>& encoding, const std::vector<uint8_t>& body) const {
+    if (!encoding.has_value() || encoding.value() == PropertyDataEncoding::ASCII || encoding.value().empty()) {
         return body;
-    } else if (encoding == PropertyDataEncoding::MCODED7) {
+    } else if (encoding.value() == PropertyDataEncoding::MCODED7) {
         return PropertyCommonConverter::decode_mcoded7(body);
-    } else if (encoding == PropertyDataEncoding::ZLIB_MCODED7) {
+    } else if (encoding.value() == PropertyDataEncoding::ZLIB_MCODED7) {
         return PropertyCommonConverter::decode_zlib_mcoded7(body);
     } else {
         auto logger = device_.get_logger();
         if (logger) {
-            logger(LogData("Unrecognized mutualEncoding is specified: " + encoding, true));
+            logger(LogData("Unrecognized mutualEncoding is specified: " + encoding.value(), true));
         }
         return body;
     }

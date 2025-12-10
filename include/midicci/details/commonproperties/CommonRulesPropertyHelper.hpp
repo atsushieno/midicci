@@ -29,6 +29,7 @@ public:
     
     std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) const;
     std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const;
+    std::vector<uint8_t> decode_body(const std::optional<std::string>& encoding, const std::vector<uint8_t>& body) const;
 
 private:
     MidiCIDevice& device_;

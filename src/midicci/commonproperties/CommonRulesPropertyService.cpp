@@ -1,4 +1,5 @@
 #include "midicci/midicci.hpp"
+#include "midicci/details/PropertyPartialUpdater.hpp"
 #include <sstream>
 #include <algorithm>
 #include <random>
@@ -70,7 +71,7 @@ GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetProp
         std::string header_str(msg.get_header().begin(), msg.get_header().end());
         JsonValue json_inquiry = JsonValue::parse(header_str);
 
-        auto result = get_property_data_internal(json_inquiry);
+        auto result = get_property_data_encoded(json_inquiry);
 
         std::string reply_header_str = result.first.serialize();
         std::vector<uint8_t> reply_header(reply_header_str.begin(), reply_header_str.end());
@@ -80,7 +81,6 @@ GetPropertyDataReply CommonRulesPropertyService::get_property_data(const GetProp
         Common common{device_.get_muid(), msg.get_source_muid(), srcCommon.address, srcCommon.group};
         return GetPropertyDataReply(common, msg.get_request_id(), reply_header, reply_body);
     } catch (const std::exception& e) {
-        // Return error response
         JsonObject error_header;
         error_header[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::INTERNAL_ERROR);
         error_header[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Error: " + std::string(e.what()));
@@ -99,23 +99,23 @@ SetPropertyDataReply CommonRulesPropertyService::set_property_data(const SetProp
     try {
         std::string header_str(msg.get_header().begin(), msg.get_header().end());
         JsonValue header_json = JsonValue::parse(header_str);
-        
-        auto result = set_property_data_internal(header_json, msg.get_body());
-        
+
+        auto result = set_property_data(header_json, msg.get_body());
+
         std::string reply_header_str = result.serialize();
         std::vector<uint8_t> reply_header(reply_header_str.begin(), reply_header_str.end());
-        
+
         Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
         return SetPropertyDataReply(common, msg.get_request_id(), reply_header);
     } catch (const std::exception& e) {
         JsonObject error_header;
         error_header[PropertyCommonHeaderKeys::STATUS] = JsonValue(PropertyExchangeStatus::INTERNAL_ERROR);
         error_header[PropertyCommonHeaderKeys::MESSAGE] = JsonValue("Error: " + std::string(e.what()));
-        
+
         JsonValue error_json(error_header);
         std::string error_str = error_json.serialize();
         std::vector<uint8_t> reply_header(error_str.begin(), error_str.end());
-        
+
         Common common{device_.get_muid(), msg.get_source_muid(), msg.get_common().address, msg.get_common().group};
         return SetPropertyDataReply(common, msg.get_request_id(), reply_header);
     }
@@ -342,10 +342,9 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::unsubscribe(const st
     return std::make_pair(get_reply_header_json(reply_header), reply_body);
 }
 
-JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue& header_json, const std::vector<uint8_t>& body) {
+JsonValue CommonRulesPropertyService::set_property_data(const JsonValue& header_json, const std::vector<uint8_t>& body) {
     PropertyCommonRequestHeader header = get_property_header(header_json);
 
-    // Check if it's a system property (read-only)
     if (header.resource == PropertyResourceNames::DEVICE_INFO ||
         header.resource == PropertyResourceNames::CHANNEL_LIST ||
         header.resource == PropertyResourceNames::JSON_SCHEMA ||
@@ -357,24 +356,43 @@ JsonValue CommonRulesPropertyService::set_property_data_internal(const JsonValue
         return get_reply_header_json(reply_header);
     }
 
-    // Handle partial updates (following Kotlin implementation)
+    std::optional<std::string> mutual_encoding = header.mutual_encoding.empty()
+        ? std::nullopt
+        : std::optional<std::string>(header.mutual_encoding);
+    std::vector<uint8_t> decoded_body = helper_->decode_body(mutual_encoding, body);
+
+    auto& values = device_.get_config().property_values;
+    auto existing_it = std::find_if(values.begin(), values.end(),
+        [&header](const PropertyValue& pv) {
+            return pv.id == header.resource;
+        });
+
     if (header.set_partial.has_value() && header.set_partial.value()) {
-        auto& values = device_.get_config().property_values;
-        auto existing_it = std::find_if(values.begin(), values.end(),
-            [&header](const PropertyValue& pv) {
-                return pv.id == header.resource;
-            });
         if (existing_it == values.end()) {
             device_.get_logger()(LogData("Partial update is specified but there is no existing value for property " + header.resource, true));
         } else {
-            // For simplicity, just overwrite for now - full partial update logic would need JSON merging
-            existing_it->body = body;
+            try {
+                std::string decoded_str(decoded_body.begin(), decoded_body.end());
+                JsonValue body_json = JsonValue::parse(decoded_str);
+
+                std::string existing_str(existing_it->body.begin(), existing_it->body.end());
+                JsonValue existing_json = JsonValue::parse(existing_str);
+
+                auto result = PropertyPartialUpdater::apply_partial_updates(existing_json, body_json);
+                if (!result.first) {
+                    device_.get_logger()(LogData("Failed partial update for property " + header.resource, true));
+                } else {
+                    std::string updated_str = result.second.serialize();
+                    existing_it->body = std::vector<uint8_t>(updated_str.begin(), updated_str.end());
+                }
+            } catch (const std::exception& e) {
+                device_.get_logger()(LogData("Error parsing JSON for partial update: " + std::string(e.what()), true));
+            }
         }
     } else {
-        // Use propertyBinarySetter for dynamic property value setting (following Kotlin d3fc841eb)
         bool success = propertyBinarySetter(header.resource, header.res_id,
                                            header.media_type.empty() ? CommonRulesKnownMimeTypes::APPLICATION_JSON : header.media_type,
-                                           body);
+                                           decoded_body);
         if (!success) {
             PropertyCommonReplyHeader reply_header;
             reply_header.status = PropertyExchangeStatus::INTERNAL_ERROR;
@@ -472,7 +490,7 @@ std::pair<JsonValue, JsonValue> CommonRulesPropertyService::get_property_data_js
     return std::make_pair(get_reply_header_json(reply_header), paginated_body.is_null() ? JsonValue(JsonObject{}) : paginated_body);
 }
 
-std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_property_data_internal(const JsonValue& header_json) const {
+std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_property_data_encoded(const JsonValue& header_json) const {
     PropertyCommonRequestHeader header = get_property_header(header_json);
 
     if ((header.media_type.empty() || header.media_type == CommonRulesKnownMimeTypes::APPLICATION_JSON) &&
@@ -491,11 +509,6 @@ std::pair<JsonValue, std::vector<uint8_t>> CommonRulesPropertyService::get_prope
 
         return std::make_pair(get_reply_header_json(reply_header), encoded_body);
     }
-}
-
-std::vector<uint8_t> CommonRulesPropertyService::decode_body_internal(const std::string& mutual_encoding, const std::vector<uint8_t>& body) const {
-    std::vector<uint8_t> encoding_vec(mutual_encoding.begin(), mutual_encoding.end());
-    return helper_->decode_body(encoding_vec, body);
 }
 
 } // namespace

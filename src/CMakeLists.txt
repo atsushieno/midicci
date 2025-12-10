@@ -15,6 +15,7 @@ set(MIDICCI_SOURCES
         midicci/PropertyHostFacade.cpp
         midicci/PropertyCommonConverter.cpp
         midicci/ObservablePropertyList.cpp
+        midicci/PropertyPartialUpdater.cpp
         midicci/commonproperties/CommonRulesPropertyHelper.cpp
         midicci/commonproperties/CommonRulesPropertyService.cpp
         midicci/commonproperties/CommonRulesPropertyClient.cpp

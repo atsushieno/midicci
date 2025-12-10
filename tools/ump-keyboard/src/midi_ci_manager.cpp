@@ -285,15 +285,45 @@ void MidiCIManager::setupCallbacks() {
                 const auto* endpoint_reply = dynamic_cast<const midicci::EndpointReply*>(&message);
                 if (endpoint_reply) {
                     uint32_t source_muid = endpoint_reply->get_source_muid();
-                    
+
                     std::cout << "[ENDPOINT REPLY] Source MUID: 0x" << std::hex << source_muid << std::dec << " (" << source_muid << ")" << std::endl;
-                    
-                    // Find the device and mark it as endpoint ready
+
+                    // Extract product_instance_id from EndpointReply data
+                    const auto& data = endpoint_reply->get_data();
+                    std::string product_instance_id;
+                    if (!data.empty()) {
+                        product_instance_id = std::string(data.begin(), data.end());
+                        std::cout << "[ENDPOINT REPLY] Product Instance ID: " << product_instance_id << std::endl;
+                    }
+
+                    // Find the device and update its information
                     bool found = false;
                     for (auto& device : discovered_devices_) {
                         if (device.muid == source_muid) {
                             std::cout << "[ENDPOINT REPLY] Marking device MUID 0x" << std::hex << source_muid << std::dec << " as endpoint ready" << std::endl;
                             device.endpoint_ready = true;
+
+                            // Try to get DeviceInfo from the connection
+                            if (device_) {
+                                auto connection = device_->get_connection(source_muid);
+                                if (connection) {
+                                    const auto* device_info = connection->get_device_info();
+                                    if (device_info) {
+                                        device.manufacturer = device_info->manufacturer;
+                                        device.model = device_info->model;
+                                        device.version = device_info->version;
+                                        std::cout << "[ENDPOINT REPLY] Updated device info - Manufacturer: " << device.manufacturer
+                                                  << ", Model: " << device.model << ", Version: " << device.version << std::endl;
+                                    }
+                                }
+                            }
+
+                            // If DeviceInfo wasn't available, at least use product_instance_id as model name
+                            if (device.model == "MIDI-CI Device" && !product_instance_id.empty()) {
+                                device.model = product_instance_id;
+                                std::cout << "[ENDPOINT REPLY] Using product_instance_id as model: " << product_instance_id << std::endl;
+                            }
+
                             found = true;
                             break;
                         }
@@ -728,6 +758,34 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
             this->removePendingPropertyRequest(muid, propertyId);
             // Mark property as fetched at least once
             this->mark_property_fetched(muid, propertyId);
+
+            // If DeviceInfo was updated, refresh the device list display
+            if (propertyId == "DeviceInfo") {
+                std::cout << "[DEVICE INFO UPDATED] Updating device display name for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+
+                // Update the device info in discovered_devices_
+                auto connection = this->device_->get_connection(muid);
+                if (connection) {
+                    const auto* device_info = connection->get_device_info();
+                    if (device_info) {
+                        for (auto& device : this->discovered_devices_) {
+                            if (device.muid == muid) {
+                                device.manufacturer = device_info->manufacturer;
+                                device.model = device_info->model;
+                                device.version = device_info->version;
+                                std::cout << "[DEVICE INFO UPDATED] Device name updated to: " << device.getDisplayName() << std::endl;
+                                break;
+                            }
+                        }
+
+                        // Trigger devices_changed_callback to refresh the UI dropdown
+                        if (this->devices_changed_callback_) {
+                            std::cout << "[DEVICE INFO UPDATED] Calling devices_changed_callback to refresh UI" << std::endl;
+                            this->devices_changed_callback_();
+                        }
+                    }
+                }
+            }
 
             // Notify UI about this specific property change
             if (this->properties_changed_callback_) {

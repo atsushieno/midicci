@@ -90,9 +90,20 @@ int main(int argc, char** argv) {
 
             MidiCIDeviceInfo* device = controller.getMidiCIDeviceByMuid(muid);
             QString deviceName = device ? QString::fromStdString(device->model) : QString("device");
-            deviceName.replace("/", "-").replace("\\", "-");
 
-            QString defaultFileName = QString("State - %1.midi2").arg(deviceName);
+            // Sanitize device name to remove illegal filename characters
+            // On Windows: < > : " / \ | ? *
+            // On Unix/macOS: / and potentially :
+            // We also remove control characters (0x00-0x1F) for safety
+            QString sanitized = deviceName;
+            const QString illegalChars = R"(<>:"/\|?*)";
+            for (const QChar& ch : illegalChars) {
+                sanitized.replace(ch, '-');
+            }
+            // Remove control characters
+            sanitized.remove(QRegularExpression("[\\x00-\\x1F]"));
+
+            QString defaultFileName = QString("State - %1.midi2").arg(sanitized);
             QString defaultPath = QDir(lastDir).filePath(defaultFileName);
 
             QString filename = QFileDialog::getSaveFileName(

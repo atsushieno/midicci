@@ -29,7 +29,7 @@ struct MidiCIDeviceInfo {
           supported_features(features), max_sysex_size(sysex_size), endpoint_ready(false) {}
     
     std::string getDisplayName() const {
-        return model + " (" + manufacturer + ")";
+        return model;
     }
     
     std::string getFullInfo() const {

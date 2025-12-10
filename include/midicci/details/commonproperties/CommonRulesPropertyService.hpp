@@ -73,35 +73,9 @@ private:
     std::vector<std::function<void(const SubscriptionEntry&, bool)>> subscription_updated_callbacks_;
 
 public:
-    std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)> propertyBinaryGetter =
-        [this](const std::string& property_id, const std::string& res_id) -> std::vector<uint8_t> {
-            const auto& values = device_.get_config().property_values;
-            auto it = std::find_if(values.begin(), values.end(),
-                [&property_id, &res_id](const PropertyValue& pv) {
-                    return pv.id == property_id && (res_id.empty() || pv.resId == res_id);
-                });
-            if (it != values.end()) {
-                return it->body;
-            }
-            return {};
-        };
+    std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)> propertyBinaryGetter{};
 
-    std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)> propertyBinarySetter =
-        [this](const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body) -> bool {
-            auto& values = device_.get_config().property_values;
-            auto it = std::find_if(values.begin(), values.end(),
-                [&property_id](const PropertyValue& pv) {
-                    return pv.id == property_id;
-                });
-
-            if (it != values.end()) {
-                it->body = body;
-                return true;
-            } else {
-                device_.get_config().property_values.push_back(PropertyValue(property_id, res_id, media_type, body));
-                return true;
-            }
-        };
+    std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)> propertyBinarySetter{};
 
 private:
 

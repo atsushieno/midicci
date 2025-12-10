@@ -46,8 +46,7 @@ target_include_directories(${MODULE_NAME}
 
 target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(${MODULE_NAME} PRIVATE ZLIB::ZLIB)
+target_link_libraries(${MODULE_NAME} PRIVATE zlib)
 
 if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)

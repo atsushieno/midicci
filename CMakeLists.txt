@@ -43,6 +43,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(libremidi)
 
+FetchContent_Declare(
+  zlib-ng
+  GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
+  GIT_TAG 2.2.2
+)
+set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
+set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_MakeAvailable(zlib-ng)
+set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
+
 add_subdirectory(src)
 
 if(BUILD_TESTS)

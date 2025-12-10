@@ -9,6 +9,7 @@
 #include <QtCore/QMetaObject>
 #include <QtCore/QEvent>
 #include <QtCore/QDir>
+#include <QtCore/QSettings>
 #include <QtGui/QEnterEvent>
 #include <QtGui/QMouseEvent>
 #include <iostream>
@@ -907,10 +908,13 @@ void KeyboardWidget::onLoadStates() {
         return;
     }
 
+    QSettings settings("midicci", "keyboard");
+    QString lastDir = settings.value("lastStateDirectory", QDir::homePath()).toString();
+
     QString filename = QFileDialog::getOpenFileName(
         this,
         tr("Load Device State"),
-        QDir::homePath(),
+        lastDir,
         tr("MIDI Clip Files (*.midi2);;All Files (*)")
     );
 
@@ -918,17 +922,7 @@ void KeyboardWidget::onLoadStates() {
         return;
     }
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        tr("Load State"),
-        tr("This will send SetPropertyData message to the device with resId 'fullState'.\n"
-           "Are you sure you want to load state from:\n%1").arg(filename),
-        QMessageBox::Yes | QMessageBox::No
-    );
-
-    if (reply != QMessageBox::Yes) {
-        return;
-    }
+    settings.setValue("lastStateDirectory", QFileInfo(filename).absolutePath());
 
     std::ifstream infile(filename.toStdString(), std::ios::binary | std::ios::ate);
     if (!infile) {
@@ -955,9 +949,6 @@ void KeyboardWidget::onLoadStates() {
     infile.close();
 
     stateSendCallback(selectedDeviceMuid, midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE, stateData);
-
-    QMessageBox::information(this, tr("Load State"),
-                            tr("State data sent to device successfully."));
 }
 
 void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {

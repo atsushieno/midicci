@@ -4,6 +4,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QMetaObject>
 #include <QtCore/QDir>
+#include <QtCore/QSettings>
 #include "main_window.h"
 #include "keyboard_controller.h"
 #include <iostream>
@@ -82,12 +83,22 @@ int main(int argc, char** argv) {
         }
     );
 
-    controller.setStateSaveCallback([&keyboard](uint32_t muid, const std::vector<uint8_t>& stateData) {
-        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, stateData]() {
+    controller.setStateSaveCallback([&keyboard, &controller](uint32_t muid, const std::vector<uint8_t>& stateData) {
+        QMetaObject::invokeMethod(&keyboard, [&keyboard, &controller, muid, stateData]() {
+            QSettings settings("midicci", "keyboard");
+            QString lastDir = settings.value("lastStateDirectory", QDir::homePath()).toString();
+
+            MidiCIDeviceInfo* device = controller.getMidiCIDeviceByMuid(muid);
+            QString deviceName = device ? QString::fromStdString(device->model) : QString("device");
+            deviceName.replace("/", "-").replace("\\", "-");
+
+            QString defaultFileName = QString("State - %1.midi2").arg(deviceName);
+            QString defaultPath = QDir(lastDir).filePath(defaultFileName);
+
             QString filename = QFileDialog::getSaveFileName(
                 &keyboard,
                 QObject::tr("Save Device State"),
-                QDir::homePath() + "/device_state.midi2",
+                defaultPath,
                 QObject::tr("MIDI Clip Files (*.midi2);;All Files (*)")
             );
 
@@ -99,15 +110,14 @@ int main(int argc, char** argv) {
                 filename += ".midi2";
             }
 
+            settings.setValue("lastStateDirectory", QFileInfo(filename).absolutePath());
+
             std::ofstream outfile(filename.toStdString(), std::ios::binary);
             if (outfile) {
                 outfile.write(reinterpret_cast<const char*>(stateData.data()), stateData.size());
                 outfile.close();
 
-                if (outfile.good()) {
-                    QMessageBox::information(&keyboard, QObject::tr("Save State"),
-                                            QObject::tr("State saved successfully to:\n%1").arg(filename));
-                } else {
+                if (!outfile.good()) {
                     QMessageBox::warning(&keyboard, QObject::tr("Save State"),
                                         QObject::tr("Failed to write data to file:\n%1").arg(filename));
                 }

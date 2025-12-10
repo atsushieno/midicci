@@ -46,7 +46,7 @@ FetchContent_MakeAvailable(libremidi)
 FetchContent_Declare(
   zlib-ng
   GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
-  GIT_TAG 2.2.2
+  GIT_TAG 2.3.2
 )
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)

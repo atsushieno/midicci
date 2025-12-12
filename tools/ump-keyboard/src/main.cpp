@@ -145,9 +145,9 @@ int main(int argc, char** argv) {
     );
 
     // Set up properties changed callback
-    controller.setMidiCIPropertiesChangedCallback([&keyboard](uint32_t muid, const std::string& propertyId) {
-        std::cout << "Property updated for MUID: 0x" << std::hex << muid << std::dec << ", id='" << propertyId << "'" << std::endl;
-        
+    controller.setMidiCIPropertiesChangedCallback([&keyboard](uint32_t muid, const std::string& propertyId, const std::string& resId) {
+        std::cout << "Property updated for MUID: 0x" << std::hex << muid << std::dec << ", id='" << propertyId << "', resId='" << resId << "'" << std::endl;
+
         // Ensure UI updates happen on the main Qt thread, pass property id
         QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, propertyId]() {
             keyboard.onPropertiesUpdated(muid, QString::fromStdString(propertyId));

@@ -515,7 +515,7 @@ void KeyboardController::setStateSaveCallback(std::function<void(uint32_t, const
     }
 }
 
-void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
+void KeyboardController::setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&, const std::string&)> callback) {
     midiCIPropertiesChangedCallback = callback;
     if (midiCIManager) {
         midiCIManager->setPropertiesChangedCallback(callback);

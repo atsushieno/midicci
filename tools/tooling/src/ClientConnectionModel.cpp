@@ -211,7 +211,7 @@ void ClientConnectionModel::setup_property_listeners() {
             pimpl_->properties_.add(value);
         }
         
-        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
+        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId, const std::string& resId) {
             if (pimpl_->connection_) {
                 auto& property_facade = pimpl_->connection_->get_property_client_facade();
                 auto* observable_properties = property_facade.get_properties();

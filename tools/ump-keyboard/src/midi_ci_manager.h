@@ -90,7 +90,7 @@ public:
     // State management
     void sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data);
 
-    void setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
+    void setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&, const std::string&)> callback);
     void setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback);
     
     // Instrumentation - for debugging performance issues
@@ -103,7 +103,7 @@ private:
     SysExSender sysex_sender_;
     LogCallback log_callback_;
     DevicesChangedCallback devices_changed_callback_;
-    std::function<void(uint32_t, const std::string&)> properties_changed_callback_;
+    std::function<void(uint32_t, const std::string&, const std::string&)> properties_changed_callback_;
     std::function<void(uint32_t, const std::vector<uint8_t>&)> state_save_callback_;
     uint32_t muid_;
     bool initialized_;

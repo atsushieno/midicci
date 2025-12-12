@@ -16,12 +16,12 @@ public:
         properties_->addPropertyCatalogUpdatedCallback([this]() {
             // Notify that the property catalog has changed
             if (property_updated_callback_) {
-                property_updated_callback_(""); // Empty string indicates catalog change
+                property_updated_callback_("", "");
             }
         });
         
         // Set up property value update callback
-        properties_->addPropertyUpdatedCallback([this](const std::string& property_id) {
+        properties_->addPropertyUpdatedCallback([this](const std::string& property_id, const std::string& res_id) {
             notify_property_updated_to_subscribers(property_id);
         });
     }
@@ -196,9 +196,9 @@ void PropertyHostFacade::updateCommonRulesDeviceInfo(const DeviceInfo& device_in
     // Update device info in the device itself
     auto& current_device_info = pimpl_->device_.get_device_info();
     current_device_info = device_info;
-    
+
     // Notify that DeviceInfo property may have changed
-    notify_property_updated(PropertyResourceNames::DEVICE_INFO);
+    notify_property_updated(PropertyResourceNames::DEVICE_INFO, "");
 }
 
 void PropertyHostFacade::updateCommonRulesChannelList(const MidiCIChannelList& channel_list) {
@@ -206,9 +206,9 @@ void PropertyHostFacade::updateCommonRulesChannelList(const MidiCIChannelList& c
     
     // Update channel list in the device configuration
     pimpl_->device_.get_config().channel_list = channel_list;
-    
+
     // Notify that ChannelList property may have changed
-    notify_property_updated(PropertyResourceNames::CHANNEL_LIST);
+    notify_property_updated(PropertyResourceNames::CHANNEL_LIST, "");
 }
 
 void PropertyHostFacade::updateJsonSchema(const std::string& json_schema) {
@@ -216,9 +216,9 @@ void PropertyHostFacade::updateJsonSchema(const std::string& json_schema) {
     
     // Update JSON schema in the device configuration
     pimpl_->device_.get_config().json_schema_string = json_schema;
-    
+
     // Notify that JSONSchema property may have changed
-    notify_property_updated(PropertyResourceNames::JSON_SCHEMA);
+    notify_property_updated(PropertyResourceNames::JSON_SCHEMA, "");
 }
 
 // Observable property list access (following Kotlin lazy properties)
@@ -315,11 +315,11 @@ SubscribePropertyReply PropertyHostFacade::process_subscribe_property(const Subs
     return SubscribePropertyReply(msg.get_common(), msg.get_request_id(), {}, {});
 }
 
-void PropertyHostFacade::notify_property_updated(const std::string& property_id) {
+void PropertyHostFacade::notify_property_updated(const std::string& property_id, const std::string& res_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    
+
     if (pimpl_->property_updated_callback_) {
-        pimpl_->property_updated_callback_(property_id);
+        pimpl_->property_updated_callback_(property_id, res_id);
     }
 }
 

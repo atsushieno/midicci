@@ -40,7 +40,7 @@ public:
     void removePropertyCatalogUpdatedCallback(const PropertyCatalogUpdatedCallback& callback);
 
 protected:
-    void notifyPropertyUpdated(const std::string& propertyId);
+    void notifyPropertyUpdated(const std::string& propertyId, const std::string& resId);
     void notifyPropertyCatalogUpdated();
     
 private:

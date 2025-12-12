@@ -820,10 +820,11 @@ void InitiatorWidget::setupPropertyCallbacks()
                             .arg(m_selectedDeviceMUID, 8, 16, QChar('0')).toStdString(), 
                             tooling::MessageDirection::In);
                         
-                        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId) {
-                            m_repository->log(QString("Property updated callback triggered for property: %1 (currently selected: %2)")
+                        observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId, const std::string& resId) {
+                            m_repository->log(QString("Property updated callback triggered for property: %1 resId: %2 (currently selected: %3)")
                                 .arg(QString::fromStdString(propertyId))
-                                .arg(m_selectedProperty).toStdString(), 
+                                .arg(QString::fromStdString(resId))
+                                .arg(m_selectedProperty).toStdString(),
                                 tooling::MessageDirection::In);
                             
                             QMetaObject::invokeMethod(this, [this, propertyId]() {

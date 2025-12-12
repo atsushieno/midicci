@@ -12,7 +12,7 @@ protected:
         controller = std::make_unique<KeyboardController>();
         
         // Track property update callbacks with detailed logging
-        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&) {
+        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&, const std::string&) {
             auto now = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - test_start_time);
             

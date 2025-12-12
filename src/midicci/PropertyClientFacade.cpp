@@ -228,6 +228,7 @@ void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& ms
                     auto status = pimpl_->property_rules_->get_header_field_integer(msg.get_header(), "status");
                     if (status == 200) {
                         auto property_id = pimpl_->property_rules_->get_property_id_for_header(stored_request.get_header());
+                        auto res_id = pimpl_->property_rules_->get_header_field_string(stored_request.get_header(), "resId");
 
                         auto media_type = pimpl_->property_rules_->get_header_field_string(msg.get_header(), "mediaType");
                         if (media_type.empty()) {

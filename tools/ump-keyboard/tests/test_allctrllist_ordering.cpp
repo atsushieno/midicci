@@ -14,7 +14,7 @@ protected:
         controller = std::make_unique<KeyboardController>();
         
         // Set up MIDI-CI properties changed callback to track when properties are updated
-        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&) {
+        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&, const std::string&) {
             std::cout << "[TEST-CALLBACK] Properties updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             properties_updated_muids.insert(muid);
             

@@ -31,6 +31,6 @@ namespace midicci {
                           const std::string& sub_id, const std::string& enc);
     };
 
-    using PropertyUpdatedCallback = std::function<void(const std::string&)>;
+    using PropertyUpdatedCallback = std::function<void(const std::string& propertyId, const std::string& resId)>;
     using PropertyCatalogUpdatedCallback = std::function<void()>;
 }

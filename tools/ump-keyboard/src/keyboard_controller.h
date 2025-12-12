@@ -43,7 +43,7 @@ public:
     std::optional<std::vector<midicci::commonproperties::MidiCIControl>> getAllCtrlList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> getProgramList(uint32_t muid);
     std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
-    void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback);
+    void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&, const std::string&)> callback);
 
     // Explicit property requests (user-triggered)
     void requestAllCtrlList(uint32_t muid);
@@ -76,7 +76,7 @@ private:
     std::string currentOutputDeviceId;
     
     std::function<void(bool)> midiConnectionChangedCallback;
-    std::function<void(uint32_t, const std::string&)> midiCIPropertiesChangedCallback;
+    std::function<void(uint32_t, const std::string&, const std::string&)> midiCIPropertiesChangedCallback;
     std::function<void()> midiCIDevicesChangedCallback;
     std::function<void(uint32_t, const std::vector<uint8_t>&)> stateSaveCallback;
     bool initialized = false;

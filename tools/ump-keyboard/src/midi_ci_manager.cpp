@@ -203,7 +203,7 @@ void MidiCIManager::setDevicesChangedCallback(DevicesChangedCallback callback) {
     devices_changed_callback_ = callback;
 }
 
-void MidiCIManager::setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&)> callback) {
+void MidiCIManager::setPropertiesChangedCallback(std::function<void(uint32_t, const std::string&, const std::string&)> callback) {
     properties_changed_callback_ = callback;
 }
 
@@ -751,13 +751,15 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
         }
         
         // Register callback for property value updates
-        properties->addPropertyUpdatedCallback([this, muid](const std::string& propertyId) {
-            std::cout << "[PROPERTY VALUE UPDATED] Property '" << propertyId << "' updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        properties->addPropertyUpdatedCallback([this, muid](const std::string& propertyId, const std::string& resId) {
+            std::cout << "[PROPERTY VALUE UPDATED] Property '" << propertyId << "' (resId '" << resId << "') updated for MUID: 0x" << std::hex << muid << std::dec << std::endl;
 
             // Clear any pending requests for this specific property
-            this->removePendingPropertyRequest(muid, propertyId);
+            // Use the same key format as when the request was added
+            std::string requestKey = resId.empty() ? propertyId : (propertyId + ":" + resId);
+            this->removePendingPropertyRequest(muid, requestKey);
             // Mark property as fetched at least once
-            this->mark_property_fetched(muid, propertyId);
+            this->mark_property_fetched(muid, requestKey);
 
             // If DeviceInfo was updated, refresh the device list display
             if (propertyId == "DeviceInfo") {
@@ -789,7 +791,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
 
             // Notify UI about this specific property change
             if (this->properties_changed_callback_) {
-                this->properties_changed_callback_(muid, propertyId);
+                this->properties_changed_callback_(muid, propertyId, resId);
             }
         });
         
@@ -799,7 +801,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
             
             // Notify UI about property changes
             if (this->properties_changed_callback_) {
-                this->properties_changed_callback_(muid, "");
+                this->properties_changed_callback_(muid, "", "");
             }
         });
         

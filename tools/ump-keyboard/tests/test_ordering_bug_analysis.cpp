@@ -11,7 +11,7 @@ protected:
     void SetUp() override {
         controller = std::make_unique<KeyboardController>();
         
-        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&) {
+        controller->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string&, const std::string&) {
             auto ctrlList = controller->getAllCtrlList(muid);
             if (ctrlList.has_value()) {
                 data_received = true;

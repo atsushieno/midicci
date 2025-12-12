@@ -23,10 +23,10 @@ namespace midicci {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
     }
 
-    void ObservablePropertyList::notifyPropertyUpdated(const std::string& propertyId) {
+    void ObservablePropertyList::notifyPropertyUpdated(const std::string& propertyId, const std::string& resId) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& callback : property_updated_callbacks_) {
-            callback(propertyId);
+            callback(propertyId, resId);
         }
     }
 
@@ -104,7 +104,7 @@ namespace midicci {
             values_.emplace(propertyId, PropertyValue(propertyId, resId, "application/json", data));
         }
 
-        notifyPropertyUpdated(propertyId);
+        notifyPropertyUpdated(propertyId, resId);
     }
 
     void ClientObservablePropertyList::updateValue(const std::string& propertyId, const std::vector<uint8_t>& body, const std::string& mediaType) {
@@ -118,7 +118,7 @@ namespace midicci {
             values_.emplace(propertyId, PropertyValue(propertyId, mediaType, body));
         }
 
-        notifyPropertyUpdated(propertyId);
+        notifyPropertyUpdated(propertyId, it != values_.end() ? it->second.resId : "");
     }
 
     std::string ClientObservablePropertyList::updateValue(const SubscribeProperty& msg) {
@@ -249,9 +249,9 @@ namespace midicci {
         
         // Add the new property value
         internal_values_.emplace_back(propertyId, resId, mediaType, body);
-        
+
         // Notify that the property was updated
-        notifyPropertyUpdated(propertyId);
+        notifyPropertyUpdated(propertyId, resId);
     }
 
     void ServiceObservablePropertyList::removeMetadata(const std::string& propertyId) {

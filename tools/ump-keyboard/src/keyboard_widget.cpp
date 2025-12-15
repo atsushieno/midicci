@@ -915,7 +915,7 @@ void KeyboardWidget::onLoadStates() {
         this,
         tr("Load Device State"),
         lastDir,
-        tr("MIDI Clip Files (*.midi2);;All Files (*)")
+        tr("State Files (*.state);;All Files (*)")
     );
 
     if (filename.isEmpty()) {

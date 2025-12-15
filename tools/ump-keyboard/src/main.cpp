@@ -103,22 +103,22 @@ int main(int argc, char** argv) {
             // Remove control characters
             sanitized.remove(QRegularExpression("[\\x00-\\x1F]"));
 
-            QString defaultFileName = QString("State - %1.midi2").arg(sanitized);
+            QString defaultFileName = QString("State - %1.state").arg(sanitized);
             QString defaultPath = QDir(lastDir).filePath(defaultFileName);
 
             QString filename = QFileDialog::getSaveFileName(
                 &keyboard,
                 QObject::tr("Save Device State"),
                 defaultPath,
-                QObject::tr("MIDI Clip Files (*.midi2);;All Files (*)")
+                QObject::tr("State Files (*.state);;All Files (*)")
             );
 
             if (filename.isEmpty()) {
                 return;
             }
 
-            if (!filename.endsWith(".midi2")) {
-                filename += ".midi2";
+            if (!filename.endsWith(".state")) {
+                filename += ".state";
             }
 
             settings.setValue("lastStateDirectory", QFileInfo(filename).absolutePath());

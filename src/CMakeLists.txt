@@ -26,7 +26,6 @@ set(MIDICCI_SOURCES
         midicci/ump/UmpFactory.cpp
         midicci/ump/UmpRetriever.cpp
         midicci/ump/UmpTranslator.cpp
-        midicci/ump/Smf2Clip.cpp
         midicci/musicdevice/MidiMachineMessageReporter.cpp
         midicci/musicdevice/MidiCISession.cpp
         midicci/musicdevice/MusicDevice.cpp

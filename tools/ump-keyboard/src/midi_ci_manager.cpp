@@ -6,7 +6,6 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-#include <midicci/details/ump/Smf2Clip.hpp>
 #include <midicci/details/ump/UmpTranslator.hpp>
 #include <midicci/details/Message.hpp>
 #include <midicci/details/PropertyValue.hpp>

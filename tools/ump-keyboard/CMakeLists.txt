@@ -9,7 +9,7 @@ include(FetchContent)
 # cmidi2 for UMP support
 FetchContent_Declare(cmidi2
         GIT_REPOSITORY https://github.com/atsushieno/cmidi2
-        GIT_TAG        280bb44
+        GIT_TAG        1f9282d
         EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(cmidi2)

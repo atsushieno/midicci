@@ -7,6 +7,29 @@
 #include <optional>
 #include "midicci/midicci.hpp"
 
+#if defined(_WIN32)
+#   if defined(ABSOLUTE)
+#       define MIDICCI_RESTORE_ABSOLUTE 1
+#       pragma push_macro("ABSOLUTE")
+#       undef ABSOLUTE
+#   endif
+#   if defined(RELATIVE)
+#       define MIDICCI_RESTORE_RELATIVE 1
+#       pragma push_macro("RELATIVE")
+#       undef RELATIVE
+#   endif
+#   if defined(BOTH)
+#       define MIDICCI_RESTORE_BOTH 1
+#       pragma push_macro("BOTH")
+#       undef BOTH
+#   endif
+#   if defined(NONE)
+#       define MIDICCI_RESTORE_NONE 1
+#       pragma push_macro("NONE")
+#       undef NONE
+#   endif
+#endif
+
 using namespace midicci;
 
 namespace midicci {
@@ -210,3 +233,22 @@ namespace StandardPropertiesExtensions {
 
 } // namespace commonproperties
 } // namespace midicci
+
+#if defined(_WIN32)
+#   if defined(MIDICCI_RESTORE_ABSOLUTE)
+#       pragma pop_macro("ABSOLUTE")
+#       undef MIDICCI_RESTORE_ABSOLUTE
+#   endif
+#   if defined(MIDICCI_RESTORE_RELATIVE)
+#       pragma pop_macro("RELATIVE")
+#       undef MIDICCI_RESTORE_RELATIVE
+#   endif
+#   if defined(MIDICCI_RESTORE_BOTH)
+#       pragma pop_macro("BOTH")
+#       undef MIDICCI_RESTORE_BOTH
+#   endif
+#   if defined(MIDICCI_RESTORE_NONE)
+#       pragma pop_macro("NONE")
+#       undef MIDICCI_RESTORE_NONE
+#   endif
+#endif

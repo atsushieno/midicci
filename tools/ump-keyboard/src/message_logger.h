@@ -46,6 +46,15 @@ public:
     
     std::vector<LogEntry> get_logs() const;
     void clear_logs();
+
+    // Recording of raw SysEx bytes
+    void set_recording_enabled(bool enabled);
+    bool is_recording_enabled() const;
+    void record_input_sysex(const std::vector<uint8_t>& data);
+    void record_output_sysex(const std::vector<uint8_t>& data);
+    std::vector<uint8_t> get_recorded_inputs() const;
+    std::vector<uint8_t> get_recorded_outputs() const;
+    void clear_recorded();
     
 private:
     class Impl;

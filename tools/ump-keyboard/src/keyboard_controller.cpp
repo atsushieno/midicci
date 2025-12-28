@@ -299,6 +299,7 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                             hex_str += std::format("{:02X} ", sysex_buffer_[i]);
                         }
                         logger_->log(hex_str, midicci::keyboard::MessageDirection::In);
+                        logger_->record_input_sysex(sysex_buffer_);
                     }
                     
                     // Check if this might be a legitimate MIDI-CI message (starts with F0 7E ... 0D)
@@ -371,6 +372,7 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                             hex_str += std::format("{:02X} ", sysex_buffer_[i]);
                         }
                         logger_->log(hex_str, midicci::keyboard::MessageDirection::In);
+                        logger_->record_input_sysex(sysex_buffer_);
                     }
                     
                     // Check if this might be a legitimate MIDI-CI message (starts with F0 7E ... 0D)
@@ -654,6 +656,7 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
                 hex_str += std::format("{:02X} ", data[i]);
             }
             logger_->log(hex_str, midicci::keyboard::MessageDirection::Out);
+            logger_->record_output_sysex(data);
         }
         
         // Track this outgoing message to avoid processing it as input

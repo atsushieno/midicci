@@ -12,6 +12,11 @@ public:
     std::vector<LogEntry> logs_;
     std::vector<LogCallback> log_callbacks_;
     mutable std::mutex mutex_;
+
+    // Recording state
+    bool recording_enabled_ = false;
+    std::vector<uint8_t> recorded_inputs_;
+    std::vector<uint8_t> recorded_outputs_;
 };
 
 MessageLogger::MessageLogger() : pimpl_(std::make_unique<Impl>()) {
@@ -61,6 +66,44 @@ std::vector<LogEntry> MessageLogger::get_logs() const {
 void MessageLogger::clear_logs() {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     pimpl_->logs_.clear();
+}
+
+void MessageLogger::set_recording_enabled(bool enabled) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->recording_enabled_ = enabled;
+}
+
+bool MessageLogger::is_recording_enabled() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recording_enabled_;
+}
+
+void MessageLogger::record_input_sysex(const std::vector<uint8_t>& data) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_inputs_.insert(pimpl_->recorded_inputs_.end(), data.begin(), data.end());
+}
+
+void MessageLogger::record_output_sysex(const std::vector<uint8_t>& data) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_outputs_.insert(pimpl_->recorded_outputs_.end(), data.begin(), data.end());
+}
+
+std::vector<uint8_t> MessageLogger::get_recorded_inputs() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_inputs_;
+}
+
+std::vector<uint8_t> MessageLogger::get_recorded_outputs() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_outputs_;
+}
+
+void MessageLogger::clear_recorded() {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->recorded_inputs_.clear();
+    pimpl_->recorded_outputs_.clear();
 }
 
 } // namespace

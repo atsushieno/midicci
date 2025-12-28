@@ -33,6 +33,10 @@ public:
     uint32_t muid_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceManager> ci_device_manager_;
+    // Recording
+    bool recording_enabled_ = false;
+    std::vector<uint8_t> recorded_inputs_;
+    std::vector<uint8_t> recorded_outputs_;
 };
 
 CIToolRepository::CIToolRepository() : pimpl_(std::make_unique<Impl>()) {
@@ -140,6 +144,44 @@ void CIToolRepository::load_default_config() {
 
 void CIToolRepository::save_default_config() {
     save_config(DEFAULT_CONFIG_FILE);
+}
+
+void CIToolRepository::set_recording_enabled(bool enabled) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->recording_enabled_ = enabled;
+}
+
+bool CIToolRepository::is_recording_enabled() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recording_enabled_;
+}
+
+void CIToolRepository::record_input_sysex(const std::vector<uint8_t>& data) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_inputs_.insert(pimpl_->recorded_inputs_.end(), data.begin(), data.end());
+}
+
+void CIToolRepository::record_output_sysex(const std::vector<uint8_t>& data) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_outputs_.insert(pimpl_->recorded_outputs_.end(), data.begin(), data.end());
+}
+
+std::vector<uint8_t> CIToolRepository::get_recorded_inputs() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_inputs_;
+}
+
+std::vector<uint8_t> CIToolRepository::get_recorded_outputs() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_outputs_;
+}
+
+void CIToolRepository::clear_recorded() {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    pimpl_->recorded_inputs_.clear();
+    pimpl_->recorded_outputs_.clear();
 }
 
 } // namespace ci_tool

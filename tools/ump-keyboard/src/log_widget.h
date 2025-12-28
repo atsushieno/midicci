@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QTextEdit>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -50,6 +51,9 @@ public:
 private slots:
     void onClearLogs();
     void onFullTextToggled(bool enabled);
+    void onRecordToggled(bool enabled);
+    void onSaveInputs();
+    void onSaveOutputs();
 
 private:
     void setupUI();
@@ -58,6 +62,9 @@ private:
 
     QPushButton *m_clearButton;
     QPushButton *m_fullTextToggle;
+    QCheckBox *m_recordCheck;
+    QPushButton *m_saveInputsButton;
+    QPushButton *m_saveOutputsButton;
     SimpleLogWidget *m_logTable;
 };
 }

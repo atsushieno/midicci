@@ -44,6 +44,7 @@ void CIDeviceManager::initialize() {
             hex_str += hex;
         }
         repository_.log("[sent CI SysEx (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
+        repository_.record_output_sysex(data);
         
         return midi_device_manager_->send_sysex(group, ump_data);
     };
@@ -67,6 +68,7 @@ void CIDeviceManager::initialize() {
             hex_str += hex;
         }
         repository_.log("[sent MIDI Message Report (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
+        repository_.record_output_sysex(data);
         
         return midi_device_manager_->send_sysex(group, ump_data);
     };
@@ -294,6 +296,7 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                             sysex7_hex += hex;
                         }
                         repository_.log("[received CI SysEx7] " + sysex7_hex, MessageDirection::In);
+                        repository_.record_input_sysex(buffered_sysex7_);
                         
                         if (device_model_) {
                             device_model_->process_ci_message(ump.get_group(), buffered_sysex7_);
@@ -328,6 +331,7 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                             sysex8_hex += hex;
                         }
                         repository_.log("[received CI SysEx8] " + sysex8_hex, MessageDirection::In);
+                        repository_.record_input_sysex(buffered_sysex8_);
                         
                         if (device_model_) {
                             device_model_->process_ci_message(ump.get_group(), buffered_sysex8_);

@@ -9,6 +9,9 @@
 #include <QMetaObject>
 #include <QApplication>
 #include <QScrollBar>
+#include <QFileDialog>
+#include <QFile>
+#include <QMessageBox>
 #include <ctime>
 
 namespace midicci::keyboard {
@@ -172,9 +175,15 @@ void LogWidget::setupUI()
     m_fullTextToggle = new QPushButton("Full Text: OFF", this);
     m_fullTextToggle->setCheckable(true);
     m_fullTextToggle->setChecked(false);
+    m_recordCheck = new QCheckBox("Record logs", this);
+    m_saveInputsButton = new QPushButton("Save Inputs", this);
+    m_saveOutputsButton = new QPushButton("Save Outputs", this);
     
     buttonLayout->addWidget(m_clearButton);
     buttonLayout->addWidget(m_fullTextToggle);
+    buttonLayout->addWidget(m_recordCheck);
+    buttonLayout->addWidget(m_saveInputsButton);
+    buttonLayout->addWidget(m_saveOutputsButton);
     buttonLayout->addStretch();
     
     mainLayout->addLayout(buttonLayout);
@@ -184,6 +193,9 @@ void LogWidget::setupUI()
     
     connect(m_clearButton, &QPushButton::clicked, this, &LogWidget::onClearLogs);
     connect(m_fullTextToggle, &QPushButton::toggled, this, &LogWidget::onFullTextToggled);
+    connect(m_recordCheck, &QCheckBox::toggled, this, &LogWidget::onRecordToggled);
+    connect(m_saveInputsButton, &QPushButton::clicked, this, &LogWidget::onSaveInputs);
+    connect(m_saveOutputsButton, &QPushButton::clicked, this, &LogWidget::onSaveOutputs);
 }
 
 void LogWidget::onClearLogs()
@@ -195,5 +207,42 @@ void LogWidget::onFullTextToggled(bool enabled)
 {
     m_fullTextToggle->setText(enabled ? "Full Text: ON" : "Full Text: OFF");
     m_logTable->setFullTextMode(enabled);
+}
+
+void LogWidget::onRecordToggled(bool enabled)
+{
+    if (m_logger) {
+        m_logger->set_recording_enabled(enabled);
+    }
+}
+
+static bool save_bytes_to_file(QWidget* parent, const QString& suggested, const std::vector<uint8_t>& data)
+{
+    QString filename = QFileDialog::getSaveFileName(parent, "Save Bytes", suggested, "Binary files (*.bin);;All files (*)");
+    if (filename.isEmpty()) return false;
+    QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(parent, "Save Failed", QString("Could not open %1 for writing").arg(filename));
+        return false;
+    }
+    if (!data.empty()) {
+        file.write(reinterpret_cast<const char*>(data.data()), static_cast<qint64>(data.size()));
+    }
+    file.close();
+    return true;
+}
+
+void LogWidget::onSaveInputs()
+{
+    if (!m_logger) return;
+    auto bytes = m_logger->get_recorded_inputs();
+    save_bytes_to_file(this, "inputs.bin", bytes);
+}
+
+void LogWidget::onSaveOutputs()
+{
+    if (!m_logger) return;
+    auto bytes = m_logger->get_recorded_outputs();
+    save_bytes_to_file(this, "outputs.bin", bytes);
 }
 }

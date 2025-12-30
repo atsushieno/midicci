@@ -44,8 +44,14 @@ constexpr uint8_t PROPERTY_EXCHANGE_MINOR_VERSION = 0;
 
 constexpr uint8_t ENDPOINT_STATUS_PRODUCT_INSTANCE_ID = 0;
 
+// It seems there are some uncomfortable facts around the stable buffer sizes...
+#if defined(__APPLE__)
+constexpr uint32_t DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE = 4096;
+constexpr uint32_t DEFAULT_MAX_PROPERTY_CHUNK_SIZE = 4096 - 256;
+#else
 constexpr uint32_t DEFAULT_RECEIVABLE_MAX_SYSEX_SIZE = 2048;
 constexpr uint32_t DEFAULT_MAX_PROPERTY_CHUNK_SIZE = 2048 - 256;
+#endif
 constexpr uint8_t DEFAULT_MAX_SIMULTANEOUS_PROPERTY_REQUESTS = 127;
 
 constexpr uint8_t ADDRESS_GROUP = 0x7E;

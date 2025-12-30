@@ -132,10 +132,12 @@ void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling
                                 const char* right_id,
                                 std::string& right_value) {
         ImGui::TextUnformatted(left_label);
+        ImGui::SameLine();
         ImGui::SetNextItemWidth(-FLT_MIN);
         ImGui::InputText(left_id, &left_value);
         ImGui::NextColumn();
         ImGui::TextUnformatted(right_label);
+        ImGui::SameLine();
         ImGui::SetNextItemWidth(-FLT_MIN);
         ImGui::InputText(right_id, &right_value);
         ImGui::NextColumn();
@@ -145,6 +147,7 @@ void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling
                                   const char* input_id,
                                   std::string& value) {
         ImGui::TextUnformatted(label);
+        ImGui::SameLine();
         ImGui::SetNextItemWidth(-FLT_MIN);
         ImGui::InputText(input_id, &value);
         ImGui::NextColumn();
@@ -157,6 +160,7 @@ void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling
                                 int& value,
                                 int min_value) {
         ImGui::TextUnformatted(label);
+        ImGui::SameLine();
         ImGui::SetNextItemWidth(-FLT_MIN);
         ImGui::InputInt(input_id, &value);
         if (value < min_value) {

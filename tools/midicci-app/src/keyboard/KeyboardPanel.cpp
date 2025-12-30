@@ -397,7 +397,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     if (ImGui::Button("Request##ctrl-list")) {
         controller_->requestAllCtrlList(muid);
     }
-    ImGui::BeginChild("control-scroll", ImVec2(-FLT_MIN, 230.0f), true);
     if (muid != last_selected_muid_) {
         if (last_selected_muid_ != 0) {
             ctrl_map_cache_.erase(last_selected_muid_);
@@ -420,11 +419,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ? &ctrl_list_it->second
         : nullptr;
     if (controls && !controls->empty()) {
-        if (ImGui::BeginTable("control-table", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+        if (ImGui::BeginTable("control-table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
             const int current_frame = ImGui::GetFrameCount();
             ImGui::TableSetupColumn("Index");
             ImGui::TableSetupColumn("Title");
-            ImGui::TableSetupColumn("Type");
             ImGui::TableSetupColumn("Value");
             ImGui::TableHeadersRow();
             int row = 0;
@@ -435,8 +433,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextUnformatted(ctrl.title.c_str());
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(ctrl.ctrlType.c_str());
-                ImGui::TableSetColumnIndex(3);
                 std::string key = ctrl.title + std::to_string(row);
                 uint32_t min_raw = ctrl.minMax.size() > 0 ? ctrl.minMax[0] : 0u;
                 uint32_t max_raw = ctrl.minMax.size() > 1 ? ctrl.minMax[1] : std::numeric_limits<uint32_t>::max();
@@ -565,7 +561,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ImGui::TextUnformatted("Control data not received yet.");
     }
     ImGui::EndChild();
-    ImGui::EndChild();
 
     ImGui::SameLine();
     ImGui::BeginChild("program-column", ImVec2(half_width, 280.0f), true);
@@ -574,7 +569,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     if (ImGui::Button("Request##prg-list")) {
         controller_->requestProgramList(muid);
     }
-    ImGui::BeginChild("program-scroll", ImVec2(-FLT_MIN, 230.0f), true);
     const auto program_it = program_list_cache_.find(muid);
     const std::vector<midicci::commonproperties::MidiCIProgram>* programs = (program_it != program_list_cache_.end())
         ? &program_it->second
@@ -613,7 +607,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     } else {
         ImGui::TextUnformatted("Program data not received yet.");
     }
-    ImGui::EndChild();
     ImGui::EndChild();
 }
 

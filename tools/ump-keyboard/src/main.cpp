@@ -141,7 +141,13 @@ int main(int argc, char** argv) {
 
     // Set up control map provider for enumerated values
     keyboard.setControlMapProvider(
-        [&controller](uint32_t muid, const std::string& ctrlMapId) { return controller.getCtrlMapList(muid, ctrlMapId); }
+        [&controller](uint32_t muid, const std::string& ctrlMapId) {
+            auto maps = controller.getCtrlMapList(muid, ctrlMapId);
+            if (!maps) {
+                controller.requestCtrlMapList(muid, ctrlMapId);
+            }
+            return maps;
+        }
     );
 
     // Set up properties changed callback

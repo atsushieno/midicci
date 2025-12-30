@@ -82,6 +82,7 @@ public:
     std::optional<std::vector<uint8_t>> getState(uint32_t muid, const std::string& stateId);
 
     // Explicit request APIs (do not rely on cache heuristics)
+    void requestCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
     void requestStateList(uint32_t muid);

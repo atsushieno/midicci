@@ -72,6 +72,7 @@ public:
     void setValueChangeCallback(std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> callback);
     void setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(const std::string&)> provider);
     uint32_t getControlValue(int controlIndex) const;  // Get stored value for a control
+    void refreshVisibleItems();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

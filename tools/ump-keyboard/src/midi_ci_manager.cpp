@@ -519,7 +519,6 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIMa
         return std::nullopt;
     }
 
-    // Get connection to the remote device
     auto connection = device_->get_connection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
@@ -528,29 +527,41 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIMa
 
     try {
         auto* properties = connection->get_property_client_facade().get_properties();
-        auto ret = StandardPropertiesExtensions::getCtrlMapList(*properties, ctrlMapId);
-
-        // If we have no data, request it
-        if (!ret) {
-            // Check if we already have a pending request for this property
-            std::string requestKey = std::string(StandardPropertyNames::CTRL_MAP_LIST) + ":" + ctrlMapId;
-            if (isPropertyRequestPending(muid, requestKey)) {
-                std::cout << "[PROPERTY ACCESS] CtrlMapList[" << ctrlMapId << "] request already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
-                return std::nullopt;
-            }
-
-            // Add to pending requests to prevent duplicates
-            addPendingPropertyRequest(muid, requestKey);
-
-            auto& property_client = connection->get_property_client_facade();
-            // Explicit log: some property sends do not trigger device message_callback
-            std::cout << "[MIDI-CI SENT] GetPropertyData(CtrlMapList:'" << ctrlMapId << "') to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-            property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+        if (!properties) {
+            std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return std::nullopt;
         }
-        return ret;
+        return StandardPropertiesExtensions::getCtrlMapList(*properties, ctrlMapId);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] Failed to get CtrlMapList[" << ctrlMapId << "] for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
         return std::nullopt;
+    }
+}
+
+void MidiCIManager::requestCtrlMapList(uint32_t muid, const std::string& ctrlMapId) {
+    if (!initialized_ || !device_) {
+        std::cerr << "[MIDI-CI ERROR] Cannot request CtrlMapList - not initialized" << std::endl;
+        return;
+    }
+
+    auto connection = device_->get_connection(muid);
+    if (!connection) {
+        std::cout << "[PROPERTY REQUEST] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        return;
+    }
+
+    try {
+        std::string requestKey = std::string(StandardPropertyNames::CTRL_MAP_LIST) + ":" + ctrlMapId;
+        if (isPropertyRequestPending(muid, requestKey)) {
+            std::cout << "[PROPERTY REQUEST] CtrlMapList[" << ctrlMapId << "] already pending for MUID: 0x" << std::hex << muid << std::dec << std::endl;
+            return;
+        }
+        addPendingPropertyRequest(muid, requestKey);
+        auto& property_client = connection->get_property_client_facade();
+        std::cout << "[MIDI-CI SENT] GetPropertyData(CtrlMapList:'" << ctrlMapId << "') to MUID: 0x" << std::hex << muid << std::dec << std::endl;
+        property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+    } catch (const std::exception& e) {
+        std::cerr << "[MIDI-CI ERROR] requestCtrlMapList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
 }
 
@@ -922,4 +933,3 @@ void MidiCIManager::instrumentation_print_statistics() const {
     }
     std::cout << std::endl;
 }
-

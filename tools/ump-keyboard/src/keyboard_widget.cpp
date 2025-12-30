@@ -1018,10 +1018,15 @@ void KeyboardWidget::onPropertiesUpdated(uint32_t muid, const QString& propertyI
     instrumentation_callback_counter++;
     std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec
               << ", propertyId='" << propertyId.toStdString() << "'" << std::endl;
+    if (muid != selectedDeviceMuid) {
+        return;
+    }
     // Only update lists for explicit property replies
     if (propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::ALL_CTRL_LIST) ||
         propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST)) {
         updateProperties(muid);
+    } else if (propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::CTRL_MAP_LIST)) {
+        controlListWidget->refreshVisibleItems();
     }
 }
 

@@ -440,35 +440,13 @@ void VirtualizedControlList::setControls(const std::vector<midicci::commonproper
     }
     
     setEnabled(true);
-    
-    // TEMP: Create widgets for ALL items (no virtualization) to test basic functionality
     for (size_t i = 0; i < m_controls.size(); ++i) {
         QListWidgetItem* item = new QListWidgetItem();
+        item->setSizeHint(QSize(viewport()->width(), ITEM_HEIGHT));
         addItem(item);
-
-        ControlParameterWidget* widget = new ControlParameterWidget();
-        widget->setValueChangeCallback(m_valueChangeCallback);
-        widget->setValueUpdateCallback([this](int index, uint32_t value) {
-            updateStoredValue(index, value);
-        });
-
-        // Fetch control maps if control has ctrlMapId
-        const std::vector<midicci::commonproperties::MidiCIControlMap>* controlMaps = nullptr;
-        std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> controlMapsOpt;
-        if (m_controlMapProvider && m_controls[i].ctrlMapId.has_value()) {
-            controlMapsOpt = m_controlMapProvider(m_controls[i].ctrlMapId.value());
-            if (controlMapsOpt.has_value()) {
-                controlMaps = &(*controlMapsOpt);
-            }
-        }
-
-        widget->updateFromControl(m_controls[i], static_cast<int>(i), m_controlValues[i], controlMaps);
-
-        setItemWidget(item, widget);
-
-        // Force the item size to match our widget
-        item->setSizeHint(QSize(widget->width(), 35));
     }
+
+    updateVisibleItems();
 }
 
 void VirtualizedControlList::setValueChangeCallback(std::function<void(int, const midicci::commonproperties::MidiCIControl&, uint32_t)> callback) {
@@ -477,6 +455,10 @@ void VirtualizedControlList::setValueChangeCallback(std::function<void(int, cons
 
 void VirtualizedControlList::setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(const std::string&)> provider) {
     m_controlMapProvider = provider;
+}
+
+void VirtualizedControlList::refreshVisibleItems() {
+    updateVisibleItems();
 }
 
 void VirtualizedControlList::resizeEvent(QResizeEvent* event) {

@@ -484,6 +484,12 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> Keyboard
     return std::nullopt;
 }
 
+void KeyboardController::requestCtrlMapList(uint32_t muid, const std::string& ctrlMapId) {
+    if (midiCIManager && midiCIManager->isInitialized()) {
+        midiCIManager->requestCtrlMapList(muid, ctrlMapId);
+    }
+}
+
 void KeyboardController::requestAllCtrlList(uint32_t muid) {
     if (midiCIManager && midiCIManager->isInitialized()) {
         midiCIManager->requestAllCtrlList(muid);

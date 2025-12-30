@@ -165,17 +165,8 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     // Log the UMP packet
-    std::string hex_str;
-    char hex[10];
-    snprintf(hex, sizeof(hex), "%08X ", ump.int1);
-    hex_str += hex;
-    snprintf(hex, sizeof(hex), "%08X ", ump.int2);
-    hex_str += hex;
-    snprintf(hex, sizeof(hex), "%08X ", ump.int3);
-    hex_str += hex;
-    snprintf(hex, sizeof(hex), "%08X", ump.int4);
-    hex_str += hex;
-    repository_.log("[received UMP packet] " + hex_str, MessageDirection::In);
+    bool is_ci_sysex = (ump.get_message_type() == midicci::ump::MessageType::SYSEX7 ||
+                        ump.get_message_type() == midicci::ump::MessageType::SYSEX8_MDS);
     
     switch (ump.get_message_type()) {
         case midicci::ump::MessageType::SYSEX7: {
@@ -258,13 +249,7 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
 void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
-    std::string hex_str;
-    for (size_t i = start; i < start + length && i < data.size(); ++i) {
-        char hex[4];
-        snprintf(hex, sizeof(hex), "%02X ", data[i]);
-        hex_str += hex;
-    }
-    repository_.log("[received UMP] " + hex_str, MessageDirection::In);
+    // avoid logging every UMP byte dump; detailed logs handled per-message
     
     auto umps = midicci::ump::parse_umps_from_bytes(data.data(), start, length);
     

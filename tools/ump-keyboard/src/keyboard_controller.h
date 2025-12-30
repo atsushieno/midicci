@@ -46,6 +46,7 @@ public:
     void setMidiCIPropertiesChangedCallback(std::function<void(uint32_t, const std::string&, const std::string&)> callback);
 
     // Explicit property requests (user-triggered)
+    void requestCtrlMapList(uint32_t muid, const std::string& ctrlMapId);
     void requestAllCtrlList(uint32_t muid);
     void requestProgramList(uint32_t muid);
     void requestSaveState(uint32_t muid);

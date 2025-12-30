@@ -12,6 +12,10 @@
 
 using namespace midicci::commonproperties;
 
+namespace {
+constexpr auto PROPERTY_REQUEST_TIMEOUT = std::chrono::seconds(3);
+}
+
 MidiCIManager::MidiCIManager(midicci::keyboard::MessageLogger* logger) 
     : muid_(0), initialized_(false), logger_(logger), instrumentation_call_counter_(0) {
 }
@@ -258,6 +262,31 @@ void MidiCIManager::setupDeviceConfiguration() {
 
 void MidiCIManager::setupCallbacks() {
     if (!device_) return;
+
+    device_->set_property_chunk_callback([this](uint32_t source_muid, const std::vector<uint8_t>& header) {
+        if (!this->device_) {
+            return;
+        }
+        auto connection = this->device_->get_connection(source_muid);
+        if (!connection) {
+            return;
+        }
+        auto* rules = connection->get_property_client_facade().get_property_rules();
+        if (!rules) {
+            return;
+        }
+        try {
+            std::string property_id = rules->get_property_id_for_header(header);
+            if (property_id.empty()) {
+                return;
+            }
+            std::string res_id = rules->get_res_id_for_header(header);
+            std::string request_key = res_id.empty() ? property_id : (property_id + ":" + res_id);
+            this->extendPendingPropertyRequest(source_muid, request_key);
+        } catch (const std::exception& e) {
+            std::cerr << "[MIDI-CI ERROR] Failed to refresh pending request timer: " << e.what() << std::endl;
+        }
+    });
     
     // Set up message callback for outgoing messages
     device_->set_message_callback([this](const midicci::Message& message) {
@@ -823,6 +852,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
 }
 
 bool MidiCIManager::isPropertyRequestPending(uint32_t muid, const std::string& property_name) {
+    cleanupExpiredPropertyRequests();
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     return std::any_of(pending_property_requests_.begin(), pending_property_requests_.end(),
                        [muid, &property_name](const PendingPropertyRequest& req) {
@@ -831,6 +861,7 @@ bool MidiCIManager::isPropertyRequestPending(uint32_t muid, const std::string& p
 }
 
 void MidiCIManager::addPendingPropertyRequest(uint32_t muid, const std::string& property_name) {
+    cleanupExpiredPropertyRequests();
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     // First check if it already exists to avoid duplicates
     auto exists = std::any_of(pending_property_requests_.begin(), pending_property_requests_.end(),
@@ -860,11 +891,10 @@ void MidiCIManager::removePendingPropertyRequest(uint32_t muid, const std::strin
 void MidiCIManager::cleanupExpiredPropertyRequests() {
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     const auto now = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(30); // 30 second timeout
     
     auto it = std::remove_if(pending_property_requests_.begin(), pending_property_requests_.end(),
-                            [now, timeout](const PendingPropertyRequest& req) {
-                                return (now - req.request_time) > timeout;
+                            [now](const PendingPropertyRequest& req) {
+                                return (now - req.request_time) > PROPERTY_REQUEST_TIMEOUT;
                             });
     
     if (it != pending_property_requests_.end()) {
@@ -882,6 +912,17 @@ bool MidiCIManager::has_property_been_fetched(uint32_t muid, const std::string& 
 void MidiCIManager::mark_property_fetched(uint32_t muid, const std::string& property_name) {
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     fetched_properties_.insert({muid, property_name});
+}
+
+void MidiCIManager::extendPendingPropertyRequest(uint32_t muid, const std::string& property_name) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    auto it = std::find_if(pending_property_requests_.begin(), pending_property_requests_.end(),
+                           [muid, &property_name](const PendingPropertyRequest& req) {
+                               return req.muid == muid && req.property_name == property_name;
+                           });
+    if (it != pending_property_requests_.end()) {
+        it->request_time = std::chrono::steady_clock::now();
+    }
 }
 
 void MidiCIManager::clearDiscoveredDevices() {

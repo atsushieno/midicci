@@ -15,6 +15,8 @@ int convert_velocity_to_16bit(int value7) {
     int clamped = std::clamp(value7, 1, 127);
     return clamped << 9;
 }
+
+constexpr auto CTRL_MAP_REQUEST_TIMEOUT = std::chrono::seconds(3);
 } // namespace
 
 KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
@@ -50,6 +52,15 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
         devices_dirty_.store(true, std::memory_order_relaxed);
     });
 
+    controller_->setMidiCIPropertiesChangedCallback([this](uint32_t muid, const std::string& propertyId, const std::string& resId) {
+        if (propertyId == midicci::commonproperties::StandardPropertyNames::ALL_CTRL_LIST ||
+            propertyId == midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST ||
+            propertyId == midicci::commonproperties::StandardPropertyNames::CTRL_MAP_LIST) {
+            std::lock_guard<std::mutex> lock(property_update_mutex_);
+            pending_property_updates_.push_back({muid, propertyId, resId});
+        }
+    });
+
     devices_dirty_.store(true, std::memory_order_relaxed);
     ci_dirty_.store(true, std::memory_order_relaxed);
 }
@@ -82,7 +93,77 @@ void KeyboardPanel::apply_pending_updates() {
     }
     if (ci_dirty_.exchange(false)) {
         ctrl_map_cache_.clear();
+        ctrl_list_cache_.clear();
+        program_list_cache_.clear();
         refresh_ci_devices();
+    }
+    process_property_updates();
+}
+
+void KeyboardPanel::process_property_updates() {
+    std::vector<PendingPropertyUpdate> updates;
+    {
+        std::lock_guard<std::mutex> lock(property_update_mutex_);
+        if (pending_property_updates_.empty()) {
+            return;
+        }
+        updates.swap(pending_property_updates_);
+    }
+
+    if (!controller_) {
+        return;
+    }
+
+    for (const auto& update : updates) {
+        if (update.property_id == midicci::commonproperties::StandardPropertyNames::ALL_CTRL_LIST) {
+            auto controls = controller_->getAllCtrlList(update.muid);
+            if (controls) {
+                ctrl_list_cache_[update.muid] = *controls;
+            }
+        } else if (update.property_id == midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST) {
+            auto programs = controller_->getProgramList(update.muid);
+            if (programs) {
+                program_list_cache_[update.muid] = *programs;
+            }
+        } else if (update.property_id == midicci::commonproperties::StandardPropertyNames::CTRL_MAP_LIST) {
+            if (update.res_id.empty()) {
+                continue;
+            }
+            auto device_it = ctrl_map_cache_.find(update.muid);
+            if (device_it == ctrl_map_cache_.end()) {
+                continue;
+            }
+            auto cache_it = device_it->second.find(update.res_id);
+            if (cache_it == device_it->second.end()) {
+                continue;
+            }
+            auto latest = controller_->getCtrlMapList(update.muid, update.res_id);
+            auto& cache = cache_it->second;
+            cache.pending = false;
+            cache.checked_local = true;
+            cache.last_request_time = std::chrono::steady_clock::now();
+            if (latest) {
+                cache.values = *latest;
+                cache.loaded = true;
+            } else {
+                cache.values.clear();
+                cache.loaded = false;
+            }
+        }
+    }
+}
+
+void KeyboardPanel::invalidate_invisible_ctrl_map_entries(uint32_t muid, int current_frame) {
+    auto device_it = ctrl_map_cache_.find(muid);
+    if (device_it == ctrl_map_cache_.end()) {
+        return;
+    }
+    for (auto& entry : device_it->second) {
+        if (entry.second.last_visible_frame != current_frame) {
+            entry.second.values.clear();
+            entry.second.loaded = false;
+            entry.second.checked_local = false;
+        }
     }
 }
 
@@ -317,9 +398,30 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         controller_->requestAllCtrlList(muid);
     }
     ImGui::BeginChild("control-scroll", ImVec2(-FLT_MIN, 230.0f), true);
-    auto controls = controller_->getAllCtrlList(muid);
+    if (muid != last_selected_muid_) {
+        if (last_selected_muid_ != 0) {
+            ctrl_map_cache_.erase(last_selected_muid_);
+            ctrl_list_cache_.erase(last_selected_muid_);
+            program_list_cache_.erase(last_selected_muid_);
+        }
+        last_selected_muid_ = muid;
+        if (controller_ && muid != 0) {
+            if (auto initial_controls = controller_->getAllCtrlList(muid)) {
+                ctrl_list_cache_[muid] = *initial_controls;
+            }
+            if (auto initial_programs = controller_->getProgramList(muid)) {
+                program_list_cache_[muid] = *initial_programs;
+            }
+        }
+    }
+
+    const auto ctrl_list_it = ctrl_list_cache_.find(muid);
+    const std::vector<midicci::commonproperties::MidiCIControl>* controls = (ctrl_list_it != ctrl_list_cache_.end())
+        ? &ctrl_list_it->second
+        : nullptr;
     if (controls && !controls->empty()) {
         if (ImGui::BeginTable("control-table", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+            const int current_frame = ImGui::GetFrameCount();
             ImGui::TableSetupColumn("Index");
             ImGui::TableSetupColumn("Title");
             ImGui::TableSetupColumn("Type");
@@ -359,7 +461,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 const bool has_combo = ctrl.ctrlMapId.has_value();
                 const std::vector<midicci::commonproperties::MidiCIControlMap>* map_values = nullptr;
                 bool map_loading = false;
-                ControlMapCache* map_cache_entry = nullptr;
                 float combo_button_width = 0.0f;
                 float combo_spacing = 0.0f;
                 if (has_combo) {
@@ -384,25 +485,36 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                         controller_->sendControlChange(0, ctrl.ctrlIndex[0], static_cast<uint32_t>(raw));
                     }
                 }
-                if (has_combo) {
-                    map_cache_entry = &ctrl_map_cache_[muid][*ctrl.ctrlMapId];
-                    bool should_refresh = map_cache_entry->pending || !map_cache_entry->loaded;
-                    if (should_refresh) {
-                        auto latest = controller_->getCtrlMapList(muid, *ctrl.ctrlMapId);
-                        if (latest) {
-                            map_cache_entry->values = *latest;
-                            map_cache_entry->loaded = true;
-                            map_cache_entry->pending = false;
+                if (has_combo && slider_visible) {
+                    auto& cache = ctrl_map_cache_[muid][*ctrl.ctrlMapId];
+                    cache.last_visible_frame = current_frame;
+                    if (cache.pending && cache.last_request_time.time_since_epoch().count() > 0) {
+                        auto now = std::chrono::steady_clock::now();
+                        if ((now - cache.last_request_time) > CTRL_MAP_REQUEST_TIMEOUT) {
+                            cache.pending = false;
+                            cache.checked_local = false;
                         }
                     }
-                    if (slider_visible && !map_cache_entry->loaded && !map_cache_entry->pending) {
+                    if (!cache.loaded && !cache.checked_local) {
+                        auto latest = controller_->getCtrlMapList(muid, *ctrl.ctrlMapId);
+                        cache.checked_local = true;
+                        if (latest) {
+                            cache.values = *latest;
+                            cache.loaded = true;
+                        } else {
+                            cache.values.clear();
+                            cache.loaded = false;
+                        }
+                    }
+                    if (!cache.loaded && !cache.pending) {
                         controller_->requestCtrlMapList(muid, *ctrl.ctrlMapId);
-                        map_cache_entry->pending = true;
+                        cache.pending = true;
+                        cache.last_request_time = std::chrono::steady_clock::now();
                     }
-                    if (map_cache_entry->loaded && !map_cache_entry->values.empty()) {
-                        map_values = &map_cache_entry->values;
+                    if (cache.loaded && !cache.values.empty()) {
+                        map_values = &cache.values;
                     }
-                    map_loading = (map_cache_entry->pending && !map_cache_entry->loaded);
+                    map_loading = cache.pending && !cache.loaded;
                 }
                 if (has_combo) {
                     ImGui::SameLine(0.0f, combo_spacing);
@@ -446,8 +558,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 ++row;
             }
             ImGui::EndTable();
+            invalidate_invisible_ctrl_map_entries(muid, current_frame);
         }
     } else {
+        invalidate_invisible_ctrl_map_entries(muid, -1);
         ImGui::TextUnformatted("Control data not received yet.");
     }
     ImGui::EndChild();
@@ -461,7 +575,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         controller_->requestProgramList(muid);
     }
     ImGui::BeginChild("program-scroll", ImVec2(-FLT_MIN, 230.0f), true);
-    auto programs = controller_->getProgramList(muid);
+    const auto program_it = program_list_cache_.find(muid);
+    const std::vector<midicci::commonproperties::MidiCIProgram>* programs = (program_it != program_list_cache_.end())
+        ? &program_it->second
+        : nullptr;
     if (programs && !programs->empty()) {
         if (ImGui::BeginTable("program-table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
             ImGui::TableSetupColumn("Index");

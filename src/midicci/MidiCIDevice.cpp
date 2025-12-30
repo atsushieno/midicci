@@ -30,6 +30,7 @@ public:
     mutable std::recursive_mutex mutex_;
     LoggerFunction logger_;
     Messenger messenger_;
+    PropertyChunkCallback property_chunk_callback_;
 };
 
 MidiCIDevice::MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger) : pimpl_(std::make_unique<Impl>(*this, std::move(config), muid)) {
@@ -57,6 +58,11 @@ void MidiCIDevice::set_message_received_callback(MessageReceivedCallback callbac
 void MidiCIDevice::set_connections_changed_callback(ConnectionsChangedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->connections_changed_callback_ = std::move(callback);
+}
+
+void MidiCIDevice::set_property_chunk_callback(PropertyChunkCallback callback) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->property_chunk_callback_ = std::move(callback);
 }
 
 void MidiCIDevice::store_connection(uint32_t destination_muid, std::shared_ptr<ClientConnection> connection) {
@@ -158,6 +164,17 @@ MidiCIDevice::LoggerFunction MidiCIDevice::get_logger() const {
 Messenger& MidiCIDevice::get_messenger() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->messenger_;
+}
+
+void MidiCIDevice::notify_property_chunk(uint32_t source_muid, const std::vector<uint8_t>& header) {
+    PropertyChunkCallback callback;
+    {
+        std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+        callback = pimpl_->property_chunk_callback_;
+    }
+    if (callback) {
+        callback(source_muid, header);
+    }
 }
 
 } // namespace

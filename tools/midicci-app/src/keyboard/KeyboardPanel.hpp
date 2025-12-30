@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
 
 namespace midicci::app {
 
@@ -66,8 +67,25 @@ private:
         std::vector<midicci::commonproperties::MidiCIControlMap> values;
         bool pending = false;
         bool loaded = false;
+        bool checked_local = false;
+        int last_visible_frame = -1;
+        std::chrono::steady_clock::time_point last_request_time{};
     };
+
+    struct PendingPropertyUpdate {
+        uint32_t muid;
+        std::string property_id;
+        std::string res_id;
+    };
+
+    void process_property_updates();
+    void invalidate_invisible_ctrl_map_entries(uint32_t muid, int current_frame);
+
     std::unordered_map<uint32_t, std::unordered_map<std::string, ControlMapCache>> ctrl_map_cache_;
+    std::unordered_map<uint32_t, std::vector<midicci::commonproperties::MidiCIControl>> ctrl_list_cache_;
+    std::unordered_map<uint32_t, std::vector<midicci::commonproperties::MidiCIProgram>> program_list_cache_;
+    std::mutex property_update_mutex_;
+    std::vector<PendingPropertyUpdate> pending_property_updates_;
 
     std::unordered_map<std::string, int> control_values_;
 };

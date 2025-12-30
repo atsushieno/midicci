@@ -138,6 +138,7 @@ private:
     void addPendingPropertyRequest(uint32_t muid, const std::string& property_name);
     void removePendingPropertyRequest(uint32_t muid, const std::string& property_name);
     void cleanupExpiredPropertyRequests();
+    void extendPendingPropertyRequest(uint32_t muid, const std::string& property_name);
     bool has_property_been_fetched(uint32_t muid, const std::string& property_name) const;
     void mark_property_fetched(uint32_t muid, const std::string& property_name);
     

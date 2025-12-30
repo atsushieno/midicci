@@ -236,7 +236,7 @@ void PropertyClientFacade::process_get_data_reply(const GetPropertyDataReply& ms
                         }
 
                         if (pimpl_->properties_) {
-                            pimpl_->properties_->updateValue(property_id, msg.get_body(), media_type);
+                            pimpl_->properties_->setPropertyValue(property_id, res_id, msg.get_body(), false);
                         }
 
                         pimpl_->property_rules_->property_value_updated(property_id, msg.get_body());

@@ -142,11 +142,12 @@ int main(int argc, char** argv) {
     // Set up control map provider for enumerated values
     keyboard.setControlMapProvider(
         [&controller](uint32_t muid, const std::string& ctrlMapId) {
-            auto maps = controller.getCtrlMapList(muid, ctrlMapId);
-            if (!maps) {
-                controller.requestCtrlMapList(muid, ctrlMapId);
-            }
-            return maps;
+            return controller.getCtrlMapList(muid, ctrlMapId);
+        }
+    );
+    keyboard.setControlMapRequester(
+        [&controller](uint32_t muid, const std::string& ctrlMapId) {
+            controller.requestCtrlMapList(muid, ctrlMapId);
         }
     );
 
@@ -155,8 +156,10 @@ int main(int argc, char** argv) {
         std::cout << "Property updated for MUID: 0x" << std::hex << muid << std::dec << ", id='" << propertyId << "', resId='" << resId << "'" << std::endl;
 
         // Ensure UI updates happen on the main Qt thread, pass property id
-        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, propertyId]() {
-            keyboard.onPropertiesUpdated(muid, QString::fromStdString(propertyId));
+        QMetaObject::invokeMethod(&keyboard, [&keyboard, muid, propertyId, resId]() {
+            keyboard.onPropertiesUpdated(muid,
+                                         QString::fromStdString(propertyId),
+                                         QString::fromStdString(resId));
         }, Qt::QueuedConnection);
     });
     

@@ -607,10 +607,7 @@ void KeyboardWidget::setupPropertiesPanel() {
 
     // Set up control map provider for enumerated values
     controlListWidget->setControlMapProvider([this](const std::string& ctrlMapId) -> std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> {
-        if (controlMapProvider && selectedDeviceMuid != 0) {
-            return controlMapProvider(selectedDeviceMuid, ctrlMapId);
-        }
-        return std::nullopt;
+        return getControlMapForCurrentDevice(ctrlMapId);
     });
     
     listsLayout->addLayout(controlLayout);
@@ -818,6 +815,10 @@ void KeyboardWidget::onMidiCIDeviceSelected(int index) {
     saveStatesButton->setEnabled(true);
     loadStatesButton->setEnabled(true);
 
+    if (previousDeviceMuid != muid) {
+        controlListWidget->refreshVisibleItems();
+    }
+
     // Do not auto-request properties; leave lists unchanged until user requests
 }
 
@@ -830,6 +831,85 @@ void KeyboardWidget::setPropertyDataProvider(std::function<std::optional<std::ve
 
 void KeyboardWidget::setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> provider) {
     controlMapProvider = provider;
+}
+
+void KeyboardWidget::setControlMapRequester(std::function<void(uint32_t, const std::string&)> requester) {
+    controlMapRequester = requester;
+}
+
+std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> KeyboardWidget::getControlMapForCurrentDevice(const std::string& ctrlMapId) {
+    if (!controlMapProvider || selectedDeviceMuid == 0) {
+        return std::nullopt;
+    }
+
+    auto& device_cache = ctrlMapCache[selectedDeviceMuid];
+    auto& entry = device_cache[ctrlMapId];
+    auto now = std::chrono::steady_clock::now();
+
+    if (entry.needs_refresh || !entry.has_value) {
+        auto latest = controlMapProvider(selectedDeviceMuid, ctrlMapId);
+        entry.needs_refresh = false;
+        if (latest.has_value()) {
+            entry.values = *latest;
+            entry.has_value = true;
+            entry.pending_request = false;
+            return entry.values;
+        }
+        entry.has_value = false;
+    }
+
+    if (!entry.has_value) {
+        const bool should_retry = !entry.pending_request ||
+                                   (now - entry.last_request_time) > CTRL_MAP_REQUEST_TIMEOUT;
+        if (should_retry) {
+            entry.pending_request = true;
+            entry.last_request_time = now;
+            if (controlMapRequester) {
+                controlMapRequester(selectedDeviceMuid, ctrlMapId);
+            } else {
+                // Fallback to legacy behavior where the provider handled requests.
+                controlMapProvider(selectedDeviceMuid, ctrlMapId);
+            }
+        }
+        return std::nullopt;
+    }
+
+    return entry.values;
+}
+
+void KeyboardWidget::markControlMapDirty(uint32_t muid, const std::string& ctrlMapId) {
+    if (muid == 0) {
+        return;
+    }
+
+    auto deviceIt = ctrlMapCache.find(muid);
+    if (deviceIt == ctrlMapCache.end()) {
+        // Ensure an entry exists if we need to refresh later.
+        if (!ctrlMapId.empty()) {
+            auto& entry = ctrlMapCache[muid][ctrlMapId];
+            entry.needs_refresh = true;
+            entry.pending_request = false;
+        }
+        return;
+    }
+
+    if (ctrlMapId.empty()) {
+        for (auto& [_, entry] : deviceIt->second) {
+            entry.needs_refresh = true;
+            entry.pending_request = false;
+        }
+        return;
+    }
+
+    auto entryIt = deviceIt->second.find(ctrlMapId);
+    if (entryIt != deviceIt->second.end()) {
+        entryIt->second.needs_refresh = true;
+        entryIt->second.pending_request = false;
+    } else {
+        auto& entry = deviceIt->second[ctrlMapId];
+        entry.needs_refresh = true;
+        entry.pending_request = false;
+    }
 }
 
 void KeyboardWidget::setPropertyRequesters(std::function<void(uint32_t)> requestCtrl,
@@ -1013,11 +1093,11 @@ void KeyboardWidget::updatePropertiesOnMainThread(uint32_t muid) {
     }
 }
 
-void KeyboardWidget::onPropertiesUpdated(uint32_t muid, const QString& propertyId) {
+void KeyboardWidget::onPropertiesUpdated(uint32_t muid, const QString& propertyId, const QString& resId) {
     static int instrumentation_callback_counter = 0;
     instrumentation_callback_counter++;
     std::cout << "[INSTRUMENTATION CALLBACK #" << instrumentation_callback_counter << "] onPropertiesUpdated called for MUID: 0x" << std::hex << muid << std::dec
-              << ", propertyId='" << propertyId.toStdString() << "'" << std::endl;
+              << ", propertyId='" << propertyId.toStdString() << "', resId='" << resId.toStdString() << "'" << std::endl;
     if (muid != selectedDeviceMuid) {
         return;
     }
@@ -1026,6 +1106,7 @@ void KeyboardWidget::onPropertiesUpdated(uint32_t muid, const QString& propertyI
         propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST)) {
         updateProperties(muid);
     } else if (propertyId == QString::fromUtf8(midicci::commonproperties::StandardPropertyNames::CTRL_MAP_LIST)) {
+        markControlMapDirty(muid, resId.toStdString());
         controlListWidget->refreshVisibleItems();
     }
 }

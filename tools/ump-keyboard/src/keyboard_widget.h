@@ -13,6 +13,8 @@
 #include <QtCore/QSignalMapper>
 #include <QtCore/QTimer>
 #include <functional>
+#include <unordered_map>
+#include <chrono>
 #include "midi_ci_manager.h"
 #include "virtualized_control_list.h"
 #include <midicci/details/commonproperties/StandardProperties.hpp>
@@ -55,6 +57,7 @@ public:
     void setPropertyDataProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlProvider,
                                 std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> progProvider);
     void setControlMapProvider(std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> provider);
+    void setControlMapRequester(std::function<void(uint32_t, const std::string&)> requester);
     void updateProperties(uint32_t muid);
     void updatePropertiesOnMainThread(uint32_t muid);
 
@@ -78,7 +81,7 @@ private slots:
     void onLoadStates();
 
 public slots:
-    void onPropertiesUpdated(uint32_t muid, const QString& propertyId);
+    void onPropertiesUpdated(uint32_t muid, const QString& propertyId, const QString& resId);
 
 private:
     void setupUI();
@@ -104,6 +107,7 @@ private:
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControl>>(uint32_t)> ctrlListProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIProgram>>(uint32_t)> programListProvider;
     std::function<std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>>(uint32_t, const std::string&)> controlMapProvider;
+    std::function<void(uint32_t, const std::string&)> controlMapRequester;
     
     QVBoxLayout* mainLayout;
     QWidget* keyboardWidget;
@@ -153,4 +157,16 @@ private:
     // State management callbacks
     std::function<void(uint32_t, const std::string&, const std::vector<uint8_t>&)> stateSendCallback;
     std::function<void(uint32_t, const std::vector<uint8_t>&)> stateSaveCallback;
+
+    struct ControlMapCacheEntry {
+        std::vector<midicci::commonproperties::MidiCIControlMap> values;
+        bool has_value = false;
+        bool pending_request = false;
+        bool needs_refresh = true;
+        std::chrono::steady_clock::time_point last_request_time{};
+    };
+    std::unordered_map<uint32_t, std::unordered_map<std::string, ControlMapCacheEntry>> ctrlMapCache;
+    std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> getControlMapForCurrentDevice(const std::string& ctrlMapId);
+    void markControlMapDirty(uint32_t muid, const std::string& ctrlMapId);
+    static constexpr std::chrono::milliseconds CTRL_MAP_REQUEST_TIMEOUT{1500};
 };

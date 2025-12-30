@@ -90,7 +90,14 @@ void InspectorPanel::render() {
         return;
     }
 
-    if (ImGui::BeginListBox("CI Devices", ImVec2(-FLT_MIN, 140.0f))) {
+    ImGui::TextUnformatted("MIDI-CI Device:");
+    ImGui::SameLine();
+    std::string current_connection_label =
+        (selected_connection_index_ >= 0 &&
+         selected_connection_index_ < static_cast<int>(connections.size()))
+            ? connections[static_cast<size_t>(selected_connection_index_)].label
+            : "Select device";
+    if (ImGui::BeginCombo("##inspector-ci-device", current_connection_label.c_str())) {
         for (size_t i = 0; i < connections.size(); ++i) {
             bool selected = static_cast<int>(i) == selected_connection_index_;
             if (ImGui::Selectable(connections[i].label.c_str(), selected)) {
@@ -103,8 +110,9 @@ void InspectorPanel::render() {
                 ImGui::SetItemDefaultFocus();
             }
         }
-        ImGui::EndListBox();
+        ImGui::EndCombo();
     }
+    ImGui::Spacing();
 
     if (selected_connection_index_ < 0 || selected_connection_index_ >= static_cast<int>(connections.size())) {
         return;
@@ -209,10 +217,13 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
         property_value_buffer_.clear();
     }
     auto metadata_list = entry.connection->get_metadata_list();
-    if (metadata_list.empty()) {
-        ImGui::TextUnformatted("No properties advertise yet.");
-    } else {
-        if (ImGui::BeginListBox("Property Catalog", ImVec2(-FLT_MIN, 160.0f))) {
+    float total_width = ImGui::GetContentRegionAvail().x;
+    float list_width = std::max(0.0f, total_width * 0.25f);
+
+    if (ImGui::BeginChild("property-list-pane", ImVec2(list_width, 0), true)) {
+        if (metadata_list.empty()) {
+            ImGui::TextUnformatted("No properties advertised yet.");
+        } else if (ImGui::BeginListBox("Property Catalog", ImVec2(-FLT_MIN, 160.0f))) {
             for (size_t i = 0; i < metadata_list.size(); ++i) {
                 const auto* meta = metadata_list[i].get();
                 if (!meta) {
@@ -237,61 +248,64 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
             ImGui::EndListBox();
         }
     }
-
-    if (selected_property_id_.empty()) {
-        ImGui::TextUnformatted("Select a property to inspect.");
-        return;
-    }
-
-    ImGui::InputText("Resource ID", &property_res_id_);
-    ImGui::InputText("Encoding", &property_encoding_);
-    ImGui::InputInt("Paginate Offset", &paginate_offset_);
-    ImGui::InputInt("Paginate Limit", &paginate_limit_);
-    paginate_offset_ = std::max(0, paginate_offset_);
-    paginate_limit_ = std::max(1, paginate_limit_);
-
-    if (ImGui::Button("Get Property")) {
-        entry.connection->get_property_data(
-            selected_property_id_,
-            property_res_id_,
-            property_encoding_,
-            paginate_offset_,
-            paginate_limit_);
-    }
+    ImGui::EndChild();
     ImGui::SameLine();
-    bool subscribed = has_property_subscription(entry.connection, selected_property_id_);
-    if (ImGui::Button(subscribed ? "Unsubscribe" : "Subscribe")) {
-        if (subscribed) {
-            entry.connection->unsubscribe_property(selected_property_id_, property_res_id_);
+    if (ImGui::BeginChild("property-details-pane", ImVec2(0, 0), true)) {
+        if (selected_property_id_.empty()) {
+            ImGui::TextUnformatted("Select a property to inspect.");
         } else {
-            entry.connection->subscribe_property(selected_property_id_, property_res_id_, property_encoding_);
+            ImGui::InputText("Resource ID", &property_res_id_);
+            ImGui::InputText("Encoding", &property_encoding_);
+            ImGui::InputInt("Paginate Offset", &paginate_offset_);
+            ImGui::InputInt("Paginate Limit", &paginate_limit_);
+            paginate_offset_ = std::max(0, paginate_offset_);
+            paginate_limit_ = std::max(1, paginate_limit_);
+
+            if (ImGui::Button("Get Property")) {
+                entry.connection->get_property_data(
+                    selected_property_id_,
+                    property_res_id_,
+                    property_encoding_,
+                    paginate_offset_,
+                    paginate_limit_);
+            }
+            ImGui::SameLine();
+            bool subscribed = has_property_subscription(entry.connection, selected_property_id_);
+            if (ImGui::Button(subscribed ? "Unsubscribe" : "Subscribe")) {
+                if (subscribed) {
+                    entry.connection->unsubscribe_property(selected_property_id_, property_res_id_);
+                } else {
+                    entry.connection->subscribe_property(selected_property_id_, property_res_id_, property_encoding_);
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Edit Mode", &edit_mode_);
+            if (ImGui::Button("Refresh Local Value")) {
+                refresh_property_value(entry.connection);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Commit Changes")) {
+                if (edit_mode_) {
+                    std::vector<uint8_t> data(property_value_buffer_.begin(), property_value_buffer_.end());
+                    entry.connection->set_property_data(
+                        selected_property_id_,
+                        property_res_id_,
+                        data,
+                        property_encoding_,
+                        false);
+                }
+            }
+
+            ImGuiInputTextFlags flags = edit_mode_ ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_ReadOnly;
+            flags |= ImGuiInputTextFlags_AllowTabInput;
+            ImGui::InputTextMultiline("Property Value",
+                                      &property_value_buffer_,
+                                      ImVec2(-FLT_MIN, 180.0f),
+                                      flags);
         }
     }
-
-    ImGui::Separator();
-    ImGui::Checkbox("Edit Mode", &edit_mode_);
-    if (ImGui::Button("Refresh Local Value")) {
-        refresh_property_value(entry.connection);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Commit Changes")) {
-        if (edit_mode_) {
-            std::vector<uint8_t> data(property_value_buffer_.begin(), property_value_buffer_.end());
-            entry.connection->set_property_data(
-                selected_property_id_,
-                property_res_id_,
-                data,
-                property_encoding_,
-                false);
-        }
-    }
-
-    ImGuiInputTextFlags flags = edit_mode_ ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_ReadOnly;
-    flags |= ImGuiInputTextFlags_AllowTabInput;
-    ImGui::InputTextMultiline("Property Value",
-                              &property_value_buffer_,
-                              ImVec2(-FLT_MIN, 180.0f),
-                              flags);
+    ImGui::EndChild();
 }
 
 void InspectorPanel::render_process_inquiry(const ConnectionEntry& entry) {

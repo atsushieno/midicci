@@ -37,7 +37,6 @@ private:
     std::string version_text_;
     std::string serial_number_;
     std::string product_instance_id_;
-    std::string json_schema_text_;
     int max_connections_ = 8;
     bool workaround_subscription_ = false;
     bool workaround_profile_channels_ = false;

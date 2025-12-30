@@ -10,7 +10,6 @@ namespace midicci::app {
 namespace {
 constexpr const char* kSystemPropertyDeviceInfo = "DeviceInfo";
 constexpr const char* kSystemPropertyChannelList = "ChannelList";
-constexpr const char* kSystemPropertyJsonSchema = "JSONSchema";
 
 bool parse_profile_id_string(const std::string& text, std::vector<uint8_t>& out) {
     out.clear();
@@ -44,8 +43,7 @@ bool parse_profile_id_string(const std::string& text, std::vector<uint8_t>& out)
 
 bool is_system_property(const std::string& property_id) {
     return property_id == kSystemPropertyDeviceInfo ||
-           property_id == kSystemPropertyChannelList ||
-           property_id == kSystemPropertyJsonSchema;
+           property_id == kSystemPropertyChannelList;
 }
 
 std::string to_hex(uint32_t value, size_t width) {
@@ -124,57 +122,63 @@ void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling
     auto& config = device->get_config();
 
     ImGui::TextUnformatted("Local Device Configuration");
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, 220.0f);
+    ImGui::TextWrapped("Note that each ID byte is in 7 bits. Hex values above 0x80 per byte are invalid.");
+    ImGui::Spacing();
 
-    ImGui::TextUnformatted("Manufacturer ID (hex)");
-    ImGui::NextColumn();
-    ImGui::InputText("##manu_id", &manufacturer_id_hex_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Family ID (hex)");
-    ImGui::NextColumn();
-    ImGui::InputText("##family_id", &family_id_hex_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Model ID (hex)");
-    ImGui::NextColumn();
-    ImGui::InputText("##model_id", &model_id_hex_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Version ID (hex)");
-    ImGui::NextColumn();
-    ImGui::InputText("##version_id", &version_id_hex_);
+    auto render_dual_field = [](const char* left_label,
+                                const char* left_id,
+                                std::string& left_value,
+                                const char* right_label,
+                                const char* right_id,
+                                std::string& right_value) {
+        ImGui::TextUnformatted(left_label);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputText(left_id, &left_value);
+        ImGui::NextColumn();
+        ImGui::TextUnformatted(right_label);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputText(right_id, &right_value);
+        ImGui::NextColumn();
+    };
 
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Manufacturer Name");
-    ImGui::NextColumn();
-    ImGui::InputText("##manu_text", &manufacturer_text_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Family Name");
-    ImGui::NextColumn();
-    ImGui::InputText("##family_text", &family_text_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Model Name");
-    ImGui::NextColumn();
-    ImGui::InputText("##model_text", &model_text_);
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Version");
-    ImGui::NextColumn();
-    ImGui::InputText("##version_text", &version_text_);
+    auto render_single_field = [](const char* label,
+                                  const char* input_id,
+                                  std::string& value) {
+        ImGui::TextUnformatted(label);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputText(input_id, &value);
+        ImGui::NextColumn();
+        ImGui::Spacing();
+        ImGui::NextColumn();
+    };
 
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Serial Number");
-    ImGui::NextColumn();
-    ImGui::InputText("##serial_text", &serial_number_);
+    auto render_single_int = [](const char* label,
+                                const char* input_id,
+                                int& value,
+                                int min_value) {
+        ImGui::TextUnformatted(label);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputInt(input_id, &value);
+        if (value < min_value) {
+            value = min_value;
+        }
+        ImGui::NextColumn();
+        ImGui::Spacing();
+        ImGui::NextColumn();
+    };
 
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Product Instance ID");
-    ImGui::NextColumn();
-    ImGui::InputText("##prod_instance", &product_instance_id_);
-
-    ImGui::NextColumn();
-    ImGui::TextUnformatted("Max Connections");
-    ImGui::NextColumn();
-    ImGui::InputInt("##max_conn", &max_connections_);
-    if (max_connections_ < 1) max_connections_ = 1;
+    ImGui::Columns(2, "local-device-config-columns", false);
+    render_dual_field("Manufacturer ID (hex)", "##manu_id", manufacturer_id_hex_,
+                      "Text", "##manu_text", manufacturer_text_);
+    render_dual_field("Family ID (hex)", "##family_id", family_id_hex_,
+                      "Text", "##family_text", family_text_);
+    render_dual_field("Model ID (hex)", "##model_id", model_id_hex_,
+                      "Text", "##model_text", model_text_);
+    render_dual_field("Version ID (hex)", "##version_id", version_id_hex_,
+                      "Text", "##version_text", version_text_);
+    render_single_field("Serial Number", "##serial_text", serial_number_);
+    render_single_field("Product Instance ID", "##prod_instance", product_instance_id_);
+    render_single_int("Max Connections", "##max_conn", max_connections_, 1);
     ImGui::Columns(1);
 
     if (ImGui::Button("Apply Device Info")) {
@@ -189,19 +193,7 @@ void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling
     ImGui::Checkbox("Workaround JUCE Subscription", &workaround_subscription_);
     ImGui::SameLine();
     ImGui::Checkbox("Workaround JUCE Profile Channels", &workaround_profile_channels_);
-    if (ImGui::Button("Log Workaround State")) {
-        repository_->log(
-            std::string("Workarounds - subscription: ") + (workaround_subscription_ ? "on" : "off") +
-                ", profile channels: " + (workaround_profile_channels_ ? "on" : "off"),
-            tooling::MessageDirection::Out);
-    }
-
-    ImGui::TextUnformatted("JSON Schema");
-    ImGui::InputTextMultiline("##json_schema", &json_schema_text_, ImVec2(-FLT_MIN, 140.0f));
-    if (ImGui::Button("Apply JSON Schema")) {
-        config.json_schema_string = json_schema_text_;
-        repository_->log("Updated local JSON schema", tooling::MessageDirection::Out);
-    }
+    ImGui::Spacing();
 }
 
 void LocalDevicePanel::render_profiles_section(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
@@ -212,41 +204,52 @@ void LocalDevicePanel::render_profiles_section(const std::shared_ptr<tooling::CI
         selected_profile_id_ = profile_ids.front();
     }
 
-    if (ImGui::BeginListBox("Profiles", ImVec2(-FLT_MIN, 140.0f))) {
-        for (const auto& pid : profile_ids) {
-            bool selected = (pid == selected_profile_id_);
-            if (ImGui::Selectable(pid.c_str(), selected)) {
-                selected_profile_id_ = pid;
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    float total_width = avail.x;
+    float list_width = std::max(0.0f, total_width * 0.3f);
+    float profile_section_height = std::clamp(avail.y * 0.4f, 220.0f, 360.0f);
+
+    if (ImGui::BeginChild("local-profiles-list", ImVec2(list_width, profile_section_height), true)) {
+        if (ImGui::BeginListBox("Profiles", ImVec2(-FLT_MIN, -FLT_MIN))) {
+            for (const auto& pid : profile_ids) {
+                bool selected = (pid == selected_profile_id_);
+                if (ImGui::Selectable(pid.c_str(), selected)) {
+                    selected_profile_id_ = pid;
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
             }
-            if (selected) {
-                ImGui::SetItemDefaultFocus();
-            }
+            ImGui::EndListBox();
         }
-        ImGui::EndListBox();
     }
-
-    ImGui::InputText("New Profile ID (XX:..)", &new_profile_id_input_);
-    ImGui::InputInt("Target Address", &new_profile_address_);
-    if (new_profile_address_ < 0) new_profile_address_ = 0;
-    if (new_profile_address_ > 127) new_profile_address_ = 127;
-    ImGui::InputInt("Channels", &new_profile_channels_);
-    if (new_profile_channels_ < 1) new_profile_channels_ = 1;
-    if (new_profile_channels_ > 16) new_profile_channels_ = 16;
-
-    if (ImGui::Button("Add Profile")) {
-        add_profile(device_model);
-    }
+    ImGui::EndChild();
     ImGui::SameLine();
-    if (ImGui::Button("Add Target")) {
-        add_profile_target(device_model);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Add Test Items")) {
-        device_model->add_test_profile_items();
-        repository_->log("Added test profile items", tooling::MessageDirection::Out);
-    }
+    if (ImGui::BeginChild("local-profiles-details", ImVec2(0, profile_section_height), true)) {
+        ImGui::TextUnformatted("Profile Setup");
+        ImGui::InputText("New Profile ID (XX:..)", &new_profile_id_input_);
+        ImGui::InputInt("Target Address", &new_profile_address_);
+        new_profile_address_ = std::clamp(new_profile_address_, 0, 127);
+        ImGui::InputInt("Channels", &new_profile_channels_);
+        new_profile_channels_ = std::clamp(new_profile_channels_, 1, 16);
 
-    render_profile_targets(device_model);
+        if (ImGui::Button("Add Profile")) {
+            add_profile(device_model);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Add Target")) {
+            add_profile_target(device_model);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Add Test Items")) {
+            device_model->add_test_profile_items();
+            repository_->log("Added test profile items", tooling::MessageDirection::Out);
+        }
+
+        ImGui::Separator();
+        render_profile_targets(device_model);
+    }
+    ImGui::EndChild();
 }
 
 void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
@@ -257,8 +260,7 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
 
     std::vector<std::string> property_ids = {
         kSystemPropertyDeviceInfo,
-        kSystemPropertyChannelList,
-        kSystemPropertyJsonSchema
+        kSystemPropertyChannelList
     };
     auto metadata_list = property_facade.get_metadata_list();
     for (const auto* metadata : metadata_list) {
@@ -271,120 +273,130 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
         selected_property_id_ = property_ids.front();
     }
 
-    if (ImGui::BeginListBox("Property Catalog", ImVec2(-FLT_MIN, 160.0f))) {
-        for (const auto& prop : property_ids) {
-            bool selected = (prop == selected_property_id_);
-            std::string label = prop;
-            const auto* meta = property_facade.get_property_metadata(prop);
-            if (meta) {
-                auto desc = resolve_property_description(meta);
-                if (!desc.empty()) {
-                    label += " - " + desc;
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    float total_width = avail.x;
+    float list_width = std::max(0.0f, total_width * 0.25f);
+    float properties_section_height = std::clamp(avail.y * 0.85f, 320.0f, 560.0f);
+
+    if (ImGui::BeginChild("local-props-list", ImVec2(list_width, properties_section_height), true)) {
+        if (property_ids.empty()) {
+            ImGui::TextUnformatted("No properties available.");
+        } else if (ImGui::BeginListBox("Property Catalog", ImVec2(-FLT_MIN, -FLT_MIN))) {
+            for (const auto& prop : property_ids) {
+                bool selected = (prop == selected_property_id_);
+                std::string label = prop;
+                const auto* meta = property_facade.get_property_metadata(prop);
+                if (meta) {
+                    auto desc = resolve_property_description(meta);
+                    if (!desc.empty()) {
+                        label += " - " + desc;
+                    }
+                }
+                if (ImGui::Selectable(label.c_str(), selected)) {
+                    selected_property_id_ = prop;
+                    refresh_property_value(device_model);
+                    const auto* meta = property_facade.get_property_metadata(selected_property_id_);
+                    if (auto* rules = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta)) {
+                        property_can_get_ = rules->canGet;
+                        property_can_set_ = rules->canSet;
+                        property_can_subscribe_ = rules->canSubscribe;
+                        property_require_res_id_ = rules->requireResId;
+                        property_can_paginate_ = rules->canPaginate;
+                        property_media_types_.clear();
+                        for (size_t i = 0; i < rules->mediaTypes.size(); ++i) {
+                            if (i > 0) property_media_types_ += ", ";
+                            property_media_types_ += rules->mediaTypes[i];
+                        }
+                        property_encodings_.clear();
+                        for (size_t i = 0; i < rules->encodings.size(); ++i) {
+                            if (i > 0) property_encodings_ += ", ";
+                            property_encodings_ += rules->encodings[i];
+                        }
+                        property_schema_ = rules->schema;
+                    }
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
                 }
             }
-            if (ImGui::Selectable(label.c_str(), selected)) {
-                selected_property_id_ = prop;
+            ImGui::EndListBox();
+        }
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    if (ImGui::BeginChild("local-props-details", ImVec2(0, properties_section_height), true)) {
+        if (selected_property_id_.empty()) {
+            ImGui::TextUnformatted("Select a property to edit.");
+        } else {
+            if (ImGui::Button("Add Property")) {
+                add_property(device_model);
+            }
+            ImGui::SameLine();
+            bool is_system = is_system_property(selected_property_id_);
+            if (ImGui::Button("Delete Property")) {
+                if (!is_system) {
+                    delete_property(device_model);
+                }
+            }
+            if (is_system) {
+                ImGui::SameLine();
+                ImGui::TextUnformatted("(system property)");
+            }
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Metadata");
+            ImGui::Checkbox("Can Get", &property_can_get_);
+            ImGui::SameLine();
+            ImGui::Checkbox("Can Subscribe", &property_can_subscribe_);
+            ImGui::SameLine();
+            ImGui::Checkbox("Require ResId", &property_require_res_id_);
+            ImGui::Checkbox("Can Paginate", &property_can_paginate_);
+            ImGui::InputText("Can Set", &property_can_set_);
+            ImGui::InputText("Media Types", &property_media_types_);
+            ImGui::InputText("Encodings", &property_encodings_);
+            ImGui::InputTextMultiline("Schema", &property_schema_, ImVec2(-FLT_MIN, 120.0f));
+            if (ImGui::Button("Save Metadata")) {
+                if (!is_system) {
+                    save_property_metadata(device_model);
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Edit Value", &property_edit_mode_);
+            if (ImGui::Button("Refresh Value")) {
                 refresh_property_value(device_model);
-                const auto* meta = property_facade.get_property_metadata(selected_property_id_);
-                if (auto* rules = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta)) {
-                    property_can_get_ = rules->canGet;
-                    property_can_set_ = rules->canSet;
-                    property_can_subscribe_ = rules->canSubscribe;
-                    property_require_res_id_ = rules->requireResId;
-                    property_can_paginate_ = rules->canPaginate;
-                    property_media_types_.clear();
-                    for (size_t i = 0; i < rules->mediaTypes.size(); ++i) {
-                        if (i > 0) property_media_types_ += ", ";
-                        property_media_types_ += rules->mediaTypes[i];
-                    }
-                    property_encodings_.clear();
-                    for (size_t i = 0; i < rules->encodings.size(); ++i) {
-                        if (i > 0) property_encodings_ += ", ";
-                        property_encodings_ += rules->encodings[i];
-                    }
-                    property_schema_ = rules->schema;
+            }
+            ImGui::InputText("Resource ID", &property_res_id_);
+            ImGui::InputTextMultiline("Value", &property_value_buffer_, ImVec2(-FLT_MIN, 180.0f),
+                                      property_edit_mode_ ? 0 : ImGuiInputTextFlags_ReadOnly);
+            if (property_edit_mode_ && ImGui::Button("Apply Value")) {
+                save_property_value(device_model);
+            }
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Property Subscriptions");
+            auto subs = property_facade.get_subscriptions();
+            if (subs.empty()) {
+                ImGui::TextUnformatted("No active subscriptions.");
+            } else if (ImGui::BeginTable("subscriptions", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+                ImGui::TableSetupColumn("MUID");
+                ImGui::TableSetupColumn("ResID");
+                ImGui::TableSetupColumn("Subscription ID");
+                ImGui::TableHeadersRow();
+                for (const auto& sub : subs) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("0x%08X", sub.subscriber_muid);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(sub.res_id.c_str());
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::TextUnformatted(sub.subscription_id.c_str());
                 }
-            }
-            if (selected) {
-                ImGui::SetItemDefaultFocus();
+                ImGui::EndTable();
             }
         }
-        ImGui::EndListBox();
     }
-
-    if (selected_property_id_.empty()) {
-        ImGui::TextUnformatted("Select a property to edit.");
-        return;
-    }
-
-    if (ImGui::Button("Add Property")) {
-        add_property(device_model);
-    }
-    ImGui::SameLine();
-    bool is_system = is_system_property(selected_property_id_);
-    if (ImGui::Button("Delete Property")) {
-        if (!is_system) {
-            delete_property(device_model);
-        }
-    }
-    if (is_system) {
-        ImGui::SameLine();
-        ImGui::TextUnformatted("(system property)");
-    }
-
-    ImGui::Separator();
-    ImGui::TextUnformatted("Metadata");
-    ImGui::Checkbox("Can Get", &property_can_get_);
-    ImGui::SameLine();
-    ImGui::Checkbox("Can Subscribe", &property_can_subscribe_);
-    ImGui::SameLine();
-    ImGui::Checkbox("Require ResId", &property_require_res_id_);
-    ImGui::Checkbox("Can Paginate", &property_can_paginate_);
-    ImGui::InputText("Can Set", &property_can_set_);
-    ImGui::InputText("Media Types", &property_media_types_);
-    ImGui::InputText("Encodings", &property_encodings_);
-    ImGui::InputTextMultiline("Schema", &property_schema_, ImVec2(-FLT_MIN, 120.0f));
-    if (ImGui::Button("Save Metadata")) {
-        if (!is_system) {
-            save_property_metadata(device_model);
-        }
-    }
-
-    ImGui::Separator();
-    ImGui::Checkbox("Edit Value", &property_edit_mode_);
-    if (ImGui::Button("Refresh Value")) {
-        refresh_property_value(device_model);
-    }
-    ImGui::InputText("Resource ID", &property_res_id_);
-    ImGui::InputTextMultiline("Value", &property_value_buffer_, ImVec2(-FLT_MIN, 180.0f),
-                              property_edit_mode_ ? 0 : ImGuiInputTextFlags_ReadOnly);
-    if (property_edit_mode_ && ImGui::Button("Apply Value")) {
-        save_property_value(device_model);
-    }
-
-    ImGui::Separator();
-    ImGui::TextUnformatted("Property Subscriptions");
-    auto subs = property_facade.get_subscriptions();
-    if (subs.empty()) {
-        ImGui::TextUnformatted("No active subscriptions.");
-    } else {
-        if (ImGui::BeginTable("subscriptions", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
-            ImGui::TableSetupColumn("MUID");
-            ImGui::TableSetupColumn("ResID");
-            ImGui::TableSetupColumn("Subscription ID");
-            ImGui::TableHeadersRow();
-            for (const auto& sub : subs) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("0x%08X", sub.subscriber_muid);
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(sub.res_id.c_str());
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(sub.subscription_id.c_str());
-            }
-            ImGui::EndTable();
-        }
-    }
+    ImGui::EndChild();
 }
 
 void LocalDevicePanel::load_fields_from_config(midicci::MidiCIDeviceConfiguration& config) {
@@ -398,7 +410,6 @@ void LocalDevicePanel::load_fields_from_config(midicci::MidiCIDeviceConfiguratio
     version_text_ = config.device_info.version;
     serial_number_ = config.device_info.serial_number;
     product_instance_id_ = config.product_instance_id;
-    json_schema_text_ = config.json_schema_string;
 }
 
 void LocalDevicePanel::apply_device_info(midicci::MidiCIDeviceConfiguration& config) {
@@ -510,11 +521,14 @@ void LocalDevicePanel::render_profile_targets(const std::shared_ptr<tooling::CID
 }
 
 void LocalDevicePanel::add_property(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
-    auto property = device_model->create_new_property();
-    if (property) {
-        selected_property_id_ = property->getPropertyId();
-        repository_->log("Added local property", tooling::MessageDirection::Out);
+    if (!device_model) {
+        return;
     }
+    auto property = device_model->create_new_property();
+    if (!property) {
+        return;
+    }
+    repository_->log("Added local property " + property->getPropertyId(), tooling::MessageDirection::Out);
 }
 
 void LocalDevicePanel::delete_property(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {

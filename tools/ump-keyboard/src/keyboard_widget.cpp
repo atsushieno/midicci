@@ -816,7 +816,13 @@ void KeyboardWidget::onMidiCIDeviceSelected(int index) {
     loadStatesButton->setEnabled(true);
 
     if (previousDeviceMuid != muid) {
-        controlListWidget->refreshVisibleItems();
+        // Clear any data from the previously selected device so we don't
+        // accidentally trigger property requests for the wrong MUID.
+        controlListWidget->setControls({});
+        controlListWidget->setEnabled(false);
+        programListWidget->clear();
+        programListWidget->addItem("No data loaded. Click Refresh.");
+        programListWidget->setEnabled(false);
     }
 
     // Do not auto-request properties; leave lists unchanged until user requests

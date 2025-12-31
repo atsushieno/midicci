@@ -555,8 +555,6 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
 }
 
 std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIManager::getCtrlMapList(uint32_t muid, const std::string& ctrlMapId) {
-    instrumentation_log_property_call(muid, "CtrlMapList", "getCtrlMapList");
-
     if (!initialized_ || !device_) {
         std::cerr << "[MIDI-CI ERROR] Cannot get properties - not initialized" << std::endl;
         return std::nullopt;

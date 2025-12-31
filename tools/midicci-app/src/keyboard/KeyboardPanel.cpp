@@ -404,14 +404,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             program_list_cache_.erase(last_selected_muid_);
         }
         last_selected_muid_ = muid;
-        if (controller_ && muid != 0) {
-            if (auto initial_controls = controller_->getAllCtrlList(muid)) {
-                ctrl_list_cache_[muid] = *initial_controls;
-            }
-            if (auto initial_programs = controller_->getProgramList(muid)) {
-                program_list_cache_[muid] = *initial_programs;
-            }
-        }
+        // Do not auto-fetch control/program lists; leave them empty until the user requests data.
     }
 
     const auto ctrl_list_it = ctrl_list_cache_.find(muid);
@@ -455,14 +448,17 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 float width = ImGui::GetContentRegionAvail().x;
                 ImGui::PushID(row);
                 const bool has_combo = ctrl.ctrlMapId.has_value();
-                const std::vector<midicci::commonproperties::MidiCIControlMap>* map_values = nullptr;
-                bool map_loading = false;
+                ControlMapCache* ctrl_map_cache_entry = nullptr;
+                std::string ctrl_map_id_str;
                 float combo_button_width = 0.0f;
                 float combo_spacing = 0.0f;
                 if (has_combo) {
                     combo_button_width = ImGui::GetFrameHeight();
                     combo_spacing = ImGui::GetStyle().ItemInnerSpacing.x;
                     width = std::max(20.0f, width - (combo_button_width + combo_spacing));
+                    ctrl_map_id_str = *ctrl.ctrlMapId;
+                    ctrl_map_cache_entry = &ctrl_map_cache_[muid][ctrl_map_id_str];
+                    ctrl_map_cache_entry->last_visible_frame = current_frame;
                 }
                 ImGui::SetNextItemWidth(width);
                 float slider_ratio = 0.0f;
@@ -481,37 +477,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                         controller_->sendControlChange(0, ctrl.ctrlIndex[0], static_cast<uint32_t>(raw));
                     }
                 }
-                if (has_combo && slider_visible) {
-                    auto& cache = ctrl_map_cache_[muid][*ctrl.ctrlMapId];
-                    cache.last_visible_frame = current_frame;
-                    if (cache.pending && cache.last_request_time.time_since_epoch().count() > 0) {
-                        auto now = std::chrono::steady_clock::now();
-                        if ((now - cache.last_request_time) > CTRL_MAP_REQUEST_TIMEOUT) {
-                            cache.pending = false;
-                            cache.checked_local = false;
-                        }
-                    }
-                    if (!cache.loaded && !cache.checked_local) {
-                        auto latest = controller_->getCtrlMapList(muid, *ctrl.ctrlMapId);
-                        cache.checked_local = true;
-                        if (latest) {
-                            cache.values = *latest;
-                            cache.loaded = true;
-                        } else {
-                            cache.values.clear();
-                            cache.loaded = false;
-                        }
-                    }
-                    if (!cache.loaded && !cache.pending) {
-                        controller_->requestCtrlMapList(muid, *ctrl.ctrlMapId);
-                        cache.pending = true;
-                        cache.last_request_time = std::chrono::steady_clock::now();
-                    }
-                    if (cache.loaded && !cache.values.empty()) {
-                        map_values = &cache.values;
-                    }
-                    map_loading = cache.pending && !cache.loaded;
-                }
                 if (has_combo) {
                     ImGui::SameLine(0.0f, combo_spacing);
                     std::string combo_button = "##link-btn-" + std::to_string(row);
@@ -526,6 +491,38 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                     ImGui::SetNextWindowPos(slider_min);
                     ImGui::SetNextWindowSize(ImVec2(slider_max.x - slider_min.x, 0.0f));
                     if (ImGui::BeginPopup(combo_popup.c_str())) {
+                        const std::vector<midicci::commonproperties::MidiCIControlMap>* map_values = nullptr;
+                        bool map_loading = false;
+                        if (ctrl_map_cache_entry) {
+                            auto& cache = *ctrl_map_cache_entry;
+                            auto now = std::chrono::steady_clock::now();
+                            if (cache.pending && cache.last_request_time.time_since_epoch().count() > 0 &&
+                                (now - cache.last_request_time) > CTRL_MAP_REQUEST_TIMEOUT) {
+                                cache.pending = false;
+                                cache.checked_local = false;
+                            }
+                            if (!cache.loaded && !cache.checked_local && controller_) {
+                                auto latest = controller_->getCtrlMapList(muid, ctrl_map_id_str);
+                                cache.checked_local = true;
+                                if (latest) {
+                                    cache.values = *latest;
+                                    cache.loaded = true;
+                                    cache.pending = false;
+                                } else {
+                                    cache.values.clear();
+                                    cache.loaded = false;
+                                }
+                            }
+                            if (!cache.loaded && !cache.pending && controller_) {
+                                controller_->requestCtrlMapList(muid, ctrl_map_id_str);
+                                cache.pending = true;
+                                cache.last_request_time = now;
+                            }
+                            if (cache.loaded && !cache.values.empty()) {
+                                map_values = &cache.values;
+                            }
+                            map_loading = cache.pending && !cache.loaded;
+                        }
                         if (map_values && !map_values->empty()) {
                             uint32_t current_value = static_cast<uint32_t>(value);
                             for (const auto& mapEntry : *map_values) {

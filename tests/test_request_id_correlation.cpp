@@ -48,7 +48,7 @@ TEST(RequestIdCorrelationTest, PropertyClientFacadeSequence) {
     MidiCIDeviceConfiguration config;
     auto client_device = std::make_shared<MidiCIDevice>(0x12345678, config);
     
-    auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, DeviceDetails{0x123, 0x456, 0x789, 0xABC});
+    auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, DeviceDetails{0x123, 0x456, 0x789, 0xABC}, 4096);
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Get next request ID from messenger

@@ -55,7 +55,7 @@ TEST_F(FinalCorrelationTest, BasicRequestIdCorrelation) {
     
     // Create client connection
     auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, 
-        DeviceDetails{0x123, 0x456, 0x789, 0xABC});
+        DeviceDetails{0x123, 0x456, 0x789, 0xABC}, 4096);
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Send property request
@@ -107,7 +107,7 @@ TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
     
     // Create client connection
     auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, 
-        DeviceDetails{0x123, 0x456, 0x789, 0xABC});
+        DeviceDetails{0x123, 0x456, 0x789, 0xABC}, 4096);
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Send multiple requests to test correlation

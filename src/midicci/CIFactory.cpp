@@ -1,5 +1,6 @@
 #include "midicci/midicci.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 namespace midicci {
 
@@ -171,15 +172,47 @@ std::vector<std::vector<uint8_t>> CIFactory::midiCIPropertyChunks(
         return result;
     }
 
-    size_t num_chunks = (data.size() + max_chunk_size - 1) / max_chunk_size;
-    for (size_t i = 0; i < num_chunks; ++i) {
-        size_t start = i * max_chunk_size;
-        size_t end = std::min(start + max_chunk_size, data.size());
-        std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
+    auto available_payload = [&](bool include_header) -> size_t {
+        size_t overhead = 22 + (include_header ? header.size() : 0);
+        if (max_chunk_size <= overhead) {
+            return 0;
+        }
+        return max_chunk_size - overhead;
+    };
 
-        auto packet = midiCIPropertyPacketCommon(dst, sub_id_2,
-                                               source_muid, destination_muid, request_id, i > 0 ? std::vector<uint8_t>() : header,
-                                               static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);
+    std::vector<std::vector<uint8_t>> chunk_payloads;
+    size_t offset = 0;
+
+    if (!header.empty()) {
+        size_t first_capacity = available_payload(true);
+        size_t first_len = std::min(first_capacity, data.size());
+        chunk_payloads.emplace_back(data.begin(), data.begin() + first_len);
+        offset = first_len;
+    }
+
+    size_t regular_capacity = available_payload(false);
+    while (offset < data.size()) {
+        if (regular_capacity == 0) {
+            throw std::runtime_error("max_property_chunk_size too small for property payload");
+        }
+        size_t len = std::min(regular_capacity, data.size() - offset);
+        chunk_payloads.emplace_back(data.begin() + offset, data.begin() + offset + len);
+        offset += len;
+    }
+
+    if (chunk_payloads.empty()) {
+        chunk_payloads.emplace_back(); // Ensure we still emit a packet even with no data/header
+    }
+
+    const size_t num_chunks = chunk_payloads.size();
+    for (size_t i = 0; i < num_chunks; ++i) {
+        auto packet = midiCIPropertyPacketCommon(
+            dst, sub_id_2,
+            source_muid, destination_muid, request_id,
+            (i == 0) ? header : std::vector<uint8_t>(),
+            static_cast<uint16_t>(num_chunks),
+            static_cast<uint16_t>(i + 1),
+            chunk_payloads[i]);
         result.push_back(packet);
     }
     return result;

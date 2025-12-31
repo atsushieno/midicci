@@ -5,11 +5,12 @@ namespace midicci {
 
 class ClientConnection::Impl {
 public:
-    explicit Impl(uint32_t target_muid, MidiCIDevice& device, DeviceDetails& device_details, ClientConnection& conn)
+    explicit Impl(uint32_t target_muid, MidiCIDevice& device, DeviceDetails& device_details, uint32_t remote_max_sysex, ClientConnection& conn)
         : target_muid_(target_muid), connected_(true),
           profile_client_facade_(std::make_unique<ProfileClientFacade>(device, conn)),
           property_client_facade_(std::make_unique<PropertyClientFacade>(device, conn)),
-          channel_list_(nullptr), json_schema_(nullptr) {
+          channel_list_(nullptr), json_schema_(nullptr),
+          remote_max_sysex_size_(remote_max_sysex) {
         // those string fields are unknown at DiscoveryReply.
         device_info_ = std::make_unique<DeviceInfo>(device_details.manufacturer,
                                                     device_details.family,
@@ -28,10 +29,11 @@ public:
     std::unique_ptr<JsonValue> channel_list_;
     std::unique_ptr<JsonValue> json_schema_;
     mutable std::recursive_mutex mutex_;
+    uint32_t remote_max_sysex_size_;
 };
 
-ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails device_details)
-    : pimpl_(std::make_unique<Impl>(target_muid, device, device_details, *this)) {}
+ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails device_details, uint32_t remote_max_sysex)
+    : pimpl_(std::make_unique<Impl>(target_muid, device, device_details, remote_max_sysex, *this)) {}
 
 ClientConnection::~ClientConnection() = default;
 
@@ -167,6 +169,11 @@ JsonValue ClientConnection::jsonSchema() const {
         return *pimpl_->json_schema_;
     }
     return JsonValue(JsonObject{});
+}
+
+uint32_t ClientConnection::get_remote_max_sysex_size() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->remote_max_sysex_size_;
 }
 
 } // namespace

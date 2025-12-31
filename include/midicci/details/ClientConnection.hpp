@@ -29,7 +29,7 @@ public:
     using MessageCallback = std::function<void(const Message&)>;
     using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
     
-    explicit ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails target_device_details);
+    explicit ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails target_device_details, uint32_t remote_max_sysex);
     ~ClientConnection();
     
     ClientConnection(const ClientConnection&) = delete;
@@ -59,6 +59,8 @@ public:
     DeviceInfo deviceInfo() const;
     JsonValue channelList() const;
     JsonValue jsonSchema() const;
+
+    uint32_t get_remote_max_sysex_size() const;
     
 private:
     class Impl;

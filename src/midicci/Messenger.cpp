@@ -45,7 +45,34 @@ Messenger::~Messenger() = default;
 void Messenger::send(const Message& message) {
     pimpl_->log_message(message, true);
 
-    auto parts = message.serialize_multi(pimpl_->device_.get_config());
+    auto& device_config = pimpl_->device_.get_config();
+    int original_chunk_size = device_config.max_property_chunk_size;
+    int original_sysex_size = device_config.receivable_max_sysex_size;
+    bool overridden = false;
+    uint32_t dest_muid = message.get_destination_muid();
+    if (dest_muid != MIDI_CI_BROADCAST_MUID_32) {
+        auto connection = pimpl_->device_.get_connection(dest_muid);
+        if (connection) {
+            uint32_t remote_limit = connection->get_remote_max_sysex_size();
+            if (remote_limit > 0) {
+                int limit = static_cast<int>(remote_limit);
+                if (device_config.max_property_chunk_size > limit) {
+                    device_config.max_property_chunk_size = limit;
+                    overridden = true;
+                }
+                if (device_config.receivable_max_sysex_size > limit) {
+                    device_config.receivable_max_sysex_size = limit;
+                    overridden = true;
+                }
+            }
+        }
+    }
+
+    auto parts = message.serialize_multi(device_config);
+    if (overridden) {
+        device_config.max_property_chunk_size = original_chunk_size;
+        device_config.receivable_max_sysex_size = original_sysex_size;
+    }
     for (auto & part : parts) {
         auto ci_output_sender = pimpl_->device_.get_ci_output_sender();
         if (ci_output_sender) {
@@ -619,7 +646,7 @@ void Messenger::handleNewEndpoint(const DiscoveryReply& msg) {
         pimpl_->device_.remove_connection(msg.get_source_muid());
     }
 
-    auto connection = std::make_shared<ClientConnection>(pimpl_->device_, msg.get_source_muid(), msg.get_device_details());
+    auto connection = std::make_shared<ClientConnection>(pimpl_->device_, msg.get_source_muid(), msg.get_device_details(), msg.get_max_sysex_size());
     pimpl_->device_.store_connection(msg.get_source_muid(), connection);
 
     send_endpoint_inquiry(msg.get_common().group, msg.get_source_muid(), 0x01);

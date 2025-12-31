@@ -126,6 +126,7 @@ public:
     std::string get_body_string() const override;
 
     const DeviceDetails& get_device_details() const { return device_details_; }
+    uint32_t get_max_sysex_size() const { return max_sysex_size_; }
     
 private:
     DeviceDetails device_details_;

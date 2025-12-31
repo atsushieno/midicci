@@ -705,7 +705,7 @@ SetPropertyDataReply::SetPropertyDataReply(const Common& common, uint8_t request
 std::vector<std::vector<uint8_t>> SetPropertyDataReply::serialize(const MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(4096);
     auto chunks = CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(CISubId2::PROPERTY_SET_DATA_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, {});
     return chunks;
@@ -734,7 +734,7 @@ SubscribePropertyReply::SubscribePropertyReply(const Common& common, uint8_t req
 std::vector<std::vector<uint8_t>> SubscribePropertyReply::serialize(const MidiCIDeviceConfiguration& config) const {
     std::vector<uint8_t> dst(4096);
     auto chunks = CIFactory::midiCIPropertyChunks(
-        dst, 4096 - 256, // max chunk size
+        dst, config.max_property_chunk_size,
         static_cast<uint8_t>(CISubId2::PROPERTY_SUBSCRIPTION_REPLY),
         common_.source_muid, common_.destination_muid, request_id_, header_, body_);
     return chunks;

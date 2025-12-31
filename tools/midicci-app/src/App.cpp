@@ -1,5 +1,6 @@
 #include "App.hpp"
 
+#include "imgui/SharedTheme.hpp"
 #include <midicci/tooling/CIDeviceManager.hpp>
 #include <midicci/tooling/MidiDeviceManager.hpp>
 #include <chrono>
@@ -19,6 +20,7 @@ bool MidicciApplication::initialize() {
     if (initialized_) {
         return true;
     }
+    SetupImGuiStyle();
 
     repository_ = std::make_unique<tooling::CIToolRepository>();
 

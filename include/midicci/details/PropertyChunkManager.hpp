@@ -25,6 +25,8 @@ public:
     finish_pending_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data);
     
     bool has_pending_chunk(uint32_t source_muid, uint8_t request_id) const;
+
+    std::vector<uint8_t> get_pending_header(uint32_t source_muid, uint8_t request_id) const;
     
     void cleanup_expired_chunks(uint64_t current_timestamp, uint64_t timeout_seconds = 30);
     

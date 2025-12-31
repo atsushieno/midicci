@@ -6,9 +6,11 @@
 #include <string>
 #include <cstdint>
 #include <map>
+#include <unordered_map>
 #include <chrono>
 #include <mutex>
 #include <set>
+#include <optional>
 #include <midicci/midicci.hpp>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
 #include "message_logger.h"
@@ -125,6 +127,7 @@ private:
     std::vector<PendingPropertyRequest> pending_property_requests_;
     // Track properties that have received at least one update from the peer
     std::set<std::pair<uint32_t, std::string>> fetched_properties_;
+    std::unordered_map<uint32_t, std::unordered_map<uint8_t, std::string>> inflight_request_map_;
 
     // Note: Remote device access is now handled through ClientConnection objects
     // obtained via device_->get_connection(muid) - no need for separate storage
@@ -141,6 +144,9 @@ private:
     void extendPendingPropertyRequest(uint32_t muid, const std::string& property_name);
     bool has_property_been_fetched(uint32_t muid, const std::string& property_name) const;
     void mark_property_fetched(uint32_t muid, const std::string& property_name);
+    void registerPropertyRequestId(uint32_t muid, uint8_t request_id, const std::string& request_key);
+    std::optional<std::string> getRequestKeyForId(uint32_t muid, uint8_t request_id) const;
+    void clearRequestIdTracking(uint32_t muid, const std::string& request_key);
     
     // Logging helper
     void log(const std::string& message, bool is_outgoing = false);

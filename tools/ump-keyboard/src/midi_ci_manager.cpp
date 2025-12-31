@@ -263,28 +263,42 @@ void MidiCIManager::setupDeviceConfiguration() {
 void MidiCIManager::setupCallbacks() {
     if (!device_) return;
 
-    device_->set_property_chunk_callback([this](uint32_t source_muid, const std::vector<uint8_t>& header) {
-        if (!this->device_) {
-            return;
+    device_->set_property_chunk_callback([this](uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header) {
+        std::string request_key;
+        if (auto mapped = this->getRequestKeyForId(source_muid, request_id)) {
+            request_key = *mapped;
         }
-        auto connection = this->device_->get_connection(source_muid);
-        if (!connection) {
-            return;
-        }
-        auto* rules = connection->get_property_client_facade().get_property_rules();
-        if (!rules) {
-            return;
-        }
-        try {
-            std::string property_id = rules->get_property_id_for_header(header);
-            if (property_id.empty()) {
+
+        if (request_key.empty()) {
+            if (!this->device_) {
                 return;
             }
-            std::string res_id = rules->get_res_id_for_header(header);
-            std::string request_key = res_id.empty() ? property_id : (property_id + ":" + res_id);
+            auto connection = this->device_->get_connection(source_muid);
+            if (!connection) {
+                return;
+            }
+            auto* rules = connection->get_property_client_facade().get_property_rules();
+            if (!rules) {
+                return;
+            }
+            if (header.empty()) {
+                return;
+            }
+            try {
+                std::string property_id = rules->get_property_id_for_header(header);
+                if (property_id.empty()) {
+                    return;
+                }
+                std::string res_id = rules->get_res_id_for_header(header);
+                request_key = res_id.empty() ? property_id : (property_id + ":" + res_id);
+            } catch (const std::exception& e) {
+                std::cerr << "[MIDI-CI ERROR] Failed to parse property chunk header: " << e.what() << std::endl;
+                return;
+            }
+        }
+
+        if (!request_key.empty()) {
             this->extendPendingPropertyRequest(source_muid, request_key);
-        } catch (const std::exception& e) {
-            std::cerr << "[MIDI-CI ERROR] Failed to refresh pending request timer: " << e.what() << std::endl;
         }
     });
     
@@ -588,7 +602,8 @@ void MidiCIManager::requestCtrlMapList(uint32_t muid, const std::string& ctrlMap
         addPendingPropertyRequest(muid, requestKey);
         auto& property_client = connection->get_property_client_facade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(CtrlMapList:'" << ctrlMapId << "') to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+        auto request_id = property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+        registerPropertyRequestId(muid, request_id, requestKey);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestCtrlMapList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
@@ -609,7 +624,8 @@ void MidiCIManager::requestAllCtrlList(uint32_t muid) {
         addPendingPropertyRequest(muid, StandardPropertyNames::ALL_CTRL_LIST);
         auto& property_client = connection->get_property_client_facade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(AllCtrlList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+        auto request_id = property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+        registerPropertyRequestId(muid, request_id, StandardPropertyNames::ALL_CTRL_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestAllCtrlList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
@@ -630,7 +646,8 @@ void MidiCIManager::requestProgramList(uint32_t muid) {
         addPendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
         auto& property_client = connection->get_property_client_facade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(ProgramList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
+        auto request_id = property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
+        registerPropertyRequestId(muid, request_id, StandardPropertyNames::PROGRAM_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestProgramList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
@@ -743,7 +760,8 @@ void MidiCIManager::requestStateList(uint32_t muid) {
         addPendingPropertyRequest(muid, StandardPropertyNames::STATE_LIST);
         auto& property_client = connection->get_property_client_facade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(StateList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        property_client.send_get_property_data(StandardPropertyNames::STATE_LIST, "");
+        auto request_id = property_client.send_get_property_data(StandardPropertyNames::STATE_LIST, "");
+        registerPropertyRequestId(muid, request_id, StandardPropertyNames::STATE_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestStateList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
@@ -886,6 +904,7 @@ void MidiCIManager::removePendingPropertyRequest(uint32_t muid, const std::strin
         std::cout << "[PROPERTY REQUEST] Removed pending request for MUID: 0x" << std::hex << muid << std::dec 
                   << ", property: " << property_name << std::endl;
     }
+    clearRequestIdTracking(muid, property_name);
 }
 
 void MidiCIManager::cleanupExpiredPropertyRequests() {
@@ -912,6 +931,42 @@ bool MidiCIManager::has_property_been_fetched(uint32_t muid, const std::string& 
 void MidiCIManager::mark_property_fetched(uint32_t muid, const std::string& property_name) {
     std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
     fetched_properties_.insert({muid, property_name});
+}
+
+void MidiCIManager::registerPropertyRequestId(uint32_t muid, uint8_t request_id, const std::string& request_key) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    inflight_request_map_[muid][request_id] = request_key;
+}
+
+std::optional<std::string> MidiCIManager::getRequestKeyForId(uint32_t muid, uint8_t request_id) const {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    auto device_it = inflight_request_map_.find(muid);
+    if (device_it == inflight_request_map_.end()) {
+        return std::nullopt;
+    }
+    auto req_it = device_it->second.find(request_id);
+    if (req_it == device_it->second.end()) {
+        return std::nullopt;
+    }
+    return req_it->second;
+}
+
+void MidiCIManager::clearRequestIdTracking(uint32_t muid, const std::string& request_key) {
+    std::lock_guard<std::recursive_mutex> lock(midi_ci_mutex_);
+    auto device_it = inflight_request_map_.find(muid);
+    if (device_it == inflight_request_map_.end()) {
+        return;
+    }
+    for (auto it = device_it->second.begin(); it != device_it->second.end();) {
+        if (it->second == request_key) {
+            it = device_it->second.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (device_it->second.empty()) {
+        inflight_request_map_.erase(device_it);
+    }
 }
 
 void MidiCIManager::extendPendingPropertyRequest(uint32_t muid, const std::string& property_name) {

@@ -35,7 +35,7 @@ public:
     typedef std::function<void()> ConnectionsChangedCallback;
     typedef std::function<bool(uint8_t group, const std::vector<uint8_t>& data)> CIOutputSender;
     typedef std::function<void(const LogData&)> LoggerFunction;
-    typedef std::function<void(uint32_t source_muid, const std::vector<uint8_t>& header)> PropertyChunkCallback;
+    typedef std::function<void(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header)> PropertyChunkCallback;
     
     MidiCIDevice(uint32_t muid, MidiCIDeviceConfiguration& config, LoggerFunction logger = LoggerFunction{});
     ~MidiCIDevice();
@@ -78,7 +78,7 @@ public:
     
     Messenger& get_messenger();
     
-    void notify_property_chunk(uint32_t source_muid, const std::vector<uint8_t>& header);
+    void notify_property_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header);
     
 private:
     class Impl;

@@ -166,14 +166,14 @@ Messenger& MidiCIDevice::get_messenger() {
     return pimpl_->messenger_;
 }
 
-void MidiCIDevice::notify_property_chunk(uint32_t source_muid, const std::vector<uint8_t>& header) {
+void MidiCIDevice::notify_property_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header) {
     PropertyChunkCallback callback;
     {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
         callback = pimpl_->property_chunk_callback_;
     }
     if (callback) {
-        callback(source_muid, header);
+        callback(source_muid, request_id, header);
     }
 }
 

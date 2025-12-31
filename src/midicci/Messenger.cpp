@@ -938,7 +938,12 @@ void Messenger::handleChunk(const Common& common, uint8_t request_id, uint16_t c
         chunk_manager = &property_client.get_pending_chunk_manager();
     }
 
-    pimpl_->device_.notify_property_chunk(common.source_muid, header);
+    std::vector<uint8_t> effective_header = header;
+    if (effective_header.empty() && chunk_manager->has_pending_chunk(common.source_muid, request_id)) {
+        effective_header = chunk_manager->get_pending_header(common.source_muid, request_id);
+    }
+
+    pimpl_->device_.notify_property_chunk(common.source_muid, request_id, effective_header);
     if (chunk_index < num_chunks) {
         chunk_manager->add_pending_chunk(
             std::chrono::duration_cast<std::chrono::seconds>(

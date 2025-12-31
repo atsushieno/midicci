@@ -73,6 +73,20 @@ bool PropertyChunkManager::has_pending_chunk(uint32_t source_muid, uint8_t reque
     return it != pimpl_->chunks_.end();
 }
 
+std::vector<uint8_t> PropertyChunkManager::get_pending_header(uint32_t source_muid, uint8_t request_id) const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    
+    auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
+        [&](const Chunk& chunk) {
+            return chunk.source_muid == source_muid && chunk.request_id == request_id;
+        });
+    
+    if (it != pimpl_->chunks_.end()) {
+        return it->header;
+    }
+    return {};
+}
+
 void PropertyChunkManager::cleanup_expired_chunks(uint64_t current_timestamp, uint64_t timeout_seconds) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     

@@ -31,10 +31,9 @@ void CIDeviceManager::initialize() {
         auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
         std::vector<uint32_t> ump_data;
         for (const auto& ump : umps) {
+            // SysEx7 packets are 2 words
             ump_data.push_back(ump.int1);
             ump_data.push_back(ump.int2);
-            ump_data.push_back(ump.int3);
-            ump_data.push_back(ump.int4);
         }
         
         std::string hex_str;
@@ -46,6 +45,7 @@ void CIDeviceManager::initialize() {
         repository_.log("[sent CI SysEx (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
         repository_.record_output_sysex(data);
         
+        repository_.record_output_ump_words(ump_data);
         return midi_device_manager_->send_sysex(group, ump_data);
     };
     
@@ -55,10 +55,9 @@ void CIDeviceManager::initialize() {
         auto umps = midicci::ump::UmpFactory::sysex7(group, data_vector);
         std::vector<uint32_t> ump_data;
         for (const auto& ump : umps) {
+            // MIDI message report is sent as SysEx7: 2 words per packet
             ump_data.push_back(ump.int1);
             ump_data.push_back(ump.int2);
-            ump_data.push_back(ump.int3);
-            ump_data.push_back(ump.int4);
         }
         
         std::string hex_str;
@@ -70,6 +69,7 @@ void CIDeviceManager::initialize() {
         repository_.log("[sent MIDI Message Report (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
         repository_.record_output_sysex(data);
         
+        repository_.record_output_ump_words(ump_data);
         return midi_device_manager_->send_sysex(group, ump_data);
     };
     
@@ -94,7 +94,29 @@ void CIDeviceManager::initialize() {
     
     midi_device_manager_->set_sysex_callback(
         [this](uint8_t group, const std::vector<uint32_t>& ump_data) {
-            // Process UMP packets directly (4 words = 1 UMP packet)
+            // Process UMP packets directly (4 words = 1 UMP packet as delivered here)
+            // Record raw UMP words for input with correct per-message length
+            std::vector<uint32_t> trimmed;
+            for (size_t i = 0; i + 3 < ump_data.size(); i += 4) {
+                uint32_t w0 = ump_data[i];
+                uint8_t type = (w0 >> 28) & 0xF;
+                unsigned count = 4;
+                switch (type) {
+                    case 0x0: // Utility
+                    case 0x1: // System
+                    case 0x2: // MIDI 1.0
+                        count = 1; break;
+                    case 0x3: // SysEx7
+                    case 0x4: // MIDI 2.0 Channel Voice
+                        count = 2; break;
+                    case 0x5: // Data Messages (incl. SysEx8 MDS)
+                    default:
+                        count = 4; break;
+                }
+                for (unsigned k = 0; k < count; ++k) trimmed.push_back(ump_data[i + k]);
+            }
+            repository_.record_input_ump_words(trimmed);
+
             for (size_t i = 0; i + 3 < ump_data.size(); i += 4) {
                 midicci::ump::Ump ump(ump_data[i], ump_data[i+1], ump_data[i+2], ump_data[i+3]);
                 process_single_ump_packet(ump);

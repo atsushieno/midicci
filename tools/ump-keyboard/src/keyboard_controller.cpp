@@ -272,6 +272,11 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
         // Handle multi-packet SysEx reconstruction manually based on UMP SysEx7 status
         switch (status) {
             case 0x0: { // Complete SysEx in one packet
+                if (logger_) {
+                    // SysEx7 packets are 2 words long
+                    std::vector<uint32_t> words{packet.data[0], packet.data[1]};
+                    logger_->record_input_ump_words(words);
+                }
                 sysex_buffer_.clear();
 
                 // Extract data bytes using cmidi2 helper functions
@@ -316,6 +321,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                 break;
             }
             case 0x1: { // SysEx start
+                if (logger_) {
+                    std::vector<uint32_t> words{packet.data[0], packet.data[1]};
+                    logger_->record_input_ump_words(words);
+                }
                 sysex_buffer_.clear();
                 sysex_in_progress_ = true;
                 
@@ -328,6 +337,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                 break;
             }
             case 0x2: { // SysEx continue
+                if (logger_) {
+                    std::vector<uint32_t> words{packet.data[0], packet.data[1]};
+                    logger_->record_input_ump_words(words);
+                }
                 if (!sysex_in_progress_) {
                     std::cerr << "[SYSEX ERROR] Continue packet without start" << std::endl;
                     break;
@@ -342,6 +355,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                 break;
             }
             case 0x3: { // SysEx end
+                if (logger_) {
+                    std::vector<uint32_t> words{packet.data[0], packet.data[1]};
+                    logger_->record_input_ump_words(words);
+                }
                 if (!sysex_in_progress_) {
                     std::cerr << "[SYSEX ERROR] End packet without start" << std::endl;
                     break;
@@ -683,6 +700,11 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
                 libremidi::ump packet(word0, word1, 0, 0);
 
                 try {
+                    if (controller->logger_) {
+                        // SysEx7 UMP packet is 2 words
+                        std::vector<uint32_t> words{word0, word1};
+                        controller->logger_->record_output_ump_words(words);
+                    }
                     controller->midiOut->send_ump(packet);
                 } catch (const std::exception& e) {
                     std::cerr << "Failed to send UMP SYSEX7 packet: " << e.what() << std::endl;

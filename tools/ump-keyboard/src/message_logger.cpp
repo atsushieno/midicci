@@ -17,6 +17,8 @@ public:
     bool recording_enabled_ = false;
     std::vector<uint8_t> recorded_inputs_;
     std::vector<uint8_t> recorded_outputs_;
+    std::vector<uint32_t> recorded_input_ump_;
+    std::vector<uint32_t> recorded_output_ump_;
 };
 
 MessageLogger::MessageLogger() : pimpl_(std::make_unique<Impl>()) {
@@ -104,6 +106,30 @@ void MessageLogger::clear_recorded() {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     pimpl_->recorded_inputs_.clear();
     pimpl_->recorded_outputs_.clear();
+    pimpl_->recorded_input_ump_.clear();
+    pimpl_->recorded_output_ump_.clear();
+}
+
+void MessageLogger::record_input_ump_words(const std::vector<uint32_t>& words) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_input_ump_.insert(pimpl_->recorded_input_ump_.end(), words.begin(), words.end());
+}
+
+void MessageLogger::record_output_ump_words(const std::vector<uint32_t>& words) {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    if (!pimpl_->recording_enabled_) return;
+    pimpl_->recorded_output_ump_.insert(pimpl_->recorded_output_ump_.end(), words.begin(), words.end());
+}
+
+std::vector<uint32_t> MessageLogger::get_recorded_input_ump_words() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_input_ump_;
+}
+
+std::vector<uint32_t> MessageLogger::get_recorded_output_ump_words() const {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+    return pimpl_->recorded_output_ump_;
 }
 
 } // namespace

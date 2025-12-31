@@ -9,6 +9,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QScrollBar>
+#include <QComboBox>
 #include <memory>
 #include <vector>
 #include <midicci/tooling/CIToolRepository.hpp>
@@ -65,6 +66,7 @@ private:
     QCheckBox *m_recordCheck;
     QPushButton *m_saveInputsButton;
     QPushButton *m_saveOutputsButton;
+    QComboBox *m_saveTypeCombo;
     SimpleLogWidget *m_logTable;
 };
 }

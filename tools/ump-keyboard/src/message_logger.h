@@ -55,6 +55,12 @@ public:
     std::vector<uint8_t> get_recorded_inputs() const;
     std::vector<uint8_t> get_recorded_outputs() const;
     void clear_recorded();
+
+    // Recording of raw UMP words (32-bit words)
+    void record_input_ump_words(const std::vector<uint32_t>& words);
+    void record_output_ump_words(const std::vector<uint32_t>& words);
+    std::vector<uint32_t> get_recorded_input_ump_words() const;
+    std::vector<uint32_t> get_recorded_output_ump_words() const;
     
 private:
     class Impl;

@@ -178,12 +178,16 @@ void LogWidget::setupUI()
     m_recordCheck = new QCheckBox("Record logs", this);
     m_saveInputsButton = new QPushButton("Save Inputs", this);
     m_saveOutputsButton = new QPushButton("Save Outputs", this);
+    m_saveTypeCombo = new QComboBox(this);
+    m_saveTypeCombo->addItem("SysEx");
+    m_saveTypeCombo->addItem("UMP");
     
     buttonLayout->addWidget(m_clearButton);
     buttonLayout->addWidget(m_fullTextToggle);
     buttonLayout->addWidget(m_recordCheck);
     buttonLayout->addWidget(m_saveInputsButton);
     buttonLayout->addWidget(m_saveOutputsButton);
+    buttonLayout->addWidget(m_saveTypeCombo);
     buttonLayout->addStretch();
     
     mainLayout->addLayout(buttonLayout);
@@ -235,14 +239,40 @@ static bool save_bytes_to_file(QWidget* parent, const QString& suggested, const 
 void LogWidget::onSaveInputs()
 {
     if (!m_logger) return;
-    auto bytes = m_logger->get_recorded_inputs();
-    save_bytes_to_file(this, "inputs.bin", bytes);
+    if (m_saveTypeCombo && m_saveTypeCombo->currentText() == "UMP") {
+        auto words = m_logger->get_recorded_input_ump_words();
+        std::vector<uint8_t> bytes;
+        bytes.reserve(words.size() * 4);
+        for (uint32_t w : words) {
+            bytes.push_back(static_cast<uint8_t>((w >> 24) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>((w >> 16) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>((w >> 8) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>(w & 0xFF));
+        }
+        save_bytes_to_file(this, "inputs_ump.bin", bytes);
+    } else {
+        auto bytes = m_logger->get_recorded_inputs();
+        save_bytes_to_file(this, "inputs_sysex.bin", bytes);
+    }
 }
 
 void LogWidget::onSaveOutputs()
 {
     if (!m_logger) return;
-    auto bytes = m_logger->get_recorded_outputs();
-    save_bytes_to_file(this, "outputs.bin", bytes);
+    if (m_saveTypeCombo && m_saveTypeCombo->currentText() == "UMP") {
+        auto words = m_logger->get_recorded_output_ump_words();
+        std::vector<uint8_t> bytes;
+        bytes.reserve(words.size() * 4);
+        for (uint32_t w : words) {
+            bytes.push_back(static_cast<uint8_t>((w >> 24) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>((w >> 16) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>((w >> 8) & 0xFF));
+            bytes.push_back(static_cast<uint8_t>(w & 0xFF));
+        }
+        save_bytes_to_file(this, "outputs_ump.bin", bytes);
+    } else {
+        auto bytes = m_logger->get_recorded_outputs();
+        save_bytes_to_file(this, "outputs_sysex.bin", bytes);
+    }
 }
 }

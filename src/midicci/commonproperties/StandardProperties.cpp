@@ -506,8 +506,10 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
     for (const auto& control : controlList) {
         JsonObject obj;
         obj[ControlPropertyNames::TITLE] = JsonValue(control.title);
-        obj[ControlPropertyNames::CTRL_TYPE] = JsonValue(control.ctrlType);
-        obj[ControlPropertyNames::DESCRIPTION] = JsonValue(control.description);
+        if (!control.ctrlType.empty())
+            obj[ControlPropertyNames::CTRL_TYPE] = JsonValue(control.ctrlType);
+        if (!control.description.empty())
+            obj[ControlPropertyNames::DESCRIPTION] = JsonValue(control.description);
         
         JsonArray index_array;
         for (uint8_t index : control.ctrlIndex) {
@@ -515,13 +517,11 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
         }
         obj[ControlPropertyNames::CTRL_INDEX] = JsonValue(index_array);
         
-        if (control.channel.has_value()) {
+        if (control.channel.has_value())
             obj[ControlPropertyNames::CHANNEL] = JsonValue(static_cast<double>(control.channel.value()));
-        }
-        
-        if (control.priority.has_value()) {
+
+        if (control.priority.has_value())
             obj[ControlPropertyNames::PRIORITY] = JsonValue(static_cast<double>(control.priority.value()));
-        }
 
         if (control.defaultValue)
             obj[ControlPropertyNames::DEFAULT] = JsonValue(static_cast<double>(control.defaultValue));
@@ -532,27 +532,26 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
         if (control.numSigBits != 32)
             obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));
         
-        if (control.paramPath.has_value() && !control.paramPath.value().empty()) {
+        if (control.paramPath.has_value() && !control.paramPath.value().empty())
             obj[ControlPropertyNames::PARAM_PATH] = JsonValue(control.paramPath.value());
-        }
-        
-        if (control.typeHint.has_value()) {
+
+        if (control.typeHint.has_value())
             obj[ControlPropertyNames::TYPE_HINT] = JsonValue(control.typeHint.value());
-        }
-        
-        if (control.ctrlMapId.has_value()) {
+
+        if (control.ctrlMapId.has_value() && !control.ctrlMapId.value().empty())
             obj[ControlPropertyNames::CTRL_MAP_ID] = JsonValue(control.ctrlMapId.value());
-        }
-        
+
         if (control.stepCount.has_value()) {
             obj[ControlPropertyNames::STEP_COUNT] = JsonValue(static_cast<double>(control.stepCount.value()));
         }
-        
-        JsonArray minmax_array;
-        for (uint32_t val : control.minMax) {
-            minmax_array.push_back(JsonValue(static_cast<double>(val)));
+
+        if (control.minMax.size() != 2 || control.minMax[0] != 0 || control.minMax[1] != UINT32_MAX) {
+            JsonArray minmax_array;
+            for (uint32_t val : control.minMax) {
+                minmax_array.push_back(JsonValue(static_cast<double>(val)));
+            }
+            obj[ControlPropertyNames::MIN_MAX] = JsonValue(minmax_array);
         }
-        obj[ControlPropertyNames::MIN_MAX] = JsonValue(minmax_array);
 
         if (control.defaultCCMap)
             obj[ControlPropertyNames::DEFAULT_CC_MAP] = JsonValue(control.defaultCCMap);

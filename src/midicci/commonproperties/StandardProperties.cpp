@@ -529,9 +529,10 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
             obj[ControlPropertyNames::TRANSMIT] = JsonValue(control.transmit);
         if (!control.recognize.empty())
             obj[ControlPropertyNames::RECOGNIZE] = JsonValue(control.recognize);
-        obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));
+        if (control.numSigBits != 32)
+            obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));
         
-        if (control.paramPath.has_value()) {
+        if (control.paramPath.has_value() && !control.paramPath.value().empty()) {
             obj[ControlPropertyNames::PARAM_PATH] = JsonValue(control.paramPath.value());
         }
         

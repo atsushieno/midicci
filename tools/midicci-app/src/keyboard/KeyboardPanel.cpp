@@ -213,9 +213,38 @@ void KeyboardPanel::refresh_devices() {
 void KeyboardPanel::refresh_ci_devices() {
     auto devices = controller_->getMidiCIDeviceDetails();
     std::lock_guard<std::mutex> lock(state_mutex_);
-    ci_devices_ = devices;
+    uint32_t previously_selected_muid = 0;
+    if (selected_ci_index_ >= 0 && selected_ci_index_ < static_cast<int>(ci_devices_.size())) {
+        previously_selected_muid = ci_devices_[selected_ci_index_].muid;
+    }
+
+    ci_devices_ = std::move(devices);
+
+    if (previously_selected_muid != 0) {
+        auto preserved = std::find_if(ci_devices_.begin(), ci_devices_.end(),
+                                      [previously_selected_muid](const MidiCIDeviceInfo& info) {
+                                          return info.muid == previously_selected_muid;
+                                      });
+        if (preserved != ci_devices_.end()) {
+            selected_ci_index_ = static_cast<int>(std::distance(ci_devices_.begin(), preserved));
+            return;
+        }
+    }
+
     if (selected_ci_index_ >= static_cast<int>(ci_devices_.size())) {
         selected_ci_index_ = -1;
+    }
+
+    if (selected_ci_index_ == -1 && !ci_devices_.empty()) {
+        auto ready_device = std::find_if(ci_devices_.begin(), ci_devices_.end(),
+                                         [](const MidiCIDeviceInfo& info) {
+                                             return info.endpoint_ready;
+                                         });
+        if (ready_device != ci_devices_.end()) {
+            selected_ci_index_ = static_cast<int>(std::distance(ci_devices_.begin(), ready_device));
+        } else {
+            selected_ci_index_ = 0;
+        }
     }
 }
 

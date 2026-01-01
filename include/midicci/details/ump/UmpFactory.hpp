@@ -3,6 +3,9 @@
 #include "midicci/details/ump/Ump.hpp"
 #include <vector>
 #include <functional>
+// I made stupid mistakes in cmidi2.h which defined such globally injecting constants.
+#undef JR_TIMESTAMP_TICKS_PER_SECOND
+#undef MIDI_2_0_RESERVED
 
 namespace midicci {
 namespace ump {

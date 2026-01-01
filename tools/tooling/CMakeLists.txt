@@ -43,6 +43,4 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
-install(TARGETS midicci-tooling
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+## Do not install this internal static library; only used by our apps

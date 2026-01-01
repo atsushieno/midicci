@@ -33,7 +33,9 @@ set(MIDICCI_SOURCES
 
 set(MODULE_NAME midicci)
 
-add_library(${MODULE_NAME} ${MIDICCI_SOURCES})
+# Build both shared and static library variants
+add_library(${MODULE_NAME} SHARED ${MIDICCI_SOURCES})
+add_library(${MODULE_NAME}_static STATIC ${MIDICCI_SOURCES})
 
 target_include_directories(${MODULE_NAME}
     PUBLIC
@@ -43,17 +45,23 @@ target_include_directories(${MODULE_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_include_directories(${MODULE_NAME}_static
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
+target_compile_features(${MODULE_NAME}_static PUBLIC cxx_std_20)
 
 target_link_libraries(${MODULE_NAME} PRIVATE zlib)
+target_link_libraries(${MODULE_NAME}_static PRIVATE zlib)
 
 if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)
-    if(BUILD_SHARED_LIBS)
-        set_target_properties(${MODULE_NAME} PROPERTIES
-            WINDOWS_EXPORT_ALL_SYMBOLS ON
-        )
-    endif()
+    set_target_properties(${MODULE_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 set_target_properties(${MODULE_NAME} PROPERTIES
@@ -62,7 +70,12 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     PUBLIC_HEADER "${MIDICCI_HEADERS}"
 )
 
-install(TARGETS ${MODULE_NAME}
+# Ensure the static archive is named libmidicci.a (no "-static" suffix)
+set_target_properties(${MODULE_NAME}_static PROPERTIES
+    OUTPUT_NAME ${MODULE_NAME}
+)
+
+install(TARGETS ${MODULE_NAME} ${MODULE_NAME}_static
     EXPORT midicci-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

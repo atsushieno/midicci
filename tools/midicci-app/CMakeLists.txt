@@ -176,7 +176,7 @@ target_include_directories(midicci-app PRIVATE
 target_link_libraries(midicci-app PRIVATE
     midicci-imgui-support
     midicci-tooling
-    midicci
+    midicci_static
     libremidi::libremidi
     ${BACKEND_LIBRARIES}
 )

@@ -49,6 +49,7 @@ FetchContent_Declare(
 )
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+# Prevent zlib-ng from installing, but otherwise respect its defaults
 set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
 set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(zlib-ng)
@@ -102,7 +103,39 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
+# CPack packaging setup (DEB, RPM; Arch PKGBUILD generated separately)
 set(CPACK_PACKAGE_NAME "midicci")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_VENDOR "midicci")
+set(CPACK_PACKAGE_CONTACT "midicci maintainers")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+
+# Install into /usr inside packages
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_SET_DESTDIR ON)
+
+# Enable DEB and RPM
+set(CPACK_GENERATOR "DEB;RPM")
+
+# DEB metadata
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "midicci maintainers")
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_DEBIAN_COMPRESSION_TYPE xz)
+set(CPACK_DEBIAN_PACKAGE_SECTION libs)
+
+# RPM metadata
+set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+set(CPACK_RPM_PACKAGE_GROUP "System Environment/Libraries")
+set(CPACK_RPM_COMPRESSION_TYPE xz)
+set(CPACK_RPM_PACKAGE_AUTOREQPROV ON)
+
+# Generate Arch PKGBUILD template into build tree
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/packages/arch)
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/packaging/arch/PKGBUILD.in
+    ${CMAKE_BINARY_DIR}/packages/arch/PKGBUILD
+    @ONLY
+)
+
 include(CPack)

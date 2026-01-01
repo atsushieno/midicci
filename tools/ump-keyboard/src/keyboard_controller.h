@@ -1,5 +1,7 @@
 #pragma once
 
+// include cmidi2 *before* libremidi which includes outdated version and prevents use of the latest API.
+#include <cmidi2.h>
 #include <libremidi/libremidi.hpp>
 #include <libremidi/ump.hpp>
 #include <memory>

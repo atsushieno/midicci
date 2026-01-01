@@ -84,6 +84,7 @@ target_include_directories(midicci-keyboard PRIVATE
     ${cmidi2_SOURCE_DIR}
 )
 
+# Enable tests only if BUILD_TESTS and GTest are available
 # Enable testing
 enable_testing()
 

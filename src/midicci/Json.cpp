@@ -84,8 +84,8 @@ std::string JsonValue::serialize() const {
         } else if constexpr (std::is_same_v<T, JsonBool>) {
             oss << (value ? "true" : "false");
         } else if constexpr (std::is_same_v<T, JsonNumber>) {
-            if (value == static_cast<int>(value)) {
-                oss << static_cast<int>(value);
+            if (value == static_cast<uint32_t>(value)) {
+                oss << static_cast<uint32_t>(value);
             } else {
                 oss << value;
             }

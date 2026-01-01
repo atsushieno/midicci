@@ -51,7 +51,9 @@ public:
     const std::vector<SubscriptionEntry>& get_subscriptions() const override;
     
     // Additional helper methods
-    void set_property_value(const std::string& property_id, const std::vector<uint8_t>& data);
+    void set_property_value(const std::string& property_id, const std::string& res_id,
+                            const std::vector<uint8_t>& data,
+                            const std::string& media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON);
 
     // Property catalog update callback management (following Kotlin propertyCatalogUpdated)
     void add_property_catalog_updated_callback(std::function<void()> callback);

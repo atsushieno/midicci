@@ -240,15 +240,20 @@ namespace midicci {
                                                     const std::string& mediaType, const std::vector<uint8_t>& body) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        // Following Kotlin implementation: remove existing property, then add new one
-        auto it = std::find_if(internal_values_.begin(), internal_values_.end(),
-            [&propertyId](const PropertyValue& pv) { return pv.id == propertyId; });
+        auto matches = [&propertyId, &resId](const PropertyValue& pv) {
+            if (pv.id != propertyId) {
+                return false;
+            }
+            return pv.resId == resId;
+        };
+        auto it = std::find_if(internal_values_.begin(), internal_values_.end(), matches);
         if (it != internal_values_.end()) {
-            internal_values_.erase(it);
+            it->mediaType = mediaType;
+            it->body = body;
+            it->resId = resId;
+        } else {
+            internal_values_.emplace_back(propertyId, resId, mediaType, body);
         }
-        
-        // Add the new property value
-        internal_values_.emplace_back(propertyId, resId, mediaType, body);
 
         // Notify that the property was updated
         notifyPropertyUpdated(propertyId, resId);

@@ -159,17 +159,18 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
     
     // Following Kotlin implementation exactly: properties.values.first { it.id == propertyId && (resId == null || it.resId == resId) }.body = data
     auto& property_values = pimpl_->properties_->getMutableValues();
+    std::string media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
     auto it = std::find_if(property_values.begin(), property_values.end(),
-        [&property_id, &res_id](const PropertyValue& pv) { 
-            return pv.id == property_id && (res_id.empty() || pv.resId == res_id); 
+        [&property_id, &res_id](const PropertyValue& pv) {
+            return pv.id == property_id && pv.resId == res_id;
         });
     
     if (it != property_values.end()) {
         // Update existing property value directly (following Kotlin pattern)
         it->body = data;
+        media_type = it->mediaType;
     } else {
         auto* metadata = get_property_metadata(property_id);
-        std::string media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
         if (metadata) {
             auto* common_rules_metadata = dynamic_cast<const CommonRulesPropertyMetadata*>(metadata);
             if (common_rules_metadata && !common_rules_metadata->mediaTypes.empty()) {
@@ -182,7 +183,7 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
     
     // CRITICAL: Update the property value in the service layer so GetPropertyData works
     if (auto* common_service = dynamic_cast<CommonRulesPropertyService*>(pimpl_->property_service_.get())) {
-        common_service->set_property_value(property_id, data);
+        common_service->set_property_value(property_id, res_id, data, media_type);
     }
     
     // Following Kotlin implementation: notifyPropertyUpdatesToSubscribers(propertyId, data, isPartial)

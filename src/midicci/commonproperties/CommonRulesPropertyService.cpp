@@ -23,12 +23,14 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
     propertyBinarySetter = [this](const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body) -> bool {
         auto& values = device_.get_config().property_values;
         auto it = std::find_if(values.begin(), values.end(),
-            [&property_id](const PropertyValue& pv) {
-                return pv.id == property_id;
+            [&property_id, &res_id](const PropertyValue& pv) {
+                return pv.id == property_id && pv.resId == res_id;
             });
 
         if (it != values.end()) {
             it->body = body;
+            it->mediaType = media_type;
+            it->resId = res_id;
             return true;
         } else {
             device_.get_config().property_values.push_back(PropertyValue(property_id, res_id, media_type, body));
@@ -36,20 +38,21 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
         }
     };
 }
-
-
-void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::vector<uint8_t>& data) {
+void CommonRulesPropertyService::set_property_value(const std::string& property_id, const std::string& res_id,
+                                                    const std::vector<uint8_t>& data, const std::string& media_type) {
     auto& values = device_.get_config().property_values;
     auto it = std::find_if(values.begin(), values.end(),
-        [&property_id](const PropertyValue& pv) {
-            return pv.id == property_id;
+        [&property_id, &res_id](const PropertyValue& pv) {
+            return pv.id == property_id && pv.resId == res_id;
         });
 
     if (it != values.end()) {
         it->body = data;
+        it->mediaType = media_type;
+        it->resId = res_id;
     } else {
         device_.get_config().property_values.push_back(
-            PropertyValue(property_id, "", CommonRulesKnownMimeTypes::APPLICATION_JSON, data));
+            PropertyValue(property_id, res_id, media_type, data));
     }
 }
 

@@ -13,7 +13,7 @@ int main() {
 
     ImGuiAppConfig config;
     config.windowTitle = "MIDICCI App";
-    config.windowWidth = 800;
+    config.windowWidth = 1000;
     config.windowHeight = 600;
     config.clearColor = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
 

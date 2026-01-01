@@ -418,9 +418,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     }
 
     float full_width = ImGui::GetContentRegionAvail().x;
-    float half_width = full_width * 0.5f;
+    float control_width = full_width * 0.6f;
+    float program_width = full_width - control_width;
 
-    ImGui::BeginChild("control-column", ImVec2(half_width, 280.0f), true);
+    ImGui::BeginChild("control-column", ImVec2(control_width, 280.0f), true);
     ImGui::TextUnformatted("Control List");
     ImGui::SameLine();
     if (ImGui::Button("Request##ctrl-list")) {
@@ -441,11 +442,15 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ? &ctrl_list_it->second
         : nullptr;
     if (controls && !controls->empty()) {
-        if (ImGui::BeginTable("control-table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+        const ImGuiTableFlags control_table_flags = ImGuiTableFlags_RowBg |
+                                                   ImGuiTableFlags_Borders |
+                                                   ImGuiTableFlags_Resizable |
+                                                   ImGuiTableFlags_SizingStretchProp;
+        if (ImGui::BeginTable("control-table", 3, control_table_flags)) {
             const int current_frame = ImGui::GetFrameCount();
-            ImGui::TableSetupColumn("Index");
-            ImGui::TableSetupColumn("Title");
-            ImGui::TableSetupColumn("Value");
+            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 3.0f);
             ImGui::TableHeadersRow();
             int row = 0;
             for (const auto& ctrl : *controls) {
@@ -589,7 +594,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("program-column", ImVec2(half_width, 280.0f), true);
+    ImGui::BeginChild("program-column", ImVec2(program_width, 280.0f), true);
     ImGui::TextUnformatted("Program List");
     ImGui::SameLine();
     if (ImGui::Button("Request##prg-list")) {
@@ -600,10 +605,14 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ? &program_it->second
         : nullptr;
     if (programs && !programs->empty()) {
-        if (ImGui::BeginTable("program-table", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
-            ImGui::TableSetupColumn("Index");
-            ImGui::TableSetupColumn("Title");
-            ImGui::TableSetupColumn("Bank/Program");
+        const ImGuiTableFlags program_table_flags = ImGuiTableFlags_RowBg |
+                                                   ImGuiTableFlags_Borders |
+                                                   ImGuiTableFlags_Resizable |
+                                                   ImGuiTableFlags_SizingStretchProp;
+        if (ImGui::BeginTable("program-table", 3, program_table_flags)) {
+            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
+            ImGui::TableSetupColumn("Bank[M/L]/Prog.", ImGuiTableColumnFlags_WidthStretch, 3.0f);
             ImGui::TableHeadersRow();
             int row = 0;
             for (const auto& program : *programs) {
@@ -616,7 +625,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 ImGui::TextUnformatted(program.title.c_str());
                 ImGui::TableSetColumnIndex(2);
                 if (program.bankPC.size() >= 3) {
-                    ImGui::Text("MSB %u / LSB %u / PC %u",
+                    ImGui::Text("%u/%u/%u",
                                 program.bankPC[0],
                                 program.bankPC[1],
                                 program.bankPC[2]);

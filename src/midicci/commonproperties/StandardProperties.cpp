@@ -525,9 +525,9 @@ std::vector<uint8_t> StandardProperties::toJson(const std::vector<MidiCIControl>
 
         if (control.defaultValue)
             obj[ControlPropertyNames::DEFAULT] = JsonValue(static_cast<double>(control.defaultValue));
-        if (!control.transmit.empty())
+        if (!control.transmit.empty() && control.transmit != MidiCIControlTransmit::ABSOLUTE)
             obj[ControlPropertyNames::TRANSMIT] = JsonValue(control.transmit);
-        if (!control.recognize.empty())
+        if (!control.recognize.empty() && control.transmit != MidiCIControlTransmit::ABSOLUTE)
             obj[ControlPropertyNames::RECOGNIZE] = JsonValue(control.recognize);
         if (control.numSigBits != 32)
             obj[ControlPropertyNames::NUM_SIG_BITS] = JsonValue(static_cast<double>(control.numSigBits));

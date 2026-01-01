@@ -33,7 +33,7 @@ set(MIDICCI_SOURCES
 
 set(MODULE_NAME midicci)
 
-# Build both shared and static library variants
+# Build both shared and static variants
 add_library(${MODULE_NAME} SHARED ${MIDICCI_SOURCES})
 add_library(${MODULE_NAME}_static STATIC ${MIDICCI_SOURCES})
 
@@ -70,18 +70,46 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     PUBLIC_HEADER "${MIDICCI_HEADERS}"
 )
 
-# Ensure the static archive is named libmidicci.a (no "-static" suffix)
-set_target_properties(${MODULE_NAME}_static PROPERTIES
-    OUTPUT_NAME ${MODULE_NAME}
-)
+# Keep identical base name for both libs; avoid filename collisions on Windows
+# by separating their build output directories.
+if(WIN32)
+    # DLL and its import lib
+    set_target_properties(${MODULE_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/bin"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/dll"
+        PDB_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/$<CONFIG>/bin"
+    )
+    # Static archive
+    set_target_properties(${MODULE_NAME}_static PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/static"
+        PDB_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/static"
+    )
+endif()
 
-install(TARGETS ${MODULE_NAME} ${MODULE_NAME}_static
-    EXPORT midicci-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midicci
-)
+# Install both shared and static libraries on all platforms.
+# To avoid midicci.lib name collision on Windows, place the DLL import lib
+# and the static archive in different subdirectories.
+if(WIN32)
+    install(TARGETS ${MODULE_NAME}
+        EXPORT midicci-targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/dll
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midicci
+    )
+    install(TARGETS ${MODULE_NAME}_static
+        EXPORT midicci-targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static
+    )
+else()
+    install(TARGETS ${MODULE_NAME} ${MODULE_NAME}_static
+        EXPORT midicci-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/midicci
+    )
+endif()
 
 install(EXPORT midicci-targets
     FILE midicci-targets.cmake

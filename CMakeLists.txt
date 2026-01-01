@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 project(midicci
-    VERSION 1.0.0
+    VERSION 0.1.0
     DESCRIPTION "Cross-platform MIDI 2.0 MIDI-CI session library"
     LANGUAGES CXX
 )
@@ -65,11 +65,11 @@ if(BUILD_TESTS)
       GIT_REPOSITORY https://github.com/google/googletest.git
       GIT_TAG release-1.12.1
     )
+    # Ensure gtest participates in configuration but does not install itself.
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
-    set(CMAKE_SKIP_INSTALL_RULES ON)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(INSTALL_GMOCK OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
-    set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
     add_subdirectory(tests)
 endif()
 
@@ -103,39 +103,54 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# CPack packaging setup (DEB, RPM; Arch PKGBUILD generated separately)
+# -----------------
+# CPack (Deb/RPM/TXZ)
+# -----------------
+# Version used for packages (override with -DMIDICCI_VERSION=...)
+set(MIDICCI_VERSION "0.1.0" CACHE STRING "Project version for packaging")
+
 set(CPACK_PACKAGE_NAME "midicci")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_VENDOR "midicci")
 set(CPACK_PACKAGE_CONTACT "midicci maintainers")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "midicci MIDI-CI tools and libraries")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/atsushieno/midicci")
 
-# Install into /usr inside packages
+# Install under /usr in packages regardless of CMAKE_INSTALL_PREFIX
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
-set(CPACK_SET_DESTDIR ON)
 
-# Enable DEB and RPM
-set(CPACK_GENERATOR "DEB;RPM")
+# Generators: deb, rpm, and a portable txz archive
+set(CPACK_GENERATOR "DEB;RPM;TXZ")
 
-# DEB metadata
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "midicci maintainers")
-set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-set(CPACK_DEBIAN_COMPRESSION_TYPE xz)
-set(CPACK_DEBIAN_PACKAGE_SECTION libs)
+# Debian-specific
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
+set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
+set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
 
-# RPM metadata
+# RPM-specific
 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
-set(CPACK_RPM_PACKAGE_GROUP "System Environment/Libraries")
-set(CPACK_RPM_COMPRESSION_TYPE xz)
-set(CPACK_RPM_PACKAGE_AUTOREQPROV ON)
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Multimedia")
+set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
 
-# Generate Arch PKGBUILD template into build tree
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/packages/arch)
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/packaging/arch/PKGBUILD.in
-    ${CMAKE_BINARY_DIR}/packages/arch/PKGBUILD
-    @ONLY
-)
+# Common metadata
+set(CPACK_PACKAGE_VERSION "${MIDICCI_VERSION}")
+
+# Package only our component
+set(CPACK_COMPONENTS_ALL midicci)
+set(CPACK_COMPONENT_MIDICCI_DISPLAY_NAME "midicci")
+set(CPACK_COMPONENT_MIDICCI_DESCRIPTION "MIDICCI MIDI-CI tools, libraries, and headers")
 
 include(CPack)
+
+# -----------------
+# Arch Linux helper
+# -----------------
+set(PACKAGING_ARCH_DIR "${CMAKE_BINARY_DIR}/packaging/arch")
+file(MAKE_DIRECTORY "${PACKAGING_ARCH_DIR}")
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PKGBUILD.in
+        ${PACKAGING_ARCH_DIR}/PKGBUILD
+        @ONLY)
+add_custom_target(package-arch
+        COMMAND ${CMAKE_COMMAND} -E echo "PKGBUILD generated at: ${PACKAGING_ARCH_DIR}/PKGBUILD"
+        WORKING_DIRECTORY ${PACKAGING_ARCH_DIR}
+        COMMENT "Generate Arch Linux PKGBUILD (use makepkg to build)")

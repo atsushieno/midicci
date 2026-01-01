@@ -1,184 +1,141 @@
-name: Build Cross-Platform Artifacts
+name: build dist
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. v1.2.3)'
+        required: true
+        type: string
+      release_name:
+        description: 'Release title (defaults to tag name when empty)'
+        required: false
+        type: string
+        default: ''
+      release_body:
+        description: 'Release notes body (Markdown)'
+        required: false
+        type: string
+        default: ''
+      generate_release_notes:
+        description: 'Let GitHub auto-generate release notes'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark release as pre-release'
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: 'Create release as draft'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
+    if: github.event_name != 'workflow_dispatch'
+    name: 'build on ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-15, windows-latest]
-        build_type: [Release]
-        include:
-          - os: ubuntu-24.04
-            platform: linux
-            qt_arch: gcc_64
-          - os: macos-15
-            platform: macos
-            qt_arch: clang_64
-          - os: windows-latest
-            platform: windows
-            qt_arch: win64_msvc2019_64
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: apt update and install
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          # There is no libsdl3-dev on 24.04...
+          sudo apt install gcc-14 ninja-build libgtk-3-dev libwebkit2gtk-4.1-dev libadwaita-1-dev libsdl2-dev
+      - name: brew install
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install ninja sdl3
 
-    - name: Install deps (Ubuntu)
-      if: matrix.os == 'ubuntu-24.04'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ninja-build qtbase5-dev qtbase5-dev-tools qt6-base-dev qt6-base-dev-tools libsdl2-dev
+      - name: setup build on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=OFF
+      - name: setup build on Darwin
+        if: matrix.os == 'macos-15'
+        run: |
+          cmake -B build -G Ninja
+      - name: setup build on Linux
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          cmake -B build -G Ninja
 
-    - name: Install deps (macOS)
-      if: matrix.os == 'macos-15'
-      run: |
-        brew install ninja qt@5 sdl3
-        echo "/opt/homebrew/opt/qt@5/bin" >> $GITHUB_PATH
-        echo "CMAKE_PREFIX_PATH=/opt/homebrew/opt/qt@5" >> $GITHUB_ENV
+      - name: build
+        run: cmake --build build
 
-    - name: Install Qt5 (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '5.15.2'
-        arch: ${{ matrix.qt_arch }}
+      - name: packaging
+        if: matrix.os == 'ubuntu-24.04' && success()
+        run: cmake --build build --target package
 
-    - name: Configure CMake (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cmake -B build-static -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+      - name: upload Linux artifacts
+        if: matrix.os == 'ubuntu-24.04' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: |
+            build/*.deb
+            build/*.rpm
+            build/*.tar.xz
 
-    - name: Configure CMake (macOS)
-      if: matrix.os == 'macos-15'
-      run: |
-        cmake -B build-static -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+      - name: upload build failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: |
+            build
 
-    - name: Configure CMake (Linux)
-      if: matrix.os == 'ubuntu-24.04'
-      run: |
-        cmake -B build-static -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-
-    - name: Build (Static Libraries)
-      run: cmake --build build-static --config ${{ matrix.build_type }}
-
-    - name: Run Tests (Static) except for Windows
-      if: matrix.os != 'windows-latest'
-      run: |
-        cd build-static
-        ctest --output-on-failure
-
-    - name: Configure CMake (Windows - Shared)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cmake -B build-shared -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-
-    - name: Configure CMake (macOS - Shared)
-      if: matrix.os == 'macos-15'
-      run: |
-        cmake -B build-shared -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-
-    - name: Configure CMake (Linux - Shared)
-      if: matrix.os == 'ubuntu-24.04'
-      run: |
-        cmake -B build-shared -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-
-    - name: Build (Dynamic Libraries)
-      run: cmake --build build-shared --config ${{ matrix.build_type }}
-
-    - name: Run Tests (Dynamic) except for Windows
-      if: matrix.os != 'windows-latest'
-      run: |
-        cd build-shared
-        ctest --output-on-failure -C ${{ matrix.build_type }}
-
-    - name: Create artifact directories
-      run: |
-        mkdir -p artifacts/${{ matrix.platform }}/include
-        mkdir -p artifacts/${{ matrix.platform }}/lib/static
-        mkdir -p artifacts/${{ matrix.platform }}/lib/shared
-        mkdir -p artifacts/${{ matrix.platform }}/bin
-
-    - name: Copy headers
-      run: |
-        cp -r include/* artifacts/${{ matrix.platform }}/include/
-
-    - name: Copy artifacts (Linux)
-      if: matrix.os == 'ubuntu-24.04'
-      run: |
-        # Static libraries
-        find build-static -name "*.a" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
-        # Dynamic libraries
-        find build-shared -name "*.so*" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
-        # Executables
-        find build-static -name "midicci-gui" -executable -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
-
-    - name: Copy artifacts (macOS)
-      if: matrix.os == 'macos-15'
-      run: |
-        # Static libraries
-        find build-static -name "*.a" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
-        # Dynamic libraries
-        find build-shared -name "*.dylib" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
-        # Executables
-        find build-static -name "midicci-gui" -type f -exec cp {} artifacts/${{ matrix.platform }}/bin/ \; || true
-
-    - name: Copy artifacts (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        # Static libraries
-        find build-static -name "*.lib" -exec cp {} artifacts/${{ matrix.platform }}/lib/static/ \;
-        # Dynamic libraries
-        find build-shared -name "*.dll" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
-        find build-shared -name "*.lib" -exec cp {} artifacts/${{ matrix.platform }}/lib/shared/ \;
-        # Executables
-        find build-static -name "*.exe" -exec cp {} artifacts/${{ matrix.platform }}/bin/ \;
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: midicci-${{ matrix.platform }}-${{ matrix.build_type }}
-        path: artifacts/${{ matrix.platform }}/
-        retention-days: 30
-
-    - name: Upload build failure logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-failure-${{ matrix.platform }}
-        path: |
-          build-static
-          build-shared
-
-  create-release-package:
-    name: Create Release Package
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: all-artifacts
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Create combined release package
-      run: |
-        mkdir -p release-package
-        cp -r all-artifacts/* release-package/
-        cd release-package
-        tar -czf ../midicci-cross-platform-release.tar.gz *
+      - name: apt update and install
+        run: |
+          sudo apt-get update
+          sudo apt install gcc-14 ninja-build libgtk-3-dev libwebkit2gtk-4.1-dev libadwaita-1-dev libsdl2-dev
 
-    - name: Upload combined release package
-      uses: actions/upload-artifact@v4
-      with:
-        name: midicci-cross-platform-release
-        path: midicci-cross-platform-release.tar.gz
-        retention-days: 90
+      - name: Install Qt6 (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev qtbase5-dev-tools qt6-base-dev qt6-base-dev-tools
+
+      - name: setup build on Linux
+        run: |
+          cmake -B build -G Ninja
+
+      - name: build
+        run: cmake --build build
+
+      - name: packaging
+        run: cmake --build build --target package
+
+      - name: create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.event.inputs.tag_name }}
+          name: ${{ github.event.inputs.release_name || github.event.inputs.tag_name }}
+          body: ${{ github.event.inputs.release_body }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          generateReleaseNotes: ${{ github.event.inputs.generate_release_notes }}
+          artifacts: build/*.deb,build/*.rpm,build/*.tar.xz

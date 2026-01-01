@@ -28,34 +28,47 @@ option(BUILD_EXAMPLES "Build examples" ON)
 include(GNUInstallDirs)
 
 include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.12.1
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
 
+# Fetch libremidi for tools / tests, but do not install it
 FetchContent_Declare(
-  libremidi
-  GIT_REPOSITORY https://github.com/celtera/libremidi.git
-  GIT_TAG v5.3.1
+    libremidi
+    GIT_REPOSITORY https://github.com/celtera/libremidi.git
+    GIT_TAG v5.3.1
+    EXCLUDE_FROM_ALL
 )
+set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(libremidi)
+set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
 
 FetchContent_Declare(
-  zlib-ng
-  GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
-  GIT_TAG 2.3.2
+    zlib-ng
+    GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
+    GIT_TAG 2.3.2
+    EXCLUDE_FROM_ALL
 )
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(zlib-ng)
+set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
 
 add_subdirectory(src)
 
 if(BUILD_TESTS)
     enable_testing()
+    # Fetch googletest only for tests, and prevent it from installing
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG release-1.12.1
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
+    set(CMAKE_SKIP_INSTALL_RULES ON)
+    FetchContent_MakeAvailable(googletest)
+    set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
     add_subdirectory(tests)
 endif()
 
@@ -82,6 +95,12 @@ if(NOT Qt6_FOUND)
 endif()
 
 add_subdirectory(tools)
+
+# Install public headers only from our tree
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/midicci
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 set(CPACK_PACKAGE_NAME "midicci")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

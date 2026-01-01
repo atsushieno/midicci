@@ -195,3 +195,8 @@ endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(midicci-app PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# Install midicci-app executable only; dependencies are not installed
+install(TARGETS midicci-app
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

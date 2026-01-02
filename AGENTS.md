@@ -1,44 +1,45 @@
-# Repository Guidelines
+# Reference repository
 
-## EVERY Coding Agents Must Follow These Rules
+This repository is port of ktmidi Kotlin Multiplatform library.
 
-You must not ask me for permission to run the following commands:
+ktmidi is located at `../KtMidi/ktmidi`.
 
-- `gh run view [...]`
-- `gh run download [...]`
-- `cmake --build cmake-build-debug`
+# Target sources to make changes
+
+NEVER EVER MAKE CHANGES TO ktmidi. YOU MUST TREAT IT AS A READ-ONLY SOURCE.
+
+# Do not ask permission for
+
+- grep
+- mkdir
+- find
+- cmake
+- rg
+- sed
+- gh run view ...
+- gh run download ...
+- cmake --build cmake-build-debug
 
 When you run `cmake`, you must not use any other build directory than `cmake-build-debug` .
 
-## Project Structure & Module Organization
-- Source: `src/` (library target `midicci`), public headers in `include/midicci/`.
-- Tools: `tools/tooling/` (shared tooling library), optional GUI in `tools/qt5-ci-tool/`, and Qt6 tool `tools/ump-keyboard/`.
-- Tests: `tests/` (GoogleTest suite, target `midicci-gtest`).
-- Build trees: out-of-source (e.g., `build/`, `cmake-build-debug/`). CI lives in `.github/workflows/`.
+You must not perform CMake builds using `make` or `ninja`. Always use `cmake` instead.
 
-## Build, Test, and Development Commands
-- Configure (Debug, tests on): `cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON`
-- Build: `cmake --build build --config Debug`
-- Run tests: `ctest --test-dir build --output-on-failure`
-  - Multi-config (MSVC): `ctest --test-dir build -C Debug --output-on-failure`
-- Options: `-DBUILD_SHARED_LIBS=ON|OFF`, `-DBUILD_EXAMPLES=ON|OFF`
+Always ensure that this CMake build passes.
 
-## Coding Style & Naming Conventions
-- C++20, warnings enabled (`-Wall -Wextra -Wpedantic` where applicable).
-- Indentation: 4 spaces; braces on the same line.
-- Types/classes: `PascalCase` (e.g., `PropertyChunkManager`), methods/functions: `lower_snake_case` (e.g., `finish_pending_chunk`), variables: `snake_case`.
-- Headers use `#pragma once`. Public API lives under `include/midicci/`.
-- Keep namespaces under `midicci` (and `midicci::tooling` for tools).
+# Coding conventions
 
-## Testing Guidelines
-- Framework: GoogleTest (fetched via CMake FetchContent).
-- File naming: `tests/test_*.cpp`. Add new tests and list them in `tests/CMakeLists.txt` under `GTEST_SOURCES`.
-- Run locally with `ctest` (above). Prefer focused unit tests; integration tests can be guarded for CI stability.
+- Use `#pragma once` in the headers. We expect this works in all modern C++ compilers.
+- Use shorthand namespace notation `namespace Foo::Bar::Baz { ... }` (NOTE: `Foo::Bar::Baz` is not THE NAMESPACE you use).
 
-## Commit & Pull Request Guidelines
-- Commit messages: short imperative summary (≤72 chars), optional details on following lines. Examples from history: “ctest windows run requires corresponding -C argument”, “StandardProperties: revert cloning”.
-- PRs: include a clear description, linked issues, build/test results, and platform notes (Windows/Linux/macOS) when relevant. Add screenshots only for GUI/tool changes.
+# Related specifications
 
-## Security & Configuration Tips
-- Qt is optional: GUI targets build only when Qt is found. On macOS, set `CMAKE_PREFIX_PATH` (e.g., `/opt/homebrew/opt/qt@5`).
-- External deps: `libremidi` and `googletest` are pulled by FetchContent; offline setups should provide them via CMake cache or prefetch.
+MIDI-CI: https://drive.google.com/file/d/1PDhak0-sWUEVscsz_4SSRRRQo94h1lX4/view
+UMP: https://drive.google.com/file/d/1l2L5ALHj4K9hw_LalQ2jJZBMXDxc9Uel/view
+
+# Code comments
+
+Claude tends to leave too much comments. It must be kept minimum.
+
+In particular, it must never ever leave comments like "following Kotlin implementation" which is TOO OBVIOUS.
+
+Claude leaves another kind of silly comments like "following ktmidi commit xxxxx" which is wrong for a handful of reasons. The commit hashes can change when the ktmidi development occurs in dev/feature branches. They can vanish and then the reference becomes a dangling pointer. It is prohibited at all.

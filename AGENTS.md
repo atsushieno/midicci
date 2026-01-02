@@ -1,5 +1,15 @@
 # Repository Guidelines
 
+## EVERY Coding Agents Must Follow These Rules
+
+You must not ask me for permission to run the following commands:
+
+- `gh run view [...]`
+- `gh run download [...]`
+- `cmake --build cmake-build-debug`
+
+When you run `cmake`, you must not use any other build directory than `cmake-build-debug` .
+
 ## Project Structure & Module Organization
 - Source: `src/` (library target `midicci`), public headers in `include/midicci/`.
 - Tools: `tools/tooling/` (shared tooling library), optional GUI in `tools/qt5-ci-tool/`, and Qt6 tool `tools/ump-keyboard/`.

@@ -466,11 +466,69 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         return;
     }
 
-    float full_width = ImGui::GetContentRegionAvail().x;
-    float control_width = full_width * 0.6f;
-    float program_width = full_width - control_width;
-
-    ImGui::BeginChild("control-column", ImVec2(control_width, 280.0f), true);
+    ImGui::BeginChild("control-column", ImVec2(0, 320.0f), true);
+    ImGui::TextUnformatted("Program List [BankMSB:BankLSB:Program]");
+    const auto program_it = program_list_cache_.find(muid);
+    const auto* programs = (program_it != program_list_cache_.end()) ? &program_it->second : nullptr;
+    bool has_programs = programs && !programs->empty();
+    if (ImGui::Button("Request##prg-list")) {
+        controller_->requestProgramList(muid);
+    }
+    ImGui::SameLine();
+    float program_combo_width = ImGui::GetContentRegionAvail().x;
+    auto format_program_label = [](const midicci::commonproperties::MidiCIProgram& program) {
+        uint8_t msb = program.bankPC.size() > 0 ? program.bankPC[0] : 0;
+        uint8_t lsb = program.bankPC.size() > 1 ? program.bankPC[1] : 0;
+        uint8_t pc = program.bankPC.size() > 2 ? program.bankPC[2] : 0;
+        std::ostringstream oss;
+        oss << '[' << static_cast<int>(msb) <<  ':' << static_cast<int>(lsb) << ':' << static_cast<int>(pc) << "] " << program.title;
+        return oss.str();
+    };
+    if (!has_programs) {
+        ImGui::BeginDisabled();
+    }
+    std::string preview_label = "Select program";
+    int current_program_index = -1;
+    if (has_programs) {
+        auto sel_it = selected_program_index_.find(muid);
+        if (sel_it != selected_program_index_.end()) {
+            current_program_index = sel_it->second;
+        }
+        if (current_program_index >= 0 && current_program_index < static_cast<int>(programs->size())) {
+            preview_label = format_program_label((*programs)[static_cast<size_t>(current_program_index)]);
+        }
+    } else {
+        preview_label = "No programs";
+    }
+    ImGui::SetNextItemWidth(program_combo_width);
+    if (ImGui::BeginCombo("##program-list", preview_label.c_str())) {
+        if (has_programs) {
+            for (size_t i = 0; i < programs->size(); ++i) {
+                const auto& program = (*programs)[i];
+                std::string item_label = format_program_label(program);
+                bool selected = (static_cast<int>(i) == current_program_index);
+                if (ImGui::Selectable(item_label.c_str(), selected)) {
+                    selected_program_index_[muid] = static_cast<int>(i);
+                    if (program.bankPC.size() >= 3) {
+                        controller_->sendProgramChange(
+                            current_channel_value(),
+                            program.bankPC[2],
+                            program.bankPC[0],
+                            program.bankPC[1],
+                            current_group_value());
+                    }
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+        }
+        ImGui::EndCombo();
+    }
+    if (!has_programs) {
+        ImGui::EndDisabled();
+    }
+    ImGui::Spacing();
     ImGui::TextUnformatted("Control List");
     ImGui::SameLine();
     if (ImGui::Button("Request##ctrl-list")) {
@@ -481,6 +539,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             ctrl_map_cache_.erase(last_selected_muid_);
             ctrl_list_cache_.erase(last_selected_muid_);
             program_list_cache_.erase(last_selected_muid_);
+            selected_program_index_.erase(last_selected_muid_);
         }
         last_selected_muid_ = muid;
         // Do not auto-fetch control/program lists; leave them empty until the user requests data.
@@ -664,62 +723,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         } else {
             ImGui::TextUnformatted("No controls for this context.");
         }
-    }
-    ImGui::EndChild();
-
-    ImGui::SameLine();
-    ImGui::BeginChild("program-column", ImVec2(program_width, 280.0f), true);
-    ImGui::TextUnformatted("Program List");
-    ImGui::SameLine();
-    if (ImGui::Button("Request##prg-list")) {
-        controller_->requestProgramList(muid);
-    }
-    const auto program_it = program_list_cache_.find(muid);
-    const std::vector<midicci::commonproperties::MidiCIProgram>* programs = (program_it != program_list_cache_.end())
-        ? &program_it->second
-        : nullptr;
-    if (programs && !programs->empty()) {
-        const ImGuiTableFlags program_table_flags = ImGuiTableFlags_RowBg |
-                                                   ImGuiTableFlags_Borders |
-                                                   ImGuiTableFlags_Resizable |
-                                                   ImGuiTableFlags_SizingStretchProp;
-        if (ImGui::BeginTable("program-table", 3, program_table_flags)) {
-            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-            ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
-            ImGui::TableSetupColumn("Bank[M/L]/Prog.", ImGuiTableColumnFlags_WidthStretch, 3.0f);
-            ImGui::TableHeadersRow();
-            int row = 0;
-            for (const auto& program : *programs) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                bool selected = ImGui::Selectable(("##prog" + std::to_string(row)).c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
-                ImGui::SameLine();
-                ImGui::Text("%d", row);
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(program.title.c_str());
-                ImGui::TableSetColumnIndex(2);
-                if (program.bankPC.size() >= 3) {
-                    ImGui::Text("%u/%u/%u",
-                                program.bankPC[0],
-                                program.bankPC[1],
-                                program.bankPC[2]);
-                } else {
-                    ImGui::TextUnformatted("-");
-                }
-                if (selected && program.bankPC.size() >= 3) {
-                    controller_->sendProgramChange(
-                        current_channel_value(),
-                        program.bankPC[2],
-                        program.bankPC[0],
-                        program.bankPC[1],
-                        current_group_value());
-                }
-                ++row;
-            }
-            ImGui::EndTable();
-        }
-    } else {
-        ImGui::TextUnformatted("Program data not received yet.");
     }
     ImGui::EndChild();
 }

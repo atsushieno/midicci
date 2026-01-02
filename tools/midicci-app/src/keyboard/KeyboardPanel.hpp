@@ -92,6 +92,7 @@ private:
     std::unordered_map<uint32_t, std::unordered_map<std::string, ControlMapCache>> ctrl_map_cache_;
     std::unordered_map<uint32_t, std::vector<midicci::commonproperties::MidiCIControl>> ctrl_list_cache_;
     std::unordered_map<uint32_t, std::vector<midicci::commonproperties::MidiCIProgram>> program_list_cache_;
+    std::unordered_map<uint32_t, int> selected_program_index_;
     std::mutex property_update_mutex_;
     std::vector<PendingPropertyUpdate> pending_property_updates_;
 

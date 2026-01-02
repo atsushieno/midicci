@@ -30,6 +30,33 @@ std::string note_label(int note) {
     oss << NOTE_NAMES[note % 12] << octave;
     return oss.str();
 }
+
+std::string format_parameter_id(const midicci::commonproperties::MidiCIControl& ctrl) {
+    if (ctrl.ctrlIndex.empty()) {
+        return "-";
+    }
+    const size_t bytes = std::min<size_t>(ctrl.ctrlIndex.size(), 4);
+    uint32_t combined = 0;
+    for (size_t i = 0; i < bytes; ++i) {
+        combined = (combined << 8) | static_cast<uint32_t>(ctrl.ctrlIndex[i]);
+    }
+    std::ostringstream oss;
+    oss << "0x" << std::uppercase << std::hex << std::setfill('0') << std::setw(static_cast<int>(bytes * 2))
+        << combined;
+    if (ctrl.ctrlIndex.size() > bytes) {
+        for (size_t i = bytes; i < ctrl.ctrlIndex.size(); ++i) {
+            oss << '/' << static_cast<int>(ctrl.ctrlIndex[i]);
+        }
+    }
+    return oss.str();
+}
+
+std::string format_parameter_path(const midicci::commonproperties::MidiCIControl& ctrl) {
+    if (ctrl.paramPath.has_value() && !ctrl.paramPath.value().empty()) {
+        return ctrl.paramPath.value();
+    }
+    return "-";
+}
 } // namespace
 
 KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
@@ -477,9 +504,16 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                                                    ImGuiTableFlags_Borders |
                                                    ImGuiTableFlags_Resizable |
                                                    ImGuiTableFlags_SizingStretchProp;
-        if (ImGui::BeginTable("control-table", 3, control_table_flags)) {
+        if (ImGui::BeginTable("control-table", 4, control_table_flags)) {
             const int current_frame = ImGui::GetFrameCount();
-            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            constexpr float PATH_COLUMN_WIDTH = 110.0f;
+            constexpr float ID_COLUMN_WIDTH = 100.0f;
+            ImGui::TableSetupColumn("Path",
+                                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
+                                    PATH_COLUMN_WIDTH);
+            ImGui::TableSetupColumn("Param ID",
+                                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
+                                    ID_COLUMN_WIDTH);
             ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 3.0f);
             ImGui::TableHeadersRow();
@@ -490,10 +524,17 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 }
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%d", row);
+                std::string param_path = format_parameter_path(ctrl);
+                ImGui::TextUnformatted(param_path.c_str());
+                if (param_path != "-" && ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s", param_path.c_str());
+                }
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(ctrl.title.c_str());
+                std::string parameter_id = format_parameter_id(ctrl);
+                ImGui::TextUnformatted(parameter_id.c_str());
                 ImGui::TableSetColumnIndex(2);
+                ImGui::TextUnformatted(ctrl.title.c_str());
+                ImGui::TableSetColumnIndex(3);
                 std::string key = ctrl.title + std::to_string(row);
                 uint32_t min_raw = ctrl.minMax.size() > 0 ? ctrl.minMax[0] : 0u;
                 uint32_t max_raw = ctrl.minMax.size() > 1 ? ctrl.minMax[1] : std::numeric_limits<uint32_t>::max();
@@ -536,7 +577,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 bool value_changed = ImGui::SliderFloat("##ctrl", &slider_ratio, 0.0f, 1.0f, "%.3f");
                 ImVec2 slider_min = ImGui::GetItemRectMin();
                 ImVec2 slider_max = ImGui::GetItemRectMax();
-                bool slider_visible = ImGui::IsItemVisible();
                 if (value_changed) {
                     uint64_t raw = static_cast<uint64_t>(min_raw) + static_cast<uint64_t>(slider_ratio * static_cast<float>(span));
                     raw = std::min<uint64_t>(raw, max_raw);

@@ -69,6 +69,9 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     SOVERSION ${PROJECT_VERSION_MAJOR}
     PUBLIC_HEADER "${MIDICCI_HEADERS}"
 )
+set_target_properties(${MODULE_NAME}_static PROPERTIES
+    OUTPUT_NAME ${MODULE_NAME}
+)
 
 # Keep identical base name for both libs; avoid filename collisions on Windows
 # by separating their build output directories.

@@ -29,6 +29,23 @@ include(GNUInstallDirs)
 
 include(FetchContent)
 
+function(midicci_fetchcontent_makeavailable_static target_name)
+    set(_midicci_prev_build_shared ${BUILD_SHARED_LIBS})
+    if(NOT DEFINED _midicci_prev_build_shared)
+        set(_midicci_prev_build_shared ON)
+    endif()
+    set(_midicci_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(CMAKE_SKIP_INSTALL_RULES ON)
+    FetchContent_MakeAvailable(${target_name})
+    if(DEFINED _midicci_prev_skip_install)
+        set(CMAKE_SKIP_INSTALL_RULES ${_midicci_prev_skip_install})
+    else()
+        unset(CMAKE_SKIP_INSTALL_RULES)
+    endif()
+    set(BUILD_SHARED_LIBS ${_midicci_prev_build_shared} CACHE BOOL "" FORCE)
+endfunction()
+
 # Fetch libremidi for tools / tests, but do not install it
 FetchContent_Declare(
     libremidi
@@ -36,10 +53,7 @@ FetchContent_Declare(
     GIT_TAG v5.3.1
     EXCLUDE_FROM_ALL
 )
-set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(libremidi)
-set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
+midicci_fetchcontent_makeavailable_static(libremidi)
 
 FetchContent_Declare(
     zlib-ng
@@ -50,10 +64,7 @@ FetchContent_Declare(
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 # Prevent zlib-ng from installing, but otherwise respect its defaults
-set(_prev_skip_install ${CMAKE_SKIP_INSTALL_RULES})
-set(CMAKE_SKIP_INSTALL_RULES ON)
-FetchContent_MakeAvailable(zlib-ng)
-set(CMAKE_SKIP_INSTALL_RULES ${_prev_skip_install})
+midicci_fetchcontent_makeavailable_static(zlib-ng)
 
 add_subdirectory(src)
 

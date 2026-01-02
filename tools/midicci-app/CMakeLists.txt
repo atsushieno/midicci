@@ -51,6 +51,8 @@ if(NOT BACKEND_FOUND)
             GIT_TAG 3.4
             GIT_REPOSITORY https://github.com/glfw/glfw
             OPTIONS
+                "BUILD_SHARED_LIBS OFF"
+                "GLFW_BUILD_SHARED_LIBS OFF"
                 "GLFW_BUILD_EXAMPLES OFF"
                 "GLFW_BUILD_TESTS OFF"
                 "GLFW_BUILD_DOCS OFF"

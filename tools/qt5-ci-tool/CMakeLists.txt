@@ -42,11 +42,11 @@ target_include_directories(midicci-gui PRIVATE
 target_link_libraries(midicci-gui
     Qt::Core
     Qt::Widgets
-    midicci
+    midicci_static
     midicci-tooling
 )
 
-add_dependencies(midicci-gui midicci midicci-tooling)
+add_dependencies(midicci-gui midicci_static midicci-tooling)
 
 if(WIN32)
     set_target_properties(midicci-gui PROPERTIES

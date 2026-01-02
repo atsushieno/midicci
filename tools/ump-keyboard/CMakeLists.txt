@@ -26,8 +26,8 @@ add_library(midicci-keyboard-core
 # Link required libraries to the core library (no Qt dependencies)
 target_link_libraries(midicci-keyboard-core
     PUBLIC
-    libremidi
-    midicci
+        libremidi::libremidi
+        midicci_static
 )
 
 # Include directories for the core library
@@ -105,8 +105,8 @@ target_link_libraries(ump_keyboard_tests
     midicci-keyboard-core
     gtest_main
     gtest
-    libremidi
-    midicci
+    libremidi::libremidi
+    midicci_static
 )
 
 target_include_directories(ump_keyboard_tests 

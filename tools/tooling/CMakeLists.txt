@@ -27,10 +27,10 @@ set(MIDICCI_TOOLING_SOURCES
 
 
 add_library(midicci-tooling STATIC ${MIDICCI_TOOLING_SOURCES})
-target_link_libraries(midicci-tooling 
+target_link_libraries(midicci-tooling
     PRIVATE
-        midicci
-        libremidi
+        midicci_static
+        libremidi::libremidi
 )
 
 target_compile_features(midicci-tooling PRIVATE cxx_std_20)

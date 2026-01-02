@@ -38,9 +38,9 @@ add_executable(midicci-gtest ${GTEST_SOURCES})
 
 target_link_libraries(midicci-gtest
     PRIVATE
-        midicci
+        midicci_static
         midicci-tooling
-        libremidi
+        libremidi::libremidi
         gtest_main
         gtest
         Threads::Threads

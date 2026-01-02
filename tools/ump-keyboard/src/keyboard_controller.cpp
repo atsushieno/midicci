@@ -710,12 +710,17 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
     }
 }
 
-void KeyboardController::sendControlChange(int channel, int controller, uint32_t value) {
+namespace {
+int clamp_group(int group) {
+    return std::clamp(group, 0, 15);
+}
+} // namespace
+
+void KeyboardController::sendControlChange(int channel, int controller, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        // Create MIDI 2.0 Control Change UMP packet
-        auto cc = cmidi2_ump_midi2_cc(0, channel, controller, value);
+        auto cc = cmidi2_ump_midi2_cc(clamp_group(group), channel, controller, value);
         libremidi::ump packet(cc >> 32, cc & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
         
@@ -725,11 +730,11 @@ void KeyboardController::sendControlChange(int channel, int controller, uint32_t
     }
 }
 
-void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value) {
+void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        auto rpn = cmidi2_ump_midi2_rpn(0, channel, msb, lsb, value);
+        auto rpn = cmidi2_ump_midi2_rpn(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(rpn >> 32, rpn & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
 
@@ -739,11 +744,11 @@ void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value) 
     }
 }
 
-void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value) {
+void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        auto nrpn = cmidi2_ump_midi2_nrpn(0, channel, msb, lsb, value);
+        auto nrpn = cmidi2_ump_midi2_nrpn(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(nrpn >> 32, nrpn & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
         
@@ -753,12 +758,11 @@ void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value)
     }
 }
 
-void KeyboardController::sendPerNoteControlChange(int channel, int note, int controller, uint32_t value) {
+void KeyboardController::sendPerNoteControlChange(int channel, int note, int controller, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        // Create MIDI 2.0 Per-Note Control Change UMP packet
-        auto pnac = cmidi2_ump_midi2_per_note_acc(0, channel, note, controller, value);
+        auto pnac = cmidi2_ump_midi2_per_note_acc(clamp_group(group), channel, note, controller, value);
         libremidi::ump packet(pnac >> 32, pnac & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
         
@@ -768,12 +772,11 @@ void KeyboardController::sendPerNoteControlChange(int channel, int note, int con
     }
 }
 
-void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t value) {
+void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        // Create MIDI 2.0 Per-Note Aftertouch UMP packet
-        auto paf = cmidi2_ump_midi2_paf(0, channel, note, value);
+        auto paf = cmidi2_ump_midi2_paf(clamp_group(group), channel, note, value);
         libremidi::ump packet(paf >> 32, paf & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
         
@@ -783,12 +786,11 @@ void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t v
     }
 }
 
-void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB) {
+void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB, int group) {
     if (!midiOut || !initialized) return;
     
     try {
-        // Create MIDI 2.0 UMP Program Change with bank select
-        auto pc = cmidi2_ump_midi2_program(0, channel, CMIDI2_PROGRAM_CHANGE_OPTION_BANK_VALID, program, bankMSB, bankLSB);
+        auto pc = cmidi2_ump_midi2_program(clamp_group(group), channel, CMIDI2_PROGRAM_CHANGE_OPTION_BANK_VALID, program, bankMSB, bankLSB);
         libremidi::ump packet(pc >> 32, pc & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
         

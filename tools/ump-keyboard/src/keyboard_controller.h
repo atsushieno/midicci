@@ -58,12 +58,12 @@ public:
     void setStateSaveCallback(std::function<void(uint32_t, const std::vector<uint8_t>&)> callback);
 
     // MIDI control sending
-    void sendControlChange(int channel, int controller, uint32_t value);
-    void sendRPN(int channel, int msb, int lsb, uint32_t value);
-    void sendNRPN(int channel, int msb, int lsb, uint32_t value);
-    void sendPerNoteControlChange(int channel, int note, int controller, uint32_t value);
-    void sendPerNoteAftertouch(int channel, int note, uint32_t value);
-    void sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB);
+    void sendControlChange(int channel, int controller, uint32_t value, int group = 0);
+    void sendRPN(int channel, int msb, int lsb, uint32_t value, int group = 0);
+    void sendNRPN(int channel, int msb, int lsb, uint32_t value, int group = 0);
+    void sendPerNoteControlChange(int channel, int note, int controller, uint32_t value, int group = 0);
+    void sendPerNoteAftertouch(int channel, int note, uint32_t value, int group = 0);
+    void sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB, int group = 0);
     
     // MIDI connection state
     bool hasValidMidiPair() const;

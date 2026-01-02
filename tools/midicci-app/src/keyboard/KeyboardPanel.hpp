@@ -28,6 +28,13 @@ private:
         std::string name;
     };
 
+    enum class ParameterContext {
+        Global = 0,
+        Group,
+        Channel,
+        Key
+    };
+
     void apply_pending_updates();
     void refresh_devices();
     void refresh_ci_devices();
@@ -43,6 +50,7 @@ private:
     midicci::keyboard::MessageLogger message_logger_;
     std::unique_ptr<KeyboardController> controller_;
     MidiKeyboard midi_keyboard_;
+    MidiKeyboard parameter_keyboard_;
 
     std::vector<DeviceEntry> input_devices_;
     std::vector<DeviceEntry> output_devices_;
@@ -88,6 +96,20 @@ private:
     std::vector<PendingPropertyUpdate> pending_property_updates_;
 
     std::unordered_map<std::string, int> control_values_;
+
+    ParameterContext parameter_context_ = ParameterContext::Global;
+    int parameter_group_value_ = 0;
+    int parameter_channel_value_ = 0;
+    int parameter_key_value_ = 60;
+
+    void render_parameter_context_controls();
+    int current_group_value() const;
+    int current_channel_value() const;
+    int current_key_value() const;
+    int resolve_channel(const midicci::commonproperties::MidiCIControl& ctrl) const;
+    void send_control_value(const midicci::commonproperties::MidiCIControl& ctrl, uint32_t value);
+    void set_parameter_key_value(int note);
+    bool control_matches_context(const midicci::commonproperties::MidiCIControl& ctrl) const;
 };
 
 } // namespace midicci::app

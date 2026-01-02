@@ -17,6 +17,19 @@ int convert_velocity_to_16bit(int value7) {
 }
 
 constexpr auto CTRL_MAP_REQUEST_TIMEOUT = std::chrono::seconds(3);
+constexpr const char* PARAM_CONTEXT_LABELS[] = {"Global", "Group", "Channel", "Key"};
+constexpr int PARAM_CONTEXT_COUNT = static_cast<int>(sizeof(PARAM_CONTEXT_LABELS) / sizeof(PARAM_CONTEXT_LABELS[0]));
+
+std::string note_label(int note) {
+    static constexpr const char* NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    if (note < 0 || note > 127) {
+        return "N/A";
+    }
+    int octave = (note / 12) - 1;
+    std::ostringstream oss;
+    oss << NOTE_NAMES[note % 12] << octave;
+    return oss.str();
+}
 } // namespace
 
 KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
@@ -43,6 +56,15 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
             controller_->noteOff(note);
         }
     });
+
+    parameter_keyboard_.set_octave_range(4, 2);
+    parameter_keyboard_.set_key_size(16.0f, 48.0f, 32.0f);
+    parameter_keyboard_.set_key_event_callback([this](int note, int /*velocity*/, bool is_pressed) {
+        if (is_pressed) {
+            set_parameter_key_value(note);
+        }
+    });
+    set_parameter_key_value(parameter_key_value_);
 
     controller_->setMidiCIDevicesChangedCallback([this]() {
         ci_dirty_.store(true, std::memory_order_relaxed);
@@ -436,12 +458,21 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         last_selected_muid_ = muid;
         // Do not auto-fetch control/program lists; leave them empty until the user requests data.
     }
+    ImGui::Spacing();
+    render_parameter_context_controls();
+    ImGui::Spacing();
 
     const auto ctrl_list_it = ctrl_list_cache_.find(muid);
     const std::vector<midicci::commonproperties::MidiCIControl>* controls = (ctrl_list_it != ctrl_list_cache_.end())
         ? &ctrl_list_it->second
         : nullptr;
-    if (controls && !controls->empty()) {
+    auto has_visible_controls = [this](const std::vector<midicci::commonproperties::MidiCIControl>& list) {
+        return std::any_of(list.begin(), list.end(), [this](const auto& ctrl) {
+            return control_matches_context(ctrl);
+        });
+    };
+
+    if (controls && !controls->empty() && has_visible_controls(*controls)) {
         const ImGuiTableFlags control_table_flags = ImGuiTableFlags_RowBg |
                                                    ImGuiTableFlags_Borders |
                                                    ImGuiTableFlags_Resizable |
@@ -454,6 +485,9 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             ImGui::TableHeadersRow();
             int row = 0;
             for (const auto& ctrl : *controls) {
+                if (!control_matches_context(ctrl)) {
+                    continue;
+                }
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%d", row);
@@ -507,9 +541,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                     uint64_t raw = static_cast<uint64_t>(min_raw) + static_cast<uint64_t>(slider_ratio * static_cast<float>(span));
                     raw = std::min<uint64_t>(raw, max_raw);
                     value = static_cast<int>(raw);
-                    if (!ctrl.ctrlIndex.empty()) {
-                        controller_->sendControlChange(0, ctrl.ctrlIndex[0], static_cast<uint32_t>(raw));
-                    }
+                    send_control_value(ctrl, static_cast<uint32_t>(raw));
                 }
                 if (has_combo) {
                     ImGui::SameLine(0.0f, combo_spacing);
@@ -563,9 +595,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                                 bool selected = current_value == mapEntry.value;
                                 if (ImGui::Selectable(mapEntry.title.c_str(), selected)) {
                                     value = static_cast<int>(mapEntry.value);
-                                    if (!ctrl.ctrlIndex.empty()) {
-                                        controller_->sendControlChange(0, ctrl.ctrlIndex[0], mapEntry.value);
-                                    }
+                                    send_control_value(ctrl, mapEntry.value);
                                     ImGui::CloseCurrentPopup();
                                 }
                                 if (selected) {
@@ -589,7 +619,11 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         }
     } else {
         invalidate_invisible_ctrl_map_entries(muid, -1);
-        ImGui::TextUnformatted("Control data not received yet.");
+        if (!controls || controls->empty()) {
+            ImGui::TextUnformatted("Control data not received yet.");
+        } else {
+            ImGui::TextUnformatted("No controls for this context.");
+        }
     }
     ImGui::EndChild();
 
@@ -633,7 +667,12 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                     ImGui::TextUnformatted("-");
                 }
                 if (selected && program.bankPC.size() >= 3) {
-                    controller_->sendProgramChange(0, program.bankPC[2], program.bankPC[0], program.bankPC[1]);
+                    controller_->sendProgramChange(
+                        current_channel_value(),
+                        program.bankPC[2],
+                        program.bankPC[0],
+                        program.bankPC[1],
+                        current_group_value());
                 }
                 ++row;
             }
@@ -643,6 +682,179 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ImGui::TextUnformatted("Program data not received yet.");
     }
     ImGui::EndChild();
+}
+
+void KeyboardPanel::render_parameter_context_controls() {
+    const ImGuiTableFlags table_flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings;
+    if (ImGui::BeginTable("parameter-context-layout", 2, table_flags)) {
+        ImGui::TableSetupColumn("context-controls", ImGuiTableColumnFlags_WidthFixed, 360.0f);
+        ImGui::TableSetupColumn("context-keyboard", ImGuiTableColumnFlags_WidthStretch, 0.0f);
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        auto format_value_label = [&](int idx) {
+            idx = std::clamp(idx, 0, 127);
+            if (parameter_context_ == ParameterContext::Key) {
+                std::ostringstream oss;
+                oss << idx << " (" << note_label(idx) << ")";
+                return oss.str();
+            }
+            return std::to_string(idx);
+        };
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Context:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(140.0f);
+        int context_index = std::clamp(static_cast<int>(parameter_context_), 0, PARAM_CONTEXT_COUNT - 1);
+        const char* current_label = PARAM_CONTEXT_LABELS[context_index];
+        if (ImGui::BeginCombo("##parameter-context", current_label)) {
+            for (int i = 0; i < PARAM_CONTEXT_COUNT; ++i) {
+                bool selected = (context_index == i);
+                if (ImGui::Selectable(PARAM_CONTEXT_LABELS[i], selected)) {
+                    parameter_context_ = static_cast<ParameterContext>(i);
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::SameLine();
+        ImGui::TextUnformatted("Value/Key:");
+        ImGui::SameLine();
+
+        bool disable_combo = (parameter_context_ == ParameterContext::Global);
+        if (disable_combo) {
+            ImGui::BeginDisabled();
+        }
+
+        int* target_value = nullptr;
+        int max_items = 0;
+        switch (parameter_context_) {
+        case ParameterContext::Group:
+            target_value = &parameter_group_value_;
+            max_items = 16;
+            break;
+        case ParameterContext::Channel:
+            target_value = &parameter_channel_value_;
+            max_items = 16;
+            break;
+        case ParameterContext::Key:
+            target_value = &parameter_key_value_;
+            max_items = 128;
+            break;
+        case ParameterContext::Global:
+            break;
+        }
+
+        int current_value = 0;
+        if (target_value != nullptr && max_items > 0) {
+            current_value = std::clamp(*target_value, 0, max_items - 1);
+            *target_value = current_value;
+        }
+        std::string preview_label = (target_value != nullptr && max_items > 0)
+                                        ? format_value_label(current_value)
+                                        : std::string("-");
+
+        ImGui::SetNextItemWidth(160.0f);
+        if (ImGui::BeginCombo("##parameter-context-value", preview_label.c_str())) {
+            for (int idx = 0; idx < max_items; ++idx) {
+                bool is_selected = (target_value != nullptr && idx == current_value);
+                std::string option = format_value_label(idx);
+                if (ImGui::Selectable(option.c_str(), is_selected) && target_value != nullptr) {
+                    *target_value = idx;
+                    if (parameter_context_ == ParameterContext::Key) {
+                        set_parameter_key_value(*target_value);
+                    }
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        if (disable_combo) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushID("parameter-keyboard");
+        parameter_keyboard_.render();
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
+}
+
+int KeyboardPanel::current_group_value() const {
+    return std::clamp(parameter_group_value_, 0, 15);
+}
+
+int KeyboardPanel::current_channel_value() const {
+    return std::clamp(parameter_channel_value_, 0, 15);
+}
+
+int KeyboardPanel::current_key_value() const {
+    return std::clamp(parameter_key_value_, 0, 127);
+}
+
+int KeyboardPanel::resolve_channel(const midicci::commonproperties::MidiCIControl& ctrl) const {
+    if (parameter_context_ == ParameterContext::Channel || parameter_context_ == ParameterContext::Key) {
+        return current_channel_value();
+    }
+    if (ctrl.channel.has_value()) {
+        return std::clamp(static_cast<int>(*ctrl.channel), 0, 15);
+    }
+    return 0;
+}
+
+void KeyboardPanel::send_control_value(const midicci::commonproperties::MidiCIControl& ctrl, uint32_t value) {
+    if (!controller_) {
+        return;
+    }
+    const int group = current_group_value();
+    const int channel = resolve_channel(ctrl);
+    const auto& type = ctrl.ctrlType;
+
+    if (type == midicci::commonproperties::MidiCIControlType::RPN) {
+        if (ctrl.ctrlIndex.size() >= 2) {
+            controller_->sendRPN(channel, ctrl.ctrlIndex[0], ctrl.ctrlIndex[1], value, group);
+        }
+    } else if (type == midicci::commonproperties::MidiCIControlType::NRPN) {
+        if (ctrl.ctrlIndex.size() >= 2) {
+            controller_->sendNRPN(channel, ctrl.ctrlIndex[0], ctrl.ctrlIndex[1], value, group);
+        }
+    } else if (type == midicci::commonproperties::MidiCIControlType::PNAC) {
+        if (!ctrl.ctrlIndex.empty()) {
+            controller_->sendPerNoteControlChange(channel, current_key_value(), ctrl.ctrlIndex[0], value, group);
+        }
+    } else {
+        if (!ctrl.ctrlIndex.empty()) {
+            controller_->sendControlChange(channel, ctrl.ctrlIndex[0], value, group);
+        }
+    }
+}
+
+void KeyboardPanel::set_parameter_key_value(int note) {
+    parameter_key_value_ = std::clamp(note, 0, 127);
+    parameter_keyboard_.set_highlighted_key(parameter_key_value_);
+}
+
+bool KeyboardPanel::control_matches_context(const midicci::commonproperties::MidiCIControl& ctrl) const {
+    const auto& type = ctrl.ctrlType;
+    switch (parameter_context_) {
+    case ParameterContext::Global:
+        return type == midicci::commonproperties::MidiCIControlType::NRPN;
+    case ParameterContext::Key:
+        return type == midicci::commonproperties::MidiCIControlType::PNAC;
+    case ParameterContext::Group:
+    case ParameterContext::Channel:
+        return true;
+    }
+    return true;
 }
 
 void KeyboardPanel::select_input_device(int index) {

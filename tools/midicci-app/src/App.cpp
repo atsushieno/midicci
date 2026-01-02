@@ -159,12 +159,16 @@ void MidicciApplication::render_logs_tab() {
     auto entries = copy_logs_for_render();
     ImGui::Text("Entries: %zu", entries.size());
 
-    if (ImGui::Button("Clear")) {
+    if (ImGui::Button("Clear Logs")) {
         std::lock_guard<std::mutex> lock(log_mutex_);
         log_lines_.clear();
     }
     ImGui::SameLine();
     log_filter_.Draw("Filter");
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Filter")) {
+        log_filter_.Clear();
+    }
     ImGui::SameLine();
     ImGui::Checkbox("Auto-scroll", &auto_scroll_logs_);
 

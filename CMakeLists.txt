@@ -63,6 +63,7 @@ FetchContent_Declare(
 )
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Prevent zlib-ng from installing, but otherwise respect its defaults
 midicci_fetchcontent_makeavailable_static(zlib-ng)
 

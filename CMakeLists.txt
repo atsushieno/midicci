@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 project(midicci
-    VERSION 0.1.1
+    VERSION 0.1.2
     DESCRIPTION "Cross-platform MIDI 2.0 MIDI-CI session library"
     LANGUAGES CXX
 )
@@ -119,7 +119,7 @@ install(
 # CPack (Deb/RPM/TXZ)
 # -----------------
 # Version used for packages (override with -DMIDICCI_VERSION=...)
-set(MIDICCI_VERSION "0.1.1" CACHE STRING "Project version for packaging")
+set(MIDICCI_VERSION "0.1.2" CACHE STRING "Project version for packaging")
 
 set(CPACK_PACKAGE_NAME "midicci")
 set(CPACK_PACKAGE_VENDOR "midicci")

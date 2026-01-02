@@ -728,9 +728,15 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
 }
 
 void KeyboardPanel::render_parameter_context_controls() {
+    const ImFont* font = ImGui::GetFont();
+    const float ui_scale = font ? std::max(font->Scale, 0.1f) : 1.0f;
+    const float context_column_width = 360.0f * ui_scale;
+    const float context_combo_width = 140.0f * ui_scale;
+    const float context_value_width = 160.0f * ui_scale;
+
     const ImGuiTableFlags table_flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings;
     if (ImGui::BeginTable("parameter-context-layout", 2, table_flags)) {
-        ImGui::TableSetupColumn("context-controls", ImGuiTableColumnFlags_WidthFixed, 360.0f);
+        ImGui::TableSetupColumn("context-controls", ImGuiTableColumnFlags_WidthFixed, context_column_width);
         ImGui::TableSetupColumn("context-keyboard", ImGuiTableColumnFlags_WidthStretch, 0.0f);
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -748,7 +754,7 @@ void KeyboardPanel::render_parameter_context_controls() {
         ImGui::AlignTextToFramePadding();
         ImGui::TextUnformatted("Context:");
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(140.0f);
+        ImGui::SetNextItemWidth(context_combo_width);
         int context_index = std::clamp(static_cast<int>(parameter_context_), 0, PARAM_CONTEXT_COUNT - 1);
         const char* current_label = PARAM_CONTEXT_LABELS[context_index];
         if (ImGui::BeginCombo("##parameter-context", current_label)) {
@@ -801,7 +807,7 @@ void KeyboardPanel::render_parameter_context_controls() {
                                         ? format_value_label(current_value)
                                         : std::string("-");
 
-        ImGui::SetNextItemWidth(160.0f);
+        ImGui::SetNextItemWidth(context_value_width);
         if (ImGui::BeginCombo("##parameter-context-value", preview_label.c_str())) {
             for (int idx = 0; idx < max_items; ++idx) {
                 bool is_selected = (target_value != nullptr && idx == current_value);

@@ -43,3 +43,15 @@ Claude tends to leave too much comments. It must be kept minimum.
 In particular, it must never ever leave comments like "following Kotlin implementation" which is TOO OBVIOUS.
 
 Claude leaves another kind of silly comments like "following ktmidi commit xxxxx" which is wrong for a handful of reasons. The commit hashes can change when the ktmidi development occurs in dev/feature branches. They can vanish and then the reference becomes a dangling pointer. It is prohibited at all.
+
+# Build artifacts
+
+We have to pay attention to the installed files that can be verified by:
+
+`cmake --install cmake-build-debug --prefix=dist`
+
+The resulting target directory must not contain any header files that are NOT part of the public API in this repository.
+
+The resulting target directory must contain both static and dynamic versions of the library.
+
+The resulting applications must not reference any dynamic library other than the system libraries like glibc or Apple macOS Frameworks, so that it can run without run-time library resolution failure.

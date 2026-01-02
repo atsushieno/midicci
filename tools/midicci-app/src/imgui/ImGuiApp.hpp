@@ -50,7 +50,7 @@ public:
     static int run(
         const ImGuiAppConfig& config,
         std::function<bool(ImGuiEventLoop*)> onInit,
-        std::function<bool(ImGuiEventLoop*, WindowHandle*)> onFrame,
+        std::function<bool(ImGuiEventLoop*, WindowHandle*, WindowingBackend*)> onFrame,
         std::function<void()> onShutdown = nullptr
     ) {
         auto windowingBackend = WindowingBackend::create();
@@ -115,7 +115,7 @@ public:
             platformBackend->newFrame();
             ImGui::NewFrame();
 
-            if (!onFrame(eventLoopPtr, window)) {
+            if (!onFrame(eventLoopPtr, window, windowingBackend.get())) {
                 running = false;
             }
 

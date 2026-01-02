@@ -3,7 +3,9 @@
 #include "imgui/SharedTheme.hpp"
 #include <midicci/tooling/CIDeviceManager.hpp>
 #include <midicci/tooling/MidiDeviceManager.hpp>
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -21,6 +23,9 @@ bool MidicciApplication::initialize() {
         return true;
     }
     SetupImGuiStyle();
+    base_style_ = ImGui::GetStyle();
+    apply_ui_scale(ui_scale_);
+    ui_scale_dirty_ = false;
 
     repository_ = std::make_unique<tooling::CIToolRepository>();
 
@@ -76,10 +81,13 @@ bool MidicciApplication::render_frame() {
     }
 
     render_window();
+    ui_scale_dirty_ = false;
     return true;
 }
 
 void MidicciApplication::render_window() {
+    update_window_size_tracking();
+
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
@@ -91,8 +99,10 @@ void MidicciApplication::render_window() {
                              ImGuiWindowFlags_NoBackground;
 
     if (ImGui::Begin("midicci-app-root", nullptr, flags)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.0f, 16.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.0f * ui_scale_, 16.0f * ui_scale_));
 
+        render_scale_toolbar();
+        ImGui::Separator();
         if (ImGui::BeginTabBar("midicci-app-tabs")) {
             if (ImGui::BeginTabItem("Keyboard")) {
                 ImGui::BeginChild("keyboard-scroll", ImVec2(0, 0), false, ImGuiWindowFlags_NoBackground);
@@ -124,6 +134,46 @@ void MidicciApplication::render_window() {
         ImGui::PopStyleVar();
     }
     ImGui::End();
+}
+
+void MidicciApplication::render_scale_toolbar() {
+    ImGui::BeginGroup();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Scale:");
+    ImGui::SameLine();
+
+    static constexpr float kScaleOptions[] = {0.5f, 0.8f, 1.0f, 1.25f, 1.5f, 2.0f, 3.0f};
+    static constexpr const char* kScaleLabels[] = {"x0.5", "x0.8", "x1.0", "x1.25", "x1.5", "x2.0", "x3.0"};
+    constexpr int kScaleCount = sizeof(kScaleOptions) / sizeof(kScaleOptions[0]);
+
+    int currentIndex = 0;
+    for (int i = 0; i < kScaleCount; ++i) {
+        if (std::fabs(ui_scale_ - kScaleOptions[i]) < 0.001f) {
+            currentIndex = i;
+            break;
+        }
+    }
+    int selectedIndex = currentIndex;
+
+    ImGui::SetNextItemWidth(120.0f * ui_scale_);
+    if (ImGui::BeginCombo("##midicci-scale", kScaleLabels[currentIndex])) {
+        for (int i = 0; i < kScaleCount; ++i) {
+            bool isSelected = (selectedIndex == i);
+            if (ImGui::Selectable(kScaleLabels[i], isSelected)) {
+                selectedIndex = i;
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    if (selectedIndex != currentIndex) {
+        apply_ui_scale(kScaleOptions[selectedIndex]);
+        request_window_resize();
+    }
+    ImGui::EndGroup();
+    ImGui::Spacing();
 }
 
 void MidicciApplication::render_keyboard_tab() {
@@ -240,6 +290,100 @@ std::string MidicciApplication::format_timestamp(const std::chrono::system_clock
     std::ostringstream oss;
     oss << std::put_time(&tm, "%H:%M:%S");
     return oss.str();
+}
+
+bool MidicciApplication::consume_pending_window_resize(ImVec2& size) {
+    if (!window_size_request_pending_) {
+        return false;
+    }
+    size = requested_window_size_;
+    window_size_request_pending_ = false;
+    return true;
+}
+
+void MidicciApplication::apply_ui_scale(float scale) {
+    ui_scale_ = std::clamp(scale, 0.5f, 4.0f);
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    style = base_style_;
+    style.ScaleAllSizes(ui_scale_);
+
+    apply_font_scaling();
+    ui_scale_dirty_ = true;
+}
+
+void MidicciApplication::capture_font_scales() {
+    ImGuiIO& io = ImGui::GetIO();
+    base_font_scales_.clear();
+    base_font_scales_.reserve(static_cast<size_t>(io.Fonts->Fonts.Size));
+    for (int i = 0; i < io.Fonts->Fonts.Size; ++i) {
+        base_font_scales_.push_back(io.Fonts->Fonts[i]->Scale);
+    }
+    font_scales_captured_ = true;
+}
+
+void MidicciApplication::apply_font_scaling() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!font_scales_captured_ || base_font_scales_.size() != static_cast<size_t>(io.Fonts->Fonts.Size)) {
+        capture_font_scales();
+    }
+    for (int i = 0; i < io.Fonts->Fonts.Size; ++i) {
+        io.Fonts->Fonts[i]->Scale = base_font_scales_[i] * ui_scale_;
+    }
+    io.FontGlobalScale = 1.0f;
+}
+
+void MidicciApplication::request_window_resize() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (base_window_size_.x <= 0.0f || base_window_size_.y <= 0.0f) {
+        if (io.DisplaySize.x > 0.0f && io.DisplaySize.y > 0.0f) {
+            float safeScale = std::max(ui_scale_, 0.001f);
+            base_window_size_.x = io.DisplaySize.x / safeScale;
+            base_window_size_.y = io.DisplaySize.y / safeScale;
+        }
+    }
+
+    requested_window_size_.x = std::max(200.0f, base_window_size_.x * ui_scale_);
+    requested_window_size_.y = std::max(200.0f, base_window_size_.y * ui_scale_);
+    window_size_request_pending_ = true;
+    waiting_for_window_resize_ = true;
+}
+
+void MidicciApplication::update_window_size_tracking() {
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    if (displaySize.x <= 0.0f || displaySize.y <= 0.0f) {
+        return;
+    }
+
+    constexpr float kWindowSizeEpsilon = 1.0f;
+    if (last_window_size_.x == 0.0f && last_window_size_.y == 0.0f) {
+        float safeScale = std::max(ui_scale_, 0.001f);
+        base_window_size_.x = displaySize.x / safeScale;
+        base_window_size_.y = displaySize.y / safeScale;
+    }
+
+    float deltaX = std::fabs(displaySize.x - last_window_size_.x);
+    float deltaY = std::fabs(displaySize.y - last_window_size_.y);
+
+    if (waiting_for_window_resize_) {
+        bool reachedTarget = std::fabs(displaySize.x - requested_window_size_.x) < kWindowSizeEpsilon &&
+                             std::fabs(displaySize.y - requested_window_size_.y) < kWindowSizeEpsilon;
+        if (reachedTarget || deltaX > kWindowSizeEpsilon || deltaY > kWindowSizeEpsilon) {
+            waiting_for_window_resize_ = false;
+            if (ui_scale_ > 0.0f) {
+                base_window_size_.x = displaySize.x / ui_scale_;
+                base_window_size_.y = displaySize.y / ui_scale_;
+            }
+        }
+    } else if (deltaX > kWindowSizeEpsilon || deltaY > kWindowSizeEpsilon) {
+        if (ui_scale_ > 0.0f) {
+            base_window_size_.x = displaySize.x / ui_scale_;
+            base_window_size_.y = displaySize.y / ui_scale_;
+        }
+    }
+
+    last_window_size_ = displaySize;
 }
 
 } // namespace midicci::app

@@ -5,6 +5,8 @@
 #include <windows.h>
 #endif
 #include "imgui/ImGuiApp.hpp"
+#include <algorithm>
+#include <cmath>
 
 using namespace midicci::app;
 
@@ -13,8 +15,8 @@ int main() {
 
     ImGuiAppConfig config;
     config.windowTitle = "MIDICCI App";
-    config.windowWidth = 720;
-    config.windowHeight = 720;
+    config.windowWidth = 750;
+    config.windowHeight = 750;
     config.clearColor = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
 
     return ImGuiApp::run(
@@ -22,8 +24,17 @@ int main() {
         [&](ImGuiEventLoop*) {
             return app.initialize();
         },
-        [&](ImGuiEventLoop*, WindowHandle*) {
-            return app.render_frame();
+        [&](ImGuiEventLoop*, WindowHandle* window, WindowingBackend* backend) {
+            bool keepRunning = app.render_frame();
+            if (backend && window) {
+                ImVec2 pendingWindowSize;
+                if (app.consume_pending_window_resize(pendingWindowSize)) {
+                    int width = std::max(1, static_cast<int>(std::lround(pendingWindowSize.x)));
+                    int height = std::max(1, static_cast<int>(std::lround(pendingWindowSize.y)));
+                    backend->setWindowSize(window, width, height);
+                }
+            }
+            return keepRunning;
         },
         [&]() {
             app.shutdown();

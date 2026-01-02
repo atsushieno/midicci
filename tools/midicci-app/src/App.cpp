@@ -22,6 +22,11 @@ bool MidicciApplication::initialize() {
     if (initialized_) {
         return true;
     }
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr; // disable ImGui's built-in ini persistence
+    ImGui::LoadIniSettingsFromMemory("", 0);
+
     SetupImGuiStyle();
     base_style_ = ImGui::GetStyle();
     apply_ui_scale(ui_scale_);

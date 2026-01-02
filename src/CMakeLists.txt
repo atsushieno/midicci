@@ -71,6 +71,7 @@ set_target_properties(${MODULE_NAME} PROPERTIES
 )
 set_target_properties(${MODULE_NAME}_static PROPERTIES
     OUTPUT_NAME ${MODULE_NAME}
+    POSITION_INDEPENDENT_CODE ON
 )
 
 # Keep identical base name for both libs; avoid filename collisions on Windows

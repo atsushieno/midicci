@@ -28,6 +28,11 @@
 #       pragma push_macro("NONE")
 #       undef NONE
 #   endif
+#   if defined(DEFAULT)
+#       define MIDICCI_RESTORE_DEFAULT 1
+#       pragma push_macro("DEFAULT")
+#       undef DEFAULT
+#   endif
 #endif
 
 using namespace midicci;
@@ -250,5 +255,9 @@ namespace StandardPropertiesExtensions {
 #   if defined(MIDICCI_RESTORE_NONE)
 #       pragma pop_macro("NONE")
 #       undef MIDICCI_RESTORE_NONE
+#   endif
+#   if defined(MIDICCI_RESTORE_DEFAULT)
+#       pragma pop_macro("DEFAULT")
+#       undef MIDICCI_RESTORE_DEFAULT
 #   endif
 #endif

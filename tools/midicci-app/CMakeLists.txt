@@ -189,7 +189,7 @@ if(APPLE)
         "-framework IOKit"
         "-framework CoreVideo"
     )
-elseif(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     find_package(X11 REQUIRED)
     target_link_libraries(midicci-app PRIVATE X11::X11)
 endif()

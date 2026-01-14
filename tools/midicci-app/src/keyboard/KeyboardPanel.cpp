@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <fstream>
+#include <portable-file-dialogs.h>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
 
 namespace midicci::app {
@@ -108,6 +110,10 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
             std::lock_guard<std::mutex> lock(property_update_mutex_);
             pending_property_updates_.push_back({muid, propertyId, resId});
         }
+    });
+
+    controller_->setStateSaveCallback([this](uint32_t muid, const std::vector<uint8_t>& stateData) {
+        on_save_state(muid, stateData);
     });
 
     devices_dirty_.store(true, std::memory_order_relaxed);
@@ -467,6 +473,17 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     }
 
     ImGui::BeginChild("control-column", ImVec2(0, 320.0f), true);
+
+    if (ImGui::Button("Save State")) {
+        if (controller_) {
+            controller_->requestSaveState(muid);
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Load State")) {
+        on_load_state(muid);
+    }
+
     ImGui::TextUnformatted("Program List [BankMSB:BankLSB:Program]");
     const auto program_it = program_list_cache_.find(muid);
     const auto* programs = (program_it != program_list_cache_.end()) ? &program_it->second : nullptr;
@@ -962,6 +979,104 @@ void KeyboardPanel::select_output_device(int index) {
     if (repository_) {
         if (auto midi_manager = repository_->get_midi_device_manager()) {
             midi_manager->set_output_device(device_name);
+        }
+    }
+}
+
+void KeyboardPanel::on_save_state(uint32_t muid, const std::vector<uint8_t>& stateData) {
+    std::string device_model;
+    {
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for (const auto& device : ci_devices_) {
+            if (device.muid == muid) {
+                device_model = device.model;
+                break;
+            }
+        }
+    }
+
+    std::string sanitized = device_model.empty() ? "device" : device_model;
+    const std::string illegalChars = R"(<>:"/\|?*)";
+    for (char ch : illegalChars) {
+        std::replace(sanitized.begin(), sanitized.end(), ch, '-');
+    }
+    sanitized.erase(std::remove_if(sanitized.begin(), sanitized.end(),
+        [](unsigned char c) { return c < 0x20; }), sanitized.end());
+
+    std::string default_filename = "State - " + sanitized + ".state";
+
+    auto save = pfd::save_file(
+        "Save Device State",
+        default_filename,
+        {"State Files", "*.state", "All Files", "*"}
+    );
+
+    std::string filename = save.result();
+    if (filename.empty()) {
+        return;
+    }
+
+    if (filename.find(".state") == std::string::npos) {
+        filename += ".state";
+    }
+
+    std::ofstream outfile(filename, std::ios::binary);
+    if (!outfile) {
+        pfd::message("Save State", "Failed to open file for writing:\n" + filename, pfd::choice::ok, pfd::icon::error);
+        return;
+    }
+
+    outfile.write(reinterpret_cast<const char*>(stateData.data()), static_cast<std::streamsize>(stateData.size()));
+    outfile.close();
+
+    if (!outfile.good()) {
+        pfd::message("Save State", "Failed to write data to file:\n" + filename, pfd::choice::ok, pfd::icon::error);
+        return;
+    }
+
+    if (repository_) {
+        repository_->log("Saved device state to: " + filename, tooling::MessageDirection::Out);
+    }
+}
+
+void KeyboardPanel::on_load_state(uint32_t muid) {
+    auto selection = pfd::open_file(
+        "Load Device State",
+        "",
+        {"State Files", "*.state", "All Files", "*"}
+    );
+
+    std::vector<std::string> files = selection.result();
+    if (files.empty()) {
+        return;
+    }
+
+    std::string filename = files[0];
+    std::ifstream infile(filename, std::ios::binary | std::ios::ate);
+    if (!infile) {
+        pfd::message("Load State", "Failed to open file for reading: " + filename, pfd::choice::ok, pfd::icon::error);
+        return;
+    }
+
+    std::streamsize size = infile.tellg();
+    infile.seekg(0, std::ios::beg);
+
+    if (size <= 0) {
+        pfd::message("Load State", "File is empty or cannot determine size", pfd::choice::ok, pfd::icon::error);
+        return;
+    }
+
+    std::vector<uint8_t> stateData(static_cast<size_t>(size));
+    if (!infile.read(reinterpret_cast<char*>(stateData.data()), size)) {
+        pfd::message("Load State", "Failed to read file contents", pfd::choice::ok, pfd::icon::error);
+        return;
+    }
+    infile.close();
+
+    if (controller_) {
+        controller_->sendState(muid, midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE, stateData);
+        if (repository_) {
+            repository_->log("Loaded device state from: " + filename, tooling::MessageDirection::Out);
         }
     }
 }

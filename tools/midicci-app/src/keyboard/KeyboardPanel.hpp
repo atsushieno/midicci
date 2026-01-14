@@ -46,6 +46,8 @@ private:
     uint32_t current_selected_muid() const;
     void select_input_device(int index);
     void select_output_device(int index);
+    void on_save_state(uint32_t muid, const std::vector<uint8_t>& stateData);
+    void on_load_state(uint32_t muid);
 
     midicci::keyboard::MessageLogger message_logger_;
     std::unique_ptr<KeyboardController> controller_;

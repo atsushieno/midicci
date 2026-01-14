@@ -121,6 +121,18 @@ if(NOT TARGET imgui)
 endif()
 
 # ------------------------------------------------------------------------------
+# portable-file-dialogs dependency
+# ------------------------------------------------------------------------------
+if(NOT DEFINED portable-file-dialogs_SOURCE_DIR)
+    CPMAddPackage(
+        NAME portable-file-dialogs
+        GIT_TAG c12ea8c
+        GIT_REPOSITORY https://github.com/samhocevar/portable-file-dialogs
+        DOWNLOAD_ONLY YES
+    )
+endif()
+
+# ------------------------------------------------------------------------------
 # Shared ImGui helpers
 # ------------------------------------------------------------------------------
 add_library(midicci-imgui-support STATIC
@@ -173,6 +185,7 @@ target_include_directories(midicci-app PRIVATE
     ${CMAKE_SOURCE_DIR}/external/libremidi/include
     ${cmidi2_SOURCE_DIR}
     ${midicci_SOURCE_DIR}/include
+    ${portable-file-dialogs_SOURCE_DIR}
 )
 
 target_link_libraries(midicci-app PRIVATE

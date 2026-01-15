@@ -162,9 +162,9 @@ add_executable(midicci-app
     src/keyboard/MidiKeyboard.cpp
     src/inspector/InspectorPanel.cpp
     src/local_device/LocalDevicePanel.cpp
-    ../ump-keyboard/src/keyboard_controller.cpp
-    ../ump-keyboard/src/midi_ci_manager.cpp
-    ../ump-keyboard/src/message_logger.cpp
+    src/keyboard_controller.cpp
+    src/midi_ci_manager.cpp
+    src/message_logger.cpp
 )
 
 # ------------------------------------------------------------------------------
@@ -180,7 +180,6 @@ FetchContent_MakeAvailable(cmidi2)
 target_include_directories(midicci-app PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ump-keyboard/src
     ${CMAKE_SOURCE_DIR}/tools/tooling/include
     ${CMAKE_SOURCE_DIR}/external/libremidi/include
     ${cmidi2_SOURCE_DIR}
@@ -214,4 +213,59 @@ endif()
 # Install midicci-app executable only; dependencies are not installed
 install(TARGETS midicci-app
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+enable_testing()
+
+add_executable(midicci-app-tests
+    tests/test_midi_feedback_loop.cpp
+    tests/test_standard_properties.cpp
+    tests/test_properties_parsing.cpp
+    tests/test_end_to_end_properties.cpp
+    tests/test_allctrllist_ordering.cpp
+    tests/test_blank_titles_issue.cpp
+    tests/test_allctrllist_timing.cpp
+    tests/test_ordering_bug_analysis.cpp
+)
+
+add_library(midicci-keyboard-core STATIC
+    src/keyboard_controller.cpp
+    src/midi_ci_manager.cpp
+    src/message_logger.cpp
+)
+
+target_link_libraries(midicci-keyboard-core
+    PUBLIC
+        libremidi::libremidi
+        midicci_static
+)
+
+target_include_directories(midicci-keyboard-core
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${cmidi2_SOURCE_DIR}
+)
+
+target_link_libraries(midicci-app-tests
+    PRIVATE
+    midicci-keyboard-core
+    gtest_main
+    gtest
+    libremidi::libremidi
+    midicci_static
+)
+
+target_include_directories(midicci-app-tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${cmidi2_SOURCE_DIR}
+)
+
+add_test(NAME MidiCIAppTests COMMAND midicci-app-tests)
+
+set_tests_properties(MidiCIAppTests PROPERTIES
+    TIMEOUT 60
 )

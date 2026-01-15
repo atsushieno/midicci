@@ -40,6 +40,8 @@ private:
     void setupConnections();
     void updateDeviceLists();
     void updateDeviceConfiguration();
+    void checkAndAutoConnect();
+    static QString normalizeDeviceName(const QString& deviceName);
 
     midicci::tooling::CIToolRepository* m_repository;
     

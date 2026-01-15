@@ -151,16 +151,16 @@ bool KeyboardController::selectInputDevice(const std::string& deviceId) {
             midiIn->close_port();
             updateUIConnectionState();
         }
-        
+
         if (deviceId.empty()) {
             currentInputDeviceId = "";
             updateUIConnectionState();
             return true;
         }
-        
+
         auto ports = observer->get_input_ports();
         size_t portIndex = std::stoul(deviceId);
-        
+
         if (portIndex < ports.size()) {
             midiIn->open_port(ports[portIndex]);
             currentInputDeviceId = deviceId;
@@ -171,6 +171,7 @@ bool KeyboardController::selectInputDevice(const std::string& deviceId) {
             }
 
             updateUIConnectionState();
+            checkAndAutoConnect();
 
             return true;
         } else {
@@ -187,26 +188,28 @@ bool KeyboardController::selectOutputDevice(const std::string& deviceId) {
             midiOut->close_port();
             updateUIConnectionState();
         }
-        
+
         if (deviceId.empty()) {
             currentOutputDeviceId = "";
             updateUIConnectionState();
             return true;
         }
-        
+
         auto ports = observer->get_output_ports();
         size_t portIndex = std::stoul(deviceId);
-        
+
         if (portIndex < ports.size()) {
             midiOut->open_port(ports[portIndex]);
             currentOutputDeviceId = deviceId;
             updateUIConnectionState();
-            
+
             // Reinitialize MIDI-CI when we have a valid MIDI pair
             if (hasValidMidiPair()) {
                 initializeMidiCI();
             }
-            
+
+            checkAndAutoConnect();
+
             return true;
         } else {
             return false;
@@ -803,14 +806,70 @@ void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t
 
 void KeyboardController::updateUIConnectionState() {
     bool currentConnectionState = hasValidMidiPair();
-    
+
     if (currentConnectionState != previousConnectionState) {
         previousConnectionState = currentConnectionState;
-        
+
         if (midiConnectionChangedCallback) {
             midiConnectionChangedCallback(currentConnectionState);
         }
-        
+
         std::cout << "MIDI connection pair state changed: " << (currentConnectionState ? "CONNECTED" : "DISCONNECTED") << std::endl;
+    }
+}
+
+std::string KeyboardController::normalizeDeviceName(const std::string& deviceName) {
+    if (deviceName.length() >= 3 && deviceName.substr(deviceName.length() - 3) == " In")
+        return deviceName.substr(0, deviceName.length() - 3);
+    if (deviceName.length() >= 4 && deviceName.substr(deviceName.length() - 4) == " Out")
+        return deviceName.substr(0, deviceName.length() - 4);
+    return deviceName;
+}
+
+void KeyboardController::checkAndAutoConnect() {
+    if (!hasValidMidiPair()) {
+        return;
+    }
+
+    if (!observer) {
+        return;
+    }
+
+    try {
+        std::string inputDeviceName;
+        std::string outputDeviceName;
+
+        auto inputPorts = observer->get_input_ports();
+        auto outputPorts = observer->get_output_ports();
+
+        size_t inputIndex = currentInputDeviceId.empty() ? SIZE_MAX : std::stoul(currentInputDeviceId);
+        size_t outputIndex = currentOutputDeviceId.empty() ? SIZE_MAX : std::stoul(currentOutputDeviceId);
+
+        if (inputIndex < inputPorts.size()) {
+            inputDeviceName = inputPorts[inputIndex].port_name;
+        }
+
+        if (outputIndex < outputPorts.size()) {
+            outputDeviceName = outputPorts[outputIndex].port_name;
+        }
+
+        if (inputDeviceName.empty() || outputDeviceName.empty()) {
+            return;
+        }
+
+        std::string normalizedInput = normalizeDeviceName(inputDeviceName);
+        std::string normalizedOutput = normalizeDeviceName(outputDeviceName);
+
+        if (normalizedInput == normalizedOutput) {
+            std::cout << "Auto-connecting: matched devices '" << inputDeviceName
+                      << "' and '" << outputDeviceName << "'" << std::endl;
+
+            if (midiCIManager && midiCIManager->isInitialized()) {
+                midiCIManager->sendDiscovery();
+                std::cout << "Automatically sending discovery inquiry" << std::endl;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error in auto-connect check: " << e.what() << std::endl;
     }
 }

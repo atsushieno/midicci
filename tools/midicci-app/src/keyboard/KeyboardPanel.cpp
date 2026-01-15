@@ -951,6 +951,8 @@ void KeyboardPanel::select_input_device(int index) {
             midi_manager->set_input_device(device_name);
         }
     }
+
+    check_and_auto_connect();
 }
 
 void KeyboardPanel::select_output_device(int index) {
@@ -981,6 +983,8 @@ void KeyboardPanel::select_output_device(int index) {
             midi_manager->set_output_device(device_name);
         }
     }
+
+    check_and_auto_connect();
 }
 
 void KeyboardPanel::on_save_state(uint32_t muid, const std::vector<uint8_t>& stateData) {
@@ -1077,6 +1081,55 @@ void KeyboardPanel::on_load_state(uint32_t muid) {
         controller_->sendState(muid, midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE, stateData);
         if (repository_) {
             repository_->log("Loaded device state from: " + filename, tooling::MessageDirection::Out);
+        }
+    }
+}
+
+std::string KeyboardPanel::normalize_device_name(const std::string& device_name) {
+    if (device_name.length() >= 3 && device_name.substr(device_name.length() - 3) == " In")
+        return device_name.substr(0, device_name.length() - 3);
+    if (device_name.length() >= 4 && device_name.substr(device_name.length() - 4) == " Out")
+        return device_name.substr(0, device_name.length() - 4);
+    return device_name;
+}
+
+void KeyboardPanel::check_and_auto_connect() {
+    if (!controller_) {
+        return;
+    }
+
+    std::string input_device_name;
+    std::string output_device_name;
+
+    {
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        if (selected_input_index_ >= 0 && selected_input_index_ < static_cast<int>(input_devices_.size())) {
+            input_device_name = input_devices_[selected_input_index_].name;
+        }
+
+        if (selected_output_index_ >= 0 && selected_output_index_ < static_cast<int>(output_devices_.size())) {
+            output_device_name = output_devices_[selected_output_index_].name;
+        }
+    }
+
+    if (input_device_name.empty() || output_device_name.empty()) {
+        return;
+    }
+
+    std::string normalized_input = normalize_device_name(input_device_name);
+    std::string normalized_output = normalize_device_name(output_device_name);
+
+    if (normalized_input == normalized_output) {
+        if (repository_) {
+            repository_->log("Auto-connecting: matched devices '" + input_device_name +
+                           "' and '" + output_device_name + "'", tooling::MessageDirection::Out);
+        }
+
+        if (controller_->isMidiCIInitialized()) {
+            controller_->sendMidiCIDiscovery();
+            if (repository_) {
+                repository_->log("Automatically sending discovery inquiry", tooling::MessageDirection::Out);
+            }
         }
     }
 }

@@ -46,6 +46,8 @@ private:
     uint32_t current_selected_muid() const;
     void select_input_device(int index);
     void select_output_device(int index);
+    void check_and_auto_connect();
+    static std::string normalize_device_name(const std::string& device_name);
     void on_save_state(uint32_t muid, const std::vector<uint8_t>& stateData);
     void on_load_state(uint32_t muid);
 

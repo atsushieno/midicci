@@ -101,6 +101,8 @@ private:
     
     // Connection state helpers
     void updateUIConnectionState();
+    void checkAndAutoConnect();
+    static std::string normalizeDeviceName(const std::string& deviceName);
     bool previousConnectionState = false;
     
     // SysEx reconstruction state for multi-packet UMP SysEx7

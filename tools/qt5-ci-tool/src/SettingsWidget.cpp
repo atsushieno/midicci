@@ -1,5 +1,6 @@
 #include "SettingsWidget.hpp"
 #include <midicci/tooling/CIToolRepository.hpp>
+#include <midicci/tooling/CIDeviceModel.hpp>
 #include "AppModel.hpp"
 
 #include <QVBoxLayout>
@@ -161,6 +162,7 @@ void SettingsWidget::onInputDeviceChanged(int index)
         auto midiManager = m_repository->get_midi_device_manager();
         if (midiManager && midiManager->set_input_device(deviceName.toStdString())) {
             m_repository->log(QString("Selected input device: %1").arg(deviceName).toStdString(), tooling::MessageDirection::Out);
+            checkAndAutoConnect();
         }
     }
 }
@@ -172,6 +174,7 @@ void SettingsWidget::onOutputDeviceChanged(int index)
         auto midiManager = m_repository->get_midi_device_manager();
         if (midiManager && midiManager->set_output_device(deviceName.toStdString())) {
             m_repository->log(QString("Selected output device: %1").arg(deviceName).toStdString(), tooling::MessageDirection::Out);
+            checkAndAutoConnect();
         }
     }
 }
@@ -263,5 +266,48 @@ void SettingsWidget::updateDeviceConfiguration()
     
     m_workaroundJUCESubscriptionCheck->setChecked(false);
     m_workaroundJUCEProfileChannelsCheck->setChecked(false);
+}
+
+QString SettingsWidget::normalizeDeviceName(const QString& deviceName)
+{
+    if (deviceName.endsWith(" In", Qt::CaseSensitive))
+        return deviceName.left(deviceName.length() - 3);
+    if (deviceName.endsWith(" Out", Qt::CaseSensitive))
+        return deviceName.left(deviceName.length() - 4);
+    return deviceName;
+}
+
+void SettingsWidget::checkAndAutoConnect()
+{
+    if (!m_repository) {
+        return;
+    }
+
+    auto midiManager = m_repository->get_midi_device_manager();
+    if (!midiManager) {
+        return;
+    }
+
+    QString inputDevice = QString::fromStdString(midiManager->get_current_input_device());
+    QString outputDevice = QString::fromStdString(midiManager->get_current_output_device());
+
+    if (inputDevice.isEmpty() || outputDevice.isEmpty()) {
+        return;
+    }
+
+    QString normalizedInput = normalizeDeviceName(inputDevice);
+    QString normalizedOutput = normalizeDeviceName(outputDevice);
+
+    if (normalizedInput == normalizedOutput) {
+        m_repository->log(QString("Auto-connecting: matched devices '%1' and '%2'").arg(inputDevice, outputDevice).toStdString(), tooling::MessageDirection::Out);
+
+        if (m_repository->get_ci_device_manager()) {
+            auto deviceModel = m_repository->get_ci_device_manager()->get_device_model();
+            if (deviceModel) {
+                deviceModel->send_discovery();
+                m_repository->log("Automatically sending discovery inquiry", tooling::MessageDirection::Out);
+            }
+        }
+    }
 }
 }

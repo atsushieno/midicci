@@ -24,6 +24,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
+option(MIDICCI_ENABLE_WINMIDI "Enable Windows MIDI Services backend integration (Windows only)" ${WIN32})
+set(MIDICCI_WINMIDI_HEADERS_ARCHIVE "${CMAKE_CURRENT_LIST_DIR}/external/Microsoft.Windows.Devices.Midi2.1.0.14-rc.1.209.nupkg"
+        CACHE FILEPATH "Path to the Windows MIDI Services header package used by libremidi")
 
 include(GNUInstallDirs)
 
@@ -47,6 +50,24 @@ function(midicci_fetchcontent_makeavailable_static target_name)
 endfunction()
 
 # Fetch libremidi for tools / tests, but do not install it
+if(WIN32 AND MIDICCI_ENABLE_WINMIDI)
+    if(NOT LIBREMIDI_WINMIDI_HEADERS_ZIP)
+        if(NOT MIDICCI_WINMIDI_HEADERS_ARCHIVE)
+            message(FATAL_ERROR "MIDICCI_ENABLE_WINMIDI is ON but MIDICCI_WINMIDI_HEADERS_ARCHIVE is not specified.")
+        endif()
+        set(_midicci_winmidi_archive "${MIDICCI_WINMIDI_HEADERS_ARCHIVE}")
+        if(NOT IS_ABSOLUTE "${_midicci_winmidi_archive}")
+            cmake_path(SET _midicci_winmidi_archive NORMALIZE "${CMAKE_CURRENT_LIST_DIR}/${_midicci_winmidi_archive}")
+        endif()
+        if(NOT EXISTS "${_midicci_winmidi_archive}")
+            message(FATAL_ERROR
+                    "Expected Windows MIDI Services package at ${_midicci_winmidi_archive}.\n"
+                    "Place the NuGet archive under external/ or set MIDICCI_WINMIDI_HEADERS_ARCHIVE accordingly.")
+        endif()
+        set(LIBREMIDI_WINMIDI_HEADERS_ZIP "${_midicci_winmidi_archive}" CACHE FILEPATH "Path to the Windows MIDI Services header package used by libremidi" FORCE)
+    endif()
+endif()
+
 FetchContent_Declare(
     libremidi
     GIT_REPOSITORY https://github.com/celtera/libremidi.git
@@ -105,11 +126,32 @@ set(CPACK_PACKAGE_CONTACT "midicci maintainers")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "midicci MIDI-CI tools and libraries")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/atsushieno/midicci")
 
-# Install under /usr in packages regardless of CMAKE_INSTALL_PREFIX
-set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+# Install under /usr in packages regardless of CMAKE_INSTALL_PREFIX on Linux
+if(UNIX AND NOT APPLE)
+    set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+endif()
 
-# Generators: deb, rpm, and a portable txz archive
-set(CPACK_GENERATOR "DEB;RPM;TXZ")
+# Generators per platform
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP")
+    find_program(MIDICCI_MAKENSIS_EXECUTABLE NAMES makensis)
+    if(MIDICCI_MAKENSIS_EXECUTABLE)
+        set(CPACK_GENERATOR "${CPACK_GENERATOR};NSIS")
+        set(CPACK_NSIS_DISPLAY_NAME "MIDICCI MIDI-CI Tools")
+        set(CPACK_NSIS_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+        set(CPACK_NSIS_CONTACT "${CPACK_PACKAGE_CONTACT}")
+        set(CPACK_NSIS_HELP_LINK "${CPACK_PACKAGE_HOMEPAGE_URL}")
+        set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
+        set(CPACK_NSIS_MODIFY_PATH OFF)
+    endif()
+elseif(APPLE)
+    set(CPACK_GENERATOR "ZIP;DragNDrop")
+    set(CPACK_DMG_VOLUME_NAME "MIDICCI_${CPACK_PACKAGE_VERSION}")
+    set(CPACK_DMG_SLA_USE_RESOURCE_FILE OFF)
+    set(CPACK_DMG_DISABLE_APPLICATIONS_SYMLINK OFF)
+else()
+    set(CPACK_GENERATOR "DEB;RPM;TXZ")
+endif()
 
 # Debian-specific
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
@@ -124,10 +166,16 @@ set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
 # Common metadata
 set(CPACK_PACKAGE_VERSION "${MIDICCI_VERSION}")
 
-# Package only our component
-set(CPACK_COMPONENTS_ALL midicci)
-set(CPACK_COMPONENT_MIDICCI_DISPLAY_NAME "midicci")
-set(CPACK_COMPONENT_MIDICCI_DESCRIPTION "MIDICCI MIDI-CI tools, libraries, and headers")
+# Package components per-platform; DMG should only contain the app bundle
+if(APPLE)
+    set(CPACK_COMPONENTS_ALL midicci_app)
+    set(CPACK_COMPONENT_MIDICCI_APP_DISPLAY_NAME "midicci app bundle")
+    set(CPACK_COMPONENT_MIDICCI_APP_DESCRIPTION "MIDICCI macOS desktop application bundle")
+else()
+    set(CPACK_COMPONENTS_ALL midicci)
+    set(CPACK_COMPONENT_MIDICCI_DISPLAY_NAME "midicci")
+    set(CPACK_COMPONENT_MIDICCI_DESCRIPTION "MIDICCI MIDI-CI tools, libraries, and headers")
+endif()
 
 include(CPack)
 

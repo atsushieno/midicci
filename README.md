@@ -8,17 +8,37 @@ So far it is fairly successful. It is mostly working, sometimes ahead of ktmidi-
 
 ## Build, Install, and Use midicci
 
-There are Linux packages available in the [Releases](https://github.com/atsushieno/midicci/releases) page as well as GitHub Actions CI artifacts.
+### Binary Packages
 
-For macOS there is a Homebrew setup available: `brew install atsushieno/oss/midicci`
+Binary packages are available in the [Releases](https://github.com/atsushieno/midicci/releases) page:
 
-To build from source, use CMake:
+- **Linux**: DEB, RPM, and TXZ packages
+- **macOS**: DMG (drag-and-drop app bundle) and ZIP archives
+- **Windows**: ZIP archives (with optional NSIS installer when available)
+
+For macOS there is also a Homebrew setup available: `brew install atsushieno/oss/midicci`
+
+### Building from Source
+
+Use CMake to build from source:
 
 ```
-cmake -B build -G Ninja # build or whatever directory you want, Ninja or whatever generator
+cmake -B build -G Ninja
 cmake --build build
-cmake --install build --prefix /usr/local # or wherever destination directory
+cmake --install build --prefix /usr/local
 ```
+
+To create distribution packages locally:
+
+```
+cmake --build build --target package
+```
+
+#### Windows MIDI Services Support
+
+Windows builds support the [Windows MIDI Services](https://github.com/microsoft/MIDI) backend through libremidi. The required NuGet package (`Microsoft.Windows.Devices.Midi2.1.0.14-rc.1.209.nupkg`) is included in the `external/` directory. Windows MIDI Services integration is enabled by default on Windows (controlled by `MIDICCI_ENABLE_WINMIDI` option).
+
+### Using midicci
 
 midicci comes with a MIDI 2.0 keyboard and MIDI-CI diagnostic utility `midicci-app`.
 

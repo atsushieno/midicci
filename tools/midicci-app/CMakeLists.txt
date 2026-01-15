@@ -166,6 +166,22 @@ add_executable(midicci-app
     src/midi_ci_manager.cpp
     src/message_logger.cpp
 )
+set(MIDICCI_APP_TARGETS midicci-app)
+
+if(APPLE)
+    add_executable(midicci-app-bundle MACOSX_BUNDLE
+        src/main.cpp
+        src/App.cpp
+        src/keyboard/KeyboardPanel.cpp
+        src/keyboard/MidiKeyboard.cpp
+        src/inspector/InspectorPanel.cpp
+        src/local_device/LocalDevicePanel.cpp
+        src/keyboard_controller.cpp
+        src/midi_ci_manager.cpp
+        src/message_logger.cpp
+    )
+    list(APPEND MIDICCI_APP_TARGETS midicci-app-bundle)
+endif()
 
 # ------------------------------------------------------------------------------
 # Additional dependencies for shared keyboard controller sources
@@ -177,43 +193,66 @@ FetchContent_Declare(cmidi2
 )
 FetchContent_MakeAvailable(cmidi2)
 
-target_include_directories(midicci-app PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
-    ${CMAKE_SOURCE_DIR}/tools/tooling/include
-    ${CMAKE_SOURCE_DIR}/external/libremidi/include
-    ${cmidi2_SOURCE_DIR}
-    ${midicci_SOURCE_DIR}/include
-    ${portable-file-dialogs_SOURCE_DIR}
-)
+foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
+    target_include_directories(${app_target} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
+        ${CMAKE_SOURCE_DIR}/tools/tooling/include
+        ${CMAKE_SOURCE_DIR}/external/libremidi/include
+        ${cmidi2_SOURCE_DIR}
+        ${midicci_SOURCE_DIR}/include
+        ${portable-file-dialogs_SOURCE_DIR}
+    )
 
-target_link_libraries(midicci-app PRIVATE
-    midicci-imgui-support
-    midicci-tooling
-    midicci_static
-    libremidi::libremidi
-    ${BACKEND_LIBRARIES}
-)
+    target_link_libraries(${app_target} PRIVATE
+        midicci-imgui-support
+        midicci-tooling
+        midicci_static
+        libremidi::libremidi
+        ${BACKEND_LIBRARIES}
+    )
+endforeach()
 
 if(APPLE)
-    target_link_libraries(midicci-app PRIVATE
-        "-framework Cocoa"
-        "-framework IOKit"
-        "-framework CoreVideo"
-    )
+    foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
+        target_link_libraries(${app_target} PRIVATE
+            "-framework Cocoa"
+            "-framework IOKit"
+            "-framework CoreVideo"
+        )
+    endforeach()
 elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     find_package(X11 REQUIRED)
     target_link_libraries(midicci-app PRIVATE X11::X11)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(midicci-app PRIVATE -Wall -Wextra -Wpedantic)
+    foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
+        target_compile_options(${app_target} PRIVATE -Wall -Wextra -Wpedantic)
+    endforeach()
+endif()
+
+# Configure bundle properties on macOS
+if(APPLE)
+    set(MIDICCI_APP_INFO_PLIST "${CMAKE_CURRENT_BINARY_DIR}/MidicciApp-Info.plist")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in ${MIDICCI_APP_INFO_PLIST} @ONLY)
+    set_target_properties(midicci-app-bundle PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${MIDICCI_APP_INFO_PLIST}
+        OUTPUT_NAME "midicci-app"
+    )
 endif()
 
 # Install midicci-app executable only; dependencies are not installed
 install(TARGETS midicci-app
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Install bundle on macOS to separate component
+if(APPLE AND TARGET midicci-app-bundle)
+    install(TARGETS midicci-app-bundle
+        BUNDLE DESTINATION .
+        COMPONENT midicci_app)
+endif()
 
 # ------------------------------------------------------------------------------
 # Tests

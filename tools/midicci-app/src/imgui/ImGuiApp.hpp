@@ -68,6 +68,7 @@ public:
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
+        io.IniFilename = nullptr;
         if (config.enableKeyboard) {
             io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         }

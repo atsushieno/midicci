@@ -1,4 +1,5 @@
 #include "midicci/midicci.hpp"
+#include <midicci/details/commonproperties/StandardProperties.hpp>
 #include <sstream>
 #include <algorithm>
 
@@ -107,6 +108,18 @@ void CommonRulesPropertyClient::property_value_updated(const std::string& proper
                 if (it != resource_list_.end()) {
                     conn_.get_property_client_facade().send_get_property_data(PropertyResourceNames::DEVICE_INFO, "");
                 }
+            }
+
+            auto allCtrlIt = std::find_if(resource_list_.begin(), resource_list_.end(),
+                [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == StandardPropertyNames::ALL_CTRL_LIST; });
+            if (allCtrlIt != resource_list_.end()) {
+                conn_.get_property_client_facade().send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+            }
+
+            auto programIt = std::find_if(resource_list_.begin(), resource_list_.end(),
+                [](const std::unique_ptr<PropertyMetadata>& p) { return p->getPropertyId() == StandardPropertyNames::PROGRAM_LIST; });
+            if (programIt != resource_list_.end()) {
+                conn_.get_property_client_facade().send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
             }
         } catch (const std::exception& ex) {
             device_.get_logger()(LogData("Error parsing resource list: " + std::string(ex.what()), true));

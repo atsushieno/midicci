@@ -71,7 +71,7 @@ endif()
 FetchContent_Declare(
     libremidi
     GIT_REPOSITORY https://github.com/celtera/libremidi.git
-    GIT_TAG v5.3.1
+    GIT_TAG v5.4.1
     EXCLUDE_FROM_ALL
 )
 midicci_fetchcontent_makeavailable_static(libremidi)

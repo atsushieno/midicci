@@ -209,6 +209,7 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
         midicci-tooling
         midicci_static
         libremidi::libremidi
+        zlib-ng
         ${BACKEND_LIBRARIES}
     )
 endforeach()
@@ -242,7 +243,6 @@ if(APPLE)
     )
 endif()
 
-# Install midicci-app executable only; dependencies are not installed
 install(TARGETS midicci-app
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

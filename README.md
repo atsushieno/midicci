@@ -53,6 +53,8 @@ a grain of salt because the situation around agentic coding is a moving target.
 
 We use [zlib-ng](https://github.com/zlib-ng/zlib-ng) for Mcoded7 compression (also fits nicely in Windows build), which is released under the Zlib license.
 
+We use [Roboto font](https://fonts.google.com/specimen/Roboto) which is released under the SIL Open Font License v1.1. (we bundle `Roboto-SemiBold.ttf`)
+
 ## Development
 
 It is not much more than an agentic coding experiment. Code quality is as low as generated. But also I make changes by myself too to avoid silly requests to them.

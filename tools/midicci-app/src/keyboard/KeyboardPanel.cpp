@@ -585,10 +585,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             constexpr float PATH_COLUMN_WIDTH = 110.0f;
             constexpr float ID_COLUMN_WIDTH = 100.0f;
             ImGui::TableSetupColumn("Path",
-                                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
+                                    ImGuiTableColumnFlags_WidthFixed,
                                     PATH_COLUMN_WIDTH);
             ImGui::TableSetupColumn("Param ID",
-                                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
+                                    ImGuiTableColumnFlags_WidthFixed,
                                     ID_COLUMN_WIDTH);
             ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 3.0f);

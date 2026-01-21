@@ -1,11 +1,9 @@
-#include "midicci/details/ump/UmpFactory.hpp"
+#include <umppi/details/UmpFactory.hpp>
 #include <algorithm>
 #include <stdexcept>
 
-namespace midicci {
-namespace ump {
+namespace umppi {
 
-// Utility Messages
 uint32_t UmpFactory::noop() {
     return 0;
 }
@@ -34,10 +32,9 @@ uint32_t UmpFactory::dctpq(uint16_t numberOfTicksPerQuarterNote) {
 }
 
 uint32_t UmpFactory::deltaClockstamp(uint32_t ticks20) {
-    return (0x40 << 16) + (ticks20 & 0xFFFFF); // ticks20(bits) - 0..1048575
+    return (0x40 << 16) + (ticks20 & 0xFFFFF);
 }
 
-// System Messages
 uint32_t UmpFactory::systemMessage(uint8_t group, uint8_t status, uint8_t midi1Byte2, uint8_t midi1Byte3) {
     return (static_cast<uint32_t>(MessageType::SYSTEM) << 28) +
            ((group & 0xF) << 24) +
@@ -46,7 +43,6 @@ uint32_t UmpFactory::systemMessage(uint8_t group, uint8_t status, uint8_t midi1B
            (midi1Byte3 & 0x7F);
 }
 
-// MIDI 1.0 Messages
 uint32_t UmpFactory::midi1Message(uint8_t group, uint8_t code, uint8_t channel, uint8_t byte3, uint8_t byte4) {
     return (static_cast<uint32_t>(MessageType::MIDI1) << 28) +
            ((group & 0xF) << 24) +
@@ -88,7 +84,6 @@ uint32_t UmpFactory::midi1PitchBend(uint8_t group, uint8_t channel, int16_t data
     return midi1PitchBendDirect(group, channel, unsigned_data);
 }
 
-// MIDI 2.0 Messages
 uint64_t UmpFactory::midi2ChannelMessage8_8_16_16(uint8_t group, uint8_t code, uint8_t channel, uint8_t byte3, uint8_t byte4, uint16_t short1, uint16_t short2) {
     uint64_t int1 = (static_cast<uint64_t>(MessageType::MIDI2) << 28) +
                     ((group & 0xF) << 24) +
@@ -137,7 +132,7 @@ uint64_t UmpFactory::midi2CC(uint8_t group, uint8_t channel, uint8_t index, uint
 }
 
 uint64_t UmpFactory::midi2Program(uint8_t group, uint8_t channel, uint8_t options, uint8_t program, uint8_t bankMsb, uint8_t bankLsb) {
-    return midi2ChannelMessage8_8_32(group, MidiChannelStatus::PROGRAM, channel, MIDI_2_0_RESERVED, options & 1, 
+    return midi2ChannelMessage8_8_32(group, MidiChannelStatus::PROGRAM, channel, MIDI_2_0_RESERVED, options & 1,
                                      ((program & 0x7F) << 24) + (static_cast<uint32_t>(bankMsb) << 8) + bankLsb);
 }
 
@@ -161,66 +156,61 @@ uint64_t UmpFactory::midi2NRPN(uint8_t group, uint8_t channel, uint8_t msb, uint
     return midi2ChannelMessage8_8_32(group, MidiChannelStatus::NRPN, channel, msb, lsb, data32);
 }
 
-Ump UmpFactory::sysex7_direct(uint8_t group, uint8_t status, uint8_t numBytes,
+Ump UmpFactory::sysex7Direct(uint8_t group, uint8_t status, uint8_t numBytes,
                               uint8_t data1, uint8_t data2, uint8_t data3,
                               uint8_t data4, uint8_t data5, uint8_t data6) {
-    // Port from ktmidi: sysex7Direct function
-    // Expected layout for (1, 0, 6, 0x41, 0x10, 0x42, 0x40, 0x00, 0x7F) -> 0x310641104240007F
-    
     uint32_t int1 = (static_cast<uint32_t>(MessageType::SYSEX7) << 28) |
                     (static_cast<uint32_t>(group & 0xF) << 24) |
                     (static_cast<uint32_t>(status + numBytes) << 16) |
                     (static_cast<uint32_t>(data1) << 8) |
                     static_cast<uint32_t>(data2);
-    
+
     uint32_t int2 = (static_cast<uint32_t>(data3) << 24) |
                     (static_cast<uint32_t>(data4) << 16) |
                     (static_cast<uint32_t>(data5) << 8) |
                     static_cast<uint32_t>(data6);
-    
+
     return Ump(int1, int2);
 }
 
-int UmpFactory::sysex7_get_sysex_length(const std::vector<uint8_t>& src_data) {
+int UmpFactory::sysex7GetSysexLength(const std::vector<uint8_t>& src_data) {
     int i = 0;
     while (i < static_cast<int>(src_data.size()) && src_data[i] != 0xF7) {
         i++;
     }
-    // Automatically detect if 0xF0 is prepended and reduce length if it is
     return i - (src_data.size() > 0 && src_data[0] == 0xF0 ? 1 : 0);
 }
 
-int UmpFactory::sysex7_get_packet_count(const std::vector<uint8_t>& src_data) {
-    int length = sysex7_get_sysex_length(src_data);
-    return (length + SYSEX7_RADIX - 1) / SYSEX7_RADIX; // Ceiling division
+int UmpFactory::sysex7GetPacketCount(const std::vector<uint8_t>& src_data) {
+    int length = sysex7GetSysexLength(src_data);
+    return (length + SYSEX7_RADIX - 1) / SYSEX7_RADIX;
 }
 
-Ump UmpFactory::sysex7_get_packet_of(uint8_t group, const std::vector<uint8_t>& src_data, int packet_index) {
-    return sysex_get_packet_of(MessageType::SYSEX7, group, src_data, packet_index, SYSEX7_RADIX, false, 0);
+Ump UmpFactory::sysex7GetPacketOf(uint8_t group, const std::vector<uint8_t>& src_data, int packet_index) {
+    return sysexGetPacketOf(MessageType::SYSEX7, group, src_data, packet_index, SYSEX7_RADIX, false, 0);
 }
 
-void UmpFactory::sysex7_process(uint8_t group, const std::vector<uint8_t>& src_data, 
+void UmpFactory::sysex7Process(uint8_t group, const std::vector<uint8_t>& src_data,
                                 std::function<void(const Ump&)> callback) {
-    int packet_count = sysex7_get_packet_count(src_data);
+    int packet_count = sysex7GetPacketCount(src_data);
     for (int i = 0; i < packet_count; i++) {
-        callback(sysex7_get_packet_of(group, src_data, i));
+        callback(sysex7GetPacketOf(group, src_data, i));
     }
 }
 
 std::vector<Ump> UmpFactory::sysex7(uint8_t group, const std::vector<uint8_t>& src_data) {
     std::vector<Ump> result;
-    sysex7_process(group, src_data, [&result](const Ump& ump) {
+    sysex7Process(group, src_data, [&result](const Ump& ump) {
         result.push_back(ump);
     });
     return result;
 }
 
-Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
+Ump UmpFactory::sysexGetPacketOf(MessageType message_type, uint8_t group,
                                     const std::vector<uint8_t>& src_data, int packet_index, int radix, bool hasStreamId, uint8_t streamId) {
-    int sysex_length = sysex7_get_sysex_length(src_data);
+    int sysex_length = sysex7GetSysexLength(src_data);
     int packet_count = (sysex_length + radix - 1) / radix;
-    
-    // Determine packet status
+
     BinaryChunkStatus status;
     if (packet_count == 1) {
         status = BinaryChunkStatus::COMPLETE_PACKET;
@@ -231,16 +221,13 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
     } else {
         status = BinaryChunkStatus::CONTINUE;
     }
-    
-    // Calculate data position, accounting for 0xF0 prefix
+
     int data_start = src_data.size() > 0 && src_data[0] == 0xF0 ? 1 : 0;
     int data_pos = data_start + packet_index * radix;
-    
-    // Calculate how many bytes are in this packet
+
     int remaining_bytes = sysex_length - packet_index * radix;
     int packet_bytes = std::min(remaining_bytes, radix);
-    
-    // Build the UMP packet
+
     uint32_t int1 = (static_cast<uint32_t>(message_type) << 28) |
                     (static_cast<uint32_t>(group & 0xF) << 24) |
                     (static_cast<uint32_t>(status) << 16) |
@@ -257,13 +244,11 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
             int2 |= static_cast<uint32_t>(src_data[data_pos + i]) << (24 - (i - start) * 8);
         }
     }
-    
-    // For SysEx7, we use 2 32-bit words (8 bytes total)
+
     if (message_type == MessageType::SYSEX7) {
         return Ump(int1, int2);
     }
-    
-    // For SysEx8 (if needed later), we would use 4 32-bit words (16 bytes total)
+
     uint32_t int3 = 0;
     uint32_t int4 = 0;
     start = hasStreamId ? 5 : 6;
@@ -276,11 +261,10 @@ Ump UmpFactory::sysex_get_packet_of(MessageType message_type, uint8_t group,
             }
         }
     }
-    
+
     return Ump(int1, int2, int3, int4);
 }
 
-// UMP Stream Messages
 Ump UmpFactory::startOfClip() {
     return Ump(0xF0200000, 0, 0, 0);
 }
@@ -289,5 +273,4 @@ Ump UmpFactory::endOfClip() {
     return Ump(0xF0210000, 0, 0, 0);
 }
 
-} // namespace ump
-} // namespace midicci
+} // namespace umppi

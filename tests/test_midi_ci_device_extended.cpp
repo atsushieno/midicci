@@ -13,12 +13,12 @@ protected:
         device1->initialize();
         device2->initialize();
 
-        device1->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+        device1->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
             device2->processInput(group, data);
             return true;
         });
 
-        device2->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+        device2->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
             device1->processInput(group, data);
             return true;
         });
@@ -29,18 +29,18 @@ protected:
 };
 
 TEST_F(MidiCIDeviceExtendedTest, initialState) {
-    auto device_info = device1->get_device_info();
-    EXPECT_EQ(19474, device1->get_muid());
+    auto device_info = device1->getDeviceInfo();
+    EXPECT_EQ(19474, device1->getMuid());
     EXPECT_FALSE(device_info.manufacturer.empty());
 }
 
 TEST_F(MidiCIDeviceExtendedTest, basicRun) {
     device1->sendDiscovery();
 
-    auto connections = device1->get_connections();
+    auto connections = device1->getConnections();
     EXPECT_EQ(1, connections.size());
 
-    auto conn = device1->get_connection(device2->get_muid() & 0xFF);
+    auto conn = device1->getConnection(device2->getMuid() & 0xFF);
     EXPECT_NE(nullptr, conn);
 }
 */

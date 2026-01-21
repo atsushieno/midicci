@@ -41,11 +41,11 @@ private:
 
 public:
     
-    std::shared_ptr<MidiCIDevice> get_device() const;
+    std::shared_ptr<MidiCIDevice> getDevice() const;
     
-    void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
+    void processCiMessage(uint8_t group, const std::vector<uint8_t>& data);
     
-    const MutableStateList<std::shared_ptr<ClientConnectionModel>>& get_connections() const;
+    const MutableStateList<std::shared_ptr<ClientConnectionModel>>& getConnections() const;
     MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_local_profile_states() const;
     
     void send_discovery();
@@ -61,7 +61,7 @@ public:
     void remove_local_property(const std::string& property_id);
     void update_property_value(const std::string& property_id, const std::string& res_id, 
                              const std::vector<uint8_t>& data);
-    void update_property_metadata(const std::string& property_id, const midicci::commonproperties::PropertyMetadata& metadata);
+    void updatePropertyMetadata(const std::string& property_id, const midicci::commonproperties::PropertyMetadata& metadata);
     const midicci::commonproperties::PropertyMetadata* get_local_property_metadata(const std::string& property_id) const;
     
     void add_test_profile_items();

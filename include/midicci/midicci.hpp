@@ -57,8 +57,8 @@
 #include <midicci/details/musicdevice/MidiMachineMessageReporter.hpp>
 #include <midicci/details/musicdevice/MusicDevice.hpp>
 
-// UMP (Universal MIDI Packet)
-#include <midicci/details/ump/Ump.hpp>
-#include <midicci/details/ump/UmpRetriever.hpp>
-#include <midicci/details/ump/UmpFactory.hpp>
-#include <midicci/details/ump/UmpTranslator.hpp>
+// UMP (Universal MIDI Packet) - provided by umppi module
+#include <umppi/details/Ump.hpp>
+#include <umppi/details/UmpFactory.hpp>
+#include <umppi/details/UmpRetriever.hpp>
+#include <umppi/details/UmpTranslator.hpp>

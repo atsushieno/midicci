@@ -18,6 +18,6 @@ TestCIMediator::TestCIMediator() {
         return true;
     };
     
-    device1_->set_sysex_sender(device1Sender_);
-    device2_->set_sysex_sender(device2Sender_);
+    device1_->setSysexSender(device1Sender_);
+    device2_->setSysexSender(device2Sender_);
 }

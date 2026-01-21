@@ -70,7 +70,7 @@ private:
     void apply_device_info(midicci::MidiCIDeviceConfiguration& config);
 
     std::vector<std::string> gather_profile_ids(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
-    void add_profile(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
+    void addProfile(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
     void add_profile_target(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
     void render_profile_targets(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
 

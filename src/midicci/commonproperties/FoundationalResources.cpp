@@ -18,62 +18,62 @@ std::vector<std::unique_ptr<PropertyMetadata>> FoundationalResources::parseResou
 std::vector<std::unique_ptr<PropertyMetadata>> FoundationalResources::getMetadataListForBody(const JsonValue& body) {
     std::vector<std::unique_ptr<PropertyMetadata>> result;
     
-    if (!body.is_array()) {
+    if (!body.isArray()) {
         throw std::runtime_error("Expected JSON array for resource list");
     }
     
-    const auto& list = body.as_array();
+    const auto& list = body.asArray();
     for (const auto& entry : list) {
-        if (!entry.is_object()) {
+        if (!entry.isObject()) {
             continue;
         }
         
         auto res = std::make_unique<CommonRulesPropertyMetadata>();
-        const auto& entry_obj = entry.as_object();
+        const auto& entry_obj = entry.asObject();
         
         for (const auto& [key, value] : entry_obj) {
-            if (key == PropertyResourceFields::RESOURCE && value.is_string()) {
-                res->resource = value.as_string();
-            } else if (key == PropertyResourceFields::CAN_GET && value.is_bool()) {
-                res->canGet = value.as_bool();
-            } else if (key == PropertyResourceFields::CAN_SET && value.is_string()) {
-                res->canSet = value.as_string();
-            } else if (key == PropertyResourceFields::CAN_SUBSCRIBE && value.is_bool()) {
-                res->canSubscribe = value.as_bool();
-            } else if (key == PropertyResourceFields::REQUIRE_RES_ID && value.is_bool()) {
-                res->requireResId = value.as_bool();
-            } else if (key == PropertyResourceFields::ENCODINGS && value.is_array()) {
+            if (key == PropertyResourceFields::RESOURCE && value.isString()) {
+                res->resource = value.asString();
+            } else if (key == PropertyResourceFields::CAN_GET && value.isBool()) {
+                res->canGet = value.asBool();
+            } else if (key == PropertyResourceFields::CAN_SET && value.isString()) {
+                res->canSet = value.asString();
+            } else if (key == PropertyResourceFields::CAN_SUBSCRIBE && value.isBool()) {
+                res->canSubscribe = value.asBool();
+            } else if (key == PropertyResourceFields::REQUIRE_RES_ID && value.isBool()) {
+                res->requireResId = value.asBool();
+            } else if (key == PropertyResourceFields::ENCODINGS && value.isArray()) {
                 res->encodings.clear();
-                for (const auto& e : value.as_array()) {
-                    if (e.is_string()) {
-                        res->encodings.push_back(e.as_string());
+                for (const auto& e : value.asArray()) {
+                    if (e.isString()) {
+                        res->encodings.push_back(e.asString());
                     }
                 }
-            } else if (key == PropertyResourceFields::MEDIA_TYPE && value.is_array()) {
+            } else if (key == PropertyResourceFields::MEDIA_TYPE && value.isArray()) {
                 res->mediaTypes.clear();
-                for (const auto& e : value.as_array()) {
-                    if (e.is_string()) {
-                        res->mediaTypes.push_back(e.as_string());
+                for (const auto& e : value.asArray()) {
+                    if (e.isString()) {
+                        res->mediaTypes.push_back(e.asString());
                     }
                 }
-            } else if (key == PropertyResourceFields::SCHEMA && value.is_string()) {
-                res->schema = value.as_string();
-            } else if (key == PropertyResourceFields::CAN_PAGINATE && value.is_bool()) {
-                res->canPaginate = value.as_bool();
-            } else if (key == PropertyResourceFields::COLUMNS && value.is_array()) {
+            } else if (key == PropertyResourceFields::SCHEMA && value.isString()) {
+                res->schema = value.asString();
+            } else if (key == PropertyResourceFields::CAN_PAGINATE && value.isBool()) {
+                res->canPaginate = value.asBool();
+            } else if (key == PropertyResourceFields::COLUMNS && value.isArray()) {
                 res->columns.clear();
-                for (const auto& c : value.as_array()) {
-                    if (!c.is_object()) continue;
+                for (const auto& c : value.asArray()) {
+                    if (!c.isObject()) continue;
                     
                     PropertyResourceColumn col;
-                    const auto& c_obj = c.as_object();
+                    const auto& c_obj = c.asObject();
                     for (const auto& [col_key, col_value] : c_obj) {
-                        if (col_key == PropertyResourceColumnFields::PROPERTY && col_value.is_string()) {
-                            col.property = col_value.as_string();
-                        } else if (col_key == PropertyResourceColumnFields::LINK && col_value.is_string()) {
-                            col.link = col_value.as_string();
-                        } else if (col_key == PropertyResourceColumnFields::TITLE && col_value.is_string()) {
-                            col.title = col_value.as_string();
+                        if (col_key == PropertyResourceColumnFields::PROPERTY && col_value.isString()) {
+                            col.property = col_value.asString();
+                        } else if (col_key == PropertyResourceColumnFields::LINK && col_value.isString()) {
+                            col.link = col_value.asString();
+                        } else if (col_key == PropertyResourceColumnFields::TITLE && col_value.isString()) {
+                            col.title = col_value.asString();
                         }
                     }
                     res->columns.push_back(col);
@@ -90,24 +90,24 @@ std::vector<std::unique_ptr<PropertyMetadata>> FoundationalResources::getMetadat
 DeviceInfo FoundationalResources::parseDeviceInfo(const std::vector<uint8_t>& data) {
     const JsonValue json = convertApplicationJsonBytesToJson(data);
     
-    if (!json.is_object()) {
+    if (!json.isObject()) {
         throw std::runtime_error("Expected JSON object for device info");
     }
     
-    const auto& obj = json.as_object();
+    const auto& obj = json.asObject();
     
     auto get_number = [&obj](const std::string& key, int default_value = 0) -> int {
         auto it = obj.find(key);
-        if (it != obj.end() && it->second.is_number()) {
-            return static_cast<int>(it->second.as_number());
+        if (it != obj.end() && it->second.isNumber()) {
+            return static_cast<int>(it->second.asNumber());
         }
         return default_value;
     };
     
-    auto get_string = [&obj](const std::string& key, const std::string& default_value = "") -> std::string {
+    auto getString = [&obj](const std::string& key, const std::string& default_value = "") -> std::string {
         auto it = obj.find(key);
-        if (it != obj.end() && it->second.is_string()) {
-            return it->second.as_string();
+        if (it != obj.end() && it->second.isString()) {
+            return it->second.asString();
         }
         return default_value;
     };
@@ -117,11 +117,11 @@ DeviceInfo FoundationalResources::parseDeviceInfo(const std::vector<uint8_t>& da
         static_cast<uint16_t>(get_number(DeviceInfoPropertyNames::FAMILY_ID)),
         static_cast<uint16_t>(get_number(DeviceInfoPropertyNames::MODEL_ID)),
         get_number(DeviceInfoPropertyNames::VERSION_ID),
-        get_string(DeviceInfoPropertyNames::MANUFACTURER),
-        get_string(DeviceInfoPropertyNames::FAMILY),
-        get_string(DeviceInfoPropertyNames::MODEL),
-        get_string(DeviceInfoPropertyNames::VERSION),
-        get_string(DeviceInfoPropertyNames::SERIAL_NUMBER)
+        getString(DeviceInfoPropertyNames::MANUFACTURER),
+        getString(DeviceInfoPropertyNames::FAMILY),
+        getString(DeviceInfoPropertyNames::MODEL),
+        getString(DeviceInfoPropertyNames::VERSION),
+        getString(DeviceInfoPropertyNames::SERIAL_NUMBER)
     );
 }
 
@@ -130,28 +130,28 @@ MidiCIChannelList FoundationalResources::parseChannelList(const std::vector<uint
     
     MidiCIChannelList channel_list;
     
-    if (!json.is_array()) {
+    if (!json.isArray()) {
         return channel_list; // Return empty list if not array
     }
     
-    const auto& array = json.as_array();
+    const auto& array = json.asArray();
     for (const auto& item : array) {
-        if (!item.is_object()) continue;
+        if (!item.isObject()) continue;
         
-        const auto& obj = item.as_object();
+        const auto& obj = item.asObject();
         
         auto get_number = [&obj](const std::string& key, int default_value = 0) -> int {
             auto it = obj.find(key);
-            if (it != obj.end() && it->second.is_number()) {
-                return static_cast<int>(it->second.as_number());
+            if (it != obj.end() && it->second.isNumber()) {
+                return static_cast<int>(it->second.asNumber());
             }
             return default_value;
         };
         
-        auto get_string = [&obj](const std::string& key, const std::string& default_value = "") -> std::string {
+        auto getString = [&obj](const std::string& key, const std::string& default_value = "") -> std::string {
             auto it = obj.find(key);
-            if (it != obj.end() && it->second.is_string()) {
-                return it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                return it->second.asString();
             }
             return default_value;
         };
@@ -159,32 +159,32 @@ MidiCIChannelList FoundationalResources::parseChannelList(const std::vector<uint
         // Parse bankPC array
         uint8_t bank_msb = 0, bank_lsb = 0, program = 0;
         auto bank_pc_it = obj.find(ChannelInfoPropertyNames::BANK_PC);
-        if (bank_pc_it != obj.end() && bank_pc_it->second.is_array()) {
-            const auto& bank_pc = bank_pc_it->second.as_array();
+        if (bank_pc_it != obj.end() && bank_pc_it->second.isArray()) {
+            const auto& bank_pc = bank_pc_it->second.asArray();
             if (bank_pc.size() >= 3) {
-                if (bank_pc[0].is_number()) bank_msb = static_cast<uint8_t>(bank_pc[0].as_number());
-                if (bank_pc[1].is_number()) bank_lsb = static_cast<uint8_t>(bank_pc[1].as_number());
-                if (bank_pc[2].is_number()) program = static_cast<uint8_t>(bank_pc[2].as_number());
+                if (bank_pc[0].isNumber()) bank_msb = static_cast<uint8_t>(bank_pc[0].asNumber());
+                if (bank_pc[1].isNumber()) bank_lsb = static_cast<uint8_t>(bank_pc[1].asNumber());
+                if (bank_pc[2].isNumber()) program = static_cast<uint8_t>(bank_pc[2].asNumber());
             }
         }
         
         // Parse MIDI mode
         int midi_mode = get_number(ChannelInfoPropertyNames::CLUSTER_MIDI_MODE, 3);
-        bool is_omni_on = ((midi_mode - 1) & 1) != 0;
-        bool is_poly_mode = ((midi_mode - 1) & 2) != 0;
+        bool isOmniOn = ((midi_mode - 1) & 1) != 0;
+        bool isPolyMode = ((midi_mode - 1) & 2) != 0;
         
         MidiCIChannel channel(
-            get_string(ChannelInfoPropertyNames::TITLE),
+            getString(ChannelInfoPropertyNames::TITLE),
             get_number(ChannelInfoPropertyNames::CHANNEL, 1) - 1, // Convert from 1-based to 0-based
-            get_string(ChannelInfoPropertyNames::PROGRAM_TITLE),
+            getString(ChannelInfoPropertyNames::PROGRAM_TITLE),
             bank_msb,
             bank_lsb,
             program,
             get_number(ChannelInfoPropertyNames::CLUSTER_CHANNEL_START, 1) - 1, // Convert from 1-based to 0-based
             get_number(ChannelInfoPropertyNames::CLUSTER_LENGTH, 1),
-            is_omni_on,
-            is_poly_mode,
-            get_string(ChannelInfoPropertyNames::CLUSTER_TYPE)
+            isOmniOn,
+            isPolyMode,
+            getString(ChannelInfoPropertyNames::CLUSTER_TYPE)
         );
         
         channel_list.channels.push_back(channel);
@@ -303,8 +303,8 @@ JsonValue FoundationalResources::channelToJson(const MidiCIChannel& channel) {
     
     // Calculate MIDI mode (default is 3 for poly mode)
     uint8_t midi_mode = 3; // Default poly mode
-    if (!channel.is_poly_mode) {
-        midi_mode = channel.is_omni_on ? 1 : 2;
+    if (!channel.isPolyMode) {
+        midi_mode = channel.isOmniOn ? 1 : 2;
     }
     if (midi_mode != 3) {
         obj[ChannelInfoPropertyNames::CLUSTER_MIDI_MODE] = JsonValue(static_cast<double>(midi_mode));

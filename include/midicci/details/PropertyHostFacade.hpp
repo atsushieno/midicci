@@ -34,6 +34,7 @@ public:
     void addMetadata(std::unique_ptr<PropertyMetadata> property);
     void removeProperty(const std::string& property_id);
     void updatePropertyMetadata(const std::string& old_property_id, const PropertyMetadata& property);
+    const PropertyMetadata* getPropertyMetadata(const std::string& property_id) const;
     
     // Property value updates with subscriber notifications (like Kotlin setPropertyValue)
     void setPropertyValue(const std::string& property_id, const std::string& res_id, const std::vector<uint8_t>& data, bool is_partial);
@@ -44,49 +45,57 @@ public:
     void updateJsonSchema(const std::string& json_schema);
     
     // Property service and rules management
-    void set_property_rules(std::unique_ptr<MidiCIServicePropertyRules> rules);
-    MidiCIServicePropertyRules* get_property_rules();
+    void setPropertyRules(std::unique_ptr<MidiCIServicePropertyRules> rules);
+    MidiCIServicePropertyRules* getPropertyRules();
     
     // Observable property list access (following Kotlin lazy properties)
-    ServiceObservablePropertyList& get_properties();
-    const ServiceObservablePropertyList& get_properties() const;
+    ServiceObservablePropertyList& getProperties();
+    const ServiceObservablePropertyList& getProperties() const;
     
     // Metadata list access (like Kotlin metadataList property) - returns safe pointers
-    std::vector<const PropertyMetadata*> get_metadata_list() const;
+    std::vector<const PropertyMetadata*> getMetadataList() const;
     
     // Message processing
-    GetPropertyDataReply process_get_property_data(const GetPropertyData& msg);
-    SetPropertyDataReply process_set_property_data(const SetPropertyData& msg);
-    SubscribePropertyReply process_subscribe_property(const SubscribeProperty& msg);
+    GetPropertyDataReply processGetPropertyData(const GetPropertyData& msg);
+    SetPropertyDataReply processSetPropertyData(const SetPropertyData& msg);
+    SubscribePropertyReply processSubscribeProperty(const SubscribeProperty& msg);
     
     // Subscription management
-    std::vector<PropertySubscription> get_subscriptions() const;
+    std::vector<PropertySubscription> getSubscriptions() const;
     void shutdownSubscription(uint32_t subscriber_muid, const std::string& property_id, const std::string& res_id);
     void terminateSubscriptionsToAllSubscribers(uint8_t group);
     SubscribeProperty createShutdownSubscriptionMessage(uint32_t destination_muid, const std::string& property_id, const std::string& res_id, uint8_t group, uint8_t request_id);
 
     // Property binary getter accessor (following Kotlin propertyBinaryGetter)
     using PropertyBinaryGetter = std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)>;
-    void set_property_binary_getter(PropertyBinaryGetter getter);
-    PropertyBinaryGetter get_property_binary_getter() const;
+    void setPropertyBinaryGetter(PropertyBinaryGetter getter);
+    PropertyBinaryGetter getPropertyBinaryGetter() const;
 
     // Property binary setter accessor (following Kotlin propertyBinarySetter)
     using PropertyBinarySetter = std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)>;
-    void set_property_binary_setter(PropertyBinarySetter setter);
-    PropertyBinarySetter get_property_binary_setter() const;
+    void setPropertyBinarySetter(PropertyBinarySetter setter);
+    PropertyBinarySetter getPropertyBinarySetter() const;
 
     // Notification callbacks
-    void set_property_updated_callback(PropertyUpdatedCallback callback);
-    void set_subscription_changed_callback(SubscriptionChangedCallback callback);
-    void notify_property_updated(const std::string& property_id, const std::string& res_id);
-    void notify_subscription_changed(const std::string& property_id);
+    void setPropertyUpdatedCallback(PropertyUpdatedCallback callback);
+    void setSubscriptionChangedCallback(SubscriptionChangedCallback callback);
+    void notifyPropertyUpdated(const std::string& property_id, const std::string& res_id);
+    void notifySubscriptionChanged(const std::string& property_id);
     
-    // Legacy compatibility methods
-    void remove_property(const std::string& property_id);
-    void update_property(const std::string& property_id, const std::vector<uint8_t>& data);
-    void update_property_metadata(const std::string& property_id, std::unique_ptr<PropertyMetadata> new_metadata);
-    const PropertyMetadata* get_property_metadata(const std::string& property_id) const;
-    
+    // Legacy compatibility helpers
+    [[deprecated("Use removeProperty instead")]]
+    void remove_property(const std::string& property_id) { removeProperty(property_id); }
+    [[deprecated("Use setPropertyValue instead")]]
+    void update_property(const std::string& property_id, const std::vector<uint8_t>& data) { setPropertyValue(property_id, "", data, false); }
+    [[deprecated("Use updatePropertyMetadata instead")]]
+    void update_property_metadata(const std::string& property_id, std::unique_ptr<PropertyMetadata> new_metadata) {
+        if (new_metadata) {
+            updatePropertyMetadata(property_id, *new_metadata);
+        }
+    }
+    [[deprecated("Use getPropertyMetadata instead")]]
+    const PropertyMetadata* get_property_metadata(const std::string& property_id) const { return getPropertyMetadata(property_id); }
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

@@ -28,7 +28,7 @@ void CIDeviceManager::initialize() {
         
         // Convert to UMP SysEx7 format (skip F0 and F7)
         std::vector<uint8_t> sysex_payload(sysex_data.begin() + 1, sysex_data.end() - 1);
-        auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
+        auto umps = umppi::UmpFactory::sysex7(group, sysex_payload);
         std::vector<uint32_t> ump_data;
         for (const auto& ump : umps) {
             ump_data.push_back(ump.int1);
@@ -51,7 +51,7 @@ void CIDeviceManager::initialize() {
     auto midi_message_report_sender = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         // Convert uint8_t data to UMP format
         std::vector<uint8_t> data_vector(data.begin(), data.end());
-        auto umps = midicci::ump::UmpFactory::sysex7(group, data_vector);
+        auto umps = umppi::UmpFactory::sysex7(group, data_vector);
         std::vector<uint32_t> ump_data;
         for (const auto& ump : umps) {
             ump_data.push_back(ump.int1);
@@ -72,20 +72,20 @@ void CIDeviceManager::initialize() {
     };
     
     auto logger_wrapper = [this](const LogData& log_data) {
-        MessageDirection direction = log_data.is_outgoing ? MessageDirection::Out : MessageDirection::In;
-        if (log_data.has_message()) {
+        MessageDirection direction = log_data.isOutgoing ? MessageDirection::Out : MessageDirection::In;
+        if (log_data.hasMessage()) {
             // For structured messages, extract MUIDs and use the message's log string
-            const auto& message = log_data.get_message();
-            repository_.log(message.get_log_message(), direction, 
-                          message.get_source_muid(), message.get_destination_muid());
+            const auto& message = log_data.getMessage();
+            repository_.log(message.getLogMessage(), direction, 
+                          message.getSourceMuid(), message.getDestinationMuid());
         } else {
             // For plain string messages, no MUID information
-            repository_.log(log_data.get_string(), direction);
+            repository_.log(log_data.getString(), direction);
         }
     };
     
     device_model_ = std::make_shared<CIDeviceModel>(
-        *this, config_, repository_.get_muid(),
+        *this, config_, repository_.getMuid(),
         ci_output_sender, midi_message_report_sender, logger_wrapper);
     
     device_model_->initialize();
@@ -94,7 +94,7 @@ void CIDeviceManager::initialize() {
         [this](uint8_t group, const std::vector<uint32_t>& ump_data) {
             // Process UMP packets directly (4 words = 1 UMP packet)
             for (size_t i = 0; i + 3 < ump_data.size(); i += 4) {
-                midicci::ump::Ump ump(ump_data[i], ump_data[i+1], ump_data[i+2], ump_data[i+3]);
+                umppi::Ump ump(ump_data[i], ump_data[i+1], ump_data[i+2], ump_data[i+3]);
                 process_single_ump_packet(ump);
             }
         });
@@ -120,7 +120,7 @@ std::shared_ptr<CIDeviceModel> CIDeviceManager::get_device_model() const {
     return device_model_;
 }
 
-void CIDeviceManager::process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
+void CIDeviceManager::processMidi1Input(const std::vector<uint8_t>& data, size_t start, size_t length) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     std::string hex_str;
@@ -155,32 +155,32 @@ void CIDeviceManager::process_midi1_input(const std::vector<uint8_t>& data, size
             repository_.log("[received CI SysEx] " + ci_hex_str, MessageDirection::In);
             
             if (device_model_) {
-                device_model_->process_ci_message(0, ci_data);
+                device_model_->processCiMessage(0, ci_data);
             }
         }
     }
 }
 
-void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
+void CIDeviceManager::process_single_ump_packet(const umppi::Ump& ump) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     // Log the UMP packet
-    bool is_ci_sysex = (ump.get_message_type() == midicci::ump::MessageType::SYSEX7 ||
-                        ump.get_message_type() == midicci::ump::MessageType::SYSEX8_MDS);
+    bool is_ci_sysex = (ump.getMessageType() == umppi::MessageType::SYSEX7 ||
+                        ump.getMessageType() == umppi::MessageType::SYSEX8_MDS);
     
-    switch (ump.get_message_type()) {
-        case midicci::ump::MessageType::SYSEX7: {
-            if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
+    switch (ump.getMessageType()) {
+        case umppi::MessageType::SYSEX7: {
+            if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
                 buffered_sysex7_.clear();
             }
             
-            std::vector<midicci::ump::Ump> single_ump = {ump};
-            auto sysex_data = midicci::ump::UmpRetriever::get_sysex7_data(single_ump);
+            std::vector<umppi::Ump> single_ump = {ump};
+            auto sysex_data = umppi::UmpRetriever::getSysex7Data(single_ump);
             buffered_sysex7_.insert(buffered_sysex7_.end(), 
                                            sysex_data.begin(), sysex_data.end());
             
-            if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
-                ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+            if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
+                ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
                 
                 if (buffered_sysex7_.size() > 2 &&
                     buffered_sysex7_[0] == 0x7E &&
@@ -195,7 +195,7 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
                     repository_.log("[received CI SysEx7] " + sysex7_hex, MessageDirection::In);
                     
                     if (device_model_) {
-                        device_model_->process_ci_message(ump.get_group(), buffered_sysex7_);
+                        device_model_->processCiMessage(ump.getGroup(), buffered_sysex7_);
                     }
                     buffered_sysex7_.clear();
                 }
@@ -211,18 +211,18 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
             break;
         }
         
-        case midicci::ump::MessageType::SYSEX8_MDS: {
-            if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
+        case umppi::MessageType::SYSEX8_MDS: {
+            if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
                 buffered_sysex8_.clear();
             }
             
-            std::vector<midicci::ump::Ump> single_ump = {ump};
-            auto sysex_data = midicci::ump::UmpRetriever::get_sysex8_data(single_ump);
+            std::vector<umppi::Ump> single_ump = {ump};
+            auto sysex_data = umppi::UmpRetriever::getSysex8Data(single_ump);
             buffered_sysex8_.insert(buffered_sysex8_.end(), 
                                            sysex_data.begin(), sysex_data.end());
             
-            if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
-                ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+            if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
+                ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
                 
                 if (buffered_sysex8_.size() > 2 &&
                     buffered_sysex8_[0] == 0x7E &&
@@ -237,7 +237,7 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
                     repository_.log("[received CI SysEx8] " + sysex8_hex, MessageDirection::In);
                     
                     if (device_model_) {
-                        device_model_->process_ci_message(ump.get_group(), buffered_sysex8_);
+                        device_model_->processCiMessage(ump.getGroup(), buffered_sysex8_);
                     }
                     buffered_sysex8_.clear();
                 }
@@ -247,32 +247,32 @@ void CIDeviceManager::process_single_ump_packet(const midicci::ump::Ump& ump) {
         
         default:
             // Log other message types but don't process them as CI messages
-            repository_.log("[received UMP message type: " + std::to_string(static_cast<int>(ump.get_message_type())) + "]", MessageDirection::In);
+            repository_.log("[received UMP message type: " + std::to_string(static_cast<int>(ump.getMessageType())) + "]", MessageDirection::In);
             break;
     }
 }
 
-void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length) {
+void CIDeviceManager::processUmpInput(const std::vector<uint8_t>& data, size_t start, size_t length) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
     // avoid logging every UMP byte dump; detailed logs handled per-message
     
-    auto umps = midicci::ump::parse_umps_from_bytes(data.data(), start, length);
+    auto umps = umppi::parseUmpsFromBytes(data.data(), start, length);
     
     for (const auto& ump : umps) {
-        switch (ump.get_message_type()) {
-            case midicci::ump::MessageType::SYSEX7: {
-                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
+        switch (ump.getMessageType()) {
+            case umppi::MessageType::SYSEX7: {
+                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
                     buffered_sysex7_.clear();
                 }
                 
-                std::vector<midicci::ump::Ump> single_ump = {ump};
-                auto sysex_data = midicci::ump::UmpRetriever::get_sysex7_data(single_ump);
+                std::vector<umppi::Ump> single_ump = {ump};
+                auto sysex_data = umppi::UmpRetriever::getSysex7Data(single_ump);
                 buffered_sysex7_.insert(buffered_sysex7_.end(), 
                                                sysex_data.begin(), sysex_data.end());
                 
-                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
-                    ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
+                    ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
                     
                     if (buffered_sysex7_.size() > 2 &&
                         buffered_sysex7_[0] == 0x7E &&
@@ -287,7 +287,7 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                         repository_.log("[received CI SysEx7] " + sysex7_hex, MessageDirection::In);
                         
                         if (device_model_) {
-                            device_model_->process_ci_message(ump.get_group(), buffered_sysex7_);
+                            device_model_->processCiMessage(ump.getGroup(), buffered_sysex7_);
                         }
                         buffered_sysex7_.clear();
                     }
@@ -295,18 +295,18 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                 break;
             }
             
-            case midicci::ump::MessageType::SYSEX8_MDS: {
-                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::START)) {
+            case umppi::MessageType::SYSEX8_MDS: {
+                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
                     buffered_sysex8_.clear();
                 }
                 
-                std::vector<midicci::ump::Ump> single_ump = {ump};
-                auto sysex_data = midicci::ump::UmpRetriever::get_sysex8_data(single_ump);
+                std::vector<umppi::Ump> single_ump = {ump};
+                auto sysex_data = umppi::UmpRetriever::getSysex8Data(single_ump);
                 buffered_sysex8_.insert(buffered_sysex8_.end(), 
                                                sysex_data.begin(), sysex_data.end());
                 
-                if (ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::END) ||
-                    ump.get_status_code() == static_cast<uint8_t>(midicci::ump::BinaryChunkStatus::COMPLETE_PACKET)) {
+                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
+                    ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
                     
                     if (buffered_sysex8_.size() > 2 &&
                         buffered_sysex8_[0] == 0x7E &&
@@ -321,7 +321,7 @@ void CIDeviceManager::process_ump_input(const std::vector<uint8_t>& data, size_t
                         repository_.log("[received CI SysEx8] " + sysex8_hex, MessageDirection::In);
                         
                         if (device_model_) {
-                            device_model_->process_ci_message(ump.get_group(), buffered_sysex8_);
+                            device_model_->processCiMessage(ump.getGroup(), buffered_sysex8_);
                         }
                         buffered_sysex8_.clear();
                     }
@@ -339,7 +339,7 @@ void CIDeviceManager::setup_input_event_listener() {
     std::cout << "Input event listener set up for MIDI 1.0 and UMP protocols" << std::endl;
 }
 
-void CIDeviceManager::log_midi_message_report_chunk(const std::vector<uint8_t>& data) {
+void CIDeviceManager::logMidiMessageReportChunk(const std::vector<uint8_t>& data) {
     std::string hex_str;
     for (uint8_t byte : data) {
         char hex[3];

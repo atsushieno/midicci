@@ -35,20 +35,20 @@ ClientConnectionModel::ClientConnectionModel(std::shared_ptr<CIDeviceModel> pare
 
 ClientConnectionModel::~ClientConnectionModel() = default;
 
-std::shared_ptr<ClientConnection> ClientConnectionModel::get_connection() const {
+std::shared_ptr<ClientConnection> ClientConnectionModel::getConnection() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     return pimpl_->connection_;
 }
 
-const MutableStateList<std::shared_ptr<MidiCIProfileState>>& ClientConnectionModel::get_profiles() const {
+const MutableStateList<std::shared_ptr<MidiCIProfileState>>& ClientConnectionModel::getProfiles() const {
     return pimpl_->profiles_;
 }
 
-const MutableStateList<SubscriptionState>& ClientConnectionModel::get_subscriptions() const {
+const MutableStateList<SubscriptionState>& ClientConnectionModel::getSubscriptions() const {
     return pimpl_->subscriptions_;
 }
 
-const MutableStateList<PropertyValue>& ClientConnectionModel::get_properties() const {
+const MutableStateList<PropertyValue>& ClientConnectionModel::getProperties() const {
     return pimpl_->properties_;
 }
 
@@ -56,11 +56,11 @@ std::string ClientConnectionModel::get_device_info_value() const {
     return pimpl_->device_info_.get();
 }
 
-const MutableState<std::string>& ClientConnectionModel::get_device_info() const {
+const MutableState<std::string>& ClientConnectionModel::getDeviceInfo() const {
     return pimpl_->device_info_;
 }
 
-void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile,
+void ClientConnectionModel::setProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile,
                                        bool new_enabled, uint16_t new_num_channels_requested) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     
@@ -86,14 +86,14 @@ void ClientConnectionModel::set_profile(uint8_t group, uint8_t address, const Mi
               << ", Enabled: " << new_enabled << std::endl;
 }
 
-std::vector<std::unique_ptr<PropertyMetadata>> ClientConnectionModel::get_metadata_list() const {
+std::vector<std::unique_ptr<PropertyMetadata>> ClientConnectionModel::getMetadataList() const {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) {
         return {};
     }
     
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    auto* observable_properties = property_facade.get_properties();
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+    auto* observable_properties = property_facade.getProperties();
     if (observable_properties) {
         return observable_properties->getMetadataList();
     }
@@ -103,36 +103,36 @@ std::vector<std::unique_ptr<PropertyMetadata>> ClientConnectionModel::get_metada
 
 
 
-void ClientConnectionModel::get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding,
+void ClientConnectionModel::getPropertyData(const std::string& resource, const std::string& res_id, const std::string& encoding,
                                             int paginate_offset, int paginate_limit) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
     
     if (paginate_offset >= 0 && paginate_limit > 0) {
-        property_facade.send_get_property_data(resource, res_id, encoding, paginate_offset, paginate_limit);
+        property_facade.sendGetPropertyData(resource, res_id, encoding, paginate_offset, paginate_limit);
     } else {
-        property_facade.send_get_property_data(resource, res_id, encoding);
+        property_facade.sendGetPropertyData(resource, res_id, encoding);
     }
     
     std::cout << "Getting property data for resource: " << resource << std::endl;
 }
 
-void ClientConnectionModel::set_property_data(const std::string& resource, const std::string& res_id,
+void ClientConnectionModel::setPropertyData(const std::string& resource, const std::string& res_id,
                                             const std::vector<uint8_t>& data, const std::string& encoding,
                                             bool is_partial) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    property_facade.send_set_property_data(resource, res_id, data, encoding, is_partial);
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+    property_facade.sendSetPropertyData(resource, res_id, data, encoding, is_partial);
     
     std::cout << "Setting property data for resource: " << resource 
               << " (partial: " << is_partial << ")" << std::endl;
 }
 
-void ClientConnectionModel::subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding) {
+void ClientConnectionModel::subscribeProperty(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
@@ -147,8 +147,8 @@ void ClientConnectionModel::subscribe_property(const std::string& resource, cons
     }
     
     // Actually send the subscription request
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    property_facade.send_subscribe_property(resource, res_id, mutual_encoding, "subscription_id");
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+    property_facade.sendSubscribeProperty(resource, res_id, mutual_encoding, "subscription_id");
     
     std::cout << "Subscribing to property: " << resource << std::endl;
 }
@@ -169,8 +169,8 @@ void ClientConnectionModel::unsubscribe_property(const std::string& resource, co
     }
     
     // Actually send the unsubscription request
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    property_facade.send_unsubscribe_property(resource, res_id);
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+    property_facade.sendUnsubscribeProperty(resource, res_id);
     
     std::cout << "Unsubscribing from property: " << resource << std::endl;
 }
@@ -187,14 +187,14 @@ void ClientConnectionModel::request_midi_message_report(uint8_t address, uint32_
 void ClientConnectionModel::setup_profile_listeners() {
     if (!pimpl_->connection_) return;
     
-    auto& profile_client = pimpl_->connection_->get_profile_client_facade();
-    auto& profiles = profile_client.get_profiles();
+    auto& profile_client = pimpl_->connection_->getProfileClientFacade();
+    auto& profiles = profile_client.getProfiles();
     
-    profiles.add_profiles_changed_callback([this](auto change, const auto& profile) {
+    profiles.addProfilesChangedCallback([this](auto change, const auto& profile) {
         on_profile_changed();
     });
     
-    profiles.add_profile_enabled_changed_callback([this](const auto& profile) {
+    profiles.addProfileEnabledChangedCallback([this](const auto& profile) {
         on_profile_changed();
     });
 }
@@ -202,8 +202,8 @@ void ClientConnectionModel::setup_profile_listeners() {
 void ClientConnectionModel::setup_property_listeners() {
     if (!pimpl_->connection_) return;
     
-    auto& property_facade = pimpl_->connection_->get_property_client_facade();
-    auto* observable_properties = property_facade.get_properties();
+    auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+    auto* observable_properties = property_facade.getProperties();
     
     if (observable_properties) {
         auto initial_values = observable_properties->getValues();
@@ -213,8 +213,8 @@ void ClientConnectionModel::setup_property_listeners() {
         
         observable_properties->addPropertyUpdatedCallback([this](const std::string& propertyId, const std::string& resId) {
             if (pimpl_->connection_) {
-                auto& property_facade = pimpl_->connection_->get_property_client_facade();
-                auto* observable_properties = property_facade.get_properties();
+                auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+                auto* observable_properties = property_facade.getProperties();
                 if (observable_properties) {
                     auto current_values = observable_properties->getValues();
                     auto& properties_list = pimpl_->properties_;
@@ -244,8 +244,8 @@ void ClientConnectionModel::setup_property_listeners() {
         
         observable_properties->addPropertyCatalogUpdatedCallback([this]() {
             if (pimpl_->connection_) {
-                auto& property_facade = pimpl_->connection_->get_property_client_facade();
-                auto* observable_properties = property_facade.get_properties();
+                auto& property_facade = pimpl_->connection_->getPropertyClientFacade();
+                auto* observable_properties = property_facade.getProperties();
                 if (observable_properties) {
                     pimpl_->properties_.clear();
                     auto current_values = observable_properties->getValues();
@@ -265,9 +265,9 @@ void ClientConnectionModel::on_profile_changed() {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     if (!pimpl_->connection_) return;
     
-    auto& profile_client = pimpl_->connection_->get_profile_client_facade();
-    auto& profiles = profile_client.get_profiles();
-    const auto& profile_list = profiles.get_profiles();
+    auto& profile_client = pimpl_->connection_->getProfileClientFacade();
+    auto& profiles = profile_client.getProfiles();
+    const auto& profile_list = profiles.getProfiles();
     
     pimpl_->profiles_.clear();
     for (const auto& profile : profile_list) {
@@ -284,7 +284,7 @@ void ClientConnectionModel::on_profile_changed() {
     }
 }
 
-void ClientConnectionModel::add_profiles_changed_callback(ProfilesChangedCallback callback) {
+void ClientConnectionModel::addProfilesChangedCallback(ProfilesChangedCallback callback) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
     pimpl_->profiles_changed_callbacks_.push_back(callback);
 }

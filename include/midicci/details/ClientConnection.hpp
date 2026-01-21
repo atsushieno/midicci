@@ -38,29 +38,29 @@ public:
     ClientConnection(ClientConnection&&) = default;
     ClientConnection& operator=(ClientConnection&&) = default;
     
-    uint32_t get_target_muid() const noexcept;
+    uint32_t getTargetMuid() const noexcept;
 
-    ProfileClientFacade& get_profile_client_facade();
-    const ProfileClientFacade& get_profile_client_facade() const;
+    ProfileClientFacade& getProfileClientFacade();
+    const ProfileClientFacade& getProfileClientFacade() const;
     
-    PropertyClientFacade& get_property_client_facade();
-    const PropertyClientFacade& get_property_client_facade() const;
+    PropertyClientFacade& getPropertyClientFacade();
+    const PropertyClientFacade& getPropertyClientFacade() const;
     
-    void set_device_info(const DeviceInfo& device_info);
-    const DeviceInfo* get_device_info() const;
+    void setDeviceInfo(const DeviceInfo& device_info);
+    const DeviceInfo* getDeviceInfo() const;
     
-    void set_channel_list(const JsonValue& channel_list);
-    const JsonValue* get_channel_list() const;
+    void setChannelList(const JsonValue& channel_list);
+    const JsonValue* getChannelList() const;
     
-    void set_json_schema(const JsonValue& json_schema);
-    const JsonValue* get_json_schema() const;
+    void setJsonSchema(const JsonValue& json_schema);
+    const JsonValue* getJsonSchema() const;
     
     // Convenience methods that match Kotlin pattern - use extension functions when available
     DeviceInfo deviceInfo() const;
     JsonValue channelList() const;
     JsonValue jsonSchema() const;
 
-    uint32_t get_remote_max_sysex_size() const;
+    uint32_t getRemoteMaxSysexSize() const;
     
 private:
     class Impl;

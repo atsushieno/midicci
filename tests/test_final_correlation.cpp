@@ -27,8 +27,8 @@ protected:
     };
 
     // Debug logger
-    std::function<void(const std::string&, bool)> debug_logger = [](const std::string& message, bool is_outgoing) {
-        std::string direction = is_outgoing ? "OUT" : "IN ";
+    std::function<void(const std::string&, bool)> debug_logger = [](const std::string& message, bool isOutgoing) {
+        std::string direction = isOutgoing ? "OUT" : "IN ";
         // Direction and message logged
     };
 };
@@ -42,16 +42,16 @@ TEST_F(FinalCorrelationTest, BasicRequestIdCorrelation) {
     auto server_device = std::make_shared<MidiCIDevice>(0x87654321, server_config);
     
     // Set up logging and transport
-    client_device->set_logger(debug_logger);
-    server_device->set_logger(debug_logger);
-    client_device->set_sysex_sender(client_transport);
-    server_device->set_sysex_sender(server_transport);
+    client_device->setLogger(debug_logger);
+    server_device->setLogger(debug_logger);
+    client_device->setSysexSender(client_transport);
+    server_device->setSysexSender(server_transport);
     
     // Add test property to server
     auto test_property = std::make_unique<CommonRulesPropertyMetadata>("TestProperty");
     test_property->canGet = true;
     test_property->canSet = false;
-    server_device->get_property_host_facade().addMetadata(std::move(test_property));
+    server_device->getPropertyHostFacade().addMetadata(std::move(test_property));
     
     // Create client connection
     auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, 
@@ -59,7 +59,7 @@ TEST_F(FinalCorrelationTest, BasicRequestIdCorrelation) {
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Send property request
-    property_client->send_get_property_data("ResourceList", "", "", -1, -1);
+    property_client->sendGetPropertyData("ResourceList", "", "", -1, -1);
     
     EXPECT_FALSE(client_to_server_queue.empty());
     
@@ -71,7 +71,7 @@ TEST_F(FinalCorrelationTest, BasicRequestIdCorrelation) {
     EXPECT_GT(client_to_server_queue.size(), 20u);
     
     // Process request on server
-    server_device->get_messenger().process_input(0, client_to_server_queue);
+    server_device->getMessenger().processInput(0, client_to_server_queue);
     
     EXPECT_FALSE(server_to_client_queue.empty());
     
@@ -82,7 +82,7 @@ TEST_F(FinalCorrelationTest, BasicRequestIdCorrelation) {
     EXPECT_EQ(sent_request_id, reply_request_id);
     
     // Process reply on client
-    client_device->get_messenger().process_input(0, server_to_client_queue);
+    client_device->getMessenger().processInput(0, server_to_client_queue);
 }
 
 TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
@@ -94,16 +94,16 @@ TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
     auto server_device = std::make_shared<MidiCIDevice>(0x87654321, server_config);
     
     // Set up logging and transport
-    client_device->set_logger(debug_logger);
-    server_device->set_logger(debug_logger);
-    client_device->set_sysex_sender(client_transport);
-    server_device->set_sysex_sender(server_transport);
+    client_device->setLogger(debug_logger);
+    server_device->setLogger(debug_logger);
+    client_device->setSysexSender(client_transport);
+    server_device->setSysexSender(server_transport);
     
     // Add test property to server
     auto test_property = std::make_unique<CommonRulesPropertyMetadata>("TestProperty");
     test_property->canGet = true;
     test_property->canSet = false;
-    server_device->get_property_host_facade().addMetadata(std::move(test_property));
+    server_device->getPropertyHostFacade().addMetadata(std::move(test_property));
     
     // Create client connection
     auto connection = std::make_shared<ClientConnection>(*client_device, 0x87654321, 
@@ -111,11 +111,11 @@ TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Send multiple requests to test correlation
-    property_client->send_get_property_data("DeviceInfo", "", "", -1, -1);
+    property_client->sendGetPropertyData("DeviceInfo", "", "", -1, -1);
     auto request2_data = client_to_server_queue;
     uint8_t request2_id = request2_data[13];
     
-    property_client->send_get_property_data("ChannelList", "", "", -1, -1);
+    property_client->sendGetPropertyData("ChannelList", "", "", -1, -1);
     auto request3_data = client_to_server_queue;
     uint8_t request3_id = request3_data[13];
     
@@ -123,12 +123,12 @@ TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
     EXPECT_NE(request2_id, request3_id);
     
     // Process request 3 first (out of order)
-    server_device->get_messenger().process_input(0, request3_data);
+    server_device->getMessenger().processInput(0, request3_data);
     auto reply3_data = server_to_client_queue;
     uint8_t reply3_id = reply3_data[13];
     
     // Process request 2
-    server_device->get_messenger().process_input(0, request2_data);
+    server_device->getMessenger().processInput(0, request2_data);
     auto reply2_data = server_to_client_queue;
     uint8_t reply2_id = reply2_data[13];
     
@@ -139,8 +139,8 @@ TEST_F(FinalCorrelationTest, MultipleConcurrentRequests) {
     EXPECT_EQ(request2_id, reply2_id);
     
     // Process replies on client (out of order)
-    client_device->get_messenger().process_input(0, reply3_data);
-    client_device->get_messenger().process_input(0, reply2_data);
+    client_device->getMessenger().processInput(0, reply3_data);
+    client_device->getMessenger().processInput(0, reply2_data);
     
     // All tests passed - Request ID correlation is working correctly
 }

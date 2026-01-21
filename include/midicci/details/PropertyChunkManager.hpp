@@ -18,19 +18,19 @@ public:
     PropertyChunkManager(PropertyChunkManager&&) = default;
     PropertyChunkManager& operator=(PropertyChunkManager&&) = default;
     
-    void add_pending_chunk(uint64_t timestamp, uint32_t source_muid, uint8_t request_id,
+    void addPendingChunk(uint64_t timestamp, uint32_t source_muid, uint8_t request_id,
                           const std::vector<uint8_t>& header, const std::vector<uint8_t>& data);
     
     std::pair<std::vector<uint8_t>, std::vector<uint8_t>> 
-    finish_pending_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data);
+    finishPendingChunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data);
     
-    bool has_pending_chunk(uint32_t source_muid, uint8_t request_id) const;
+    bool hasPendingChunk(uint32_t source_muid, uint8_t request_id) const;
 
-    std::vector<uint8_t> get_pending_header(uint32_t source_muid, uint8_t request_id) const;
+    std::vector<uint8_t> getPendingHeader(uint32_t source_muid, uint8_t request_id) const;
     
-    void cleanup_expired_chunks(uint64_t current_timestamp, uint64_t timeout_seconds = 30);
+    void cleanupExpiredChunks(uint64_t current_timestamp, uint64_t timeout_seconds = 30);
     
-    void clear_all_chunks();
+    void clearAllChunks();
     
 private:
     class Impl;

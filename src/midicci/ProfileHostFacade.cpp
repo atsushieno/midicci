@@ -18,30 +18,30 @@ ProfileHostFacade::ProfileHostFacade(MidiCIDevice& device) : pimpl_(std::make_un
 
 ProfileHostFacade::~ProfileHostFacade() = default;
 
-ObservableProfileList& ProfileHostFacade::get_profiles() {
+ObservableProfileList& ProfileHostFacade::getProfiles() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profiles_;
 }
 
-const ObservableProfileList& ProfileHostFacade::get_profiles() const {
+const ObservableProfileList& ProfileHostFacade::getProfiles() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profiles_;
 }
 
-void ProfileHostFacade::add_profile(const MidiCIProfile& profile) {
+void ProfileHostFacade::addProfile(const MidiCIProfile& profile) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->profiles_->add(profile);
 }
 
-void ProfileHostFacade::remove_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id) {
+void ProfileHostFacade::removeProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     MidiCIProfile profile(profile_id, group, address, false, 0);
     pimpl_->profiles_->remove(profile);
 }
 
-void ProfileHostFacade::enable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels) {
+void ProfileHostFacade::enableProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->profiles_->set_enabled(true, address, profile_id, num_channels);
+    pimpl_->profiles_->setEnabled(true, address, profile_id, num_channels);
     
     MidiCIProfile profile(profile_id, group, address, true, num_channels);
     for (const auto& callback : pimpl_->on_profile_set_callbacks_) {
@@ -49,9 +49,9 @@ void ProfileHostFacade::enable_profile(uint8_t group, uint8_t address, const Mid
     }
 }
 
-void ProfileHostFacade::disable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels) {
+void ProfileHostFacade::disableProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    pimpl_->profiles_->set_enabled(false, address, profile_id, num_channels);
+    pimpl_->profiles_->setEnabled(false, address, profile_id, num_channels);
     
     MidiCIProfile profile(profile_id, group, address, false, num_channels);
     for (const auto& callback : pimpl_->on_profile_set_callbacks_) {
@@ -59,7 +59,7 @@ void ProfileHostFacade::disable_profile(uint8_t group, uint8_t address, const Mi
     }
 }
 
-std::vector<uint8_t> ProfileHostFacade::get_profile_details(const MidiCIProfileId& profile, uint8_t target) const {
+std::vector<uint8_t> ProfileHostFacade::getProfileDetails(const MidiCIProfileId& profile, uint8_t target) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     for (const auto& entry : pimpl_->profile_details_entries_) {
         if (entry.profile == profile && entry.target == target) {
@@ -69,9 +69,9 @@ std::vector<uint8_t> ProfileHostFacade::get_profile_details(const MidiCIProfileI
     return std::vector<uint8_t>();
 }
 
-void ProfileHostFacade::update_profile_target(const MidiCIProfileId& profile_id, uint8_t old_address, uint8_t new_address, bool enabled, uint16_t num_channels_requested) {
+void ProfileHostFacade::updateProfileTarget(const MidiCIProfileId& profile_id, uint8_t old_address, uint8_t new_address, bool enabled, uint16_t num_channels_requested) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    const auto& profiles = pimpl_->profiles_->get_profiles();
+    const auto& profiles = pimpl_->profiles_->getProfiles();
     for (const auto& profile : profiles) {
         if (profile.profile == profile_id && profile.address == old_address) {
             pimpl_->profiles_->update(const_cast<MidiCIProfile&>(profile), enabled, new_address, num_channels_requested);
@@ -80,17 +80,17 @@ void ProfileHostFacade::update_profile_target(const MidiCIProfileId& profile_id,
     }
 }
 
-std::vector<MidiCIProfileDetails>& ProfileHostFacade::get_profile_details_entries() {
+std::vector<MidiCIProfileDetails>& ProfileHostFacade::getProfileDetailsEntries() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->profile_details_entries_;
 }
 
-const std::vector<MidiCIProfileDetails>& ProfileHostFacade::get_profile_details_entries() const {
+const std::vector<MidiCIProfileDetails>& ProfileHostFacade::getProfileDetailsEntries() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->profile_details_entries_;
 }
 
-void ProfileHostFacade::add_on_profile_set_callback(ProfileSetCallback callback) {
+void ProfileHostFacade::addOnProfileSetCallback(ProfileSetCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->on_profile_set_callbacks_.push_back(callback);
 }

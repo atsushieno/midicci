@@ -22,7 +22,7 @@ int Midi2Music::UmpDeltaTimeComputer::getTempoValue(const Ump& message) const {
 }
 
 bool Midi2Music::isMetaEventMessageStarter(const Ump& message) {
-    if (message.getMessageType() != MidiMessageType::SYSEX8_MDS) {
+    if (message.getMessageType() != MessageType::SYSEX8_MDS) {
         return false;
     }
 

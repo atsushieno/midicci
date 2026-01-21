@@ -20,8 +20,8 @@ public:
     MidiMachineMessageReporter(MidiMachineMessageReporter&&) = default;
     MidiMachineMessageReporter& operator=(MidiMachineMessageReporter&&) = default;
 
-    MidiMessageReportProtocol get_midi_transport_protocol() const;
-    void set_configured_midi_transport_protocol(MidiMessageReportProtocol protocol);
+    MidiMessageReportProtocol getMidiTransportProtocol() const;
+    void setConfiguredMidiTransportProtocol(MidiMessageReportProtocol protocol);
 
     // TODO: Implement reportMidiMessages when MIDI machine classes are available
     // For now, this is a placeholder that matches the Kotlin interface

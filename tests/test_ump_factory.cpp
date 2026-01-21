@@ -2,7 +2,7 @@
 #include <midicci/midicci.hpp>
 
 using namespace midicci;
-using namespace midicci::ump;
+using namespace umppi;
 
 class UmpFactoryTest : public ::testing::Test {
 protected:
@@ -13,40 +13,40 @@ protected:
 
 // Test basic UMP Factory functionality for SysEx7
 TEST_F(UmpFactoryTest, testSysEx7Direct) {
-    auto ump = UmpFactory::sysex7_direct(1, 0, 6, 0x41, 0x10, 0x42, 0x40, 0x00, 0x7F);
+    auto ump = UmpFactory::sysex7Direct(1, 0, 6, 0x41, 0x10, 0x42, 0x40, 0x00, 0x7F);
     EXPECT_EQ(0x310641104240007F, ((uint64_t)ump.int1 << 32) | ump.int2);
 }
 
 TEST_F(UmpFactoryTest, testSysEx7GetSysexLength) {
     // Test with 0xF0 prefix
     std::vector<uint8_t> gsReset = {0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7};
-    EXPECT_EQ(9, UmpFactory::sysex7_get_sysex_length(gsReset));
+    EXPECT_EQ(9, UmpFactory::sysex7GetSysexLength(gsReset));
     
     // Test without 0xF0 prefix (should get same result)
     std::vector<uint8_t> gsResetNoF0 = {0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7};
-    EXPECT_EQ(9, UmpFactory::sysex7_get_sysex_length(gsResetNoF0));
+    EXPECT_EQ(9, UmpFactory::sysex7GetSysexLength(gsResetNoF0));
     
     // Test various lengths
     std::vector<uint8_t> sysex12 = {0xF0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0xF7};
-    EXPECT_EQ(12, UmpFactory::sysex7_get_sysex_length(sysex12));
+    EXPECT_EQ(12, UmpFactory::sysex7GetSysexLength(sysex12));
     
     std::vector<uint8_t> sysex13 = {0xF0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0xF7};
-    EXPECT_EQ(13, UmpFactory::sysex7_get_sysex_length(sysex13));
+    EXPECT_EQ(13, UmpFactory::sysex7GetSysexLength(sysex13));
 }
 
 TEST_F(UmpFactoryTest, testSysEx7GetPacketCount) {
-    EXPECT_EQ(1, UmpFactory::sysex7_get_packet_count({0}));
-    EXPECT_EQ(1, UmpFactory::sysex7_get_packet_count({0, 0}));
+    EXPECT_EQ(1, UmpFactory::sysex7GetPacketCount({0}));
+    EXPECT_EQ(1, UmpFactory::sysex7GetPacketCount({0, 0}));
     
     // Test data that needs multiple packets (6 bytes per packet for SysEx7)
     std::vector<uint8_t> sysex7bytes = {0, 1, 2, 3, 4, 5, 6, 0xF7};
-    EXPECT_EQ(2, UmpFactory::sysex7_get_packet_count(sysex7bytes));
+    EXPECT_EQ(2, UmpFactory::sysex7GetPacketCount(sysex7bytes));
     
     std::vector<uint8_t> sysex12bytes = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0xF7};
-    EXPECT_EQ(2, UmpFactory::sysex7_get_packet_count(sysex12bytes));
+    EXPECT_EQ(2, UmpFactory::sysex7GetPacketCount(sysex12bytes));
     
     std::vector<uint8_t> sysex13bytes = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0xF7};
-    EXPECT_EQ(3, UmpFactory::sysex7_get_packet_count(sysex13bytes));
+    EXPECT_EQ(3, UmpFactory::sysex7GetPacketCount(sysex13bytes));
 }
 
 // Note: More comprehensive tests would need additional UmpFactory methods to be implemented
@@ -56,14 +56,14 @@ TEST_F(UmpFactoryTest, testSysEx7Process) {
     std::vector<uint8_t> sysex6 = {1, 2, 3, 4, 5, 6};
     std::vector<Ump> packets;
     
-    UmpFactory::sysex7_process(0, sysex6, [&packets](const Ump& ump) {
+    UmpFactory::sysex7Process(0, sysex6, [&packets](const Ump& ump) {
         packets.push_back(ump);
     });
     
     EXPECT_EQ(1, packets.size());
     
     // Extract UMP back to SysEx data and verify
-    auto retrieved = UmpRetriever::get_sysex7_data(packets);
+    auto retrieved = UmpRetriever::getSysex7Data(packets);
     ASSERT_EQ(sysex6.size(), retrieved.size());
     for (size_t i = 0; i < sysex6.size(); ++i) {
         EXPECT_EQ(sysex6[i], retrieved[i]) << "Mismatch at index " << i;

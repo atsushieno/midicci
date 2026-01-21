@@ -37,40 +37,40 @@ ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid, D
 
 ClientConnection::~ClientConnection() = default;
 
-uint32_t ClientConnection::get_target_muid() const noexcept {
+uint32_t ClientConnection::getTargetMuid() const noexcept {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->target_muid_;
 }
 
-ProfileClientFacade& ClientConnection::get_profile_client_facade() {
+ProfileClientFacade& ClientConnection::getProfileClientFacade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_client_facade_;
 }
 
-const ProfileClientFacade& ClientConnection::get_profile_client_facade() const {
+const ProfileClientFacade& ClientConnection::getProfileClientFacade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profile_client_facade_;
 }
 
-PropertyClientFacade& ClientConnection::get_property_client_facade() {
+PropertyClientFacade& ClientConnection::getPropertyClientFacade() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_client_facade_;
 }
 
-const PropertyClientFacade& ClientConnection::get_property_client_facade() const {
+const PropertyClientFacade& ClientConnection::getPropertyClientFacade() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->property_client_facade_;
 }
 
-void ClientConnection::set_device_info(const DeviceInfo& device_info) {
+void ClientConnection::setDeviceInfo(const DeviceInfo& device_info) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->device_info_ = std::make_unique<DeviceInfo>(device_info);
 }
 
-const DeviceInfo* ClientConnection::get_device_info() const {
+const DeviceInfo* ClientConnection::getDeviceInfo() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     // Use extension function to get deviceInfo from properties, fallback to stored device_info_
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto deviceInfo = midicci::commonproperties::FoundationalResources::getDeviceInfo(*properties);
         if (deviceInfo.has_value()) {
@@ -82,15 +82,15 @@ const DeviceInfo* ClientConnection::get_device_info() const {
     return pimpl_->device_info_.get();
 }
 
-void ClientConnection::set_channel_list(const JsonValue& channel_list) {
+void ClientConnection::setChannelList(const JsonValue& channel_list) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->channel_list_ = std::make_unique<JsonValue>(channel_list);
 }
 
-const JsonValue* ClientConnection::get_channel_list() const {
+const JsonValue* ClientConnection::getChannelList() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     // Use extension function to get channelList from properties, fallback to stored channel_list_
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto channelList = midicci::commonproperties::FoundationalResources::getChannelList(*properties);
         if (channelList.has_value()) {
@@ -103,15 +103,15 @@ const JsonValue* ClientConnection::get_channel_list() const {
     return pimpl_->channel_list_.get();
 }
 
-void ClientConnection::set_json_schema(const JsonValue& json_schema) {
+void ClientConnection::setJsonSchema(const JsonValue& json_schema) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->json_schema_ = std::make_unique<JsonValue>(json_schema);
 }
 
-const JsonValue* ClientConnection::get_json_schema() const {
+const JsonValue* ClientConnection::getJsonSchema() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     // Use extension function to get jsonSchema from properties, fallback to stored json_schema_
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto jsonSchema = midicci::commonproperties::FoundationalResources::getJsonSchema(*properties);
         if (jsonSchema.has_value()) {
@@ -125,7 +125,7 @@ const JsonValue* ClientConnection::get_json_schema() const {
 // Convenience methods that match Kotlin pattern
 DeviceInfo ClientConnection::deviceInfo() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto deviceInfo = midicci::commonproperties::FoundationalResources::getDeviceInfo(*properties);
         if (deviceInfo.has_value()) {
@@ -141,7 +141,7 @@ DeviceInfo ClientConnection::deviceInfo() const {
 
 JsonValue ClientConnection::channelList() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto channelList = midicci::commonproperties::FoundationalResources::getChannelList(*properties);
         if (channelList.has_value()) {
@@ -157,7 +157,7 @@ JsonValue ClientConnection::channelList() const {
 
 JsonValue ClientConnection::jsonSchema() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    auto* properties = pimpl_->property_client_facade_->get_properties();
+    auto* properties = pimpl_->property_client_facade_->getProperties();
     if (properties) {
         auto jsonSchema = midicci::commonproperties::FoundationalResources::getJsonSchema(*properties);
         if (jsonSchema.has_value()) {
@@ -171,7 +171,7 @@ JsonValue ClientConnection::jsonSchema() const {
     return JsonValue(JsonObject{});
 }
 
-uint32_t ClientConnection::get_remote_max_sysex_size() const {
+uint32_t ClientConnection::getRemoteMaxSysexSize() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->remote_max_sysex_size_;
 }

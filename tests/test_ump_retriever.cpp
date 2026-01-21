@@ -2,7 +2,7 @@
 #include <midicci/midicci.hpp>
 
 using namespace midicci;
-using namespace midicci::ump;
+using namespace umppi;
 
 class UmpRetrieverTest : public ::testing::Test {
 protected:
@@ -15,11 +15,11 @@ TEST_F(UmpRetrieverTest, testGetSysex7Data1) {
     std::vector<uint8_t> src1 = {0, 0, 1, 2, 3, 4};
     std::vector<Ump> packets;
     
-    UmpFactory::sysex7_process(0, src1, [&packets](const Ump& ump) {
+    UmpFactory::sysex7Process(0, src1, [&packets](const Ump& ump) {
         packets.push_back(ump);
     });
     
-    auto actual1 = UmpRetriever::get_sysex7_data(packets);
+    auto actual1 = UmpRetriever::getSysex7Data(packets);
     ASSERT_EQ(src1.size(), actual1.size());
     for (size_t i = 0; i < src1.size(); ++i) {
         EXPECT_EQ(src1[i], actual1[i]) << "Mismatch at index " << i;
@@ -30,11 +30,11 @@ TEST_F(UmpRetrieverTest, testGetSysex7Data2) {
     std::vector<uint8_t> src2 = {0, 0, 1, 2, 3, 4, 5};
     std::vector<Ump> packets;
     
-    UmpFactory::sysex7_process(0, src2, [&packets](const Ump& ump) {
+    UmpFactory::sysex7Process(0, src2, [&packets](const Ump& ump) {
         packets.push_back(ump);
     });
     
-    auto actual2 = UmpRetriever::get_sysex7_data(packets);
+    auto actual2 = UmpRetriever::getSysex7Data(packets);
     ASSERT_EQ(src2.size(), actual2.size());
     for (size_t i = 0; i < src2.size(); ++i) {
         EXPECT_EQ(src2[i], actual2[i]) << "Mismatch at index " << i;

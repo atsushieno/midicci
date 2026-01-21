@@ -43,25 +43,25 @@ public:
     ClientConnectionModel(const ClientConnectionModel&) = delete;
     ClientConnectionModel& operator=(const ClientConnectionModel&) = delete;
     
-    std::shared_ptr<ClientConnection> get_connection() const;
-    const MutableStateList<std::shared_ptr<MidiCIProfileState>>& get_profiles() const;
-    const MutableStateList<SubscriptionState>& get_subscriptions() const;
-    const MutableStateList<PropertyValue>& get_properties() const;
+    std::shared_ptr<ClientConnection> getConnection() const;
+    const MutableStateList<std::shared_ptr<MidiCIProfileState>>& getProfiles() const;
+    const MutableStateList<SubscriptionState>& getSubscriptions() const;
+    const MutableStateList<PropertyValue>& getProperties() const;
     
     std::string get_device_info_value() const;
-    const MutableState<std::string>& get_device_info() const;
+    const MutableState<std::string>& getDeviceInfo() const;
     
-    void set_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile,
+    void setProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile,
                     bool new_enabled, uint16_t new_num_channels_requested);
     
-    std::vector<std::unique_ptr<midicci::commonproperties::PropertyMetadata>> get_metadata_list() const;
+    std::vector<std::unique_ptr<midicci::commonproperties::PropertyMetadata>> getMetadataList() const;
     
-    void get_property_data(const std::string& resource, const std::string& res_id, const std::string& encoding = "",
+    void getPropertyData(const std::string& resource, const std::string& res_id, const std::string& encoding = "",
                           int paginate_offset = -1, int paginate_limit = -1);
-    void set_property_data(const std::string& resource, const std::string& res_id,
+    void setPropertyData(const std::string& resource, const std::string& res_id,
                           const std::vector<uint8_t>& data, const std::string& encoding = "",
                           bool is_partial = false);
-    void subscribe_property(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding = "");
+    void subscribeProperty(const std::string& resource, const std::string& res_id, const std::string& mutual_encoding = "");
     void unsubscribe_property(const std::string& resource, const std::string& res_id);
     
     void request_midi_message_report(uint8_t address, uint32_t target_muid,
@@ -70,7 +70,7 @@ public:
                                    uint8_t channel_controller_messages = 0xFF,
                                    uint8_t note_data_messages = 0xFF);
     
-    void add_profiles_changed_callback(ProfilesChangedCallback callback);
+    void addProfilesChangedCallback(ProfilesChangedCallback callback);
     void add_properties_changed_callback(PropertiesChangedCallback callback);
     void add_device_info_changed_callback(DeviceInfoChangedCallback callback);
     

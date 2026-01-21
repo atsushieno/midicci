@@ -12,7 +12,7 @@ static std::string replace_all(std::string str, const std::string& from, const s
     return str;
 }
 
-std::vector<std::string> PropertyPartialUpdater::parse_json_pointer(const std::string& s) {
+std::vector<std::string> PropertyPartialUpdater::parseJsonPointer(const std::string& s) {
     if (s.empty() || s[0] != '/')
         return {};
 
@@ -37,11 +37,11 @@ std::vector<std::string> PropertyPartialUpdater::parse_json_pointer(const std::s
     return result;
 }
 
-JsonValue PropertyPartialUpdater::apply_partial_update(const JsonValue& obj, const std::string& path, const JsonValue& value) {
-    return apply_partial_update(obj, parse_json_pointer(path), value);
+JsonValue PropertyPartialUpdater::applyPartialUpdate(const JsonValue& obj, const std::string& path, const JsonValue& value) {
+    return applyPartialUpdate(obj, parseJsonPointer(path), value);
 }
 
-JsonValue PropertyPartialUpdater::apply_partial_update(const JsonValue& obj, const std::vector<std::string>& json_pointer_path, const JsonValue& value) {
+JsonValue PropertyPartialUpdater::applyPartialUpdate(const JsonValue& obj, const std::vector<std::string>& json_pointer_path, const JsonValue& value) {
     return patch(obj, json_pointer_path, value);
 }
 
@@ -49,10 +49,10 @@ JsonValue PropertyPartialUpdater::patch(const JsonValue& obj, const std::vector<
     if (path.empty())
         return obj;
 
-    if (!obj.is_object())
+    if (!obj.isObject())
         return obj;
 
-    const auto& obj_map = obj.as_object();
+    const auto& obj_map = obj.asObject();
     const std::string& entry = path[0];
 
     auto context_key_it = obj_map.find(entry);
@@ -80,15 +80,15 @@ JsonValue PropertyPartialUpdater::patch(const JsonValue& obj, const std::vector<
     return JsonValue(new_map);
 }
 
-std::pair<bool, JsonValue> PropertyPartialUpdater::apply_partial_updates(const JsonValue& existing_json, const JsonValue& partial_spec_json) {
-    if (!partial_spec_json.is_object())
+std::pair<bool, JsonValue> PropertyPartialUpdater::applyPartialUpdates(const JsonValue& existing_json, const JsonValue& partial_spec_json) {
+    if (!partial_spec_json.isObject())
         return {false, existing_json};
 
     JsonValue target = existing_json;
-    const auto& spec_obj = partial_spec_json.as_object();
+    const auto& spec_obj = partial_spec_json.asObject();
 
     for (const auto& [path, new_value] : spec_obj) {
-        target = apply_partial_update(target, path, new_value);
+        target = applyPartialUpdate(target, path, new_value);
     }
 
     return {true, target};

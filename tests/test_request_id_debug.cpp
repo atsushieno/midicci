@@ -10,8 +10,8 @@ protected:
     std::vector<uint8_t> client_to_server_data;
     std::vector<uint8_t> server_to_client_data;
     
-    void debug_logger(const std::string& message, bool is_outgoing) {
-        std::string direction = is_outgoing ? "OUTGOING" : "INCOMING";
+    void debug_logger(const std::string& message, bool isOutgoing) {
+        std::string direction = isOutgoing ? "OUTGOING" : "INCOMING";
         std::string log_entry = "[" + direction + "] " + message;
         log_messages.push_back(log_entry);
     }
@@ -44,26 +44,26 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         auto server_device = std::make_shared<MidiCIDevice>(0x87654321, server_config);
         
         // Set up debug loggers
-        client_device->set_logger([this](const LogData& log_data) {
-            if (log_data.has_message()) {
-                this->debug_logger(log_data.get_message().get_log_message(), log_data.is_outgoing);
+        client_device->setLogger([this](const LogData& log_data) {
+            if (log_data.hasMessage()) {
+                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.isOutgoing);
             } else {
-                this->debug_logger(log_data.get_string(), log_data.is_outgoing);
+                this->debug_logger(log_data.getString(), log_data.isOutgoing);
             }
         });
-        server_device->set_logger([this](const LogData& log_data) {
-            if (log_data.has_message()) {
-                this->debug_logger(log_data.get_message().get_log_message(), log_data.is_outgoing);
+        server_device->setLogger([this](const LogData& log_data) {
+            if (log_data.hasMessage()) {
+                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.isOutgoing);
             } else {
-                this->debug_logger(log_data.get_string(), log_data.is_outgoing);
+                this->debug_logger(log_data.getString(), log_data.isOutgoing);
             }
         });
         
         // Set up mock transports
-        client_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        client_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_transport_client_to_server(group, data);
         });
-        server_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        server_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_transport_server_to_client(group, data);
         });
         
@@ -71,7 +71,7 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         auto test_property = std::make_unique<CommonRulesPropertyMetadata>("TestProperty");
         test_property->canGet = true;
         test_property->canSet = false;
-        server_device->get_property_host_facade().addMetadata(std::move(test_property));
+        server_device->getPropertyHostFacade().addMetadata(std::move(test_property));
         
         // Created client device (MUID: 0x12345678) and server device (MUID: 0x87654321)
         
@@ -83,7 +83,7 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         // Test 1: Send Property Request
         
         // Send a property request
-        property_client->send_get_property_data("ResourceList", "", "", -1, -1);
+        property_client->sendGetPropertyData("ResourceList", "", "", -1, -1);
         
         // Check the sent data to extract request ID from raw message
         ASSERT_FALSE(client_to_server_data.empty()) << "Should have sent data to server";
@@ -95,7 +95,7 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         
         // Simulate receiving the request on the server
         ASSERT_FALSE(client_to_server_data.empty());
-        EXPECT_NO_THROW(server_device->get_messenger().process_input(0, client_to_server_data));
+        EXPECT_NO_THROW(server_device->getMessenger().processInput(0, client_to_server_data));
         
         // Test 3: Send Reply Back to Client
         
@@ -107,32 +107,32 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
                 EXPECT_EQ(actual_request_id, reply_request_id) << "Reply should have same request ID as original request";
             }
             
-            EXPECT_NO_THROW(client_device->get_messenger().process_input(0, server_to_client_data));
+            EXPECT_NO_THROW(client_device->getMessenger().processInput(0, server_to_client_data));
         }
         
         // Test 4: Multiple Concurrent Requests
         
         // Send multiple requests quickly
-        property_client->send_get_property_data("DeviceInfo", "", "", -1, -1);
+        property_client->sendGetPropertyData("DeviceInfo", "", "", -1, -1);
         std::vector<uint8_t> request2_data = client_to_server_data;
         
-        property_client->send_get_property_data("ChannelList", "", "", -1, -1);  
+        property_client->sendGetPropertyData("ChannelList", "", "", -1, -1);  
         std::vector<uint8_t> request3_data = client_to_server_data;
         
         // Process each request on server and get replies
-        EXPECT_NO_THROW(server_device->get_messenger().process_input(0, request2_data));
+        EXPECT_NO_THROW(server_device->getMessenger().processInput(0, request2_data));
         std::vector<uint8_t> reply2_data = server_to_client_data;
         
-        EXPECT_NO_THROW(server_device->get_messenger().process_input(0, request3_data));
+        EXPECT_NO_THROW(server_device->getMessenger().processInput(0, request3_data));
         std::vector<uint8_t> reply3_data = server_to_client_data;
         
         // Process replies on client
         if (!reply2_data.empty()) {
-            EXPECT_NO_THROW(client_device->get_messenger().process_input(0, reply2_data));
+            EXPECT_NO_THROW(client_device->getMessenger().processInput(0, reply2_data));
         }
         
         if (!reply3_data.empty()) {
-            EXPECT_NO_THROW(client_device->get_messenger().process_input(0, reply3_data));
+            EXPECT_NO_THROW(client_device->getMessenger().processInput(0, reply3_data));
         }
         
         // Test Results - Check for request ID issues in log

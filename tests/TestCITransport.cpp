@@ -1,9 +1,9 @@
 #include "TestCITransport.hpp"
 #include <iostream>
 #include <atomic>
-#include <midicci/details/ump/Ump.hpp>
-#include <midicci/details/ump/UmpFactory.hpp>
-#include <midicci/details/ump/UmpRetriever.hpp>
+#include <umppi/details/Ump.hpp>
+#include <umppi/details/UmpFactory.hpp>
+#include <umppi/details/UmpRetriever.hpp>
 #include <stdlib.h>
 
 namespace midicci::test {
@@ -64,28 +64,28 @@ TestCITransport::TestCITransport() {
                 .on_message = [this](libremidi::ump&& packet) {
                     if (!running_ || !device2_) return;
 
-                    std::vector<midicci::ump::Ump> umps;
+                    std::vector<umppi::Ump> umps;
                     umps.emplace_back(packet.data[0], packet.data[1], packet.data[2], packet.data[3]);
 
-                    if (umps[0].get_message_type() == midicci::ump::MessageType::SYSEX7) {
-                        auto sysex_fragment = midicci::ump::UmpRetriever::get_sysex7_data(umps);
-                        auto status = static_cast<midicci::ump::BinaryChunkStatus>(umps[0].get_status_code());
+                    if (umps[0].getMessageType() == umppi::MessageType::SYSEX7) {
+                        auto sysex_fragment = umppi::UmpRetriever::getSysex7Data(umps);
+                        auto status = static_cast<umppi::BinaryChunkStatus>(umps[0].getStatusCode());
 
-                        if (status == midicci::ump::BinaryChunkStatus::START) {
+                        if (status == umppi::BinaryChunkStatus::START) {
                             device2_sysex_buffer_.clear();
                         }
 
                         device2_sysex_buffer_.insert(device2_sysex_buffer_.end(),
                                                     sysex_fragment.begin(), sysex_fragment.end());
 
-                        if (status == midicci::ump::BinaryChunkStatus::END ||
-                            status == midicci::ump::BinaryChunkStatus::COMPLETE_PACKET) {
+                        if (status == umppi::BinaryChunkStatus::END ||
+                            status == umppi::BinaryChunkStatus::COMPLETE_PACKET) {
 
                             if (device2_sysex_buffer_.size() > 2 &&
                                 device2_sysex_buffer_[0] == 0x7E &&
                                 device2_sysex_buffer_[2] == 0x0D) {
 
-                                device2_->processInput(umps[0].get_group(), device2_sysex_buffer_);
+                                device2_->processInput(umps[0].getGroup(), device2_sysex_buffer_);
 
                                 std::lock_guard<std::mutex> lock(mutex_);
                                 message_received_ = true;
@@ -120,28 +120,28 @@ TestCITransport::TestCITransport() {
                 .on_message = [this](libremidi::ump&& packet) {
                     if (!running_ || !device1_) return;
 
-                    std::vector<midicci::ump::Ump> umps;
+                    std::vector<umppi::Ump> umps;
                     umps.emplace_back(packet.data[0], packet.data[1], packet.data[2], packet.data[3]);
 
-                    if (umps[0].get_message_type() == midicci::ump::MessageType::SYSEX7) {
-                        auto sysex_fragment = midicci::ump::UmpRetriever::get_sysex7_data(umps);
-                        auto status = static_cast<midicci::ump::BinaryChunkStatus>(umps[0].get_status_code());
+                    if (umps[0].getMessageType() == umppi::MessageType::SYSEX7) {
+                        auto sysex_fragment = umppi::UmpRetriever::getSysex7Data(umps);
+                        auto status = static_cast<umppi::BinaryChunkStatus>(umps[0].getStatusCode());
 
-                        if (status == midicci::ump::BinaryChunkStatus::START) {
+                        if (status == umppi::BinaryChunkStatus::START) {
                             device1_sysex_buffer_.clear();
                         }
 
                         device1_sysex_buffer_.insert(device1_sysex_buffer_.end(),
                                                     sysex_fragment.begin(), sysex_fragment.end());
 
-                        if (status == midicci::ump::BinaryChunkStatus::END ||
-                            status == midicci::ump::BinaryChunkStatus::COMPLETE_PACKET) {
+                        if (status == umppi::BinaryChunkStatus::END ||
+                            status == umppi::BinaryChunkStatus::COMPLETE_PACKET) {
 
                             if (device1_sysex_buffer_.size() > 2 &&
                                 device1_sysex_buffer_[0] == 0x7E &&
                                 device1_sysex_buffer_[2] == 0x0D) {
 
-                                device1_->processInput(umps[0].get_group(), device1_sysex_buffer_);
+                                device1_->processInput(umps[0].getGroup(), device1_sysex_buffer_);
 
                                 std::lock_guard<std::mutex> lock(mutex_);
                                 message_received_ = true;
@@ -181,14 +181,14 @@ TestCITransport::TestCITransport() {
     device2_ = std::make_unique<MidiCIDevice>(37564 & 0x7F7F7F7F, config2_);
 
     // Set up SysEx senders
-    device1_->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+    device1_->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         std::vector<uint8_t> sysex_with_markers;
         sysex_with_markers.push_back(0xF0);
         sysex_with_markers.insert(sysex_with_markers.end(), data.begin(), data.end());
         sysex_with_markers.push_back(0xF7);
 
         std::vector<uint8_t> sysex_payload(sysex_with_markers.begin() + 1, sysex_with_markers.end() - 1);
-        auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
+        auto umps = umppi::UmpFactory::sysex7(group, sysex_payload);
 
         // Send UMP packets in chunks to avoid overwhelming the buffer
         // Each UMP is 16 bytes (4 uint32_t), chunk every ~128 UMPs (2048 bytes)
@@ -218,14 +218,14 @@ TestCITransport::TestCITransport() {
         return true;
     });
 
-    device2_->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+    device2_->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         std::vector<uint8_t> sysex_with_markers;
         sysex_with_markers.push_back(0xF0);
         sysex_with_markers.insert(sysex_with_markers.end(), data.begin(), data.end());
         sysex_with_markers.push_back(0xF7);
 
         std::vector<uint8_t> sysex_payload(sysex_with_markers.begin() + 1, sysex_with_markers.end() - 1);
-        auto umps = midicci::ump::UmpFactory::sysex7(group, sysex_payload);
+        auto umps = umppi::UmpFactory::sysex7(group, sysex_payload);
 
         // Send UMP packets in chunks to avoid overwhelming the buffer
         // Each UMP is 16 bytes (4 uint32_t), chunk every ~128 UMPs (2048 bytes)

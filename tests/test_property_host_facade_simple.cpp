@@ -90,7 +90,7 @@ TEST_F(PropertyHostFacadeTest, PropertyMetadataRetrievable) {
     facade->addMetadata(std::move(metadata));
     
     // Verify we can retrieve the metadata
-    auto retrieved = facade->get_property_metadata(property_id);
+    auto retrieved = facade->getPropertyMetadata(property_id);
     ASSERT_NE(retrieved, nullptr);
     EXPECT_EQ(retrieved->getPropertyId(), property_id);
 }

@@ -20,7 +20,7 @@ TEST(MessageSerializationTest, GetPropertyDataSerialization) {
     GetPropertyData request(common, test_request_id, header);
     
     // Original GetPropertyData requestId
-    EXPECT_EQ(request.get_request_id(), test_request_id);
+    EXPECT_EQ(request.getRequestId(), test_request_id);
     
     // Serialize the message
     auto serialized = request.serialize(config);
@@ -51,7 +51,7 @@ TEST(MessageSerializationTest, GetPropertyDataReplySerialization) {
     GetPropertyDataReply reply(reply_common, test_request_id, reply_header, reply_body);
     
     // Original GetPropertyDataReply requestId
-    EXPECT_EQ(reply.get_request_id(), test_request_id);
+    EXPECT_EQ(reply.getRequestId(), test_request_id);
     
     auto reply_serialized = reply.serialize(config);
     
@@ -82,7 +82,7 @@ TEST(MessageSerializationTest, MessageReconstruction) {
     auto reply_serialized = reply.serialize(config);
     ASSERT_FALSE(reply_serialized.empty());
     
-    // Test reconstruction using CIRetrieval functions (like Messenger::process_input does)
+    // Test reconstruction using CIRetrieval functions (like Messenger::processInput does)
     const auto& data = reply_serialized[0];
     
     ASSERT_GE(data.size(), 21u);
@@ -91,17 +91,17 @@ TEST(MessageSerializationTest, MessageReconstruction) {
     // Extracted request ID from reply message
     EXPECT_EQ(extracted_request_id, test_request_id);
     
-    // Use CIRetrieval methods exactly like Messenger::process_input does
-    uint32_t source_muid = CIRetrieval::get_source_muid(data);
-    uint32_t dest_muid = CIRetrieval::get_destination_muid(data);
+    // Use CIRetrieval methods exactly like Messenger::processInput does
+    uint32_t source_muid = CIRetrieval::getSourceMuid(data);
+    uint32_t dest_muid = CIRetrieval::getDestinationMuid(data);
     
     // Extracted source MUID and dest MUID should match original
     EXPECT_EQ(source_muid, 0x87654321u);
     EXPECT_EQ(dest_muid, 0x12345678u);
     
     // Extract header and body using CIRetrieval methods
-    std::vector<uint8_t> extracted_header = CIRetrieval::get_property_header(data);
-    std::vector<uint8_t> extracted_body = CIRetrieval::get_property_body_in_this_chunk(data);
+    std::vector<uint8_t> extracted_header = CIRetrieval::getPropertyHeader(data);
+    std::vector<uint8_t> extracted_body = CIRetrieval::getPropertyBodyInThisChunk(data);
     
     // Header and body sizes should be reasonable
     EXPECT_GT(extracted_header.size(), 0u);
@@ -111,5 +111,5 @@ TEST(MessageSerializationTest, MessageReconstruction) {
     GetPropertyDataReply reconstructed(reconstructed_common, extracted_request_id, extracted_header, extracted_body);
     
     // Reconstructed reply requestId should match original
-    EXPECT_EQ(reconstructed.get_request_id(), test_request_id);
+    EXPECT_EQ(reconstructed.getRequestId(), test_request_id);
 }

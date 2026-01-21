@@ -9,6 +9,9 @@
 #include <umppi/details/PlayerCommon.hpp>
 #include <umppi/details/MidiPlayerTimer.hpp>
 #include <umppi/details/Ump.hpp>
+#include <umppi/details/UmpFactory.hpp>
+#include <umppi/details/UmpRetriever.hpp>
+#include <umppi/details/UmpTranslator.hpp>
 
 #include <umppi/details/Midi1Message.hpp>
 #include <umppi/details/Midi1Event.hpp>

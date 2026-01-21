@@ -1,13 +1,13 @@
 #include "midicci/midicci.hpp"
-#include "midicci/details/ump/UmpFactory.hpp"
-#include "midicci/details/ump/UmpRetriever.hpp"
+#include <umppi/details/UmpFactory.hpp>
+#include <umppi/details/UmpRetriever.hpp>
 #include <random>
 #include <iomanip>
 #include <sstream>
 
 namespace midicci::musicdevice {
 
-std::unique_ptr<MidiCISession> create_midi_ci_session(
+std::unique_ptr<MidiCISession> createMidiCiSession(
     const MidiCISessionSource& source,
     uint32_t muid,
     MidiCIDeviceConfiguration config,
@@ -23,13 +23,13 @@ std::unique_ptr<MidiCISession> create_midi_ci_session(
     auto device = std::make_unique<MidiCIDevice>(muid, config, logger);
     
     // Set up MIDI-CI output sender
-    device->set_sysex_sender([source](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+    device->setSysexSender([source](uint8_t group, const std::vector<uint8_t>& data) -> bool {
         if (source.transport_protocol == MidiTransportProtocol::UMP) {
             // Convert SysEx data to UMP SysEx7 packets
-            auto ump_packets = ump::UmpFactory::sysex7(group, data);
+            auto ump_packets = umppi::UmpFactory::sysex7(group, data);
 
             // Send all UMP packets in a single call
-            source.output_sender((uint8_t*) ump_packets.data(), 0, ump_packets.size() * sizeof(ump::Ump), 0);
+            source.output_sender((uint8_t*) ump_packets.data(), 0, ump_packets.size() * sizeof(umppi::Ump), 0);
         } else {
             // MIDI 1.0: add SysEx start byte
             std::vector<uint8_t> midi1_data;
@@ -58,9 +58,9 @@ MidiCISession::MidiCISession(
     // Set up MIDI input processing
     input_listener_adder([this, input_protocol](const uint8_t* data, size_t start, size_t length, uint64_t timestamp) {
         if (input_protocol == MidiTransportProtocol::UMP) {
-            process_ump_input(data, start, length);
+            processUmpInput(data, start, length);
         } else {
-            process_midi1_input(data, start, length);
+            processMidi1Input(data, start, length);
         }
     });
     
@@ -68,11 +68,11 @@ MidiCISession::MidiCISession(
     // This requires access to device message handling which may need interface additions
 }
 
-void MidiCISession::process_ci_message(uint8_t group, const std::vector<uint8_t>& data) {
+void MidiCISession::processCiMessage(uint8_t group, const std::vector<uint8_t>& data) {
     if (data.empty()) return;
     
     // Log the message
-    auto logger = device_->get_logger();
+    auto logger = device_->getLogger();
     if (logger) {
         std::stringstream ss;
         ss << "[received CI SysEx (grp:" << static_cast<int>(group) << ")] ";
@@ -85,8 +85,8 @@ void MidiCISession::process_ci_message(uint8_t group, const std::vector<uint8_t>
     device_->processInput(group, data);
 }
 
-void MidiCISession::log_midi_message_report_chunk(const std::vector<uint8_t>& data) {
-    auto logger = device_->get_logger();
+void MidiCISession::logMidiMessageReportChunk(const std::vector<uint8_t>& data) {
+    auto logger = device_->getLogger();
     if (logger) {
         std::stringstream ss;
         ss << "[received MIDI (buffered)] ";
@@ -97,7 +97,7 @@ void MidiCISession::log_midi_message_report_chunk(const std::vector<uint8_t>& da
     }
 }
 
-void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_t length) {
+void MidiCISession::processMidi1Input(const uint8_t* data, size_t start, size_t length) {
     if (length <= 3) return;
     
     // Check for MIDI-CI SysEx message
@@ -107,14 +107,14 @@ void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_
         
         // Extract CI message (skip F0, include content, skip F7)
         std::vector<uint8_t> ci_data(data + start + 1, data + start + length - 1);
-        process_ci_message(0, ci_data);  // Group is always 0 for MIDI 1.0
+        processCiMessage(0, ci_data);  // Group is always 0 for MIDI 1.0
     } else {
         // May be part of MIDI Message Report
         if (receiving_midi_message_reports_) {
             uint8_t channel = data[start] & 0x0F;
             if (channel != last_chunked_message_channel_) {
                 if (!chunked_messages_.empty()) {
-                    log_midi_message_report_chunk(chunked_messages_);
+                    logMidiMessageReportChunk(chunked_messages_);
                 }
                 chunked_messages_.clear();
                 last_chunked_message_channel_ = channel;
@@ -123,7 +123,7 @@ void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_
                                    data + start, data + start + length);
         } else {
             // Log unexpected MIDI message
-            auto logger = device_->get_logger();
+            auto logger = device_->getLogger();
             if (logger) {
                 std::stringstream ss;
                 ss << "[received MIDI1] ";
@@ -136,57 +136,57 @@ void MidiCISession::process_midi1_input(const uint8_t* data, size_t start, size_
     }
 }
 
-void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t length) {
+void MidiCISession::processUmpInput(const uint8_t* data, size_t start, size_t length) {
     // Parse UMP messages from bytes
-    auto umps = ump::parse_umps_from_bytes(data, start, length);
+    auto umps = umppi::parseUmpsFromBytes(data, start, length);
     
     for (const auto& ump : umps) {
-        auto msg_type = ump.get_message_type();
-        
-        if (msg_type == ump::MessageType::SYSEX7) {
-            auto status = static_cast<ump::BinaryChunkStatus>(ump.get_status_code());
-            
-            if (status == ump::BinaryChunkStatus::START) {
+        auto msg_type = ump.getMessageType();
+
+        if (msg_type == umppi::MessageType::SYSEX7) {
+            auto status = ump.getBinaryChunkStatus();
+
+            if (status == umppi::BinaryChunkStatus::START) {
                 buffered_sysex7_.clear();
             }
-            
-            midicci::ump::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
+
+            umppi::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
                 buffered_sysex7_.insert(buffered_sysex7_.end(), data.begin(), data.end());
             }};
-            midicci::ump::UmpRetriever::get_sysex7_data(outputter, {ump});
+            umppi::UmpRetriever::getSysex7Data(outputter, {ump});
 
-            if (status == ump::BinaryChunkStatus::END || 
-                status == ump::BinaryChunkStatus::COMPLETE_PACKET) {
-                
+            if (status == umppi::BinaryChunkStatus::END ||
+                status == umppi::BinaryChunkStatus::COMPLETE_PACKET) {
+
                 if (buffered_sysex7_.size() > 2 &&
                     buffered_sysex7_[0] == UNIVERSAL_SYSEX &&
                     buffered_sysex7_[2] == SYSEX_SUB_ID_MIDI_CI) {
-                    process_ci_message(ump.get_group(), buffered_sysex7_);
+                    processCiMessage(ump.getGroup(), buffered_sysex7_);
                     buffered_sysex7_.clear();
                 }
             }
             continue;
         }
-        
-        if (msg_type == ump::MessageType::SYSEX8_MDS) {
-            auto status = static_cast<ump::BinaryChunkStatus>(ump.get_status_code());
-            
-            if (status == ump::BinaryChunkStatus::START) {
+
+        if (msg_type == umppi::MessageType::SYSEX8_MDS) {
+            auto status = ump.getBinaryChunkStatus();
+
+            if (status == umppi::BinaryChunkStatus::START) {
                 buffered_sysex8_.clear();
             }
-            
-            midicci::ump::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
+
+            umppi::UmpRetriever::DataOutputter outputter{[&](std::vector<uint8_t> data) {
                 buffered_sysex8_.insert(buffered_sysex8_.end(), data.begin(), data.end());
             }};
-            midicci::ump::UmpRetriever::get_sysex8_data(outputter, {ump});
+            umppi::UmpRetriever::getSysex8Data(outputter, {ump});
 
-            if (status == ump::BinaryChunkStatus::END || 
-                status == ump::BinaryChunkStatus::COMPLETE_PACKET) {
-                
+            if (status == umppi::BinaryChunkStatus::END ||
+                status == umppi::BinaryChunkStatus::COMPLETE_PACKET) {
+
                 if (buffered_sysex8_.size() > 2 &&
                     buffered_sysex8_[0] == UNIVERSAL_SYSEX &&
                     buffered_sysex8_[2] == SYSEX_SUB_ID_MIDI_CI) {
-                    process_ci_message(ump.get_group(), buffered_sysex8_);
+                    processCiMessage(ump.getGroup(), buffered_sysex8_);
                     buffered_sysex8_.clear();
                 }
             }
@@ -200,7 +200,7 @@ void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t 
             
             if (channel != last_chunked_message_channel_) {
                 if (!chunked_messages_.empty()) {
-                    log_midi_message_report_chunk(chunked_messages_);
+                    logMidiMessageReportChunk(chunked_messages_);
                 }
                 chunked_messages_.clear();
                 last_chunked_message_channel_ = channel;
@@ -208,12 +208,12 @@ void MidiCISession::process_ump_input(const uint8_t* data, size_t start, size_t 
             
             // TODO: Convert UMP to platform bytes when method is available
             // For now, add raw UMP data
-            size_t ump_size = ump.get_size_in_bytes();
+            size_t ump_size = ump.getSizeInBytes();
             const uint8_t* ump_bytes = reinterpret_cast<const uint8_t*>(&ump);
             chunked_messages_.insert(chunked_messages_.end(), ump_bytes, ump_bytes + ump_size);
         } else {
             // Log unexpected UMP message
-            auto logger = device_->get_logger();
+            auto logger = device_->getLogger();
             if (logger) {
                 std::stringstream ss;
                 ss << "[received UMP] ";

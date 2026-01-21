@@ -148,17 +148,17 @@ std::vector<MidiCIStateEntry> StandardProperties::parseStateList(const std::vect
         std::string json_str(data.begin(), data.end());
         auto json = JsonValue::parse(json_str);
         
-        if (!json.is_array()) {
+        if (!json.isArray()) {
             return result;
         }
         
-        const auto& json_array = json.as_array();
+        const auto& json_array = json.asArray();
         for (const auto& item : json_array) {
-            if (!item.is_object()) {
+            if (!item.isObject()) {
                 continue;
             }
             
-            const auto& obj = item.as_object();
+            const auto& obj = item.asObject();
             
             std::string title;
             std::string stateId;
@@ -168,33 +168,33 @@ std::vector<MidiCIStateEntry> StandardProperties::parseStateList(const std::vect
             std::optional<int32_t> size;
             
             auto it = obj.find(StatePropertyNames::TITLE);
-            if (it != obj.end() && it->second.is_string()) {
-                title = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                title = it->second.asString();
             }
             
             it = obj.find(StatePropertyNames::STATE_ID);
-            if (it != obj.end() && it->second.is_string()) {
-                stateId = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                stateId = it->second.asString();
             }
             
             it = obj.find(StatePropertyNames::STATE_REV);
-            if (it != obj.end() && it->second.is_string()) {
-                stateRev = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                stateRev = it->second.asString();
             }
             
             it = obj.find(StatePropertyNames::TIMESTAMP);
-            if (it != obj.end() && it->second.is_number()) {
-                timestamp = static_cast<int64_t>(it->second.as_number());
+            if (it != obj.end() && it->second.isNumber()) {
+                timestamp = static_cast<int64_t>(it->second.asNumber());
             }
             
             it = obj.find(StatePropertyNames::DESCRIPTION);
-            if (it != obj.end() && it->second.is_string()) {
-                description = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                description = it->second.asString();
             }
             
             it = obj.find(StatePropertyNames::SIZE);
-            if (it != obj.end() && it->second.is_number()) {
-                size = it->second.as_int();
+            if (it != obj.end() && it->second.isNumber()) {
+                size = it->second.asInt();
             }
             
             result.emplace_back(title, stateId, stateRev, timestamp, description, size);
@@ -213,17 +213,17 @@ std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vecto
         std::string json_str(data.begin(), data.end());
         auto json = JsonValue::parse(json_str);
         
-        if (!json.is_array()) {
+        if (!json.isArray()) {
             return result;
         }
         
-        const auto& json_array = json.as_array();
+        const auto& json_array = json.asArray();
         for (const auto& item : json_array) {
-            if (!item.is_object()) {
+            if (!item.isObject()) {
                 continue;
             }
             
-            const auto& obj = item.as_object();
+            const auto& obj = item.asObject();
             
             std::string title;
             std::string ctrlType;
@@ -243,27 +243,27 @@ std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vecto
             bool defaultCCMap = false;
             
             auto it = obj.find(ControlPropertyNames::TITLE);
-            if (it != obj.end() && it->second.is_string()) {
-                title = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                title = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::CTRL_TYPE);
-            if (it != obj.end() && it->second.is_string()) {
-                ctrlType = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                ctrlType = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::DESCRIPTION);
-            if (it != obj.end() && it->second.is_string()) {
-                description = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                description = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::CTRL_INDEX);
-            if (it != obj.end() && it->second.is_array()) {
-                const auto& index_array = it->second.as_array();
+            if (it != obj.end() && it->second.isArray()) {
+                const auto& index_array = it->second.asArray();
                 ctrlIndex.clear();
                 for (const auto& index_val : index_array) {
-                    if (index_val.is_number()) {
-                        ctrlIndex.push_back(static_cast<uint8_t>(index_val.as_int()));
+                    if (index_val.isNumber()) {
+                        ctrlIndex.push_back(static_cast<uint8_t>(index_val.asInt()));
                     }
                 }
                 if (ctrlIndex.empty()) {
@@ -272,62 +272,62 @@ std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vecto
             }
             
             it = obj.find(ControlPropertyNames::CHANNEL);
-            if (it != obj.end() && it->second.is_number()) {
-                channel = static_cast<uint8_t>(it->second.as_int());
+            if (it != obj.end() && it->second.isNumber()) {
+                channel = static_cast<uint8_t>(it->second.asInt());
             }
             
             it = obj.find(ControlPropertyNames::PRIORITY);
-            if (it != obj.end() && it->second.is_number()) {
-                priority = static_cast<uint8_t>(it->second.as_int());
+            if (it != obj.end() && it->second.isNumber()) {
+                priority = static_cast<uint8_t>(it->second.asInt());
             }
             
             it = obj.find(ControlPropertyNames::DEFAULT);
-            if (it != obj.end() && it->second.is_number()) {
-                defaultValue = static_cast<uint32_t>(it->second.as_number());
+            if (it != obj.end() && it->second.isNumber()) {
+                defaultValue = static_cast<uint32_t>(it->second.asNumber());
             }
             
             it = obj.find(ControlPropertyNames::TRANSMIT);
-            if (it != obj.end() && it->second.is_string()) {
-                transmit = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                transmit = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::RECOGNIZE);
-            if (it != obj.end() && it->second.is_string()) {
-                recognize = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                recognize = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::NUM_SIG_BITS);
-            if (it != obj.end() && it->second.is_number()) {
-                numSigBits = it->second.as_int();
+            if (it != obj.end() && it->second.isNumber()) {
+                numSigBits = it->second.asInt();
             }
             
             it = obj.find(ControlPropertyNames::PARAM_PATH);
-            if (it != obj.end() && it->second.is_string()) {
-                paramPath = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                paramPath = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::TYPE_HINT);
-            if (it != obj.end() && it->second.is_string()) {
-                typeHint = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                typeHint = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::CTRL_MAP_ID);
-            if (it != obj.end() && it->second.is_string()) {
-                ctrlMapId = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                ctrlMapId = it->second.asString();
             }
             
             it = obj.find(ControlPropertyNames::STEP_COUNT);
-            if (it != obj.end() && it->second.is_number()) {
-                stepCount = it->second.as_int();
+            if (it != obj.end() && it->second.isNumber()) {
+                stepCount = it->second.asInt();
             }
             
             it = obj.find(ControlPropertyNames::MIN_MAX);
-            if (it != obj.end() && it->second.is_array()) {
-                const auto& minmax_array = it->second.as_array();
+            if (it != obj.end() && it->second.isArray()) {
+                const auto& minmax_array = it->second.asArray();
                 minMax.clear();
                 for (const auto& val : minmax_array) {
-                    if (val.is_number()) {
-                        minMax.push_back(static_cast<uint32_t>(val.as_number()));
+                    if (val.isNumber()) {
+                        minMax.push_back(static_cast<uint32_t>(val.asNumber()));
                     }
                 }
                 if (minMax.empty()) {
@@ -336,8 +336,8 @@ std::vector<MidiCIControl> StandardProperties::parseControlList(const std::vecto
             }
             
             it = obj.find(ControlPropertyNames::DEFAULT_CC_MAP);
-            if (it != obj.end() && it->second.is_bool()) {
-                defaultCCMap = it->second.as_bool();
+            if (it != obj.end() && it->second.isBool()) {
+                defaultCCMap = it->second.asBool();
             }
             
             result.emplace_back(title, ctrlType, description, ctrlIndex, channel, priority,
@@ -358,17 +358,17 @@ std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vecto
         std::string json_str(data.begin(), data.end());
         auto json = JsonValue::parse(json_str);
         
-        if (!json.is_array()) {
+        if (!json.isArray()) {
             return result;
         }
         
-        const auto& json_array = json.as_array();
+        const auto& json_array = json.asArray();
         for (const auto& item : json_array) {
-            if (!item.is_object()) {
+            if (!item.isObject()) {
                 continue;
             }
             
-            const auto& obj = item.as_object();
+            const auto& obj = item.asObject();
             
             std::string title;
             std::vector<uint8_t> bankPC;
@@ -376,27 +376,27 @@ std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vecto
             std::optional<std::vector<std::string>> tags;
             
             auto it = obj.find(ProgramPropertyNames::TITLE);
-            if (it != obj.end() && it->second.is_string()) {
-                title = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                title = it->second.asString();
             }
             
             it = obj.find(ProgramPropertyNames::BANK_PC);
-            if (it != obj.end() && it->second.is_array()) {
-                const auto& bankpc_array = it->second.as_array();
+            if (it != obj.end() && it->second.isArray()) {
+                const auto& bankpc_array = it->second.asArray();
                 for (const auto& val : bankpc_array) {
-                    if (val.is_number()) {
-                        bankPC.push_back(static_cast<uint8_t>(val.as_int()));
+                    if (val.isNumber()) {
+                        bankPC.push_back(static_cast<uint8_t>(val.asInt()));
                     }
                 }
             }
             
             it = obj.find(ProgramPropertyNames::CATEGORY);
-            if (it != obj.end() && it->second.is_array()) {
-                const auto& category_array = it->second.as_array();
+            if (it != obj.end() && it->second.isArray()) {
+                const auto& category_array = it->second.asArray();
                 std::vector<std::string> cat_vec;
                 for (const auto& val : category_array) {
-                    if (val.is_string()) {
-                        cat_vec.push_back(val.as_string());
+                    if (val.isString()) {
+                        cat_vec.push_back(val.asString());
                     }
                 }
                 if (!cat_vec.empty()) {
@@ -405,12 +405,12 @@ std::vector<MidiCIProgram> StandardProperties::parseProgramList(const std::vecto
             }
             
             it = obj.find(ProgramPropertyNames::TAGS);
-            if (it != obj.end() && it->second.is_array()) {
-                const auto& tags_array = it->second.as_array();
+            if (it != obj.end() && it->second.isArray()) {
+                const auto& tags_array = it->second.asArray();
                 std::vector<std::string> tags_vec;
                 for (const auto& val : tags_array) {
-                    if (val.is_string()) {
-                        tags_vec.push_back(val.as_string());
+                    if (val.isString()) {
+                        tags_vec.push_back(val.asString());
                     }
                 }
                 if (!tags_vec.empty()) {
@@ -434,29 +434,29 @@ std::vector<MidiCIControlMap> StandardProperties::parseControlMapList(const std:
         std::string json_str(data.begin(), data.end());
         auto json = JsonValue::parse(json_str);
         
-        if (!json.is_array()) {
+        if (!json.isArray()) {
             return result;
         }
         
-        const auto& json_array = json.as_array();
+        const auto& json_array = json.asArray();
         for (const auto& item : json_array) {
-            if (!item.is_object()) {
+            if (!item.isObject()) {
                 continue;
             }
             
-            const auto& obj = item.as_object();
+            const auto& obj = item.asObject();
             
             uint32_t value = 0;
             std::string title;
             
             auto it = obj.find(ControlMapPropertyNames::VALUE);
-            if (it != obj.end() && it->second.is_number()) {
-                value = static_cast<uint32_t>(it->second.as_number());
+            if (it != obj.end() && it->second.isNumber()) {
+                value = static_cast<uint32_t>(it->second.asNumber());
             }
             
             it = obj.find(ControlMapPropertyNames::TITLE);
-            if (it != obj.end() && it->second.is_string()) {
-                title = it->second.as_string();
+            if (it != obj.end() && it->second.isString()) {
+                title = it->second.asString();
             }
             
             result.emplace_back(value, title);
@@ -679,39 +679,39 @@ std::optional<std::vector<uint8_t>> getState(const ObservablePropertyList& prope
 
 // MidiCIDevice getters (delegate to ObservablePropertyList getters)
 std::optional<std::vector<commonproperties::MidiCIStateEntry>> getStateList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getStateList(props);
 }
 
 std::optional<std::vector<commonproperties::MidiCIControl>> getAllCtrlList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getAllCtrlList(props);
 }
 
 std::optional<std::vector<commonproperties::MidiCIControl>> getChCtrlList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getChCtrlList(props);
 }
 
 std::optional<std::vector<commonproperties::MidiCIControlMap>> getCtrlMapList(const MidiCIDevice& device, const std::string& control) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getCtrlMapList(props, control);
 }
 
 std::optional<std::vector<commonproperties::MidiCIProgram>> getProgramList(const MidiCIDevice& device) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getProgramList(props);
 }
 
 std::optional<std::vector<uint8_t>> getState(const MidiCIDevice& device, const std::string& stateId) {
-    auto &props = device.get_property_host_facade().get_properties();
+    auto &props = device.getPropertyHostFacade().getProperties();
     return getState(props, stateId);
 }
 
 // MidiCIDevice setters (use PropertyHostFacade setPropertyValue)
 void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIStateEntry>>& stateList) {
     auto json_data = commonproperties::StandardProperties::toJson(stateList.value_or(std::vector<commonproperties::MidiCIStateEntry>{}));
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::STATE_LIST, 
         "", // empty resId
         json_data, 
@@ -721,7 +721,7 @@ void setStateList(MidiCIDevice& device, const std::optional<std::vector<commonpr
 
 void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
     auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::ALL_CTRL_LIST, 
         "", // empty resId
         json_data, 
@@ -731,7 +731,7 @@ void setAllCtrlList(MidiCIDevice& device, const std::optional<std::vector<common
 
 void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIControl>>& controlList) {
     auto json_data = commonproperties::StandardProperties::toJson(controlList.value_or(std::vector<commonproperties::MidiCIControl>{}));
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::CH_CTRL_LIST, 
         "", // empty resId
         json_data, 
@@ -741,7 +741,7 @@ void setChCtrlList(MidiCIDevice& device, const std::optional<std::vector<commonp
 
 void setCtrlMapList(MidiCIDevice& device, const std::string& control, const std::optional<std::vector<commonproperties::MidiCIControlMap>>& controlMapList) {
     auto json_data = commonproperties::StandardProperties::toJson(controlMapList.value_or(std::vector<commonproperties::MidiCIControlMap>{}));
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::CTRL_MAP_LIST, 
         control,
         json_data, 
@@ -751,7 +751,7 @@ void setCtrlMapList(MidiCIDevice& device, const std::string& control, const std:
 
 void setProgramList(MidiCIDevice& device, const std::optional<std::vector<commonproperties::MidiCIProgram>>& programList) {
     auto json_data = commonproperties::StandardProperties::toJson(programList.value_or(std::vector<commonproperties::MidiCIProgram>{}));
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::PROGRAM_LIST, 
         "", // empty resId
         json_data, 
@@ -760,7 +760,7 @@ void setProgramList(MidiCIDevice& device, const std::optional<std::vector<common
 }
 
 void setState(MidiCIDevice& device, const std::string& stateId, const std::vector<uint8_t>& data) {
-    device.get_property_host_facade().setPropertyValue(
+    device.getPropertyHostFacade().setPropertyValue(
         commonproperties::StandardPropertyNames::STATE,
         stateId,
         data,

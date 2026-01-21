@@ -15,7 +15,7 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     prop1->canSet = "partial";
     prop1->canSubscribe = true;
     
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
     host.addMetadata(std::move(prop1));
     
     JsonValue fooValue("FOO");
@@ -26,44 +26,44 @@ TEST(PropertyFacadesTest, propertyExchange1) {
     
     device1.sendDiscovery();
     
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     ASSERT_GT(connections.size(), 0) << "No connections established after discovery";
     
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
     
-    auto& client = conn->get_property_client_facade();
+    auto& client = conn->getPropertyClientFacade();
 
-    client.send_get_property_data(id, "", "");
+    client.sendGetPropertyData(id, "", "");
 
     JsonValue barValue("BAR");
     std::string barJson = barValue.serialize();
     std::vector<uint8_t> barBytes(barJson.begin(), barJson.end());
     
-    client.send_set_property_data(id, "", barBytes);
+    client.sendSetPropertyData(id, "", barBytes);
     
-    auto values = host.get_properties().getValues();
+    auto values = host.getProperties().getValues();
     auto it = std::find_if(values.begin(), values.end(),
         [&id](const PropertyValue& pv) { return pv.id == id; });
     ASSERT_NE(it, values.end()) << "Property " << id << " not found";
     EXPECT_EQ(barBytes, it->body) << "Host property value not updated";
 
-    client.send_subscribe_property(id, "", "");
-    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host";
+    client.sendSubscribeProperty(id, "", "");
+    EXPECT_EQ(1, host.getSubscriptions().size()) << "Subscription not registered on host";
 
-    client.send_unsubscribe_property(id, "");
-    EXPECT_EQ(0, host.get_subscriptions().size()) << "Subscription not removed after unsubscription";
+    client.sendUnsubscribeProperty(id, "");
+    EXPECT_EQ(0, host.getSubscriptions().size()) << "Subscription not removed after unsubscription";
     
-    client.send_subscribe_property(id, "", "");
-    EXPECT_EQ(1, host.get_subscriptions().size()) << "Subscription not registered on host, 2nd time";
-    auto subscriptions = host.get_subscriptions();
+    client.sendSubscribeProperty(id, "", "");
+    EXPECT_EQ(1, host.getSubscriptions().size()) << "Subscription not registered on host, 2nd time";
+    auto subscriptions = host.getSubscriptions();
     if (!subscriptions.empty()) {
         auto sub = subscriptions[0];
-        std::cout << "Before host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
+        std::cout << "Before host shutdown - host subscriptions: " << host.getSubscriptions().size() << ", client subscriptions: " << client.getSubscriptions().size() << std::endl;
         host.shutdownSubscription(sub.subscriber_muid, sub.property_id, sub.res_id);
-        std::cout << "After host shutdown - host subscriptions: " << host.get_subscriptions().size() << ", client subscriptions: " << client.get_subscriptions().size() << std::endl;
-        EXPECT_EQ(0, client.get_subscriptions().size()) << "Client subscriptions not cleared after host shutdown";
-        EXPECT_EQ(0, host.get_subscriptions().size()) << "Host subscriptions not cleared after shutdown";
+        std::cout << "After host shutdown - host subscriptions: " << host.getSubscriptions().size() << ", client subscriptions: " << client.getSubscriptions().size() << std::endl;
+        EXPECT_EQ(0, client.getSubscriptions().size()) << "Client subscriptions not cleared after host shutdown";
+        EXPECT_EQ(0, host.getSubscriptions().size()) << "Host subscriptions not cleared after shutdown";
     }
 }
 
@@ -75,11 +75,11 @@ TEST(PropertyFacadesTest, propertyExchange2) {
     
     device1.sendDiscovery();
     
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     ASSERT_GT(connections.size(), 0) << "No connections established";
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
     
-    auto& client = conn->get_property_client_facade();
-    client.send_get_property_data(PropertyResourceNames::CHANNEL_LIST, "", "");
+    auto& client = conn->getPropertyClientFacade();
+    client.sendGetPropertyData(PropertyResourceNames::CHANNEL_LIST, "", "");
 }

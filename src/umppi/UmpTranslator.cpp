@@ -1,9 +1,9 @@
-#include "midicci/details/ump/UmpTranslator.hpp"
-#include "midicci/details/ump/UmpFactory.hpp"
+#include <umppi/details/UmpTranslator.hpp>
+#include <umppi/details/UmpFactory.hpp>
 #include <algorithm>
 
-namespace midicci {
-namespace ump {
+namespace umppi {
+
 
 int UmpTranslator::translateUmpToMidi1Bytes(std::vector<uint8_t>& dst,
                                             const std::vector<Ump>& src,
@@ -14,13 +14,13 @@ int UmpTranslator::translateUmpToMidi1Bytes(std::vector<uint8_t>& dst,
     int deltaTime = 0;
     
     for (const auto& ump : src) {
-        if (ump.is_delta_clockstamp()) {
-            deltaTime += ump.get_delta_clockstamp();
+        if (ump.isDeltaClockstamp()) {
+            deltaTime += ump.getDeltaClockstamp();
             continue;
         }
-        if (ump.is_jr_timestamp()) {
+        if (ump.isJRTimestamp()) {
             if (!context.skipDeltaTime) {
-                deltaTime += ump.get_jr_timestamp();
+                deltaTime += ump.getJRTimestamp();
             }
             continue;
         }
@@ -35,8 +35,8 @@ int UmpTranslator::translateUmpToMidi1Bytes(std::vector<uint8_t>& dst,
         dst.resize(oldSize + messageSize); // Trim to actual size
         
         // Handle SysEx7 completion
-        if (ump.get_message_type() == MessageType::SYSEX7) {
-            BinaryChunkStatus status = ump.get_binary_chunk_status();
+        if (ump.getMessageType() == MessageType::SYSEX7) {
+            BinaryChunkStatus status = ump.getBinaryChunkStatus();
             if (status == BinaryChunkStatus::END || status == BinaryChunkStatus::COMPLETE_PACKET) {
                 // Add complete SysEx message
                 size_t sysexStart = dst.size();
@@ -60,7 +60,7 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
                                                   int deltaTime,
                                                   std::vector<uint8_t>* sysex) {
     int midiEventSize = 0;
-    uint8_t statusCode = ump.get_status_code();
+    uint8_t statusCode = ump.getStatusCode();
     size_t offset = dstOffset;
     
     auto addDeltaTimeAndStatus = [&]() {
@@ -68,10 +68,10 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
             // Simplified delta time encoding (just one byte for now)
             dst[offset++] = static_cast<uint8_t>(deltaTime & 0x7F);
         }
-        dst[offset++] = ump.get_status_byte();
+        dst[offset++] = ump.getStatusByte();
     };
     
-    switch (ump.get_message_type()) {
+    switch (ump.getMessageType()) {
         case MessageType::SYSTEM:
             addDeltaTimeAndStatus();
             midiEventSize = 1;
@@ -79,7 +79,7 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
                 case 0xF1:
                 case 0xF3:
                 case 0xF9:
-                    dst[offset++] = ump.get_midi1_msb();
+                    dst[offset++] = ump.getMidi1Msb();
                     midiEventSize = 2;
                     break;
             }
@@ -88,14 +88,14 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
         case MessageType::MIDI1:
             addDeltaTimeAndStatus();
             midiEventSize = 3;
-            dst[offset++] = ump.get_midi1_msb();
+            dst[offset++] = ump.getMidi1Msb();
             switch (statusCode) {
                 case MidiChannelStatus::PROGRAM:
                 case MidiChannelStatus::CAF:
                     midiEventSize = 2;
                     break;
                 default:
-                    dst[offset++] = ump.get_midi1_lsb();
+                    dst[offset++] = ump.getMidi1Lsb();
                     break;
             }
             break;
@@ -104,41 +104,41 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
             switch (statusCode) {
                 case MidiChannelStatus::RPN: {
                     midiEventSize = 12;
-                    uint8_t channel = ump.get_channel_in_group();
+                    uint8_t channel = ump.getChannelInGroup();
                     uint8_t ccStatus = channel + MidiChannelStatus::CC;
                     
                     dst[offset + 0] = ccStatus;
                     dst[offset + 1] = MidiCC::RPN_MSB;
-                    dst[offset + 2] = ump.get_midi2_rpn_msb();
+                    dst[offset + 2] = ump.getMidi2RpnMsb();
                     dst[offset + 3] = ccStatus;
                     dst[offset + 4] = MidiCC::RPN_LSB;
-                    dst[offset + 5] = ump.get_midi2_rpn_lsb();
+                    dst[offset + 5] = ump.getMidi2RpnLsb();
                     dst[offset + 6] = ccStatus;
                     dst[offset + 7] = MidiCC::DTE_MSB;
-                    dst[offset + 8] = static_cast<uint8_t>((ump.get_midi2_rpn_data() >> 25) & 0x7F);
+                    dst[offset + 8] = static_cast<uint8_t>((ump.getMidi2RpnData() >> 25) & 0x7F);
                     dst[offset + 9] = ccStatus;
                     dst[offset + 10] = MidiCC::DTE_LSB;
-                    dst[offset + 11] = static_cast<uint8_t>((ump.get_midi2_rpn_data() >> 18) & 0x7F);
+                    dst[offset + 11] = static_cast<uint8_t>((ump.getMidi2RpnData() >> 18) & 0x7F);
                     break;
                 }
                 
                 case MidiChannelStatus::NRPN: {
                     midiEventSize = 12;
-                    uint8_t channel = ump.get_channel_in_group();
+                    uint8_t channel = ump.getChannelInGroup();
                     uint8_t ccStatus = channel + MidiChannelStatus::CC;
                     
                     dst[offset + 0] = ccStatus;
                     dst[offset + 1] = MidiCC::NRPN_MSB;
-                    dst[offset + 2] = ump.get_midi2_nrpn_msb();
+                    dst[offset + 2] = ump.getMidi2NrpnMsb();
                     dst[offset + 3] = ccStatus;
                     dst[offset + 4] = MidiCC::NRPN_LSB;
-                    dst[offset + 5] = ump.get_midi2_nrpn_lsb();
+                    dst[offset + 5] = ump.getMidi2NrpnLsb();
                     dst[offset + 6] = ccStatus;
                     dst[offset + 7] = MidiCC::DTE_MSB;
-                    dst[offset + 8] = static_cast<uint8_t>((ump.get_midi2_nrpn_data() >> 25) & 0x7F);
+                    dst[offset + 8] = static_cast<uint8_t>((ump.getMidi2NrpnData() >> 25) & 0x7F);
                     dst[offset + 9] = ccStatus;
                     dst[offset + 10] = MidiCC::DTE_LSB;
-                    dst[offset + 11] = static_cast<uint8_t>((ump.get_midi2_nrpn_data() >> 18) & 0x7F);
+                    dst[offset + 11] = static_cast<uint8_t>((ump.getMidi2NrpnData() >> 18) & 0x7F);
                     break;
                 }
                 
@@ -146,40 +146,40 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
                 case MidiChannelStatus::NOTE_ON:
                     addDeltaTimeAndStatus();
                     midiEventSize = 3;
-                    dst[offset++] = ump.get_midi2_note();
-                    dst[offset++] = static_cast<uint8_t>(ump.get_midi2_velocity16() / 0x200);
+                    dst[offset++] = ump.getMidi2Note();
+                    dst[offset++] = static_cast<uint8_t>(ump.getMidi2Velocity16() / 0x200);
                     break;
                     
                 case MidiChannelStatus::PAF:
                     addDeltaTimeAndStatus();
                     midiEventSize = 3;
-                    dst[offset++] = ump.get_midi2_note();
-                    dst[offset++] = static_cast<uint8_t>(ump.get_midi2_paf_data() / 0x2000000U);
+                    dst[offset++] = ump.getMidi2Note();
+                    dst[offset++] = static_cast<uint8_t>(ump.getMidi2PafData() / 0x2000000U);
                     break;
                     
                 case MidiChannelStatus::CC:
                     addDeltaTimeAndStatus();
                     midiEventSize = 3;
-                    dst[offset++] = ump.get_midi2_cc_index();
-                    dst[offset++] = static_cast<uint8_t>(ump.get_midi2_cc_data() / 0x2000000U);
+                    dst[offset++] = ump.getMidi2CcIndex();
+                    dst[offset++] = static_cast<uint8_t>(ump.getMidi2CcData() / 0x2000000U);
                     break;
                     
                 case MidiChannelStatus::PROGRAM: {
-                    if (ump.get_midi2_program_options() & MidiProgramChangeOptions::BANK_VALID) {
+                    if (ump.getMidi2ProgramOptions() & MidiProgramChangeOptions::BANK_VALID) {
                         midiEventSize = 8;
-                        uint8_t channel = ump.get_channel_in_group();
+                        uint8_t channel = ump.getChannelInGroup();
                         dst[offset + 0] = channel + MidiChannelStatus::CC;
                         dst[offset + 1] = MidiCC::BANK_SELECT;
-                        dst[offset + 2] = ump.get_midi2_program_bank_msb();
+                        dst[offset + 2] = ump.getMidi2ProgramBankMsb();
                         dst[offset + 3] = channel + MidiChannelStatus::CC;
                         dst[offset + 4] = MidiCC::BANK_SELECT_LSB;
-                        dst[offset + 5] = ump.get_midi2_program_bank_lsb();
+                        dst[offset + 5] = ump.getMidi2ProgramBankLsb();
                         dst[offset + 6] = channel + MidiChannelStatus::PROGRAM;
-                        dst[offset + 7] = ump.get_midi2_program_program();
+                        dst[offset + 7] = ump.getMidi2ProgramProgram();
                     } else {
                         midiEventSize = 2;
-                        dst[offset + 0] = ump.get_channel_in_group() + MidiChannelStatus::PROGRAM;
-                        dst[offset + 1] = ump.get_midi2_program_program();
+                        dst[offset + 0] = ump.getChannelInGroup() + MidiChannelStatus::PROGRAM;
+                        dst[offset + 1] = ump.getMidi2ProgramProgram();
                     }
                     break;
                 }
@@ -187,13 +187,13 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
                 case MidiChannelStatus::CAF:
                     addDeltaTimeAndStatus();
                     midiEventSize = 2;
-                    dst[offset++] = static_cast<uint8_t>(ump.get_midi2_caf_data() / 0x2000000U);
+                    dst[offset++] = static_cast<uint8_t>(ump.getMidi2CafData() / 0x2000000U);
                     break;
                     
                 case MidiChannelStatus::PITCH_BEND: {
                     addDeltaTimeAndStatus();
                     midiEventSize = 3;
-                    uint32_t pitchBendV1 = ump.get_midi2_pitch_bend_data() / 0x40000U;
+                    uint32_t pitchBendV1 = ump.getMidi2PitchBendData() / 0x40000U;
                     // Note: MIDI1 pitch bend is little endian
                     dst[offset++] = static_cast<uint8_t>(pitchBendV1 & 0x7F);
                     dst[offset++] = static_cast<uint8_t>((pitchBendV1 >> 7) & 0x7F);
@@ -211,7 +211,7 @@ int UmpTranslator::translateSingleUmpToMidi1Bytes(std::vector<uint8_t>& dst,
             midiEventSize = 0;
             if (sysex) {
                 // Extract SysEx data from UMP and add to accumulator
-                uint8_t size = ump.get_sysex7_size();
+                uint8_t size = ump.getSysex7Size();
                 for (int i = 0; i < size && i < 6; ++i) {
                     uint8_t dataByte;
                     if (i == 0) dataByte = (ump.int1 >> 8) & 0x7F;
@@ -309,7 +309,7 @@ int UmpTranslator::translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context
             uint8_t byte3 = (len > 2) ? context.midi1[context.midi1Pos + 2] : 0;
             uint8_t channel = context.midi1[context.midi1Pos] & 0xF;
             
-            if (context.midiProtocol == MidiTransportProtocol::MIDI1) {
+            if (context.midiProtocol == static_cast<int>(MidiTransportProtocol::MIDI1)) {
                 // Generate MIDI1 UMP
                 uint32_t ump = UmpFactory::midi1Message(context.group,
                                                          context.midi1[context.midi1Pos] & 0xF0,
@@ -434,5 +434,5 @@ int UmpTranslator::translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context
     return UmpTranslationResult::OK;
 }
 
-} // namespace ump
+
 } // namespace midicci

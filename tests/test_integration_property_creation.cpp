@@ -10,7 +10,7 @@ protected:
     void SetUp() override {
         config = std::make_unique<midicci::MidiCIDeviceConfiguration>();
         device = std::make_shared<midicci::MidiCIDevice>(12345, *config);
-        property_facade = &device->get_property_host_facade();
+        property_facade = &device->getPropertyHostFacade();
         
         // Track callbacks
         callback_count = 0;
@@ -62,7 +62,7 @@ TEST_F(IntegrationPropertyTest, CreatePropertyAndCheckList) {
     EXPECT_TRUE(found) << "Property ID '" << property_id << "' should be found in property list";
     
     // Verify we can retrieve the metadata
-    auto retrieved = property_facade->get_property_metadata(property_id);
+    auto retrieved = property_facade->getPropertyMetadata(property_id);
     ASSERT_NE(retrieved, nullptr) << "Should be able to retrieve property metadata";
     EXPECT_EQ(retrieved->getPropertyId(), property_id) << "Retrieved property should have correct ID";
 }

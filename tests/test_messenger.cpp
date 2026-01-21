@@ -17,11 +17,11 @@ protected:
 
 TEST_F(MessengerTest, DeviceInitialization) {
     EXPECT_TRUE(device->is_initialized());
-    EXPECT_NE(device->get_muid(), 0);
+    EXPECT_NE(device->getMuid(), 0);
 }
 
 TEST_F(MessengerTest, DeviceInfo) {
-    auto device_info = device->get_device_info();
+    auto device_info = device->getDeviceInfo();
     EXPECT_NE(device_info.manufacturer, 0);
 }
 
@@ -36,7 +36,7 @@ TEST_F(MessengerTest, ProcessInputMidi1Format) {
         0x00, 0x02, 0x00, 0x00, 0x00
     };
     
-    EXPECT_NO_THROW(messenger.process_input(0, midi1_data));
+    EXPECT_NO_THROW(messenger.processInput(0, midi1_data));
 }
 
 TEST_F(MessengerTest, ProcessInputMidi2Format) {
@@ -50,6 +50,6 @@ TEST_F(MessengerTest, ProcessInputMidi2Format) {
         0x00, 0x02, 0x00, 0x00, 0x00
     };
     
-    EXPECT_NO_THROW(messenger.process_input(0, midi2_data));
+    EXPECT_NO_THROW(messenger.processInput(0, midi2_data));
 }
 */

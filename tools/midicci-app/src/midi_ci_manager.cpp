@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-#include <midicci/details/ump/UmpTranslator.hpp>
+#include <umppi/details/UmpTranslator.hpp>
 #include <midicci/details/Message.hpp>
 #include <midicci/details/PropertyValue.hpp>
 
@@ -50,19 +50,19 @@ bool MidiCIManager::initialize(uint32_t muid) {
             *config_,
             [this](const midicci::LogData& log_data) {
                 if (logger_) {
-                    if (log_data.has_message()) {
+                    if (log_data.hasMessage()) {
                         // Log structured MIDI-CI message with proper MUID extraction
-                        const auto& message = log_data.get_message();
-                        auto direction = log_data.is_outgoing ? 
+                        const auto& message = log_data.getMessage();
+                        auto direction = log_data.isOutgoing ? 
                             midicci::keyboard::MessageDirection::Out : 
                             midicci::keyboard::MessageDirection::In;
                         logger_->log_midi_ci_message(message, direction);
                     } else {
                         // Log plain string message
-                        auto direction = log_data.is_outgoing ? 
+                        auto direction = log_data.isOutgoing ? 
                             midicci::keyboard::MessageDirection::Out : 
                             midicci::keyboard::MessageDirection::In;
-                        logger_->log(log_data.get_string(), direction);
+                        logger_->log(log_data.getString(), direction);
                     }
                 }
             }
@@ -73,7 +73,7 @@ bool MidiCIManager::initialize(uint32_t muid) {
         
         // Set up SysEx sender if already provided
         if (sysex_sender_) {
-            device_->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+            device_->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
                 if (sysex_sender_) {
                     return sysex_sender_(group, data);
                 }
@@ -189,7 +189,7 @@ void MidiCIManager::setSysExSender(SysExSender sender) {
     
     if (initialized_ && device_ && sender) {
         // Set up the CI output sender for the device
-        device_->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
+        device_->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
             if (sysex_sender_) {
                 return sysex_sender_(group, data);
             }
@@ -263,7 +263,7 @@ void MidiCIManager::setupDeviceConfiguration() {
 void MidiCIManager::setupCallbacks() {
     if (!device_) return;
 
-    device_->set_property_chunk_callback([this](uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header) {
+    device_->setPropertyChunkCallback([this](uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& header) {
         std::string request_key;
         if (auto mapped = this->getRequestKeyForId(source_muid, request_id)) {
             request_key = *mapped;
@@ -273,11 +273,11 @@ void MidiCIManager::setupCallbacks() {
             if (!this->device_) {
                 return;
             }
-            auto connection = this->device_->get_connection(source_muid);
+            auto connection = this->device_->getConnection(source_muid);
             if (!connection) {
                 return;
             }
-            auto* rules = connection->get_property_client_facade().get_property_rules();
+            auto* rules = connection->getPropertyClientFacade().getPropertyRules();
             if (!rules) {
                 return;
             }
@@ -285,11 +285,11 @@ void MidiCIManager::setupCallbacks() {
                 return;
             }
             try {
-                std::string property_id = rules->get_property_id_for_header(header);
+                std::string property_id = rules->getPropertyIdForHeader(header);
                 if (property_id.empty()) {
                     return;
                 }
-                std::string res_id = rules->get_res_id_for_header(header);
+                std::string res_id = rules->getResIdForHeader(header);
                 request_key = res_id.empty() ? property_id : (property_id + ":" + res_id);
             } catch (const std::exception& e) {
                 std::cerr << "[MIDI-CI ERROR] Failed to parse property chunk header: " << e.what() << std::endl;
@@ -303,35 +303,35 @@ void MidiCIManager::setupCallbacks() {
     });
     
     // Set up message callback for outgoing messages
-    device_->set_message_callback([this](const midicci::Message& message) {
+    device_->setMessageCallback([this](const midicci::Message& message) {
         std::string msgTypeName;
-        switch(message.get_type()) {
+        switch(message.getType()) {
             case midicci::MessageType::DiscoveryInquiry: msgTypeName = "DiscoveryInquiry"; break;
             case midicci::MessageType::DiscoveryReply: msgTypeName = "DiscoveryReply"; break;
             case midicci::MessageType::GetPropertyData: msgTypeName = "GetPropertyData"; break;
             case midicci::MessageType::GetPropertyDataReply: msgTypeName = "GetPropertyDataReply"; break;
-            default: msgTypeName = "Unknown(" + std::to_string(static_cast<int>(message.get_type())) + ")"; break;
+            default: msgTypeName = "Unknown(" + std::to_string(static_cast<int>(message.getType())) + ")"; break;
         }
-        std::cout << "[MIDI-CI SENT] " << msgTypeName << " to MUID: 0x" << std::hex << message.get_destination_muid() << std::dec << std::endl;
+        std::cout << "[MIDI-CI SENT] " << msgTypeName << " to MUID: 0x" << std::hex << message.getDestinationMuid() << std::dec << std::endl;
     });
     
     // Set up message received callback
-    device_->set_message_received_callback([this](const midicci::Message& message) {
-        std::cout << "[UMP-KEYBOARD RECV] Message type: " << static_cast<int>(message.get_type()) << std::endl;
+    device_->setMessageReceivedCallback([this](const midicci::Message& message) {
+        std::cout << "[UMP-KEYBOARD RECV] Message type: " << static_cast<int>(message.getType()) << std::endl;
         
         // Handle Endpoint Reply messages to populate device combobox
-        if (message.get_type() == midicci::MessageType::EndpointReply) {
+        if (message.getType() == midicci::MessageType::EndpointReply) {
             std::cout << "[ENDPOINT REPLY] Processing endpoint reply message" << std::endl;
             
             try {
                 const auto* endpoint_reply = dynamic_cast<const midicci::EndpointReply*>(&message);
                 if (endpoint_reply) {
-                    uint32_t source_muid = endpoint_reply->get_source_muid();
+                    uint32_t source_muid = endpoint_reply->getSourceMuid();
 
                     std::cout << "[ENDPOINT REPLY] Source MUID: 0x" << std::hex << source_muid << std::dec << " (" << source_muid << ")" << std::endl;
 
                     // Extract product_instance_id from EndpointReply data
-                    const auto& data = endpoint_reply->get_data();
+                    const auto& data = endpoint_reply->getData();
                     std::string product_instance_id;
                     if (!data.empty()) {
                         product_instance_id = std::string(data.begin(), data.end());
@@ -347,9 +347,9 @@ void MidiCIManager::setupCallbacks() {
 
                             // Try to get DeviceInfo from the connection
                             if (device_) {
-                                auto connection = device_->get_connection(source_muid);
+                                auto connection = device_->getConnection(source_muid);
                                 if (connection) {
-                                    const auto* device_info = connection->get_device_info();
+                                    const auto* device_info = connection->getDeviceInfo();
                                     if (device_info) {
                                         device.manufacturer = device_info->manufacturer;
                                         device.model = device_info->model;
@@ -393,15 +393,15 @@ void MidiCIManager::setupCallbacks() {
         }
         
         // Handle Discovery Reply messages to populate device list
-        if (message.get_type() == midicci::MessageType::DiscoveryReply) {
+        if (message.getType() == midicci::MessageType::DiscoveryReply) {
             std::cout << "[DISCOVERY REPLY] Processing discovery reply message" << std::endl;
             
             // Try to cast to DiscoveryReply to get device details
             try {
                 const auto* discovery_reply = dynamic_cast<const midicci::DiscoveryReply*>(&message);
                 if (discovery_reply) {
-                    uint32_t source_muid = discovery_reply->get_source_muid();
-                    const auto& device_details = discovery_reply->get_device_details();
+                    uint32_t source_muid = discovery_reply->getSourceMuid();
+                    const auto& device_details = discovery_reply->getDeviceDetails();
                     
                     std::cout << "[DISCOVERY REPLY] Source MUID: 0x" << std::hex << source_muid << std::dec << " (" << source_muid << ")" << std::endl;
                     std::cout << "[DISCOVERY REPLY] Device details - Manufacturer: 0x" << std::hex << device_details.manufacturer << std::dec 
@@ -454,13 +454,13 @@ void MidiCIManager::setupCallbacks() {
     });
     
     // Set up connections changed callback
-    device_->set_connections_changed_callback([this]() {
+    device_->setConnectionsChangedCallback([this]() {
         log("MIDI-CI Connections changed", false); // incoming change notification
         
         // Defer device access to avoid potential re-entrancy or lock inversion
         std::thread([this]() {
             try {
-                auto& connections = device_->get_connections();
+                auto& connections = device_->getConnections();
                 for (const auto& conn_pair : connections) {
                     uint32_t muid = conn_pair.first;
                     std::cout << "[CONNECTIONS CHANGED] Setting up property callbacks for MUID: 0x" << std::hex << muid << std::dec << std::endl;
@@ -476,13 +476,13 @@ void MidiCIManager::setupCallbacks() {
     });
 }
 
-void MidiCIManager::log(const std::string& message, bool is_outgoing) {
-    std::string prefix = is_outgoing ? "[MIDI-CI OUT] " : "[MIDI-CI IN] ";
+void MidiCIManager::log(const std::string& message, bool isOutgoing) {
+    std::string prefix = isOutgoing ? "[MIDI-CI OUT] " : "[MIDI-CI IN] ";
     std::string full_message = prefix + message;
     
     // Log to logger if available
     if (logger_) {
-        auto direction = is_outgoing ? midicci::keyboard::MessageDirection::Out : 
+        auto direction = isOutgoing ? midicci::keyboard::MessageDirection::Out : 
                                       midicci::keyboard::MessageDirection::In;
         logger_->log(full_message, direction);
     }
@@ -505,14 +505,14 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControl>> MidiCIManag
     }
     
     // Get connection to the remote device
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return std::nullopt;
     }
     
     try {
-        auto* properties = connection->get_property_client_facade().get_properties();
+        auto* properties = connection->getPropertyClientFacade().getProperties();
         if (!properties) {
             std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return std::nullopt;
@@ -534,14 +534,14 @@ std::optional<std::vector<midicci::commonproperties::MidiCIProgram>> MidiCIManag
     }
     
     // Get connection to the remote device
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return std::nullopt;
     }
     
     try {
-        auto* properties = connection->get_property_client_facade().get_properties();
+        auto* properties = connection->getPropertyClientFacade().getProperties();
         if (!properties) {
             std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return std::nullopt;
@@ -560,14 +560,14 @@ std::optional<std::vector<midicci::commonproperties::MidiCIControlMap>> MidiCIMa
         return std::nullopt;
     }
 
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return std::nullopt;
     }
 
     try {
-        auto* properties = connection->get_property_client_facade().get_properties();
+        auto* properties = connection->getPropertyClientFacade().getProperties();
         if (!properties) {
             std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return std::nullopt;
@@ -585,7 +585,7 @@ void MidiCIManager::requestCtrlMapList(uint32_t muid, const std::string& ctrlMap
         return;
     }
 
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY REQUEST] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return;
@@ -598,9 +598,9 @@ void MidiCIManager::requestCtrlMapList(uint32_t muid, const std::string& ctrlMap
             return;
         }
         addPendingPropertyRequest(muid, requestKey);
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(CtrlMapList:'" << ctrlMapId << "') to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        auto request_id = property_client.send_get_property_data(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
+        auto request_id = property_client.sendGetPropertyData(StandardPropertyNames::CTRL_MAP_LIST, ctrlMapId);
         registerPropertyRequestId(muid, request_id, requestKey);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestCtrlMapList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -609,7 +609,7 @@ void MidiCIManager::requestCtrlMapList(uint32_t muid, const std::string& ctrlMap
 
 void MidiCIManager::requestAllCtrlList(uint32_t muid) {
     try {
-        auto connection = device_->get_connection(muid);
+        auto connection = device_->getConnection(muid);
         if (!connection) {
             std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
@@ -620,9 +620,9 @@ void MidiCIManager::requestAllCtrlList(uint32_t muid) {
             return;
         }
         addPendingPropertyRequest(muid, StandardPropertyNames::ALL_CTRL_LIST);
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(AllCtrlList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        auto request_id = property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "");
+        auto request_id = property_client.sendGetPropertyData(StandardPropertyNames::ALL_CTRL_LIST, "");
         registerPropertyRequestId(muid, request_id, StandardPropertyNames::ALL_CTRL_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestAllCtrlList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -631,7 +631,7 @@ void MidiCIManager::requestAllCtrlList(uint32_t muid) {
 
 void MidiCIManager::requestProgramList(uint32_t muid) {
     try {
-        auto connection = device_->get_connection(muid);
+        auto connection = device_->getConnection(muid);
         if (!connection) {
             std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
@@ -642,9 +642,9 @@ void MidiCIManager::requestProgramList(uint32_t muid) {
             return;
         }
         addPendingPropertyRequest(muid, StandardPropertyNames::PROGRAM_LIST);
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(ProgramList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        auto request_id = property_client.send_get_property_data(StandardPropertyNames::PROGRAM_LIST, "");
+        auto request_id = property_client.sendGetPropertyData(StandardPropertyNames::PROGRAM_LIST, "");
         registerPropertyRequestId(muid, request_id, StandardPropertyNames::PROGRAM_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestProgramList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -653,7 +653,7 @@ void MidiCIManager::requestProgramList(uint32_t muid) {
 
 void MidiCIManager::requestSaveState(uint32_t muid) {
     try {
-        auto connection = device_->get_connection(muid);
+        auto connection = device_->getConnection(muid);
         if (!connection) {
             std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
@@ -663,10 +663,10 @@ void MidiCIManager::requestSaveState(uint32_t muid) {
             return;
         }
         addPendingPropertyRequest(muid, StandardPropertyNames::STATE);
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(State, fullState) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
 
-        property_client.get_property_data(
+        property_client.getPropertyData(
             StandardPropertyNames::STATE,
             midicci::commonproperties::MidiCIStatePredefinedNames::FULL_STATE,
             [this, &property_client, muid](const GetPropertyDataReply& reply) {
@@ -674,8 +674,8 @@ void MidiCIManager::requestSaveState(uint32_t muid) {
                 this->log("[State Response] Received State property data reply");
 
                 if (this->state_save_callback_) {
-                    auto rules = property_client.get_property_rules();
-                    std::vector<uint8_t> stateData = rules->decode_body(reply.get_header(), reply.get_body());
+                    auto rules = property_client.getPropertyRules();
+                    std::vector<uint8_t> stateData = rules->decodeBody(reply.getHeader(), reply.getBody());
                     this->log("[State Response] State data size: " + std::to_string(stateData.size()) + " bytes");
                     this->state_save_callback_(muid, stateData);
                 }
@@ -695,14 +695,14 @@ std::optional<std::vector<midicci::commonproperties::MidiCIStateEntry>> MidiCIMa
         return std::nullopt;
     }
 
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return std::nullopt;
     }
 
     try {
-        auto* properties = connection->get_property_client_facade().get_properties();
+        auto* properties = connection->getPropertyClientFacade().getProperties();
         if (!properties) {
             std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return std::nullopt;
@@ -723,14 +723,14 @@ std::optional<std::vector<uint8_t>> MidiCIManager::getState(uint32_t muid, const
         return std::nullopt;
     }
 
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY ACCESS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return std::nullopt;
     }
 
     try {
-        auto* properties = connection->get_property_client_facade().get_properties();
+        auto* properties = connection->getPropertyClientFacade().getProperties();
         if (!properties) {
             std::cout << "[PROPERTY ACCESS] No ObservablePropertyList for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return std::nullopt;
@@ -745,7 +745,7 @@ std::optional<std::vector<uint8_t>> MidiCIManager::getState(uint32_t muid, const
 
 void MidiCIManager::requestStateList(uint32_t muid) {
     try {
-        auto connection = device_->get_connection(muid);
+        auto connection = device_->getConnection(muid);
         if (!connection) {
             std::cout << "[PROPERTY REQUEST] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
@@ -756,9 +756,9 @@ void MidiCIManager::requestStateList(uint32_t muid) {
             return;
         }
         addPendingPropertyRequest(muid, StandardPropertyNames::STATE_LIST);
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] GetPropertyData(StateList) to MUID: 0x" << std::hex << muid << std::dec << std::endl;
-        auto request_id = property_client.send_get_property_data(StandardPropertyNames::STATE_LIST, "");
+        auto request_id = property_client.sendGetPropertyData(StandardPropertyNames::STATE_LIST, "");
         registerPropertyRequestId(muid, request_id, StandardPropertyNames::STATE_LIST);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] requestStateList failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
@@ -767,15 +767,15 @@ void MidiCIManager::requestStateList(uint32_t muid) {
 
 void MidiCIManager::sendState(uint32_t muid, const std::string& stateId, const std::vector<uint8_t>& data) {
     try {
-        auto connection = device_->get_connection(muid);
+        auto connection = device_->getConnection(muid);
         if (!connection) {
             std::cout << "[PROPERTY SEND] No connection for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
         }
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         std::cout << "[MIDI-CI SENT] SetPropertyData(State, " << stateId << ") to MUID: 0x" << std::hex << muid << std::dec
                   << " (" << data.size() << " bytes)" << std::endl;
-        property_client.send_set_property_data(StandardPropertyNames::STATE, stateId, data, PropertyDataEncoding::MCODED7);
+        property_client.sendSetPropertyData(StandardPropertyNames::STATE, stateId, data, PropertyDataEncoding::MCODED7);
     } catch (const std::exception& e) {
         std::cerr << "[MIDI-CI ERROR] sendState failed for MUID 0x" << std::hex << muid << std::dec << ": " << e.what() << std::endl;
     }
@@ -788,7 +788,7 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
     }
     
     // Get connection to the remote device
-    auto connection = device_->get_connection(muid);
+    auto connection = device_->getConnection(muid);
     if (!connection) {
         std::cout << "[PROPERTY CALLBACKS] No connection found for MUID: 0x" << std::hex << muid << std::dec << std::endl;
         return;
@@ -796,10 +796,10 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
     
     try {
         // Get the property client facade
-        auto& property_client = connection->get_property_client_facade();
+        auto& property_client = connection->getPropertyClientFacade();
         
         // Get the observable property list  
-        auto* properties = property_client.get_properties();
+        auto* properties = property_client.getProperties();
         if (!properties) {
             std::cout << "[PROPERTY CALLBACKS] No observable property list available for MUID: 0x" << std::hex << muid << std::dec << std::endl;
             return;
@@ -821,9 +821,9 @@ void MidiCIManager::setupPropertyCallbacks(uint32_t muid) {
                 std::cout << "[DEVICE INFO UPDATED] Updating device display name for MUID: 0x" << std::hex << muid << std::dec << std::endl;
 
                 // Update the device info in discovered_devices_
-                auto connection = this->device_->get_connection(muid);
+                auto connection = this->device_->getConnection(muid);
                 if (connection) {
-                    const auto* device_info = connection->get_device_info();
+                    const auto* device_info = connection->getDeviceInfo();
                     if (device_info) {
                         for (auto& device : this->discovered_devices_) {
                             if (device.muid == muid) {

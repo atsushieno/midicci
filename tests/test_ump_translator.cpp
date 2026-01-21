@@ -2,7 +2,7 @@
 #include <midicci/midicci.hpp>
 
 using namespace midicci;
-using namespace midicci::ump;
+using namespace umppi;
 
 class UmpTranslatorTest : public ::testing::Test {
 protected:

@@ -78,7 +78,7 @@ void CIToolRepository::clear_logs() {
     pimpl_->logs_.clear();
 }
 
-uint32_t CIToolRepository::get_muid() const noexcept {
+uint32_t CIToolRepository::getMuid() const noexcept {
     return pimpl_->muid_;
 }
 
@@ -102,8 +102,8 @@ void CIToolRepository::load_config(const std::string& filename) {
                            std::istreambuf_iterator<char>());
         file.close();
         
-        auto json_val = midicci::JsonValue::parse_or_null(content);
-        if (json_val.is_null()) {
+        auto json_val = midicci::JsonValue::parseOrNull(content);
+        if (json_val.isNull()) {
             log("Failed to parse config file: " + filename, MessageDirection::In);
             return;
         }
@@ -116,7 +116,7 @@ void CIToolRepository::load_config(const std::string& filename) {
 
 void CIToolRepository::save_config(const std::string& filename) {
     try {
-        midicci::JsonValue config = midicci::JsonValue::empty_object();
+        midicci::JsonValue config = midicci::JsonValue::emptyObject();
         config["muid"] = midicci::JsonValue(static_cast<int>(pimpl_->muid_));
         
         std::ofstream file(filename);

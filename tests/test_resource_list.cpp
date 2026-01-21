@@ -53,11 +53,11 @@ TEST_F(ResourceListTest, UserDefinedPropertyInResourceList) {
     GetPropertyData request(common, 1, header_bytes);
     
     // Process the request
-    auto reply = facade->process_get_property_data(request);
+    auto reply = facade->processGetPropertyData(request);
     
     // Check the response
-    std::string reply_header_str(reply.get_header().begin(), reply.get_header().end());
-    std::string reply_body_str(reply.get_body().begin(), reply.get_body().end());
+    std::string reply_header_str(reply.getHeader().begin(), reply.getHeader().end());
+    std::string reply_body_str(reply.getBody().begin(), reply.getBody().end());
     
     // Verify that our property is in the ResourceList
     EXPECT_NE(reply_body_str.find(property_id), std::string::npos)
@@ -89,10 +89,10 @@ TEST_F(ResourceListTest, GetUserDefinedPropertyData) {
     std::vector<uint8_t> user_header_bytes(user_header_str.begin(), user_header_str.end());
     
     GetPropertyData user_request(common, 2, user_header_bytes);
-    auto user_reply = facade->process_get_property_data(user_request);
+    auto user_reply = facade->processGetPropertyData(user_request);
     
-    std::string user_reply_header_str(user_reply.get_header().begin(), user_reply.get_header().end());
-    std::string user_reply_body_str(user_reply.get_body().begin(), user_reply.get_body().end());
+    std::string user_reply_header_str(user_reply.getHeader().begin(), user_reply.getHeader().end());
+    std::string user_reply_body_str(user_reply.getBody().begin(), user_reply.getBody().end());
     
     // Verify that we got the expected data
     EXPECT_NE(user_reply_body_str.find("Hello from user property!"), std::string::npos)

@@ -38,11 +38,11 @@ Midi1MachineChannel::Midi1MachineChannel()
 }
 
 int Midi1MachineChannel::getCurrentRPN() const {
-    return (to_unsigned(controls[MidiCC::RPN_MSB]) << 7) + to_unsigned(controls[MidiCC::RPN_LSB]);
+    return (toUnsigned(controls[MidiCC::RPN_MSB]) << 7) + toUnsigned(controls[MidiCC::RPN_LSB]);
 }
 
 int Midi1MachineChannel::getCurrentNRPN() const {
-    return (to_unsigned(controls[MidiCC::NRPN_MSB]) << 7) + to_unsigned(controls[MidiCC::NRPN_LSB]);
+    return (toUnsigned(controls[MidiCC::NRPN_MSB]) << 7) + toUnsigned(controls[MidiCC::NRPN_LSB]);
 }
 
 void Midi1MachineChannel::processDte(uint8_t value, bool isMsb) {
@@ -59,9 +59,9 @@ void Midi1MachineChannel::processDte(uint8_t value, bool isMsb) {
 
     int cur = (*arr)[target];
     if (isMsb) {
-        (*arr)[target] = static_cast<int16_t>((cur & 0x007F) + ((to_unsigned(value) & 0x7F) << 7));
+        (*arr)[target] = static_cast<int16_t>((cur & 0x007F) + ((toUnsigned(value) & 0x7F) << 7));
     } else {
-        (*arr)[target] = static_cast<int16_t>((cur & 0x3F80) + (to_unsigned(value) & 0x7F));
+        (*arr)[target] = static_cast<int16_t>((cur & 0x3F80) + (toUnsigned(value) & 0x7F));
     }
 }
 
@@ -87,17 +87,17 @@ void Midi1Machine::processMessage(const Midi1Message& message) {
 
     switch (statusCode) {
         case MidiChannelStatus::NOTE_ON:
-            channels[channel].noteVelocity[to_unsigned(message.getMsb())] = message.getLsb();
-            channels[channel].noteOnStatus[to_unsigned(message.getMsb())] = true;
+            channels[channel].noteVelocity[toUnsigned(message.getMsb())] = message.getLsb();
+            channels[channel].noteOnStatus[toUnsigned(message.getMsb())] = true;
             break;
 
         case MidiChannelStatus::NOTE_OFF:
-            channels[channel].noteVelocity[to_unsigned(message.getMsb())] = message.getLsb();
-            channels[channel].noteOnStatus[to_unsigned(message.getMsb())] = false;
+            channels[channel].noteVelocity[toUnsigned(message.getMsb())] = message.getLsb();
+            channels[channel].noteOnStatus[toUnsigned(message.getMsb())] = false;
             break;
 
         case MidiChannelStatus::PAF:
-            channels[channel].pafVelocity[to_unsigned(message.getMsb())] = message.getLsb();
+            channels[channel].pafVelocity[toUnsigned(message.getMsb())] = message.getLsb();
             break;
 
         case MidiChannelStatus::CC: {
@@ -127,7 +127,7 @@ void Midi1Machine::processMessage(const Midi1Message& message) {
                     break;
             }
 
-            channels[channel].controls[to_unsigned(ccNumber)] = ccValue;
+            channels[channel].controls[toUnsigned(ccNumber)] = ccValue;
 
             switch (ccNumber) {
                 case MidiCC::OMNI_MODE_OFF:
@@ -156,7 +156,7 @@ void Midi1Machine::processMessage(const Midi1Message& message) {
 
         case MidiChannelStatus::PITCH_BEND:
             channels[channel].pitchbend = static_cast<int16_t>(
-                (to_unsigned(message.getMsb()) << 7) + to_unsigned(message.getLsb())
+                (toUnsigned(message.getMsb()) << 7) + toUnsigned(message.getLsb())
             );
             break;
     }

@@ -5,7 +5,7 @@
 
 namespace midicci::commonproperties {
 
-std::vector<uint8_t> PropertyCommonConverter::encode_to_mcoded7(const std::vector<uint8_t>& bytes) {
+std::vector<uint8_t> PropertyCommonConverter::encodeToMcoded7(const std::vector<uint8_t>& bytes) {
     std::vector<uint8_t> result;
 
     for (size_t i = 0; i < bytes.size(); i += 7) {
@@ -25,7 +25,7 @@ std::vector<uint8_t> PropertyCommonConverter::encode_to_mcoded7(const std::vecto
     return result;
 }
 
-std::vector<uint8_t> PropertyCommonConverter::decode_mcoded7(const std::vector<uint8_t>& bytes) {
+std::vector<uint8_t> PropertyCommonConverter::decodeMcoded7(const std::vector<uint8_t>& bytes) {
     std::vector<uint8_t> result;
 
     for (size_t i = 0; i < bytes.size(); i += 8) {
@@ -44,7 +44,7 @@ std::vector<uint8_t> PropertyCommonConverter::decode_mcoded7(const std::vector<u
     return result;
 }
 
-std::vector<uint8_t> PropertyCommonConverter::encode_zlib(const std::vector<uint8_t>& bytes) {
+std::vector<uint8_t> PropertyCommonConverter::encodeZlib(const std::vector<uint8_t>& bytes) {
     if (bytes.empty()) {
         return {};
     }
@@ -63,7 +63,7 @@ std::vector<uint8_t> PropertyCommonConverter::encode_zlib(const std::vector<uint
     return compressed;
 }
 
-std::vector<uint8_t> PropertyCommonConverter::decode_zlib(const std::vector<uint8_t>& bytes) {
+std::vector<uint8_t> PropertyCommonConverter::decodeZlib(const std::vector<uint8_t>& bytes) {
     if (bytes.empty()) {
         return {};
     }
@@ -89,14 +89,14 @@ std::vector<uint8_t> PropertyCommonConverter::decode_zlib(const std::vector<uint
     throw std::runtime_error("zlib decompression failed");
 }
 
-std::vector<uint8_t> PropertyCommonConverter::decode_zlib_mcoded7(const std::vector<uint8_t>& body) {
-    auto mcoded7_decoded = decode_mcoded7(body);
-    return decode_zlib(mcoded7_decoded);
+std::vector<uint8_t> PropertyCommonConverter::decodeZlibMcoded7(const std::vector<uint8_t>& body) {
+    auto mcoded7_decoded = decodeMcoded7(body);
+    return decodeZlib(mcoded7_decoded);
 }
 
-std::vector<uint8_t> PropertyCommonConverter::encode_to_zlib_mcoded7(const std::vector<uint8_t>& data) {
-    auto zlib_encoded = encode_zlib(data);
-    return encode_to_mcoded7(zlib_encoded);
+std::vector<uint8_t> PropertyCommonConverter::encodeToZlibMcoded7(const std::vector<uint8_t>& data) {
+    auto zlib_encoded = encodeZlib(data);
+    return encodeToMcoded7(zlib_encoded);
 }
 
 } // namespace midicci::commonproperties

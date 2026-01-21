@@ -22,10 +22,6 @@ set(MIDICCI_SOURCES
         midicci/commonproperties/CommonRulesPropertyMetadata.cpp
         midicci/commonproperties/FoundationalResources.cpp
         midicci/commonproperties/StandardProperties.cpp
-        midicci/ump/Ump.cpp
-        midicci/ump/UmpFactory.cpp
-        midicci/ump/UmpRetriever.cpp
-        midicci/ump/UmpTranslator.cpp
         midicci/musicdevice/MidiMachineMessageReporter.cpp
         midicci/musicdevice/MidiCISession.cpp
         midicci/musicdevice/MusicDevice.cpp
@@ -56,8 +52,8 @@ target_include_directories(${MODULE_NAME}_static
 target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
 target_compile_features(${MODULE_NAME}_static PUBLIC cxx_std_20)
 
-target_link_libraries(${MODULE_NAME} PRIVATE zlib)
-target_link_libraries(${MODULE_NAME}_static PRIVATE zlib)
+target_link_libraries(${MODULE_NAME} PUBLIC umppi PRIVATE zlib)
+target_link_libraries(${MODULE_NAME}_static PUBLIC umppi_static PRIVATE zlib)
 
 if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE WIN32_LEAN_AND_MEAN)

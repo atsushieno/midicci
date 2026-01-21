@@ -87,7 +87,7 @@ void LocalDevicePanel::render() {
 
     auto ci_manager = repository_->get_ci_device_manager();
     auto device_model = ci_manager ? ci_manager->get_device_model() : nullptr;
-    if (!device_model || !device_model->get_device()) {
+    if (!device_model || !device_model->getDevice()) {
         ImGui::TextUnformatted("Local device not initialized.");
         return;
     }
@@ -109,17 +109,17 @@ void LocalDevicePanel::ensure_device_config_loaded(const std::shared_ptr<tooling
     if (device_config_loaded_) {
         return;
     }
-    auto device = device_model->get_device();
+    auto device = device_model->getDevice();
     if (!device) {
         return;
     }
-    load_fields_from_config(device->get_config());
+    load_fields_from_config(device->getConfig());
     device_config_loaded_ = true;
 }
 
 void LocalDevicePanel::render_device_configuration(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
-    auto device = device_model->get_device();
-    auto& config = device->get_config();
+    auto device = device_model->getDevice();
+    auto& config = device->getConfig();
 
     ImGui::TextUnformatted("Local Device Configuration");
     ImGui::TextWrapped("Note that each ID byte is in 7 bits. Hex values above 0x80 per byte are invalid.");
@@ -238,7 +238,7 @@ void LocalDevicePanel::render_profiles_section(const std::shared_ptr<tooling::CI
         new_profile_channels_ = std::clamp(new_profile_channels_, 1, 16);
 
         if (ImGui::Button("Add Profile")) {
-            add_profile(device_model);
+            addProfile(device_model);
         }
         ImGui::SameLine();
         if (ImGui::Button("Add Target")) {
@@ -257,8 +257,8 @@ void LocalDevicePanel::render_profiles_section(const std::shared_ptr<tooling::CI
 }
 
 void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
-    auto device = device_model->get_device();
-    auto& property_facade = device->get_property_host_facade();
+    auto device = device_model->getDevice();
+    auto& property_facade = device->getPropertyHostFacade();
 
     ImGui::TextUnformatted("Local Properties");
 
@@ -266,7 +266,7 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
         kSystemPropertyDeviceInfo,
         kSystemPropertyChannelList
     };
-    auto metadata_list = property_facade.get_metadata_list();
+    auto metadata_list = property_facade.getMetadataList();
     for (const auto* metadata : metadata_list) {
         if (metadata) {
             property_ids.push_back(metadata->getPropertyId());
@@ -289,7 +289,7 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
             for (const auto& prop : property_ids) {
                 bool selected = (prop == selected_property_id_);
                 std::string label = prop;
-                const auto* meta = property_facade.get_property_metadata(prop);
+                const auto* meta = property_facade.getPropertyMetadata(prop);
                 if (meta) {
                     auto desc = resolve_property_description(meta);
                     if (!desc.empty()) {
@@ -299,7 +299,7 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
                 if (ImGui::Selectable(label.c_str(), selected)) {
                     selected_property_id_ = prop;
                     refresh_property_value(device_model);
-                    const auto* meta = property_facade.get_property_metadata(selected_property_id_);
+                    const auto* meta = property_facade.getPropertyMetadata(selected_property_id_);
                     if (auto* rules = dynamic_cast<const midicci::commonproperties::CommonRulesPropertyMetadata*>(meta)) {
                         property_can_get_ = rules->canGet;
                         property_can_set_ = rules->canSet;
@@ -379,7 +379,7 @@ void LocalDevicePanel::render_properties_section(const std::shared_ptr<tooling::
 
             ImGui::Separator();
             ImGui::TextUnformatted("Property Subscriptions");
-            auto subs = property_facade.get_subscriptions();
+            auto subs = property_facade.getSubscriptions();
             if (subs.empty()) {
                 ImGui::TextUnformatted("No active subscriptions.");
             } else if (ImGui::BeginTable("subscriptions", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
@@ -436,7 +436,7 @@ std::vector<std::string> LocalDevicePanel::gather_profile_ids(const std::shared_
         if (!profile_state) {
             continue;
         }
-        auto id = profile_state->get_profile().to_string();
+        auto id = profile_state->get_profile().toString();
         if (std::find(ids.begin(), ids.end(), id) == ids.end()) {
             ids.push_back(id);
         }
@@ -444,7 +444,7 @@ std::vector<std::string> LocalDevicePanel::gather_profile_ids(const std::shared_
     return ids;
 }
 
-void LocalDevicePanel::add_profile(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
+void LocalDevicePanel::addProfile(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
     std::vector<uint8_t> bytes;
     if (!parse_profile_id_string(new_profile_id_input_, bytes)) {
         repository_->log("Invalid profile ID format", tooling::MessageDirection::Out);
@@ -455,7 +455,7 @@ void LocalDevicePanel::add_profile(const std::shared_ptr<tooling::CIDeviceModel>
                                    static_cast<uint16_t>(new_profile_channels_));
     device_model->add_local_profile(profile);
     repository_->log("Added local profile target", tooling::MessageDirection::Out);
-    selected_profile_id_ = profile_id.to_string();
+    selected_profile_id_ = profile_id.toString();
 }
 
 void LocalDevicePanel::add_profile_target(const std::shared_ptr<tooling::CIDeviceModel>& device_model) {
@@ -496,13 +496,13 @@ void LocalDevicePanel::render_profile_targets(const std::shared_ptr<tooling::CID
         ImGui::TableHeadersRow();
 
         for (auto& state : states) {
-            if (!state || state->get_profile().to_string() != profile_id.to_string()) {
+            if (!state || state->get_profile().toString() != profile_id.toString()) {
                 continue;
             }
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             bool enabled = state->enabled().get();
-            std::string label = "##enabled-" + state->get_profile().to_string() + std::to_string(state->address().get());
+            std::string label = "##enabled-" + state->get_profile().toString() + std::to_string(state->address().get());
             if (ImGui::Checkbox(label.c_str(), &enabled)) {
                 device_model->update_local_profile_target(state, state->address().get(), enabled,
                                                           state->num_channels_requested().get());
@@ -549,8 +549,8 @@ void LocalDevicePanel::refresh_property_value(const std::shared_ptr<tooling::CID
         property_value_buffer_.clear();
         return;
     }
-    auto device = device_model->get_device();
-    auto values = device->get_property_host_facade().get_properties().getValues();
+    auto device = device_model->getDevice();
+    auto values = device->getPropertyHostFacade().getProperties().getValues();
     for (const auto& value : values) {
         if (value.id == selected_property_id_) {
             property_value_buffer_.assign(value.body.begin(), value.body.end());
@@ -615,7 +615,7 @@ void LocalDevicePanel::save_property_metadata(const std::shared_ptr<tooling::CID
         metadata.schema = "{}";
     }
 
-    device_model->update_property_metadata(selected_property_id_, metadata);
+    device_model->updatePropertyMetadata(selected_property_id_, metadata);
     repository_->log("Updated property metadata " + selected_property_id_, tooling::MessageDirection::Out);
 }
 

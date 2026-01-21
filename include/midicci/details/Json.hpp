@@ -35,27 +35,27 @@ public:
     JsonValue(const JsonObject& obj) : value_(obj) {}
     JsonValue(JsonObject&& obj) : value_(std::move(obj)) {}
     
-    bool is_null() const { return std::holds_alternative<JsonNull>(value_); }
-    bool is_bool() const { return std::holds_alternative<JsonBool>(value_); }
-    bool is_number() const { return std::holds_alternative<JsonNumber>(value_); }
-    bool is_string() const { return std::holds_alternative<JsonString>(value_); }
-    bool is_array() const { return std::holds_alternative<JsonArray>(value_); }
-    bool is_object() const { return std::holds_alternative<JsonObject>(value_); }
+    bool isNull() const { return std::holds_alternative<JsonNull>(value_); }
+    bool isBool() const { return std::holds_alternative<JsonBool>(value_); }
+    bool isNumber() const { return std::holds_alternative<JsonNumber>(value_); }
+    bool isString() const { return std::holds_alternative<JsonString>(value_); }
+    bool isArray() const { return std::holds_alternative<JsonArray>(value_); }
+    bool isObject() const { return std::holds_alternative<JsonObject>(value_); }
     
-    bool as_bool() const { return is_bool() ? std::get<JsonBool>(value_) : false; }
-    double as_number() const { return is_number() ? std::get<JsonNumber>(value_) : 0.0; }
-    int as_int() const { return static_cast<int>(as_number()); }
-    const std::string& as_string() const { 
+    bool asBool() const { return isBool() ? std::get<JsonBool>(value_) : false; }
+    double asNumber() const { return isNumber() ? std::get<JsonNumber>(value_) : 0.0; }
+    int asInt() const { return static_cast<int>(asNumber()); }
+    const std::string& asString() const { 
         static const std::string empty;
-        return is_string() ? std::get<JsonString>(value_) : empty; 
+        return isString() ? std::get<JsonString>(value_) : empty; 
     }
-    const JsonArray& as_array() const { 
+    const JsonArray& asArray() const { 
         static const JsonArray empty;
-        return is_array() ? std::get<JsonArray>(value_) : empty; 
+        return isArray() ? std::get<JsonArray>(value_) : empty; 
     }
-    const JsonObject& as_object() const { 
+    const JsonObject& asObject() const { 
         static const JsonObject empty;
-        return is_object() ? std::get<JsonObject>(value_) : empty; 
+        return isObject() ? std::get<JsonObject>(value_) : empty; 
     }
     
     JsonValue& operator[](const std::string& key);
@@ -63,18 +63,18 @@ public:
     JsonValue& operator[](size_t index);
     const JsonValue& operator[](size_t index) const;
     
-    std::vector<uint8_t> get_serialized_bytes() const;
+    std::vector<uint8_t> getSerializedBytes() const;
     
     static JsonValue parse(const std::string& json_str);
-    static JsonValue parse_or_null(const std::string& json_str);
+    static JsonValue parseOrNull(const std::string& json_str);
     
     std::string serialize() const;
     
     static const JsonValue& null_value();
-    static const JsonValue& true_value();
-    static const JsonValue& false_value();
-    static JsonValue empty_object();
-    static JsonValue empty_array();
+    static const JsonValue& trueValue();
+    static const JsonValue& falseValue();
+    static JsonValue emptyObject();
+    static JsonValue emptyArray();
     
 private:
     ValueType value_;
@@ -86,23 +86,23 @@ public:
     
 private:
     JsonParser(const std::string& json_str);
-    JsonValue parse_value();
-    JsonValue parse_object();
-    JsonValue parse_array();
-    JsonValue parse_string();
-    JsonValue parse_number();
-    JsonValue parse_literal();
+    JsonValue parseValue();
+    JsonValue parseObject();
+    JsonValue parseArray();
+    JsonValue parseString();
+    JsonValue parseNumber();
+    JsonValue parseLiteral();
     
-    void skip_whitespace();
+    void skipWhitespace();
     char peek() const;
     char next();
-    bool has_more() const;
+    bool hasMore() const;
     
     const std::string& json_;
     size_t pos_;
 };
 
-std::string escape_string(const std::string& str);
-std::string unescape_string(const std::string& str);
+std::string escapeString(const std::string& str);
+std::string unescapeString(const std::string& str);
 
 } // namespace midi_ci

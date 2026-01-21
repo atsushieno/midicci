@@ -16,26 +16,26 @@ class MidiCIServicePropertyRules {
 public:
     virtual ~MidiCIServicePropertyRules() = default;
     
-    virtual std::string get_property_id_for_header(const std::vector<uint8_t>& header) = 0;
-    virtual std::vector<uint8_t> create_update_notification_header(const std::string& property_id, const std::map<std::string, std::string>& fields) = 0;
-    virtual std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() = 0;
+    virtual std::string getPropertyIdForHeader(const std::vector<uint8_t>& header) = 0;
+    virtual std::vector<uint8_t> createUpdateNotificationHeader(const std::string& property_id, const std::map<std::string, std::string>& fields) = 0;
+    virtual std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() = 0;
     
-    virtual GetPropertyDataReply get_property_data(const GetPropertyData& msg) = 0;
-    virtual SetPropertyDataReply set_property_data(const SetPropertyData& msg) = 0;
-    virtual std::optional<SubscribePropertyReply> subscribe_property(const SubscribeProperty& msg) = 0;
+    virtual GetPropertyDataReply getPropertyData(const GetPropertyData& msg) = 0;
+    virtual SetPropertyDataReply setPropertyData(const SetPropertyData& msg) = 0;
+    virtual std::optional<SubscribePropertyReply> subscribeProperty(const SubscribeProperty& msg) = 0;
     
-    virtual void add_metadata(std::unique_ptr<PropertyMetadata> property) = 0;
-    virtual void remove_metadata(const std::string& property_id) = 0;
+    virtual void addMetadata(std::unique_ptr<PropertyMetadata> property) = 0;
+    virtual void removeMetadata(const std::string& property_id) = 0;
     
-    virtual std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) = 0;
-    virtual std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) = 0;
-    virtual std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) = 0;
-    virtual int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) = 0;
-    virtual std::vector<uint8_t> create_shutdown_subscription_header(const std::string& property_id, const std::string& res_id) = 0;
+    virtual std::vector<uint8_t> encodeBody(const std::vector<uint8_t>& data, const std::string& encoding) = 0;
+    virtual std::vector<uint8_t> decodeBody(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) = 0;
+    virtual std::string getHeaderFieldString(const std::vector<uint8_t>& header, const std::string& field) = 0;
+    virtual int getHeaderFieldInteger(const std::vector<uint8_t>& header, const std::string& field) = 0;
+    virtual std::vector<uint8_t> createShutdownSubscriptionHeader(const std::string& property_id, const std::string& res_id) = 0;
     
-    virtual const std::vector<SubscriptionEntry>& get_subscriptions() const = 0;
+    virtual const std::vector<SubscriptionEntry>& getSubscriptions() const = 0;
     
-    void add_property_catalog_updated_callback(std::function<void()> callback);
+    void addPropertyCatalogUpdatedCallback(std::function<void()> callback);
     
 protected:
     std::vector<std::function<void()>> property_catalog_updated_callbacks_;

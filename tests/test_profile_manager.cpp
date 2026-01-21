@@ -18,34 +18,34 @@ protected:
 };
 
 TEST_F(ProfileManagerTest, AddProfile) {
-    manager->add_profile(profile);
+    manager->addProfile(profile);
     
-    auto profiles = manager->get_profiles();
+    auto profiles = manager->getProfiles();
     EXPECT_EQ(profiles.size(), 1);
     EXPECT_EQ(profiles[0].profile_id, profile_id);
 }
 
 TEST_F(ProfileManagerTest, EnableProfile) {
-    manager->add_profile(profile);
-    manager->enable_profile(0, 0x7F, profile_id, 16);
+    manager->addProfile(profile);
+    manager->enableProfile(0, 0x7F, profile_id, 16);
     
-    auto enabled_profiles = manager->get_enabled_profiles();
+    auto enabled_profiles = manager->getEnabledProfiles();
     EXPECT_EQ(enabled_profiles.size(), 1);
     EXPECT_TRUE(enabled_profiles[0].enabled);
 }
 
 TEST_F(ProfileManagerTest, DisableProfile) {
-    manager->add_profile(profile);
-    manager->enable_profile(0, 0x7F, profile_id, 16);
-    manager->disable_profile(0, 0x7F, profile_id);
+    manager->addProfile(profile);
+    manager->enableProfile(0, 0x7F, profile_id, 16);
+    manager->disableProfile(0, 0x7F, profile_id);
     
-    auto disabled_profiles = manager->get_disabled_profiles();
+    auto disabled_profiles = manager->getDisabledProfiles();
     EXPECT_EQ(disabled_profiles.size(), 1);
     EXPECT_FALSE(disabled_profiles[0].enabled);
 }
 
 TEST_F(ProfileManagerTest, FindProfile) {
-    manager->add_profile(profile);
+    manager->addProfile(profile);
     
     auto found_profile = manager->find_profile(0, 0x7F, profile_id);
     ASSERT_NE(found_profile, nullptr);

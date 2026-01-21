@@ -17,7 +17,7 @@ ObservableProfileList::ObservableProfileList() : pimpl_(std::make_unique<Impl>()
 
 ObservableProfileList::~ObservableProfileList() = default;
 
-const std::vector<MidiCIProfile>& ObservableProfileList::get_profiles() const {
+const std::vector<MidiCIProfile>& ObservableProfileList::getProfiles() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->profiles_;
 }
@@ -58,12 +58,12 @@ void ObservableProfileList::remove(const MidiCIProfile& profile) {
     pimpl_->profiles_.erase(it, pimpl_->profiles_.end());
 }
 
-void ObservableProfileList::set_enabled(bool enabled, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels_requested) {
+void ObservableProfileList::setEnabled(bool enabled, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels_requested) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->profiles_.begin(), pimpl_->profiles_.end(),
         [address, &profile_id](const MidiCIProfile& p) {
-            return p.address == address && p.profile.to_string() == profile_id.to_string();
+            return p.address == address && p.profile.toString() == profile_id.toString();
         });
     
     if (it != pimpl_->profiles_.end()) {
@@ -89,7 +89,7 @@ void ObservableProfileList::update(MidiCIProfile& profile, bool enabled, uint8_t
     }
 }
 
-std::vector<MidiCIProfileId> ObservableProfileList::get_matching_profiles(uint8_t address, bool enabled) const {
+std::vector<MidiCIProfileId> ObservableProfileList::getMatchingProfiles(uint8_t address, bool enabled) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     std::vector<MidiCIProfileId> result;
@@ -101,17 +101,17 @@ std::vector<MidiCIProfileId> ObservableProfileList::get_matching_profiles(uint8_
     return result;
 }
 
-void ObservableProfileList::add_profiles_changed_callback(ProfilesChangedCallback callback) {
+void ObservableProfileList::addProfilesChangedCallback(ProfilesChangedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->profiles_changed_callbacks_.push_back(callback);
 }
 
-void ObservableProfileList::add_profile_enabled_changed_callback(ProfileEnabledChangedCallback callback) {
+void ObservableProfileList::addProfileEnabledChangedCallback(ProfileEnabledChangedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->profile_enabled_changed_callbacks_.push_back(callback);
 }
 
-void ObservableProfileList::add_profile_updated_callback(ProfileUpdatedCallback callback) {
+void ObservableProfileList::addProfileUpdatedCallback(ProfileUpdatedCallback callback) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->profile_updated_callbacks_.push_back(callback);
 }

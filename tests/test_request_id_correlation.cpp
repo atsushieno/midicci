@@ -23,7 +23,7 @@ TEST(RequestIdCorrelationTest, GetPropertyDataReplyCorrelation) {
     
     GetPropertyData request(common, test_request_id, header);
     
-    EXPECT_EQ(request.get_request_id(), test_request_id);
+    EXPECT_EQ(request.getRequestId(), test_request_id);
     
     // Test 2: Create GetPropertyDataReply with same requestId
     std::string reply_header_json = R"({"status":200})";
@@ -34,14 +34,14 @@ TEST(RequestIdCorrelationTest, GetPropertyDataReplyCorrelation) {
     Common reply_common(0x87654321, 0x12345678, ADDRESS_FUNCTION_BLOCK, 0);
     GetPropertyDataReply reply(reply_common, test_request_id, reply_header, reply_body);
     
-    EXPECT_EQ(reply.get_request_id(), test_request_id);
+    EXPECT_EQ(reply.getRequestId(), test_request_id);
     
     // Test 3: Verify correlation matching
-    EXPECT_EQ(request.get_request_id(), reply.get_request_id());
+    EXPECT_EQ(request.getRequestId(), reply.getRequestId());
     
     // Test 4: Test with different requestIds to ensure they don't match
     GetPropertyDataReply different_reply(reply_common, 99, reply_header, reply_body);
-    EXPECT_NE(request.get_request_id(), different_reply.get_request_id());
+    EXPECT_NE(request.getRequestId(), different_reply.getRequestId());
 }
 
 TEST(RequestIdCorrelationTest, PropertyClientFacadeSequence) {
@@ -52,8 +52,8 @@ TEST(RequestIdCorrelationTest, PropertyClientFacadeSequence) {
     auto property_client = std::make_unique<PropertyClientFacade>(*client_device, *connection);
     
     // Get next request ID from messenger
-    auto next_id1 = client_device->get_messenger().get_next_request_id();
-    auto next_id2 = client_device->get_messenger().get_next_request_id();
+    auto next_id1 = client_device->getMessenger().getNextRequestId();
+    auto next_id2 = client_device->getMessenger().getNextRequestId();
     
     EXPECT_EQ(next_id2, next_id1 + 1);
 }

@@ -30,9 +30,9 @@ void MessageLogger::log(const std::string& message, MessageDirection direction, 
 }
 
 void MessageLogger::log_midi_ci_message(const midicci::Message& message, MessageDirection direction) {
-    std::string log_message = message.get_log_message();
-    uint32_t source_muid = message.get_source_muid();
-    uint32_t destination_muid = message.get_destination_muid();
+    std::string log_message = message.getLogMessage();
+    uint32_t source_muid = message.getSourceMuid();
+    uint32_t destination_muid = message.getDestinationMuid();
     
     log(log_message, direction, source_muid, destination_muid);
 }

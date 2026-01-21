@@ -9,39 +9,39 @@ namespace midicci {
 
 class CIRetrieval {
 public:
-    static uint8_t get_addressing(const std::vector<uint8_t>& sysex);
+    static uint8_t getAddressing(const std::vector<uint8_t>& sysex);
     
-    static DeviceDetails get_device_details(const std::vector<uint8_t>& sysex);
+    static DeviceDetails getDeviceDetails(const std::vector<uint8_t>& sysex);
     
-    static uint32_t get_source_muid(const std::vector<uint8_t>& sysex);
+    static uint32_t getSourceMuid(const std::vector<uint8_t>& sysex);
     
-    static uint32_t get_destination_muid(const std::vector<uint8_t>& sysex);
+    static uint32_t getDestinationMuid(const std::vector<uint8_t>& sysex);
     
-    static uint32_t get_muid_to_invalidate(const std::vector<uint8_t>& sysex);
+    static uint32_t getMuidToInvalidate(const std::vector<uint8_t>& sysex);
     
-    static uint32_t get_max_sysex_size(const std::vector<uint8_t>& sysex);
+    static uint32_t getMaxSysexSize(const std::vector<uint8_t>& sysex);
     
     static std::pair<std::vector<MidiCIProfileId>, std::vector<MidiCIProfileId>>
-    get_profile_set(const std::vector<uint8_t>& sysex);
+    getProfileSet(const std::vector<uint8_t>& sysex);
     
-    static MidiCIProfileId get_profile_id(const std::vector<uint8_t>& sysex);
+    static MidiCIProfileId getProfileId(const std::vector<uint8_t>& sysex);
     
-    static uint16_t get_profile_enabled_channels(const std::vector<uint8_t>& sysex);
+    static uint16_t getProfileEnabledChannels(const std::vector<uint8_t>& sysex);
     
-    static uint16_t get_profile_specific_data_size(const std::vector<uint8_t>& sysex);
+    static uint16_t getProfileSpecificDataSize(const std::vector<uint8_t>& sysex);
     
-    static uint8_t get_max_property_requests(const std::vector<uint8_t>& sysex);
+    static uint8_t getMaxPropertyRequests(const std::vector<uint8_t>& sysex);
     
-    static std::vector<uint8_t> get_property_header(const std::vector<uint8_t>& sysex);
+    static std::vector<uint8_t> getPropertyHeader(const std::vector<uint8_t>& sysex);
     
-    static std::vector<uint8_t> get_property_body_in_this_chunk(const std::vector<uint8_t>& sysex);
+    static std::vector<uint8_t> getPropertyBodyInThisChunk(const std::vector<uint8_t>& sysex);
     
-    static uint16_t get_property_total_chunks(const std::vector<uint8_t>& sysex);
+    static uint16_t getPropertyTotalChunks(const std::vector<uint8_t>& sysex);
     
-    static uint16_t get_property_chunk_index(const std::vector<uint8_t>& sysex);
+    static uint16_t getPropertyChunkIndex(const std::vector<uint8_t>& sysex);
 
 private:
-    static MidiCIProfileId get_profile_id_entry(const std::vector<uint8_t>& sysex, size_t offset);
+    static MidiCIProfileId getProfileIdEntry(const std::vector<uint8_t>& sysex, size_t offset);
 };
 
 } // namespace midi_ci

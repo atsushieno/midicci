@@ -30,7 +30,7 @@ TEST_F(AllCtrlListMessagingTest, ClientServerPropertyExchange) {
     ASSERT_FALSE(controls.empty()) << "Failed to parse AllCtrlList test data";
 
     // Add the AllCtrlList metadata to the server's property host
-    auto& host = server.get_property_host_facade();
+    auto& host = server.getPropertyHostFacade();
     auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
@@ -46,23 +46,23 @@ TEST_F(AllCtrlListMessagingTest, ClientServerPropertyExchange) {
     client.sendDiscovery();
 
     // Verify connection was established
-    auto connections = client.get_connections();
+    auto connections = client.getConnections();
     ASSERT_GT(connections.size(), 0) << "No connections established after discovery";
 
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
 
     // Get the property client facade
-    auto& property_client = conn->get_property_client_facade();
+    auto& property_client = conn->getPropertyClientFacade();
 
     // Send GetPropertyData request for AllCtrlList from client to server
-    property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "", "");
+    property_client.sendGetPropertyData(StandardPropertyNames::ALL_CTRL_LIST, "", "");
 
     // The server should have received the request and sent a reply
     // The client should have processed the reply and stored it
 
     // Retrieve the AllCtrlList from the client's property cache
-    auto client_values = property_client.get_properties()->getValues();
+    auto client_values = property_client.getProperties()->getValues();
 
     // Find the AllCtrlList property in the client's cache
     auto it = std::find_if(client_values.begin(), client_values.end(),
@@ -117,7 +117,7 @@ TEST_F(AllCtrlListMessagingTest, MultiplePropertyExchanges) {
     ASSERT_FALSE(controls.empty());
 
     // Add the AllCtrlList metadata to the server's property host
-    auto& host = server.get_property_host_facade();
+    auto& host = server.getPropertyHostFacade();
     auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
@@ -127,17 +127,17 @@ TEST_F(AllCtrlListMessagingTest, MultiplePropertyExchanges) {
     // Perform discovery
     client.sendDiscovery();
 
-    auto connections = client.get_connections();
+    auto connections = client.getConnections();
     ASSERT_GT(connections.size(), 0);
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
-    auto& property_client = conn->get_property_client_facade();
+    auto& property_client = conn->getPropertyClientFacade();
 
     // First request for AllCtrlList
-    property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "", "");
+    property_client.sendGetPropertyData(StandardPropertyNames::ALL_CTRL_LIST, "", "");
 
-    auto client_values = property_client.get_properties()->getValues();
+    auto client_values = property_client.getProperties()->getValues();
 
     auto it = std::find_if(client_values.begin(), client_values.end(),
         [](const PropertyValue& pv) {
@@ -148,9 +148,9 @@ TEST_F(AllCtrlListMessagingTest, MultiplePropertyExchanges) {
     auto first_body = it->body;
 
     // Second request for the same property
-    property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "", "");
+    property_client.sendGetPropertyData(StandardPropertyNames::ALL_CTRL_LIST, "", "");
 
-    client_values = property_client.get_properties()->getValues();
+    client_values = property_client.getProperties()->getValues();
     it = std::find_if(client_values.begin(), client_values.end(),
         [](const PropertyValue& pv) {
             return pv.id == StandardPropertyNames::ALL_CTRL_LIST;
@@ -169,7 +169,7 @@ TEST_F(AllCtrlListMessagingTest, EmptyAllCtrlList) {
     auto& client = mediator.getDevice1();
 
     // Add the AllCtrlList metadata to the server's property host
-    auto& host = server.get_property_host_facade();
+    auto& host = server.getPropertyHostFacade();
     auto metadata = std::make_unique<CommonRulesPropertyMetadata>(StandardProperties::allCtrlListMetadata());
     host.addMetadata(std::move(metadata));
 
@@ -180,17 +180,17 @@ TEST_F(AllCtrlListMessagingTest, EmptyAllCtrlList) {
     // Perform discovery
     client.sendDiscovery();
 
-    auto connections = client.get_connections();
+    auto connections = client.getConnections();
     ASSERT_GT(connections.size(), 0);
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
-    auto& property_client = conn->get_property_client_facade();
+    auto& property_client = conn->getPropertyClientFacade();
 
     // Request the empty AllCtrlList
-    property_client.send_get_property_data(StandardPropertyNames::ALL_CTRL_LIST, "", "");
+    property_client.sendGetPropertyData(StandardPropertyNames::ALL_CTRL_LIST, "", "");
 
-    auto client_values = property_client.get_properties()->getValues();
+    auto client_values = property_client.getProperties()->getValues();
 
     auto it = std::find_if(client_values.begin(), client_values.end(),
         [](const PropertyValue& pv) {

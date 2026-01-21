@@ -12,37 +12,37 @@ public:
     CommonRulesPropertyClient(MidiCIDevice& device, ClientConnection& conn);
     ~CommonRulesPropertyClient() override = default;
     
-    std::vector<uint8_t> create_data_request_header(const std::string& resource, 
+    std::vector<uint8_t> createDataRequestHeader(const std::string& resource, 
                                                    const std::map<std::string, std::string>& fields) override;
     
-    std::vector<uint8_t> create_subscription_header(const std::string& resource, 
+    std::vector<uint8_t> createSubscriptionHeader(const std::string& resource, 
                                                    const std::map<std::string, std::string>& fields) override;
     
-    std::vector<uint8_t> create_status_header(int status) override;
+    std::vector<uint8_t> createStatusHeader(int status) override;
     
-    std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) override;
+    std::vector<uint8_t> encodeBody(const std::vector<uint8_t>& data, const std::string& encoding) override;
 
-    std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) override;
+    std::vector<uint8_t> decodeBody(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) override;
 
-    std::string get_property_id_for_header(const std::vector<uint8_t>& header) override;
+    std::string getPropertyIdForHeader(const std::vector<uint8_t>& header) override;
     
-    std::string get_res_id_for_header(const std::vector<uint8_t>& header) override;
+    std::string getResIdForHeader(const std::vector<uint8_t>& header) override;
     
-    std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) override;
+    std::string getHeaderFieldString(const std::vector<uint8_t>& header, const std::string& field) override;
     
-    int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) override;
+    int getHeaderFieldInteger(const std::vector<uint8_t>& header, const std::string& field) override;
     
-    void process_property_subscription_result(void* sub, const SubscribePropertyReply& msg) override;
+    void processPropertySubscriptionResult(void* sub, const SubscribePropertyReply& msg) override;
     
-    void property_value_updated(const std::string& property_id, const std::vector<uint8_t>& body) override;
+    void propertyValueUpdated(const std::string& property_id, const std::vector<uint8_t>& body) override;
     
-    void request_property_list(uint8_t group) override;
+    void requestPropertyList(uint8_t group) override;
     
-    std::string get_subscribed_property(const SubscribeProperty& msg) override;
+    std::string getSubscribedProperty(const SubscribeProperty& msg) override;
     
-    void add_property_catalog_updated_callback(std::function<void()> callback);
+    void addPropertyCatalogUpdatedCallback(std::function<void()> callback);
     
-    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list() const;
+    std::vector<std::unique_ptr<PropertyMetadata>> getMetadataList() const;
 
 private:
     MidiCIDevice& device_;
@@ -52,7 +52,7 @@ private:
     std::vector<std::unique_ptr<PropertyMetadata>> resource_list_;
     std::vector<SubscriptionEntry> subscriptions_;
     
-    std::vector<std::unique_ptr<PropertyMetadata>> get_metadata_list_for_body(const std::vector<uint8_t>& body);
+    std::vector<std::unique_ptr<PropertyMetadata>> getMetadataListForBody(const std::vector<uint8_t>& body);
 };
 
 } // namespace

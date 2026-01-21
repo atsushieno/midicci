@@ -43,7 +43,7 @@ public:
     std::vector<LogEntry> get_logs() const;
     void clear_logs();
     
-    uint32_t get_muid() const noexcept;
+    uint32_t getMuid() const noexcept;
     
     std::shared_ptr<MidiDeviceManager> get_midi_device_manager() const;
     std::shared_ptr<CIDeviceManager> get_ci_device_manager() const;

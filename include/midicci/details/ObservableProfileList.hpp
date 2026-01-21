@@ -25,19 +25,19 @@ public:
     ObservableProfileList(ObservableProfileList&&) = default;
     ObservableProfileList& operator=(ObservableProfileList&&) = default;
     
-    const std::vector<MidiCIProfile>& get_profiles() const;
+    const std::vector<MidiCIProfile>& getProfiles() const;
     
     void add(const MidiCIProfile& profile);
     void remove(const MidiCIProfile& profile);
     
-    void set_enabled(bool enabled, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels_requested);
+    void setEnabled(bool enabled, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels_requested);
     void update(MidiCIProfile& profile, bool enabled, uint8_t address, uint16_t num_channels_requested);
     
-    std::vector<MidiCIProfileId> get_matching_profiles(uint8_t address, bool enabled) const;
+    std::vector<MidiCIProfileId> getMatchingProfiles(uint8_t address, bool enabled) const;
     
-    void add_profiles_changed_callback(ProfilesChangedCallback callback);
-    void add_profile_enabled_changed_callback(ProfileEnabledChangedCallback callback);
-    void add_profile_updated_callback(ProfileUpdatedCallback callback);
+    void addProfilesChangedCallback(ProfilesChangedCallback callback);
+    void addProfileEnabledChangedCallback(ProfileEnabledChangedCallback callback);
+    void addProfileUpdatedCallback(ProfileUpdatedCallback callback);
     
 private:
     class Impl;

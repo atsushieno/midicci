@@ -18,7 +18,7 @@ namespace midicci {
             return data == other.data;
         }
 
-        std::string to_string() const {
+        std::string toString() const {
             std::string result;
             for (size_t i = 0; i < data.size(); ++i) {
                 if (i > 0) result += ":";

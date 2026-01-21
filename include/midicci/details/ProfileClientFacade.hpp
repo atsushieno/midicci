@@ -20,17 +20,17 @@ public:
     ProfileClientFacade(ProfileClientFacade&&) = default;
     ProfileClientFacade& operator=(ProfileClientFacade&&) = default;
     
-    ObservableProfileList& get_profiles();
-    const ObservableProfileList& get_profiles() const;
+    ObservableProfileList& getProfiles();
+    const ObservableProfileList& getProfiles() const;
     
-    void set_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile, bool enabled, uint16_t num_channels_requested);
+    void setProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile, bool enabled, uint16_t num_channels_requested);
     
-    void process_profile_reply(const ProfileReply& msg);
-    void process_profile_added_report(const ProfileAdded& msg);
-    void process_profile_removed_report(const ProfileRemoved& msg);
-    void process_profile_enabled_report(const ProfileEnabled& msg);
-    void process_profile_disabled_report(const ProfileDisabled& msg);
-    void process_profile_details_reply(const ProfileDetailsReply& msg);
+    void processProfileReply(const ProfileReply& msg);
+    void processProfileAddedReport(const ProfileAdded& msg);
+    void processProfileRemovedReport(const ProfileRemoved& msg);
+    void processProfileEnabledReport(const ProfileEnabled& msg);
+    void processProfileDisabledReport(const ProfileDisabled& msg);
+    void processProfileDetailsReply(const ProfileDetailsReply& msg);
     
 private:
     class Impl;

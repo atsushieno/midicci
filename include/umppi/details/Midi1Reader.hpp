@@ -27,6 +27,6 @@ public:
     Midi1Music read();
 };
 
-Midi1Music read_midi1_file(const std::string& filename);
+Midi1Music readMidi1File(const std::string& filename);
 
 } // namespace umppi

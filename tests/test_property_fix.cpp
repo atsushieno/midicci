@@ -15,7 +15,7 @@ TEST(PropertyFixTest, MetadataOnlyProperty) {
     auto device = std::make_shared<MidiCIDevice>(muid, config);
     // Created MidiCIDevice
     
-    auto& propertyFacade = device->get_property_host_facade();
+    auto& propertyFacade = device->getPropertyHostFacade();
     // Got PropertyHostFacade
     
     // Create property with metadata only (old way)
@@ -27,7 +27,7 @@ TEST(PropertyFixTest, MetadataOnlyProperty) {
     
     propertyFacade.addMetadata(std::move(property1));
     
-    auto metadata_list1 = propertyFacade.get_properties().getMetadataList();
+    auto metadata_list1 = propertyFacade.getProperties().getMetadataList();
     // After metadata only - Property count should be at least 1
     EXPECT_GE(metadata_list1.size(), 1u);
     
@@ -50,7 +50,7 @@ TEST(PropertyFixTest, MetadataWithValueProperty) {
     // Create device
     auto device = std::make_shared<MidiCIDevice>(muid, config);
     
-    auto& propertyFacade = device->get_property_host_facade();
+    auto& propertyFacade = device->getPropertyHostFacade();
     
     // Create property with metadata AND value (new way)
     auto property2 = std::make_unique<CommonRulesPropertyMetadata>();
@@ -67,7 +67,7 @@ TEST(PropertyFixTest, MetadataWithValueProperty) {
     std::vector<uint8_t> initialData(initialValue.begin(), initialValue.end());
     propertyFacade.setPropertyValue(propertyId, "", initialData, false);
     
-    auto metadata_list2 = propertyFacade.get_properties().getMetadataList();
+    auto metadata_list2 = propertyFacade.getProperties().getMetadataList();
     // After metadata + value - Property count should be at least 1
     EXPECT_GE(metadata_list2.size(), 1u);
     

@@ -34,13 +34,13 @@ public:
     
     std::shared_ptr<CIDeviceModel> get_device_model() const;
     
-    void process_midi1_input(const std::vector<uint8_t>& data, size_t start, size_t length);
-    void process_ump_input(const std::vector<uint8_t>& data, size_t start, size_t length);
-    void process_single_ump_packet(const midicci::ump::Ump& ump);
+    void processMidi1Input(const std::vector<uint8_t>& data, size_t start, size_t length);
+    void processUmpInput(const std::vector<uint8_t>& data, size_t start, size_t length);
+    void process_single_ump_packet(const umppi::Ump& ump);
     
     void setup_input_event_listener();
     
-    void log_midi_message_report_chunk(const std::vector<uint8_t>& data);
+    void logMidiMessageReportChunk(const std::vector<uint8_t>& data);
     
 private:
     CIToolRepository& repository_;

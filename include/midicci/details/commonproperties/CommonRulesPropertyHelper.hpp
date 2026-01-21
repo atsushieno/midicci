@@ -13,23 +13,23 @@ class CommonRulesPropertyHelper {
 public:
     explicit CommonRulesPropertyHelper(MidiCIDevice& device);
     
-    std::vector<uint8_t> create_request_header_bytes(const std::string& property_id, 
+    std::vector<uint8_t> createRequestHeaderBytes(const std::string& property_id, 
                                                     const std::map<std::string, std::string>& fields) const;
     
-    std::vector<uint8_t> create_subscribe_header_bytes(const std::string& property_id, 
+    std::vector<uint8_t> createSubscribeHeaderBytes(const std::string& property_id, 
                                                       const std::string& command, 
                                                       const std::string& mutual_encoding = "") const;
     
-    std::string get_property_identifier_internal(const std::vector<uint8_t>& header) const;
+    std::string getPropertyIdentifierInternal(const std::vector<uint8_t>& header) const;
     
-    std::vector<uint8_t> get_resource_list_request_bytes() const;
+    std::vector<uint8_t> getResourceListRequestBytes() const;
     
-    std::string get_header_field_string(const std::vector<uint8_t>& header, const std::string& field) const;
-    int get_header_field_integer(const std::vector<uint8_t>& header, const std::string& field) const;
+    std::string getHeaderFieldString(const std::vector<uint8_t>& header, const std::string& field) const;
+    int getHeaderFieldInteger(const std::vector<uint8_t>& header, const std::string& field) const;
     
-    std::vector<uint8_t> encode_body(const std::vector<uint8_t>& data, const std::string& encoding) const;
-    std::vector<uint8_t> decode_body(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const;
-    std::vector<uint8_t> decode_body(const std::optional<std::string>& encoding, const std::vector<uint8_t>& body) const;
+    std::vector<uint8_t> encodeBody(const std::vector<uint8_t>& data, const std::string& encoding) const;
+    std::vector<uint8_t> decodeBody(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) const;
+    std::vector<uint8_t> decodeBody(const std::optional<std::string>& encoding, const std::vector<uint8_t>& body) const;
 
 private:
     MidiCIDevice& device_;

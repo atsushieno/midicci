@@ -26,7 +26,7 @@ PropertyChunkManager::PropertyChunkManager() : pimpl_(std::make_unique<Impl>()) 
 
 PropertyChunkManager::~PropertyChunkManager() = default;
 
-void PropertyChunkManager::add_pending_chunk(uint64_t timestamp, uint32_t source_muid, uint8_t request_id,
+void PropertyChunkManager::addPendingChunk(uint64_t timestamp, uint32_t source_muid, uint8_t request_id,
                                             const std::vector<uint8_t>& header, const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
@@ -43,7 +43,7 @@ void PropertyChunkManager::add_pending_chunk(uint64_t timestamp, uint32_t source
 }
 
 std::pair<std::vector<uint8_t>, std::vector<uint8_t>> 
-PropertyChunkManager::finish_pending_chunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data) {
+PropertyChunkManager::finishPendingChunk(uint32_t source_muid, uint8_t request_id, const std::vector<uint8_t>& final_data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
@@ -62,7 +62,7 @@ PropertyChunkManager::finish_pending_chunk(uint32_t source_muid, uint8_t request
     return {{}, final_data};
 }
 
-bool PropertyChunkManager::has_pending_chunk(uint32_t source_muid, uint8_t request_id) const {
+bool PropertyChunkManager::hasPendingChunk(uint32_t source_muid, uint8_t request_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
@@ -73,7 +73,7 @@ bool PropertyChunkManager::has_pending_chunk(uint32_t source_muid, uint8_t reque
     return it != pimpl_->chunks_.end();
 }
 
-std::vector<uint8_t> PropertyChunkManager::get_pending_header(uint32_t source_muid, uint8_t request_id) const {
+std::vector<uint8_t> PropertyChunkManager::getPendingHeader(uint32_t source_muid, uint8_t request_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::find_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
@@ -87,7 +87,7 @@ std::vector<uint8_t> PropertyChunkManager::get_pending_header(uint32_t source_mu
     return {};
 }
 
-void PropertyChunkManager::cleanup_expired_chunks(uint64_t current_timestamp, uint64_t timeout_seconds) {
+void PropertyChunkManager::cleanupExpiredChunks(uint64_t current_timestamp, uint64_t timeout_seconds) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     auto it = std::remove_if(pimpl_->chunks_.begin(), pimpl_->chunks_.end(),
@@ -98,7 +98,7 @@ void PropertyChunkManager::cleanup_expired_chunks(uint64_t current_timestamp, ui
     pimpl_->chunks_.erase(it, pimpl_->chunks_.end());
 }
 
-void PropertyChunkManager::clear_all_chunks() {
+void PropertyChunkManager::clearAllChunks() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     pimpl_->chunks_.clear();
 }

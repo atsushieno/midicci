@@ -37,8 +37,8 @@ TEST(PropertyCallbackTest, CallbackFlow) {
     EXPECT_TRUE(callbackCalled);
     
     // Check property list using the correct pattern
-    auto& propertyFacade = deviceModel->get_device()->get_property_host_facade();
-    auto metadata_list = propertyFacade.get_properties().getMetadataList();
+    auto& propertyFacade = deviceModel->getDevice()->getPropertyHostFacade();
+    auto metadata_list = propertyFacade.getProperties().getMetadataList();
     // Total properties should be at least 1
     EXPECT_GE(metadata_list.size(), 1u);
     

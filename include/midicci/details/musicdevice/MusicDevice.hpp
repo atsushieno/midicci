@@ -15,8 +15,8 @@ public:
     using InputCallback = std::function<void(const uint8_t*, size_t, size_t, uint64_t)>;
     
     virtual ~MusicDeviceInputReceiver() = default;
-    virtual void add_input_receiver(InputCallback callback) = 0;
-    virtual void remove_input_receiver(InputCallback callback) = 0;
+    virtual void addInputReceiver(InputCallback callback) = 0;
+    virtual void removeInputReceiver(InputCallback callback) = 0;
 };
 
 // Abstract interface for sending MIDI output  
@@ -31,8 +31,8 @@ class CallbackMusicDeviceInputReceiver : public MusicDeviceInputReceiver {
 public:
     explicit CallbackMusicDeviceInputReceiver(MidiInputListenerAdder listener_adder);
     
-    void add_input_receiver(InputCallback callback) override;
-    void remove_input_receiver(InputCallback callback) override;
+    void addInputReceiver(InputCallback callback) override;
+    void removeInputReceiver(InputCallback callback) override;
     
 private:
     std::vector<InputCallback> input_receivers_;
@@ -62,7 +62,7 @@ public:
     
     // Asynchronous connection with timeout (returns connection result via callback)
     using ConnectionCallback = std::function<void(std::unique_ptr<class MusicDevice>, const std::string& error)>;
-    void connect_async(ConnectionCallback callback);
+    void connectAsync(ConnectionCallback callback);
     
     // Synchronous connection with timeout
     std::unique_ptr<class MusicDevice> connect(
@@ -72,9 +72,9 @@ public:
     void send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns);
     
     // Configure discovery parameters
-    void set_endpoint_selector(EndpointSelector selector);
-    void set_discovery_wait(std::chrono::milliseconds wait);
-    void set_discovery_timeout(std::chrono::milliseconds timeout);
+    void setEndpointSelector(EndpointSelector selector);
+    void setDiscoveryWait(std::chrono::milliseconds wait);
+    void setDiscoveryTimeout(std::chrono::milliseconds timeout);
     
 private:
     std::shared_ptr<MusicDeviceInputReceiver> receiver_;
@@ -102,14 +102,14 @@ public:
     MusicDevice& operator=(MusicDevice&&) = default;
     
     // MIDI-CI connection info
-    uint32_t get_target_muid() const noexcept { return target_muid_; }
+    uint32_t getTargetMuid() const noexcept { return target_muid_; }
     
     // Access to MIDI-CI facilities
-    std::shared_ptr<ClientConnection> get_connection() const;
+    std::shared_ptr<ClientConnection> getConnection() const;
     
     // Convenience accessors for MIDI-CI information
     // Note: These return nullopt if connection is not established
-    std::optional<DeviceInfo> get_device_info() const;
+    std::optional<DeviceInfo> getDeviceInfo() const;
     // TODO: Add channel list, JSON schema, and property accessors when available
     
     // Send MIDI data
@@ -117,13 +117,13 @@ public:
 
     // Property binary getter accessor (following Kotlin propertyBinaryGetter)
     using PropertyBinaryGetter = std::function<std::vector<uint8_t>(const std::string& property_id, const std::string& res_id)>;
-    void set_property_binary_getter(PropertyBinaryGetter getter);
-    PropertyBinaryGetter get_property_binary_getter() const;
+    void setPropertyBinaryGetter(PropertyBinaryGetter getter);
+    PropertyBinaryGetter getPropertyBinaryGetter() const;
 
     // Property binary setter accessor (following Kotlin propertyBinarySetter)
     using PropertyBinarySetter = std::function<bool(const std::string& property_id, const std::string& res_id, const std::string& media_type, const std::vector<uint8_t>& body)>;
-    void set_property_binary_setter(PropertyBinarySetter setter);
-    PropertyBinarySetter get_property_binary_setter() const;
+    void setPropertyBinarySetter(PropertyBinarySetter setter);
+    PropertyBinarySetter getPropertyBinarySetter() const;
 
 private:
     std::shared_ptr<MusicDeviceOutputSender> sender_;

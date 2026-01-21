@@ -26,10 +26,10 @@ TEST_F(RequestIdCorrelationAdvancedTest, AdvancedRequestIdCorrelation) {
         auto server_device = std::make_shared<MidiCIDevice>(0x87654321, config);
         
         // Set up mock output handlers
-        client_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        client_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_send_output(group, data);
         });
-        server_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        server_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_send_output(group, data);
         });
         
@@ -48,15 +48,15 @@ TEST_F(RequestIdCorrelationAdvancedTest, AdvancedRequestIdCorrelation) {
         // Test 1: Multiple Property Requests
         
         // Send first request
-        property_client->send_get_property_data("ResourceList", "", "UTF-8", -1, -1);
+        property_client->sendGetPropertyData("ResourceList", "", "UTF-8", -1, -1);
         // Sent ResourceList request
         
         // Send second request  
-        property_client->send_get_property_data("DeviceInfo", "", "UTF-8", -1, -1);
+        property_client->sendGetPropertyData("DeviceInfo", "", "UTF-8", -1, -1);
         // Sent DeviceInfo request
         
         // Send third request
-        property_client->send_get_property_data("ChannelList", "", "UTF-8", -1, -1);
+        property_client->sendGetPropertyData("ChannelList", "", "UTF-8", -1, -1);
         // Sent ChannelList request
         
         ASSERT_EQ(3, sent_messages.size()) << "Expected 3 messages to be sent";
@@ -97,10 +97,10 @@ TEST_F(RequestIdCorrelationAdvancedTest, AdvancedRequestIdCorrelation) {
             // Processing reply for requestId
             
             // Verify the reply has correct requestId
-            EXPECT_EQ(request_id, reply.get_request_id()) << "Reply requestId should match";
+            EXPECT_EQ(request_id, reply.getRequestId()) << "Reply requestId should match";
             
             // Process the reply
-            EXPECT_NO_THROW(property_client->process_get_data_reply(reply));
+            EXPECT_NO_THROW(property_client->processGetDataReply(reply));
         }
         
         // Test 4: Test with wrong requestId (should be ignored)
@@ -118,7 +118,7 @@ TEST_F(RequestIdCorrelationAdvancedTest, AdvancedRequestIdCorrelation) {
         // Processing reply with wrong requestId
         
         // This should not crash and should be safely ignored
-        EXPECT_NO_THROW(property_client->process_get_data_reply(wrong_reply));
+        EXPECT_NO_THROW(property_client->processGetDataReply(wrong_reply));
         
         // Test 5: Test byte ordering in serialized messages
         

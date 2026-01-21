@@ -57,17 +57,17 @@ void InspectorPanel::render() {
     }
 
     std::vector<ConnectionEntry> connections;
-    auto list = model->get_connections().to_vector();
+    auto list = model->getConnections().to_vector();
     for (const auto& conn : list) {
-        if (!conn || !conn->get_connection()) {
+        if (!conn || !conn->getConnection()) {
             continue;
         }
         ConnectionEntry entry;
         entry.connection = conn;
-        entry.muid = conn->get_connection()->get_target_muid();
+        entry.muid = conn->getConnection()->getTargetMuid();
         std::ostringstream label;
         label << "0x" << std::hex << entry.muid;
-        auto info = conn->get_connection()->get_device_info();
+        auto info = conn->getConnection()->getDeviceInfo();
         if (info) {
             label << " - " << info->manufacturer_id << ":" << info->family_id;
         }
@@ -143,13 +143,13 @@ void InspectorPanel::render_discovery_section(const std::vector<ConnectionEntry>
 
 void InspectorPanel::render_device_details(const ConnectionEntry& entry) {
     ImGui::Text("Selected MUID: 0x%08X", entry.muid);
-    auto conn = entry.connection ? entry.connection->get_connection() : nullptr;
+    auto conn = entry.connection ? entry.connection->getConnection() : nullptr;
     if (!conn) {
         ImGui::TextUnformatted("Connection unavailable.");
         return;
     }
 
-    const auto* info = conn->get_device_info();
+    const auto* info = conn->getDeviceInfo();
     if (info) {
         ImGui::Text("Manufacturer ID: 0x%06X", info->manufacturer_id);
         ImGui::Text("Family ID: 0x%04X", info->family_id);
@@ -166,7 +166,7 @@ void InspectorPanel::render_profiles(const ConnectionEntry& entry) {
         ImGui::TextUnformatted("No active connection.");
         return;
     }
-    auto profiles = entry.connection->get_profiles().to_vector();
+    auto profiles = entry.connection->getProfiles().to_vector();
     if (profiles.empty()) {
         ImGui::TextUnformatted("No profile information yet.");
         return;
@@ -187,11 +187,11 @@ void InspectorPanel::render_profiles(const ConnectionEntry& entry) {
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%d", profile->address().get());
             ImGui::TableSetColumnIndex(2);
-            ImGui::TextUnformatted(profile->get_profile().to_string().c_str());
+            ImGui::TextUnformatted(profile->get_profile().toString().c_str());
             ImGui::TableSetColumnIndex(3);
             bool enabled = profile->enabled().get();
-            if (ImGui::Checkbox(("##prof-en-" + profile->get_profile().to_string()).c_str(), &enabled)) {
-                entry.connection->set_profile(
+            if (ImGui::Checkbox(("##prof-en-" + profile->get_profile().toString()).c_str(), &enabled)) {
+                entry.connection->setProfile(
                     profile->group().get(),
                     profile->address().get(),
                     profile->get_profile(),
@@ -216,7 +216,7 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
         selected_property_id_.clear();
         property_value_buffer_.clear();
     }
-    auto metadata_list = entry.connection->get_metadata_list();
+    auto metadata_list = entry.connection->getMetadataList();
     float total_width = ImGui::GetContentRegionAvail().x;
     float list_width = std::max(0.0f, total_width * 0.25f);
 
@@ -262,7 +262,7 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
             paginate_limit_ = std::max(1, paginate_limit_);
 
             if (ImGui::Button("Get Property")) {
-                entry.connection->get_property_data(
+                entry.connection->getPropertyData(
                     selected_property_id_,
                     property_res_id_,
                     property_encoding_,
@@ -275,7 +275,7 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
                 if (subscribed) {
                     entry.connection->unsubscribe_property(selected_property_id_, property_res_id_);
                 } else {
-                    entry.connection->subscribe_property(selected_property_id_, property_res_id_, property_encoding_);
+                    entry.connection->subscribeProperty(selected_property_id_, property_res_id_, property_encoding_);
                 }
             }
 
@@ -288,7 +288,7 @@ void InspectorPanel::render_properties(const ConnectionEntry& entry) {
             if (ImGui::Button("Commit Changes")) {
                 if (edit_mode_) {
                     std::vector<uint8_t> data(property_value_buffer_.begin(), property_value_buffer_.end());
-                    entry.connection->set_property_data(
+                    entry.connection->setPropertyData(
                         selected_property_id_,
                         property_res_id_,
                         data,
@@ -341,7 +341,7 @@ void InspectorPanel::refresh_property_value(const std::shared_ptr<tooling::Clien
     if (!connection || selected_property_id_.empty()) {
         return;
     }
-    auto values = connection->get_properties().to_vector();
+    auto values = connection->getProperties().to_vector();
     for (const auto& value : values) {
         if (value.id == selected_property_id_) {
             property_value_buffer_.assign(value.body.begin(), value.body.end());
@@ -356,7 +356,7 @@ bool InspectorPanel::has_property_subscription(
     if (!connection || property_id.empty()) {
         return false;
     }
-    auto subs = connection->get_subscriptions().to_vector();
+    auto subs = connection->getSubscriptions().to_vector();
     for (const auto& sub : subs) {
         if (sub.property_id == property_id &&
             sub.state == tooling::SubscriptionState::State::Subscribed) {

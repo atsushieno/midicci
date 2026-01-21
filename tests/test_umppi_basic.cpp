@@ -35,9 +35,9 @@ TEST(UmppiBasicTest, Midi1TrackAndMusic) {
 }
 
 TEST(UmppiBasicTest, UmpCreationAndAccessors) {
-    Ump ump(0x20906040);
+    Ump ump(uint32_t(0x20906040));
 
-    EXPECT_EQ(ump.getMessageType(), MidiMessageType::MIDI1);
+    EXPECT_EQ(ump.getMessageType(), MessageType::MIDI1);
     EXPECT_EQ(ump.getGroup(), 0);
     EXPECT_EQ(ump.getStatusByte(), 0x90);
     EXPECT_EQ(ump.getStatusCode(), MidiChannelStatus::NOTE_ON);
@@ -47,15 +47,15 @@ TEST(UmppiBasicTest, UmpCreationAndAccessors) {
 }
 
 TEST(UmppiBasicTest, UmpSizeCalculation) {
-    Ump ump32(0x20906040);
+    Ump ump32(uint32_t(0x20906040));
     EXPECT_EQ(ump32.getSizeInInts(), 1);
     EXPECT_EQ(ump32.getSizeInBytes(), 4);
 
-    Ump ump64(0x40906040, 0x12345678);
+    Ump ump64(uint32_t(0x40906040), uint32_t(0x12345678));
     EXPECT_EQ(ump64.getSizeInInts(), 2);
     EXPECT_EQ(ump64.getSizeInBytes(), 8);
 
-    Ump ump128(0x50906040, 0x12345678, 0xABCDEF00, 0x11223344);
+    Ump ump128(uint32_t(0x50906040), uint32_t(0x12345678), uint32_t(0xABCDEF00), uint32_t(0x11223344));
     EXPECT_EQ(ump128.getSizeInInts(), 4);
     EXPECT_EQ(ump128.getSizeInBytes(), 16);
 }
@@ -63,8 +63,8 @@ TEST(UmppiBasicTest, UmpSizeCalculation) {
 TEST(UmppiBasicTest, Midi2Track) {
     Midi2Track track;
 
-    track.messages.push_back(Ump(0x00100000));
-    track.messages.push_back(Ump(0x20906040));
+    track.messages.push_back(Ump(uint32_t(0x00100000)));
+    track.messages.push_back(Ump(uint32_t(0x20906040)));
 
     EXPECT_EQ(track.messages.size(), 2);
 }
@@ -74,7 +74,7 @@ TEST(UmppiBasicTest, Midi2Music) {
     music.deltaTimeSpec = 480;
 
     Midi2Track track;
-    track.messages.push_back(Ump(0x00100000));
+    track.messages.push_back(Ump(uint32_t(0x00100000)));
 
     music.addTrack(std::move(track));
 
@@ -98,7 +98,7 @@ TEST(UmppiBasicTest, Midi1MachineStateTracking) {
 }
 
 TEST(UmppiBasicTest, UmpToBytes) {
-    Ump ump(0x20906040);
+    Ump ump(uint32_t(0x20906040));
     auto bytes = ump.toBytes();
 
     EXPECT_EQ(bytes.size(), 4);

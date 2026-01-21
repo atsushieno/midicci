@@ -18,21 +18,21 @@ public:
     ProfileHostFacade(ProfileHostFacade&&) = default;
     ProfileHostFacade& operator=(ProfileHostFacade&&) = default;
     
-    ObservableProfileList& get_profiles();
-    const ObservableProfileList& get_profiles() const;
+    ObservableProfileList& getProfiles();
+    const ObservableProfileList& getProfiles() const;
     
-    void add_profile(const MidiCIProfile& profile);
-    void remove_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id);
-    void enable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
-    void disable_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
+    void addProfile(const MidiCIProfile& profile);
+    void removeProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id);
+    void enableProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
+    void disableProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile_id, uint16_t num_channels);
     
-    std::vector<uint8_t> get_profile_details(const MidiCIProfileId& profile, uint8_t target) const;
-    void update_profile_target(const MidiCIProfileId& profile_id, uint8_t old_address, uint8_t new_address, bool enabled, uint16_t num_channels_requested);
-    std::vector<MidiCIProfileDetails>& get_profile_details_entries();
-    const std::vector<MidiCIProfileDetails>& get_profile_details_entries() const;
+    std::vector<uint8_t> getProfileDetails(const MidiCIProfileId& profile, uint8_t target) const;
+    void updateProfileTarget(const MidiCIProfileId& profile_id, uint8_t old_address, uint8_t new_address, bool enabled, uint16_t num_channels_requested);
+    std::vector<MidiCIProfileDetails>& getProfileDetailsEntries();
+    const std::vector<MidiCIProfileDetails>& getProfileDetailsEntries() const;
     
     using ProfileSetCallback = std::function<void(const MidiCIProfile&)>;
-    void add_on_profile_set_callback(ProfileSetCallback callback);
+    void addOnProfileSetCallback(ProfileSetCallback callback);
     
 private:
     class Impl;

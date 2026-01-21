@@ -121,44 +121,44 @@ constexpr uint8_t CI_NAK_STATUS_MALFORMED_MESSAGE = 0x41;
 constexpr uint8_t CI_NAK_STATUS_TIMEOUT = 0x42;
 constexpr uint8_t CI_NAK_STATUS_TIMEOUT_RETRY_SUGGESTED = 0x43;
 
-inline void serialize_muid_32(std::vector<uint8_t>& data, uint32_t muid) {
+inline void serializeMuid32(std::vector<uint8_t>& data, uint32_t muid) {
     data.push_back(static_cast<uint8_t>(muid & 0xFF));
     data.push_back(static_cast<uint8_t>((muid >> 8) & 0xFF));
     data.push_back(static_cast<uint8_t>((muid >> 16) & 0xFF));
     data.push_back(static_cast<uint8_t>((muid >> 24) & 0xFF));
 }
 
-inline void serialize_7bit_int14(std::vector<uint8_t>& data, uint16_t value) {
+inline void serialize7bitInt14(std::vector<uint8_t>& data, uint16_t value) {
     data.push_back(static_cast<uint8_t>(value & 0x7F));
     data.push_back(static_cast<uint8_t>((value >> 7) & 0x7F));
 }
 
-inline void serialize_common_header(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2,
+inline void serializeCommonHeader(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2,
                                    uint8_t version, uint32_t source_muid, uint32_t dest_muid) {
     data.push_back(MIDI_CI_UNIVERSAL_SYSEX_ID);
     data.push_back(address);
     data.push_back(MIDI_CI_SUB_ID_1);
     data.push_back(sub_id_2);
     data.push_back(version);
-    serialize_muid_32(data, source_muid);
-    serialize_muid_32(data, dest_muid);
+    serializeMuid32(data, source_muid);
+    serializeMuid32(data, dest_muid);
 }
 
-inline void serialize_property_common(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2,
+inline void serializePropertyCommon(std::vector<uint8_t>& data, uint8_t address, uint8_t sub_id_2,
                                      uint32_t source_muid, uint32_t dest_muid, uint8_t request_id,
                                      const std::vector<uint8_t>& header, uint16_t num_chunks,
                                      uint16_t chunk_index, const std::vector<uint8_t>& chunk_data) {
-    serialize_common_header(data, address, sub_id_2, MIDI_CI_VERSION_1_2, source_muid, dest_muid);
+    serializeCommonHeader(data, address, sub_id_2, MIDI_CI_VERSION_1_2, source_muid, dest_muid);
     data.push_back(request_id);
-    serialize_7bit_int14(data, static_cast<uint16_t>(header.size()));
+    serialize7bitInt14(data, static_cast<uint16_t>(header.size()));
     data.insert(data.end(), header.begin(), header.end());
-    serialize_7bit_int14(data, num_chunks);
-    serialize_7bit_int14(data, chunk_index);
-    serialize_7bit_int14(data, static_cast<uint16_t>(chunk_data.size()));
+    serialize7bitInt14(data, num_chunks);
+    serialize7bitInt14(data, chunk_index);
+    serialize7bitInt14(data, static_cast<uint16_t>(chunk_data.size()));
     data.insert(data.end(), chunk_data.begin(), chunk_data.end());
 }
 
-inline std::vector<std::vector<uint8_t>> serialize_property_chunks(
+inline std::vector<std::vector<uint8_t>> serializePropertyChunks(
     uint32_t max_chunk_size, uint8_t sub_id_2, uint32_t source_muid, uint32_t dest_muid,
     uint8_t request_id, const std::vector<uint8_t>& header, const std::vector<uint8_t>& data) {
 
@@ -166,7 +166,7 @@ inline std::vector<std::vector<uint8_t>> serialize_property_chunks(
 
     if (data.empty()) {
         std::vector<uint8_t> packet;
-        serialize_property_common(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
+        serializePropertyCommon(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
                                 source_muid, dest_muid, request_id, header, 1, 1, data);
         result.push_back(std::move(packet));
         return result;
@@ -179,7 +179,7 @@ inline std::vector<std::vector<uint8_t>> serialize_property_chunks(
         std::vector<uint8_t> chunk_data(data.begin() + start, data.begin() + end);
 
         std::vector<uint8_t> packet;
-        serialize_property_common(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
+        serializePropertyCommon(packet, MIDI_CI_ADDRESS_FUNCTION_BLOCK, sub_id_2,
                                 source_muid, dest_muid, request_id, header,
                                 static_cast<uint16_t>(num_chunks), static_cast<uint16_t>(i + 1), chunk_data);
         result.push_back(std::move(packet));

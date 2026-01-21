@@ -180,4 +180,14 @@ namespace FlexDataStatus {
     constexpr uint8_t CHORD_NAME = 6;
 }
 
+namespace MidiProgramChangeOptions {
+    constexpr uint8_t NONE = 0;
+    constexpr uint8_t BANK_VALID = 1;
+}
+
+namespace MidiNoteAttributeType {
+    constexpr uint8_t NONE = 0;
+    constexpr uint8_t Pitch7_9 = 3;
+}
+
 } // namespace umppi

@@ -7,14 +7,14 @@
 namespace midicci {
 
 JsonValue& JsonValue::operator[](const std::string& key) {
-    if (!is_object()) {
+    if (!isObject()) {
         value_ = JsonObject{};
     }
     return std::get<JsonObject>(value_)[key];
 }
 
 const JsonValue& JsonValue::operator[](const std::string& key) const {
-    if (is_object()) {
+    if (isObject()) {
         const auto& obj = std::get<JsonObject>(value_);
         auto it = obj.find(key);
         if (it != obj.end()) {
@@ -25,7 +25,7 @@ const JsonValue& JsonValue::operator[](const std::string& key) const {
 }
 
 JsonValue& JsonValue::operator[](size_t index) {
-    if (!is_array()) {
+    if (!isArray()) {
         value_ = JsonArray{};
     }
     auto& arr = std::get<JsonArray>(value_);
@@ -36,7 +36,7 @@ JsonValue& JsonValue::operator[](size_t index) {
 }
 
 const JsonValue& JsonValue::operator[](size_t index) const {
-    if (is_array()) {
+    if (isArray()) {
         const auto& arr = std::get<JsonArray>(value_);
         if (index < arr.size()) {
             return arr[index];
@@ -45,7 +45,7 @@ const JsonValue& JsonValue::operator[](size_t index) const {
     return null_value();
 }
 
-std::vector<uint8_t> JsonValue::get_serialized_bytes() const {
+std::vector<uint8_t> JsonValue::getSerializedBytes() const {
     auto json_str = serialize();
     auto ascii_encoded = midicci::MidiCIConverter::encodeStringToASCII(json_str);
     auto escaped = ascii_encoded;
@@ -66,7 +66,7 @@ JsonValue JsonValue::parse(const std::string& json_str) {
     return JsonParser::parse(json_str);
 }
 
-JsonValue JsonValue::parse_or_null(const std::string& json_str) {
+JsonValue JsonValue::parseOrNull(const std::string& json_str) {
     try {
         return parse(json_str);
     } catch (...) {
@@ -90,7 +90,7 @@ std::string JsonValue::serialize() const {
                 oss << value;
             }
         } else if constexpr (std::is_same_v<T, JsonString>) {
-            oss << '"' << escape_string(value) << '"';
+            oss << '"' << escapeString(value) << '"';
         } else if constexpr (std::is_same_v<T, JsonArray>) {
             oss << '[';
             for (size_t i = 0; i < value.size(); ++i) {
@@ -104,7 +104,7 @@ std::string JsonValue::serialize() const {
             for (const auto& [key, val] : value) {
                 if (!first) oss << ',';
                 first = false;
-                oss << '"' << escape_string(key) << '"' << ':' << val.serialize();
+                oss << '"' << escapeString(key) << '"' << ':' << val.serialize();
             }
             oss << '}';
         }
@@ -118,21 +118,21 @@ const JsonValue& JsonValue::null_value() {
     return null_val;
 }
 
-const JsonValue& JsonValue::true_value() {
+const JsonValue& JsonValue::trueValue() {
     static const JsonValue true_val{true};
     return true_val;
 }
 
-const JsonValue& JsonValue::false_value() {
+const JsonValue& JsonValue::falseValue() {
     static const JsonValue false_val{false};
     return false_val;
 }
 
-JsonValue JsonValue::empty_object() {
+JsonValue JsonValue::emptyObject() {
     return JsonValue{JsonObject{}};
 }
 
-JsonValue JsonValue::empty_array() {
+JsonValue JsonValue::emptyArray() {
     return JsonValue{JsonArray{}};
 }
 
@@ -140,58 +140,58 @@ JsonParser::JsonParser(const std::string& json_str) : json_(json_str), pos_(0) {
 
 JsonValue JsonParser::parse(const std::string& json_str) {
     JsonParser parser(json_str);
-    return parser.parse_value();
+    return parser.parseValue();
 }
 
-JsonValue JsonParser::parse_value() {
-    skip_whitespace();
+JsonValue JsonParser::parseValue() {
+    skipWhitespace();
     
-    if (!has_more()) {
+    if (!hasMore()) {
         throw std::runtime_error("Unexpected end of JSON input");
     }
     
     char c = peek();
     switch (c) {
-        case '{': return parse_object();
-        case '[': return parse_array();
-        case '"': return parse_string();
-        case 't': case 'f': case 'n': return parse_literal();
+        case '{': return parseObject();
+        case '[': return parseArray();
+        case '"': return parseString();
+        case 't': case 'f': case 'n': return parseLiteral();
         case '-': case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
-            return parse_number();
+            return parseNumber();
         default:
             throw std::runtime_error("Unexpected character in JSON");
     }
 }
 
-JsonValue JsonParser::parse_object() {
+JsonValue JsonParser::parseObject() {
     JsonObject obj;
     next(); // consume '{'
-    skip_whitespace();
+    skipWhitespace();
     
     if (peek() == '}') {
         next(); // consume '}'
         return JsonValue{std::move(obj)};
     }
     
-    while (has_more()) {
-        skip_whitespace();
+    while (hasMore()) {
+        skipWhitespace();
         
         if (peek() != '"') {
             throw std::runtime_error("Expected string key in JSON object");
         }
         
-        auto key = parse_string().as_string();
-        skip_whitespace();
+        auto key = parseString().asString();
+        skipWhitespace();
         
         if (next() != ':') {
             throw std::runtime_error("Expected ':' after key in JSON object");
         }
         
-        auto value = parse_value();
+        auto value = parseValue();
         obj[key] = std::move(value);
         
-        skip_whitespace();
+        skipWhitespace();
         char c = next();
         if (c == '}') {
             break;
@@ -203,19 +203,19 @@ JsonValue JsonParser::parse_object() {
     return JsonValue{std::move(obj)};
 }
 
-JsonValue JsonParser::parse_array() {
+JsonValue JsonParser::parseArray() {
     JsonArray arr;
     next(); // consume '['
-    skip_whitespace();
+    skipWhitespace();
     
     if (peek() == ']') {
         next(); // consume ']'
         return JsonValue{std::move(arr)};
     }
     
-    while (has_more()) {
-        arr.push_back(parse_value());
-        skip_whitespace();
+    while (hasMore()) {
+        arr.push_back(parseValue());
+        skipWhitespace();
         
         char c = next();
         if (c == ']') {
@@ -228,16 +228,16 @@ JsonValue JsonParser::parse_array() {
     return JsonValue{std::move(arr)};
 }
 
-JsonValue JsonParser::parse_string() {
+JsonValue JsonParser::parseString() {
     next(); // consume '"'
     std::string str;
     
-    while (has_more()) {
+    while (hasMore()) {
         char c = next();
         if (c == '"') {
-            return JsonValue{unescape_string(str)};
+            return JsonValue{unescapeString(str)};
         } else if (c == '\\') {
-            if (!has_more()) {
+            if (!hasMore()) {
                 throw std::runtime_error("Unexpected end of string");
             }
             char escaped = next();
@@ -280,7 +280,7 @@ JsonValue JsonParser::parse_string() {
     throw std::runtime_error("Unterminated string");
 }
 
-JsonValue JsonParser::parse_number() {
+JsonValue JsonParser::parseNumber() {
     size_t start = pos_;
     
     if (peek() == '-') {
@@ -291,29 +291,29 @@ JsonValue JsonParser::parse_number() {
         throw std::runtime_error("Invalid number format");
     }
     
-    while (has_more() && std::isdigit(peek())) {
+    while (hasMore() && std::isdigit(peek())) {
         next();
     }
     
-    if (has_more() && peek() == '.') {
+    if (hasMore() && peek() == '.') {
         next();
-        if (!has_more() || !std::isdigit(peek())) {
+        if (!hasMore() || !std::isdigit(peek())) {
             throw std::runtime_error("Invalid number format");
         }
-        while (has_more() && std::isdigit(peek())) {
+        while (hasMore() && std::isdigit(peek())) {
             next();
         }
     }
     
-    if (has_more() && (peek() == 'e' || peek() == 'E')) {
+    if (hasMore() && (peek() == 'e' || peek() == 'E')) {
         next();
-        if (has_more() && (peek() == '+' || peek() == '-')) {
+        if (hasMore() && (peek() == '+' || peek() == '-')) {
             next();
         }
-        if (!has_more() || !std::isdigit(peek())) {
+        if (!hasMore() || !std::isdigit(peek())) {
             throw std::runtime_error("Invalid number format");
         }
-        while (has_more() && std::isdigit(peek())) {
+        while (hasMore() && std::isdigit(peek())) {
             next();
         }
     }
@@ -322,7 +322,7 @@ JsonValue JsonParser::parse_number() {
     return JsonValue{std::stod(num_str)};
 }
 
-JsonValue JsonParser::parse_literal() {
+JsonValue JsonParser::parseLiteral() {
     if (json_.substr(pos_, 4) == "null") {
         pos_ += 4;
         return JsonValue{};
@@ -337,25 +337,25 @@ JsonValue JsonParser::parse_literal() {
     }
 }
 
-void JsonParser::skip_whitespace() {
-    while (has_more() && std::isspace(peek())) {
+void JsonParser::skipWhitespace() {
+    while (hasMore() && std::isspace(peek())) {
         next();
     }
 }
 
 char JsonParser::peek() const {
-    return has_more() ? json_[pos_] : '\0';
+    return hasMore() ? json_[pos_] : '\0';
 }
 
 char JsonParser::next() {
-    return has_more() ? json_[pos_++] : '\0';
+    return hasMore() ? json_[pos_++] : '\0';
 }
 
-bool JsonParser::has_more() const {
+bool JsonParser::hasMore() const {
     return pos_ < json_.size();
 }
 
-std::string escape_string(const std::string& str) {
+std::string escapeString(const std::string& str) {
     std::ostringstream oss;
     for (char c : str) {
         switch (c) {
@@ -378,7 +378,7 @@ std::string escape_string(const std::string& str) {
     return oss.str();
 }
 
-std::string unescape_string(const std::string& str) {
+std::string unescapeString(const std::string& str) {
     if (str.find('\\') == std::string::npos) {
         return str;
     }

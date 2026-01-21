@@ -236,8 +236,8 @@ int Midi1Writer::defaultMetaEventWriter(bool onlyCountLength, const Midi1Event& 
     return 0;
 }
 
-void write_midi1_file(const Midi1Music& music, const std::string& filename,
-                     bool disableRunningStatus) {
+void writeMidi1File(const Midi1Music& music, const std::string& filename,
+                   bool disableRunningStatus) {
     std::ofstream file(filename, std::ios::binary);
     if (!file) {
         throw std::runtime_error("Failed to open file for writing: " + filename);

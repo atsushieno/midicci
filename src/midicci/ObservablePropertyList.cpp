@@ -42,7 +42,7 @@ namespace midicci {
 
         auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
         if (common_rules_client) {
-            common_rules_client->add_property_catalog_updated_callback([this]() {
+            common_rules_client->addPropertyCatalogUpdatedCallback([this]() {
                 std::lock_guard<std::recursive_mutex> lock(mutex_);
 
                 auto metadata_list = getMetadataList();
@@ -75,7 +75,7 @@ namespace midicci {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         auto* common_rules_client = dynamic_cast<CommonRulesPropertyClient*>(property_client_);
         if (common_rules_client) {
-            return common_rules_client->get_metadata_list();
+            return common_rules_client->getMetadataList();
         }
         return {};
     }
@@ -129,12 +129,12 @@ namespace midicci {
         }
 
         // Get property ID from subscription mapping
-        auto property_id = property_client_->get_subscribed_property(msg);
+        auto property_id = property_client_->getSubscribedProperty(msg);
         if (property_id.empty()) {
             return "";
         }
 
-        auto command = property_client_->get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::COMMAND);
+        auto command = property_client_->getHeaderFieldString(msg.getHeader(), PropertyCommonHeaderKeys::COMMAND);
 
         // For NOTIFY commands, just return the command without updating property
         if (command == MidiCISubscriptionCommand::NOTIFY) {
@@ -142,15 +142,15 @@ namespace midicci {
         }
 
         // For FULL and PARTIAL commands, update the property value
-        auto media_type = property_client_->get_header_field_string(msg.get_header(), PropertyCommonHeaderKeys::MEDIA_TYPE);
+        auto media_type = property_client_->getHeaderFieldString(msg.getHeader(), PropertyCommonHeaderKeys::MEDIA_TYPE);
         if (media_type.empty()) {
             media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
         }
 
         // For now, we don't handle encoding, so just use body as-is
-        // In full implementation, you'd call property_client_->decode_body(msg.get_header(), msg.get_body())
+        // In full implementation, you'd call property_client_->decodeBody(msg.getHeader(), msg.getBody())
 
-        updateValue(property_id, msg.get_body(), media_type);
+        updateValue(property_id, msg.getBody(), media_type);
 
         return command;
     }
@@ -161,9 +161,9 @@ namespace midicci {
         // Initialize catalog updated event handler (following Kotlin initializeCatalogUpdatedEvent pattern)
         auto* common_rules_service = dynamic_cast<CommonRulesPropertyService*>(&property_service_);
         if (common_rules_service) {
-            common_rules_service->add_property_catalog_updated_callback([this]() {
+            common_rules_service->addPropertyCatalogUpdatedCallback([this]() {
                 // Note: Don't update metadata_list_ here since ServiceObservablePropertyList
-                // gets its metadata directly from the property service via get_metadata_list()
+                // gets its metadata directly from the property service via getMetadataList()
                 // Just notify that the catalog has been updated
                 notifyPropertyCatalogUpdated();
             });
@@ -173,7 +173,7 @@ namespace midicci {
     std::vector<std::unique_ptr<PropertyMetadata>> ServiceObservablePropertyList::getMetadataList() const {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         // Delegate to the property service to get the current metadata list
-        return property_service_.get_metadata_list();
+        return property_service_.getMetadataList();
     }
 
     std::vector<PropertyValue> ServiceObservablePropertyList::getValues() const {
@@ -187,7 +187,7 @@ namespace midicci {
         // Use the proper accessor method from CommonRulesPropertyService
         auto* common_rules_service = dynamic_cast<CommonRulesPropertyService*>(&property_service_);
         if (common_rules_service) {
-            return common_rules_service->get_metadata_by_id(property_id);
+            return common_rules_service->getMetadataById(property_id);
         }
 
         return nullptr;
@@ -208,31 +208,31 @@ namespace midicci {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // Add to property service - this will trigger the catalog update callback we registered
-        property_service_.add_metadata(std::move(metadata));
+        property_service_.addMetadata(std::move(metadata));
         // Note: Don't call notifyPropertyCatalogUpdated() here as it will be called by the callback
     }
 
     void ServiceObservablePropertyList::updateMetadata(const std::string& propertyId, PropertyMetadata* metadata) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        property_service_.remove_metadata(propertyId);
+        property_service_.removeMetadata(propertyId);
 
         auto* common_rules_metadata = dynamic_cast<CommonRulesPropertyMetadata*>(metadata);
         if (common_rules_metadata) {
             auto new_metadata = std::make_unique<CommonRulesPropertyMetadata>(*common_rules_metadata);
-            property_service_.add_metadata(std::move(new_metadata));
+            property_service_.addMetadata(std::move(new_metadata));
         }
     }
 
     void ServiceObservablePropertyList::updateValue(const std::vector<uint8_t>& header, const std::vector<uint8_t>& body) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        std::string propertyId = property_service_.get_property_id_for_header(header);
-        std::string resId = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::RES_ID);
-        std::string mediaType = property_service_.get_header_field_string(header, PropertyCommonHeaderKeys::MEDIA_TYPE);
+        std::string propertyId = property_service_.getPropertyIdForHeader(header);
+        std::string resId = property_service_.getHeaderFieldString(header, PropertyCommonHeaderKeys::RES_ID);
+        std::string mediaType = property_service_.getHeaderFieldString(header, PropertyCommonHeaderKeys::MEDIA_TYPE);
         if (mediaType.empty())
             mediaType = CommonRulesKnownMimeTypes::APPLICATION_JSON;
-        std::vector<uint8_t> decodedBody = property_service_.decode_body(header, body);
+        std::vector<uint8_t> decodedBody = property_service_.decodeBody(header, body);
         updateValue(propertyId, resId, mediaType, decodedBody);
     }
 
@@ -263,7 +263,7 @@ namespace midicci {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // Remove from property service - this will trigger the catalog update callback we registered
-        property_service_.remove_metadata(propertyId);
+        property_service_.removeMetadata(propertyId);
         // Note: Don't call notifyPropertyCatalogUpdated() here as it will be called by the callback
     }
 

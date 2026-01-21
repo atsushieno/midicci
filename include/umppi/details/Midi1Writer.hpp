@@ -33,7 +33,7 @@ public:
                                      std::vector<uint8_t>& stream);
 };
 
-void write_midi1_file(const Midi1Music& music, const std::string& filename,
-                     bool disableRunningStatus = false);
+void writeMidi1File(const Midi1Music& music, const std::string& filename,
+                   bool disableRunningStatus = false);
 
 }

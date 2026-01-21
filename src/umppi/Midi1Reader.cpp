@@ -166,7 +166,7 @@ uint8_t Midi1Reader::peekByte() {
     return static_cast<uint8_t>(c);
 }
 
-Midi1Music read_midi1_file(const std::string& filename) {
+Midi1Music readMidi1File(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {
         throw SmfParserException("Failed to open file: " + filename);

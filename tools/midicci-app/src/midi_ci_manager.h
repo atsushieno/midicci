@@ -130,7 +130,7 @@ private:
     std::unordered_map<uint32_t, std::unordered_map<uint8_t, std::string>> inflight_request_map_;
 
     // Note: Remote device access is now handled through ClientConnection objects
-    // obtained via device_->get_connection(muid) - no need for separate storage
+    // obtained via device_->getConnection(muid) - no need for separate storage
     
     // Device configuration helpers
     void setupDeviceConfiguration();
@@ -149,7 +149,7 @@ private:
     void clearRequestIdTracking(uint32_t muid, const std::string& request_key);
     
     // Logging helper
-    void log(const std::string& message, bool is_outgoing = false);
+    void log(const std::string& message, bool isOutgoing = false);
     
     // Thread synchronization for cross-thread access
     mutable std::recursive_mutex midi_ci_mutex_;

@@ -17,11 +17,11 @@ CallbackMusicDeviceInputReceiver::CallbackMusicDeviceInputReceiver(MidiInputList
     });
 }
 
-void CallbackMusicDeviceInputReceiver::add_input_receiver(InputCallback callback) {
+void CallbackMusicDeviceInputReceiver::addInputReceiver(InputCallback callback) {
     input_receivers_.push_back(callback);
 }
 
-void CallbackMusicDeviceInputReceiver::remove_input_receiver(InputCallback callback) {
+void CallbackMusicDeviceInputReceiver::removeInputReceiver(InputCallback callback) {
     // Note: Function comparison is complex, so this is a simplified implementation
     // In practice, you might want to use a different container or identification scheme
     // For now, we'll clear all receivers when remove is called
@@ -52,7 +52,7 @@ MusicDeviceConnector::MusicDeviceConnector(
 {
     // Default endpoint selector: choose first available connection
     select_target_endpoint_ = [](const MidiCIDevice& device) -> uint32_t {
-        const auto& connections = device.get_connections();
+        const auto& connections = device.getConnections();
         if (!connections.empty()) {
             return connections.begin()->first;
         }
@@ -60,7 +60,7 @@ MusicDeviceConnector::MusicDeviceConnector(
     };
 }
 
-void MusicDeviceConnector::connect_async(ConnectionCallback callback) {
+void MusicDeviceConnector::connectAsync(ConnectionCallback callback) {
     std::thread([this, callback]() {
         try {
             auto device = connect();
@@ -72,7 +72,7 @@ void MusicDeviceConnector::connect_async(ConnectionCallback callback) {
 }
 
 std::unique_ptr<MusicDevice> MusicDeviceConnector::connect(std::chrono::milliseconds timeout) {
-    auto& ci_device = ci_session_->get_device();
+    auto& ci_device = ci_session_->getDevice();
     
     // TODO: Send discovery when sendDiscovery method is available
     // ci_device.sendDiscovery();
@@ -98,15 +98,15 @@ void MusicDeviceConnector::send(const uint8_t* data, size_t offset, size_t lengt
     sender_->send(data, offset, length, timestamp_ns);
 }
 
-void MusicDeviceConnector::set_endpoint_selector(EndpointSelector selector) {
+void MusicDeviceConnector::setEndpointSelector(EndpointSelector selector) {
     select_target_endpoint_ = selector;
 }
 
-void MusicDeviceConnector::set_discovery_wait(std::chrono::milliseconds wait) {
+void MusicDeviceConnector::setDiscoveryWait(std::chrono::milliseconds wait) {
     discovery_wait_ = wait;
 }
 
-void MusicDeviceConnector::set_discovery_timeout(std::chrono::milliseconds timeout) {
+void MusicDeviceConnector::setDiscoveryTimeout(std::chrono::milliseconds timeout) {
     discovery_timeout_ = timeout;
 }
 
@@ -121,12 +121,12 @@ MusicDevice::MusicDevice(
 {
 }
 
-std::shared_ptr<ClientConnection> MusicDevice::get_connection() const {
-    return ci_session_->get_device().get_connection(target_muid_);
+std::shared_ptr<ClientConnection> MusicDevice::getConnection() const {
+    return ci_session_->getDevice().getConnection(target_muid_);
 }
 
-std::optional<DeviceInfo> MusicDevice::get_device_info() const {
-    auto connection = get_connection();
+std::optional<DeviceInfo> MusicDevice::getDeviceInfo() const {
+    auto connection = getConnection();
     if (connection) {
         // TODO: Return device info when available from connection
         // For now, return empty optional
@@ -139,20 +139,20 @@ void MusicDevice::send(const uint8_t* data, size_t offset, size_t length, uint64
     sender_->send(data, offset, length, timestamp_ns);
 }
 
-void MusicDevice::set_property_binary_getter(PropertyBinaryGetter getter) {
-    ci_session_->get_device().get_property_host_facade().set_property_binary_getter(std::move(getter));
+void MusicDevice::setPropertyBinaryGetter(PropertyBinaryGetter getter) {
+    ci_session_->getDevice().getPropertyHostFacade().setPropertyBinaryGetter(std::move(getter));
 }
 
-MusicDevice::PropertyBinaryGetter MusicDevice::get_property_binary_getter() const {
-    return ci_session_->get_device().get_property_host_facade().get_property_binary_getter();
+MusicDevice::PropertyBinaryGetter MusicDevice::getPropertyBinaryGetter() const {
+    return ci_session_->getDevice().getPropertyHostFacade().getPropertyBinaryGetter();
 }
 
-void MusicDevice::set_property_binary_setter(PropertyBinarySetter setter) {
-    ci_session_->get_device().get_property_host_facade().set_property_binary_setter(std::move(setter));
+void MusicDevice::setPropertyBinarySetter(PropertyBinarySetter setter) {
+    ci_session_->getDevice().getPropertyHostFacade().setPropertyBinarySetter(std::move(setter));
 }
 
-MusicDevice::PropertyBinarySetter MusicDevice::get_property_binary_setter() const {
-    return ci_session_->get_device().get_property_host_facade().get_property_binary_setter();
+MusicDevice::PropertyBinarySetter MusicDevice::getPropertyBinarySetter() const {
+    return ci_session_->getDevice().getPropertyHostFacade().getPropertyBinarySetter();
 }
 
 } // namespace midicci::musicdevice

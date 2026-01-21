@@ -16,23 +16,23 @@ struct MidiCIChannel {
     uint8_t program;
     int cluster_channel_start;  // 1-256 range as per spec
     int cluster_length;
-    bool is_omni_on;
-    bool is_poly_mode;
+    bool isOmniOn;
+    bool isPolyMode;
     std::string cluster_type;
     
     explicit MidiCIChannel(const std::string& title = "", int channel = 1,
                  const std::string& program_title = "", uint8_t bank_msb = 0,
                  uint8_t bank_lsb = 0, uint8_t program = 0,
                  int cluster_channel_start = 1, int cluster_length = 1,
-                 bool is_omni_on = true, bool is_poly_mode = true,
+                 bool isOmniOn = true, bool isPolyMode = true,
                  const std::string& cluster_type = "other")
         : title(title), channel(channel), program_title(program_title),
           bank_msb(bank_msb), bank_lsb(bank_lsb), program(program),
           cluster_channel_start(cluster_channel_start), cluster_length(cluster_length),
-          is_omni_on(is_omni_on), is_poly_mode(is_poly_mode), cluster_type(cluster_type) {}
+          isOmniOn(isOmniOn), isPolyMode(isPolyMode), cluster_type(cluster_type) {}
           
-    uint8_t get_cluster_midi_mode() const {
-        return static_cast<uint8_t>((is_omni_on ? 1 : 0) + (is_poly_mode ? 2 : 0) + 1);
+    uint8_t getClusterMidiMode() const {
+        return static_cast<uint8_t>((isOmniOn ? 1 : 0) + (isPolyMode ? 2 : 0) + 1);
     }
 };
 

@@ -7,11 +7,34 @@
 namespace umppi {
 
 int Ump::getSizeInInts() const {
-    return umpSizeInInts(getMessageType());
+    return umpSizeInInts(static_cast<uint8_t>(getMessageType()));
+}
+
+int Ump::getSizeInBytes() const {
+    switch (getMessageType()) {
+        case MessageType::SYSEX8_MDS:
+        case MessageType::FLEX_DATA:
+        case MessageType::UMP_STREAM:
+            return 16;
+        case MessageType::SYSEX7:
+        case MessageType::MIDI2:
+            return 8;
+        default:
+            return 4;
+    }
+}
+
+BinaryChunkStatus Ump::getBinaryChunkStatus() const {
+    uint8_t status = getStatusByte();
+    if (status == 0x00) return BinaryChunkStatus::COMPLETE_PACKET;
+    if (status == 0x10) return BinaryChunkStatus::START;
+    if (status == 0x20) return BinaryChunkStatus::CONTINUE;
+    if (status == 0x30) return BinaryChunkStatus::END;
+    return BinaryChunkStatus::COMPLETE_PACKET;
 }
 
 bool Ump::isJRClock() const {
-    return getMessageType() == MidiMessageType::UTILITY &&
+    return getMessageType() == MessageType::UTILITY &&
            getStatusCode() == MidiUtilityStatus::JR_CLOCK;
 }
 
@@ -20,7 +43,7 @@ uint16_t Ump::getJRClock() const {
 }
 
 bool Ump::isJRTimestamp() const {
-    return getMessageType() == MidiMessageType::UTILITY &&
+    return getMessageType() == MessageType::UTILITY &&
            getStatusCode() == MidiUtilityStatus::JR_TIMESTAMP;
 }
 
@@ -29,7 +52,7 @@ uint16_t Ump::getJRTimestamp() const {
 }
 
 bool Ump::isDCTPQ() const {
-    return getMessageType() == MidiMessageType::UTILITY &&
+    return getMessageType() == MessageType::UTILITY &&
            getStatusCode() == MidiUtilityStatus::DCTPQ;
 }
 
@@ -38,7 +61,7 @@ uint16_t Ump::getDCTPQ() const {
 }
 
 bool Ump::isDeltaClockstamp() const {
-    return getMessageType() == MidiMessageType::UTILITY &&
+    return getMessageType() == MessageType::UTILITY &&
            getStatusCode() == MidiUtilityStatus::DELTA_CLOCKSTAMP;
 }
 
@@ -46,13 +69,21 @@ uint32_t Ump::getDeltaClockstamp() const {
     return isDeltaClockstamp() ? (int1 & 0xFFFFF) : 0;
 }
 
+bool Ump::isStartOfClip() const {
+    return getMessageType() == MessageType::UMP_STREAM && getStatusByte() == 0x20;
+}
+
+bool Ump::isEndOfClip() const {
+    return getMessageType() == MessageType::UMP_STREAM && getStatusByte() == 0x21;
+}
+
 bool Ump::isTempo() const {
-    return getMessageType() == MidiMessageType::FLEX_DATA &&
+    return getMessageType() == MessageType::FLEX_DATA &&
            static_cast<uint8_t>(int1 & 0xFF) == FlexDataStatus::TEMPO;
 }
 
 bool Ump::isTimeSignature() const {
-    return getMessageType() == MidiMessageType::FLEX_DATA &&
+    return getMessageType() == MessageType::FLEX_DATA &&
            static_cast<uint8_t>(int1 & 0xFF) == FlexDataStatus::TIME_SIGNATURE;
 }
 
@@ -138,6 +169,53 @@ std::string Ump::toString() const {
     oss << "]";
 
     return oss.str();
+}
+
+static uint32_t getIntFromBytes_(const uint8_t* bytes, size_t offset, size_t max_size) {
+    if (offset + 3 >= max_size) return 0;
+
+    return bytes[offset] |
+           (bytes[offset + 1] << 8) |
+           (bytes[offset + 2] << 16) |
+           (bytes[offset + 3] << 24);
+}
+
+std::vector<Ump> parseUmpsFromBytes(const uint8_t* data, size_t start, size_t length) {
+    std::vector<Ump> result;
+    size_t offset = start;
+    const size_t end = start + length;
+
+    while (offset < end && (offset - start + 3) < length) {
+        uint32_t int1 = getIntFromBytes_(data, offset, start + length);
+        MessageType msg_type = static_cast<MessageType>((int1 >> 28) & 0xF);
+
+        size_t ump_size;
+        switch (msg_type) {
+            case MessageType::SYSEX8_MDS:
+            case MessageType::FLEX_DATA:
+            case MessageType::UMP_STREAM:
+                ump_size = 16;
+                break;
+            case MessageType::SYSEX7:
+            case MessageType::MIDI2:
+                ump_size = 8;
+                break;
+            default:
+                ump_size = 4;
+                break;
+        }
+
+        if (offset + ump_size > end) break;
+
+        uint32_t int2 = (ump_size > 4) ? getIntFromBytes_(data, offset + 4, start + length) : 0;
+        uint32_t int3 = (ump_size > 8) ? getIntFromBytes_(data, offset + 8, start + length) : 0;
+        uint32_t int4 = (ump_size > 12) ? getIntFromBytes_(data, offset + 12, start + length) : 0;
+
+        result.emplace_back(int1, int2, int3, int4);
+        offset += ump_size;
+    }
+
+    return result;
 }
 
 }

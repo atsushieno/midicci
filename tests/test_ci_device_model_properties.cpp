@@ -52,8 +52,8 @@ protected:
 
 TEST_F(CIDeviceModelPropertyTest, CreatePropertyAppearsInPropertyList) {
     // Get initial property count using the correct Kotlin pattern
-    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
-    auto initial_metadata = propertyFacade.get_properties().getMetadataList();
+    auto& propertyFacade = device_model->getDevice()->getPropertyHostFacade();
+    auto initial_metadata = propertyFacade.getProperties().getMetadataList();
     size_t initial_count = initial_metadata.size();
     
     // Create a new property
@@ -61,7 +61,7 @@ TEST_F(CIDeviceModelPropertyTest, CreatePropertyAppearsInPropertyList) {
     ASSERT_NE(property, nullptr);
     
     // Verify property appears in property list using the correct pattern
-    auto updated_metadata = propertyFacade.get_properties().getMetadataList();
+    auto updated_metadata = propertyFacade.getProperties().getMetadataList();
     EXPECT_EQ(updated_metadata.size(), initial_count + 1);
     
     // Verify the new property is in the list
@@ -98,8 +98,8 @@ TEST_F(CIDeviceModelPropertyTest, CreatePropertyTriggersNotification) {
 
 TEST_F(CIDeviceModelPropertyTest, MultiplePropertiesCreatedCorrectly) {
     // Get initial count using correct pattern
-    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
-    auto initial_metadata = propertyFacade.get_properties().getMetadataList();
+    auto& propertyFacade = device_model->getDevice()->getPropertyHostFacade();
+    auto initial_metadata = propertyFacade.getProperties().getMetadataList();
     size_t initial_count = initial_metadata.size();
     
     // Set up callback tracking
@@ -118,7 +118,7 @@ TEST_F(CIDeviceModelPropertyTest, MultiplePropertiesCreatedCorrectly) {
     }
     
     // Verify all properties appear in the list using correct pattern
-    auto final_metadata = propertyFacade.get_properties().getMetadataList();
+    auto final_metadata = propertyFacade.getProperties().getMetadataList();
     EXPECT_EQ(final_metadata.size(), initial_count + num_properties);
     
     // Verify each created property is in the final list
@@ -160,8 +160,8 @@ TEST_F(CIDeviceModelPropertyTest, RemovePropertyUpdatesListAndNotifications) {
     std::string property_id = property->getPropertyId();
     
     // Verify it's in the list using correct pattern
-    auto& propertyFacade = device_model->get_device()->get_property_host_facade();
-    auto metadata_with_new = propertyFacade.get_properties().getMetadataList();
+    auto& propertyFacade = device_model->getDevice()->getPropertyHostFacade();
+    auto metadata_with_new = propertyFacade.getProperties().getMetadataList();
     bool found_before = false;
     for (const auto& metadata : metadata_with_new) {
         if (metadata && metadata->getPropertyId() == property_id) {
@@ -181,7 +181,7 @@ TEST_F(CIDeviceModelPropertyTest, RemovePropertyUpdatesListAndNotifications) {
     device_model->remove_local_property(property_id);
     
     // Verify it's no longer in the list using correct pattern
-    auto metadata_after_remove = propertyFacade.get_properties().getMetadataList();
+    auto metadata_after_remove = propertyFacade.getProperties().getMetadataList();
     bool found_after = false;
     for (const auto& metadata : metadata_after_remove) {
         if (metadata && metadata->getPropertyId() == property_id) {

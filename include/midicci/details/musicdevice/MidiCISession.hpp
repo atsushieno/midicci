@@ -33,7 +33,7 @@ struct MidiCISessionSource {
 };
 
 // Factory function to create a MidiCISession from a source
-std::unique_ptr<class MidiCISession> create_midi_ci_session(
+std::unique_ptr<class MidiCISession> createMidiCiSession(
     const MidiCISessionSource& source,
     uint32_t muid = 0,  // Will be randomly generated if 0
     MidiCIDeviceConfiguration config = MidiCIDeviceConfiguration{},
@@ -55,14 +55,14 @@ public:
     MidiCISession(MidiCISession&&) = default;
     MidiCISession& operator=(MidiCISession&&) = default;
 
-    MidiCIDevice& get_device() { return *device_; }
-    const MidiCIDevice& get_device() const { return *device_; }
+    MidiCIDevice& getDevice() { return *device_; }
+    const MidiCIDevice& getDevice() const { return *device_; }
 
 private:
-    void process_ci_message(uint8_t group, const std::vector<uint8_t>& data);
-    void log_midi_message_report_chunk(const std::vector<uint8_t>& data);
-    void process_midi1_input(const uint8_t* data, size_t start, size_t length);
-    void process_ump_input(const uint8_t* data, size_t start, size_t length);
+    void processCiMessage(uint8_t group, const std::vector<uint8_t>& data);
+    void logMidiMessageReportChunk(const std::vector<uint8_t>& data);
+    void processMidi1Input(const uint8_t* data, size_t start, size_t length);
+    void processUmpInput(const uint8_t* data, size_t start, size_t length);
     
     std::unique_ptr<MidiCIDevice> device_;
     bool receiving_midi_message_reports_;

@@ -25,7 +25,7 @@ TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
     prop_metadata->canSet = "partial";
     prop_metadata->canSubscribe = false;
 
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
     host.addMetadata(std::move(prop_metadata));
 
     // Set initial property value on host (Device2)
@@ -39,26 +39,26 @@ TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
 
     // Wait for discovery to complete over the virtual ports
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
 
     ASSERT_TRUE(discovery_complete) << "Discovery did not complete over transport";
-    ASSERT_GT(device1.get_connections().size(), 0) << "No connections after discovery";
+    ASSERT_GT(device1.getConnections().size(), 0) << "No connections after discovery";
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn) << "Connection is null";
 
     // Step 2: Client (Device1) requests property data over transport
-    auto& client = conn->get_property_client_facade();
-    client.send_get_property_data(property_id, "", "");
+    auto& client = conn->getPropertyClientFacade();
+    client.sendGetPropertyData(property_id, "", "");
 
     // Wait for the property data to be received over transport
     transport.processMessages(std::chrono::milliseconds(500));
 
     // Step 3: Verify the property value was received
     bool property_received = transport.waitForCondition([&client, &property_id, &initial_bytes]() {
-        auto* properties = client.get_properties();
+        auto* properties = client.getProperties();
         auto values = properties->getValues();
         auto it = std::find_if(values.begin(), values.end(),
                               [&property_id](const PropertyValue& pv) {
@@ -70,7 +70,7 @@ TEST(TransportPropertyExchangeTest, BasicGetPropertyDataOverTransport) {
 
     ASSERT_TRUE(property_received) << "Property data was not received over transport";
 
-    auto* properties = client.get_properties();
+    auto* properties = client.getProperties();
     auto values = properties->getValues();
     auto it = std::find_if(values.begin(), values.end(),
                           [&property_id](const PropertyValue& pv) {
@@ -94,7 +94,7 @@ TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
     prop_metadata->canSet = "full";
     prop_metadata->canSubscribe = false;
 
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
     host.addMetadata(std::move(prop_metadata));
 
     // Set initial value
@@ -106,11 +106,11 @@ TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
     // Establish connection
     device1.sendDiscovery();
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
     ASSERT_TRUE(discovery_complete);
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
@@ -119,15 +119,15 @@ TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
     std::string new_json = new_value.serialize();
     std::vector<uint8_t> new_bytes(new_json.begin(), new_json.end());
 
-    auto& client = conn->get_property_client_facade();
-    client.send_set_property_data(property_id, "", new_bytes);
+    auto& client = conn->getPropertyClientFacade();
+    client.sendSetPropertyData(property_id, "", new_bytes);
 
     // Wait for the set operation to complete
     transport.processMessages(std::chrono::milliseconds(500));
 
     // Verify the host's property value was updated
     bool value_updated = transport.waitForCondition([&host, &property_id, &new_bytes]() {
-        auto values = host.get_properties().getValues();
+        auto values = host.getProperties().getValues();
         auto it = std::find_if(values.begin(), values.end(),
                               [&property_id](const PropertyValue& pv) {
                                   return pv.id == property_id;
@@ -137,7 +137,7 @@ TEST(TransportPropertyExchangeTest, SetPropertyDataOverTransport) {
 
     ASSERT_TRUE(value_updated) << "Host property value was not updated";
 
-    auto values = host.get_properties().getValues();
+    auto values = host.getProperties().getValues();
     auto it = std::find_if(values.begin(), values.end(),
                           [&property_id](const PropertyValue& pv) {
                               return pv.id == property_id;
@@ -159,7 +159,7 @@ TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
     prop_metadata->canSet = "none";
     prop_metadata->canSubscribe = false;
 
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
     host.addMetadata(std::move(prop_metadata));
 
     // Create a large JSON array to test fragmentation handling
@@ -178,24 +178,24 @@ TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
     // Establish connection
     device1.sendDiscovery();
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
     ASSERT_TRUE(discovery_complete);
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
     // Request the large property
-    auto& client = conn->get_property_client_facade();
-    client.send_get_property_data(property_id, "", "");
+    auto& client = conn->getPropertyClientFacade();
+    client.sendGetPropertyData(property_id, "", "");
 
     // Wait longer for large data transfer
     transport.processMessages(std::chrono::milliseconds(1000));
 
     // Verify the large property was received correctly
     bool property_received = transport.waitForCondition([&client, &property_id, &large_bytes]() {
-        auto* properties = client.get_properties();
+        auto* properties = client.getProperties();
         auto values = properties->getValues();
         auto it = std::find_if(values.begin(), values.end(),
                               [&property_id](const PropertyValue& pv) {
@@ -207,7 +207,7 @@ TEST(TransportPropertyExchangeTest, LargePropertyDataOverTransport) {
 
     ASSERT_TRUE(property_received) << "Large property data was not received";
 
-    auto* properties = client.get_properties();
+    auto* properties = client.getProperties();
     auto values = properties->getValues();
     auto it = std::find_if(values.begin(), values.end(),
                           [&property_id](const PropertyValue& pv) {
@@ -233,7 +233,7 @@ TEST(TransportPropertyExchangeTest, MultiplePropertyRequestsOverTransport) {
         "X-Property-C"
     };
 
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
 
     for (const auto& prop_id : property_ids) {
         auto prop_metadata = std::make_unique<CommonRulesPropertyMetadata>(prop_id);
@@ -250,24 +250,24 @@ TEST(TransportPropertyExchangeTest, MultiplePropertyRequestsOverTransport) {
     // Establish connection
     device1.sendDiscovery();
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
     ASSERT_TRUE(discovery_complete);
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
     // Request all properties
-    auto& client = conn->get_property_client_facade();
+    auto& client = conn->getPropertyClientFacade();
     for (const auto& prop_id : property_ids) {
-        client.send_get_property_data(prop_id, "", "");
+        client.sendGetPropertyData(prop_id, "", "");
         transport.processMessages(std::chrono::milliseconds(100));
     }
 
     // Verify all properties were received
     bool all_received = transport.waitForCondition([&client, &property_ids]() {
-        auto* properties = client.get_properties();
+        auto* properties = client.getProperties();
         auto values = properties->getValues();
 
         for (const auto& prop_id : property_ids) {
@@ -282,7 +282,7 @@ TEST(TransportPropertyExchangeTest, MultiplePropertyRequestsOverTransport) {
 
     ASSERT_TRUE(all_received) << "Not all properties were received";
 
-    auto* properties = client.get_properties();
+    auto* properties = client.getProperties();
     auto values = properties->getValues();
 
     for (const auto& prop_id : property_ids) {
@@ -307,7 +307,7 @@ TEST(TransportPropertyExchangeTest, PropertySubscriptionOverTransport) {
     prop_metadata->canSet = "partial";
     prop_metadata->canSubscribe = true;
 
-    auto& host = device2.get_property_host_facade();
+    auto& host = device2.getPropertyHostFacade();
     host.addMetadata(std::move(prop_metadata));
 
     JsonValue initial_value("Initial");
@@ -318,39 +318,39 @@ TEST(TransportPropertyExchangeTest, PropertySubscriptionOverTransport) {
     // Establish connection
     device1.sendDiscovery();
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
     ASSERT_TRUE(discovery_complete);
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
     // Subscribe to the property
-    auto& client = conn->get_property_client_facade();
-    client.send_subscribe_property(property_id, "", "");
+    auto& client = conn->getPropertyClientFacade();
+    client.sendSubscribeProperty(property_id, "", "");
 
     transport.processMessages(std::chrono::milliseconds(500));
 
     // Verify subscription was registered
     bool subscribed = transport.waitForCondition([&host]() {
-        return host.get_subscriptions().size() > 0;
+        return host.getSubscriptions().size() > 0;
     }, std::chrono::milliseconds(2000));
 
     ASSERT_TRUE(subscribed) << "Subscription was not registered on host";
-    EXPECT_EQ(1, host.get_subscriptions().size());
+    EXPECT_EQ(1, host.getSubscriptions().size());
 
     // Unsubscribe
-    client.send_unsubscribe_property(property_id, "");
+    client.sendUnsubscribeProperty(property_id, "");
     transport.processMessages(std::chrono::milliseconds(500));
 
     // Verify subscription was removed
     bool unsubscribed = transport.waitForCondition([&host]() {
-        return host.get_subscriptions().size() == 0;
+        return host.getSubscriptions().size() == 0;
     }, std::chrono::milliseconds(2000));
 
     ASSERT_TRUE(unsubscribed) << "Subscription was not removed";
-    EXPECT_EQ(0, host.get_subscriptions().size());
+    EXPECT_EQ(0, host.getSubscriptions().size());
 }
 
 TEST(TransportPropertyExchangeTest, StandardPropertyChannelListOverTransport) {
@@ -364,17 +364,17 @@ TEST(TransportPropertyExchangeTest, StandardPropertyChannelListOverTransport) {
     device1.sendDiscovery();
 
     bool discovery_complete = transport.waitForCondition([&device1]() {
-        return device1.get_connections().size() > 0;
+        return device1.getConnections().size() > 0;
     }, std::chrono::milliseconds(2000));
     ASSERT_TRUE(discovery_complete);
 
-    auto connections = device1.get_connections();
+    auto connections = device1.getConnections();
     auto conn = connections.begin()->second;
     ASSERT_NE(nullptr, conn);
 
     // Request standard ChannelList property
-    auto& client = conn->get_property_client_facade();
-    client.send_get_property_data(PropertyResourceNames::CHANNEL_LIST, "", "");
+    auto& client = conn->getPropertyClientFacade();
+    client.sendGetPropertyData(PropertyResourceNames::CHANNEL_LIST, "", "");
 
     transport.processMessages(std::chrono::milliseconds(1000));
 

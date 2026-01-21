@@ -7,11 +7,11 @@ MidiMachineMessageReporter::MidiMachineMessageReporter()
 {
 }
 
-MidiMessageReportProtocol MidiMachineMessageReporter::get_midi_transport_protocol() const {
+MidiMessageReportProtocol MidiMachineMessageReporter::getMidiTransportProtocol() const {
     return configured_midi_transport_protocol_;
 }
 
-void MidiMachineMessageReporter::set_configured_midi_transport_protocol(MidiMessageReportProtocol protocol) {
+void MidiMachineMessageReporter::setConfiguredMidiTransportProtocol(MidiMessageReportProtocol protocol) {
     configured_midi_transport_protocol_ = protocol;
 }
 

@@ -36,10 +36,10 @@ TEST_F(RequestIdValidMuidTest, RequestIdCorrelationWithValidMUIDs) {
         auto server_device = std::make_shared<MidiCIDevice>(server_muid, config);
         
         // Set up mock output handlers
-        client_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        client_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_send_output(group, data);
         });
-        server_device->set_sysex_sender([this](uint8_t group, const std::vector<uint8_t>& data) {
+        server_device->setSysexSender([this](uint8_t group, const std::vector<uint8_t>& data) {
             return this->mock_send_output(group, data);
         });
         
@@ -54,7 +54,7 @@ TEST_F(RequestIdValidMuidTest, RequestIdCorrelationWithValidMUIDs) {
         
         // Send a property request
         sent_messages.clear();
-        property_client->send_get_property_data("ResourceList", "", "UTF-8", -1, -1);
+        property_client->sendGetPropertyData("ResourceList", "", "UTF-8", -1, -1);
         // Sent ResourceList request
         
         ASSERT_FALSE(sent_messages.empty()) << "Messages should have been sent";
@@ -101,8 +101,8 @@ TEST_F(RequestIdValidMuidTest, RequestIdCorrelationWithValidMUIDs) {
         Common reply_common(server_muid, client_muid, ADDRESS_FUNCTION_BLOCK, 0);
         GetPropertyDataReply reply(reply_common, extracted_request_id, header_bytes, body_bytes);
         
-        EXPECT_EQ(extracted_request_id, reply.get_request_id()) << "Reply should have correct request ID";
+        EXPECT_EQ(extracted_request_id, reply.getRequestId()) << "Reply should have correct request ID";
         
         // Process the reply to test the full round-trip
-        EXPECT_NO_THROW(property_client->process_get_data_reply(reply)) << "Reply processing should not throw";
+        EXPECT_NO_THROW(property_client->processGetDataReply(reply)) << "Reply processing should not throw";
 }

@@ -69,9 +69,9 @@ int Midi1Music::getSmpteTicksForSeconds(int smfDeltaTimeSpec, double duration,
 }
 
 int Midi1Music::getSmfTempo(const uint8_t* data, size_t offset) {
-    return (to_unsigned(data[offset]) << 16) +
-           (to_unsigned(data[offset + 1]) << 8) +
-           to_unsigned(data[offset + 2]);
+    return (toUnsigned(data[offset]) << 16) +
+           (toUnsigned(data[offset + 1]) << 8) +
+           toUnsigned(data[offset + 2]);
 }
 
 double Midi1Music::getSmfBpm(const uint8_t* data, size_t offset) {

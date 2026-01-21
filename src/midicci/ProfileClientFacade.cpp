@@ -19,17 +19,17 @@ ProfileClientFacade::ProfileClientFacade(MidiCIDevice& device, ClientConnection&
 
 ProfileClientFacade::~ProfileClientFacade() = default;
 
-ObservableProfileList& ProfileClientFacade::get_profiles() {
+ObservableProfileList& ProfileClientFacade::getProfiles() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profiles_;
 }
 
-const ObservableProfileList& ProfileClientFacade::get_profiles() const {
+const ObservableProfileList& ProfileClientFacade::getProfiles() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return *pimpl_->profiles_;
 }
 
-void ProfileClientFacade::set_profile(uint8_t group, uint8_t address, const MidiCIProfileId& profile, bool enabled, uint16_t num_channels_requested) {
+void ProfileClientFacade::setProfile(uint8_t group, uint8_t address, const MidiCIProfileId& profile, bool enabled, uint16_t num_channels_requested) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
     if (enabled) {
@@ -48,54 +48,54 @@ void ProfileClientFacade::set_profile(uint8_t group, uint8_t address, const Midi
     }
 }
 
-void ProfileClientFacade::process_profile_reply(const ProfileReply& msg) {
+void ProfileClientFacade::processProfileReply(const ProfileReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    for (const auto& profile_data : msg.get_enabled_profiles()) {
-        uint16_t num_channels = (msg.get_common().address >= 0x7E) ? 0 : 1;
-        MidiCIProfile profile(profile_data, msg.get_common().group, msg.get_common().address, true, num_channels);
+    for (const auto& profile_data : msg.getEnabledProfiles()) {
+        uint16_t num_channels = (msg.getCommon().address >= 0x7E) ? 0 : 1;
+        MidiCIProfile profile(profile_data, msg.getCommon().group, msg.getCommon().address, true, num_channels);
         pimpl_->profiles_->add(profile);
     }
     
-    for (const auto& profile_data : msg.get_disabled_profiles()) {
-        uint16_t num_channels = (msg.get_common().address >= 0x7E) ? 0 : 1;
-        MidiCIProfile profile(profile_data, msg.get_common().group, msg.get_common().address, false, num_channels);
+    for (const auto& profile_data : msg.getDisabledProfiles()) {
+        uint16_t num_channels = (msg.getCommon().address >= 0x7E) ? 0 : 1;
+        MidiCIProfile profile(profile_data, msg.getCommon().group, msg.getCommon().address, false, num_channels);
         pimpl_->profiles_->add(profile);
     }
 }
 
-void ProfileClientFacade::process_profile_added_report(const ProfileAdded& msg) {
+void ProfileClientFacade::processProfileAddedReport(const ProfileAdded& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    MidiCIProfileId profile_id(msg.get_profile_id());
-    uint16_t num_channels = (msg.get_common().address >= 0x7E) ? 0 : 1;
-    MidiCIProfile profile(profile_id, msg.get_common().group, msg.get_common().address, false, num_channels);
+    MidiCIProfileId profile_id(msg.getProfileId());
+    uint16_t num_channels = (msg.getCommon().address >= 0x7E) ? 0 : 1;
+    MidiCIProfile profile(profile_id, msg.getCommon().group, msg.getCommon().address, false, num_channels);
     pimpl_->profiles_->add(profile);
 }
 
-void ProfileClientFacade::process_profile_removed_report(const ProfileRemoved& msg) {
+void ProfileClientFacade::processProfileRemovedReport(const ProfileRemoved& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    MidiCIProfileId profile_id(msg.get_profile_id());
-    MidiCIProfile profile(profile_id, msg.get_common().group, msg.get_common().address, false, 0);
+    MidiCIProfileId profile_id(msg.getProfileId());
+    MidiCIProfile profile(profile_id, msg.getCommon().group, msg.getCommon().address, false, 0);
     pimpl_->profiles_->remove(profile);
 }
 
-void ProfileClientFacade::process_profile_enabled_report(const ProfileEnabled& msg) {
+void ProfileClientFacade::processProfileEnabledReport(const ProfileEnabled& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    MidiCIProfileId profile_id(msg.get_profile_id());
-    pimpl_->profiles_->set_enabled(true, msg.get_common().address, profile_id, msg.get_num_channels());
+    MidiCIProfileId profile_id(msg.getProfileId());
+    pimpl_->profiles_->setEnabled(true, msg.getCommon().address, profile_id, msg.getNumChannels());
 }
 
-void ProfileClientFacade::process_profile_disabled_report(const ProfileDisabled& msg) {
+void ProfileClientFacade::processProfileDisabledReport(const ProfileDisabled& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    MidiCIProfileId profile_id(msg.get_profile_id());
-    pimpl_->profiles_->set_enabled(false, msg.get_common().address, profile_id, msg.get_num_channels());
+    MidiCIProfileId profile_id(msg.getProfileId());
+    pimpl_->profiles_->setEnabled(false, msg.getCommon().address, profile_id, msg.getNumChannels());
 }
 
-void ProfileClientFacade::process_profile_details_reply(const ProfileDetailsReply& msg) {
+void ProfileClientFacade::processProfileDetailsReply(const ProfileDetailsReply& msg) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
 }

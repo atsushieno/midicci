@@ -88,7 +88,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Prevent zlib-ng from installing, but otherwise respect its defaults
 midicci_fetchcontent_makeavailable_static(zlib-ng)
 
-add_subdirectory(src)
+add_subdirectory(src/umppi)
+add_subdirectory(src/midicci)
 
 if(BUILD_TESTS)
     enable_testing()

@@ -32,21 +32,54 @@ target_include_directories(umppi_static PUBLIC
 )
 target_compile_features(umppi_static PUBLIC cxx_std_20)
 
-set_target_properties(umppi_static PROPERTIES OUTPUT_NAME umppi)
+if(WIN32)
+    target_compile_definitions(umppi PRIVATE WIN32_LEAN_AND_MEAN)
+    set_target_properties(umppi PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
-install(TARGETS umppi umppi_static
-    EXPORT umppi-targets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+set_target_properties(umppi_static PROPERTIES
+    OUTPUT_NAME umppi
+    POSITION_INDEPENDENT_CODE ON
 )
 
+if(WIN32)
+    set_target_properties(umppi PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/bin"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/dll"
+        PDB_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/$<CONFIG>/bin"
+    )
+    set_target_properties(umppi_static PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/static"
+        PDB_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/$<CONFIG>/lib/static"
+    )
+endif()
+
+if(WIN32)
+    install(TARGETS umppi
+        EXPORT umppi-targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/dll
+    )
+    install(TARGETS umppi_static
+        EXPORT umppi-targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static
+    )
+else()
+    install(TARGETS umppi umppi_static
+        EXPORT umppi-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../include/umppi
-    DESTINATION include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(EXPORT umppi-targets
     FILE umppi-targets.cmake
     NAMESPACE umppi::
-    DESTINATION lib/cmake/umppi
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/umppi
 )

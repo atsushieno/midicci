@@ -120,3 +120,5 @@ install(EXPORT midicci-targets
     NAMESPACE midicci::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/midicci
 )
+
+add_subdirectory(umppi)

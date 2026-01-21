@@ -32,6 +32,7 @@ set(GTEST_SOURCES
     test_ump.cpp
     test_ump_translator.cpp
     test_transport_property_exchange.cpp
+    test_umppi_basic.cpp
 )
 
 add_executable(midicci-gtest ${GTEST_SOURCES})
@@ -39,6 +40,7 @@ add_executable(midicci-gtest ${GTEST_SOURCES})
 target_link_libraries(midicci-gtest
     PRIVATE
         midicci_static
+        umppi_static
         midicci-tooling
         libremidi::libremidi
         gtest_main

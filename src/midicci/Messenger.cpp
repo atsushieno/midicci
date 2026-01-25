@@ -29,10 +29,10 @@ public:
         }
     }
 
-    void log_message(const Message& message, bool isOutgoing) {
+    void log_message(const Message& message, bool is_outgoing) {
         auto logger = device_.getLogger();
         if (logger) {
-            logger(LogData(message, isOutgoing));
+            logger(LogData(message, is_outgoing));
         }
     }
 };

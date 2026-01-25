@@ -53,14 +53,14 @@ bool MidiCIManager::initialize(uint32_t muid) {
                     if (log_data.hasMessage()) {
                         // Log structured MIDI-CI message with proper MUID extraction
                         const auto& message = log_data.getMessage();
-                        auto direction = log_data.isOutgoing ? 
-                            midicci::keyboard::MessageDirection::Out : 
+                        auto direction = log_data.is_outgoing ?
+                            midicci::keyboard::MessageDirection::Out :
                             midicci::keyboard::MessageDirection::In;
                         logger_->log_midi_ci_message(message, direction);
                     } else {
                         // Log plain string message
-                        auto direction = log_data.isOutgoing ? 
-                            midicci::keyboard::MessageDirection::Out : 
+                        auto direction = log_data.is_outgoing ?
+                            midicci::keyboard::MessageDirection::Out :
                             midicci::keyboard::MessageDirection::In;
                         logger_->log(log_data.getString(), direction);
                     }
@@ -476,13 +476,13 @@ void MidiCIManager::setupCallbacks() {
     });
 }
 
-void MidiCIManager::log(const std::string& message, bool isOutgoing) {
-    std::string prefix = isOutgoing ? "[MIDI-CI OUT] " : "[MIDI-CI IN] ";
+void MidiCIManager::log(const std::string& message, bool is_outgoing) {
+    std::string prefix = is_outgoing ? "[MIDI-CI OUT] " : "[MIDI-CI IN] ";
     std::string full_message = prefix + message;
-    
+
     // Log to logger if available
     if (logger_) {
-        auto direction = isOutgoing ? midicci::keyboard::MessageDirection::Out : 
+        auto direction = is_outgoing ? midicci::keyboard::MessageDirection::Out :
                                       midicci::keyboard::MessageDirection::In;
         logger_->log(full_message, direction);
     }

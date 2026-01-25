@@ -27,8 +27,8 @@ protected:
     };
 
     // Debug logger
-    std::function<void(const std::string&, bool)> debug_logger = [](const std::string& message, bool isOutgoing) {
-        std::string direction = isOutgoing ? "OUT" : "IN ";
+    std::function<void(const std::string&, bool)> debug_logger = [](const std::string& message, bool is_outgoing) {
+        std::string direction = is_outgoing ? "OUT" : "IN ";
         // Direction and message logged
     };
 };

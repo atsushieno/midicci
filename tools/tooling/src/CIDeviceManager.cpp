@@ -72,7 +72,7 @@ void CIDeviceManager::initialize() {
     };
     
     auto logger_wrapper = [this](const LogData& log_data) {
-        MessageDirection direction = log_data.isOutgoing ? MessageDirection::Out : MessageDirection::In;
+        MessageDirection direction = log_data.is_outgoing ? MessageDirection::Out : MessageDirection::In;
         if (log_data.hasMessage()) {
             // For structured messages, extract MUIDs and use the message's log string
             const auto& message = log_data.getMessage();

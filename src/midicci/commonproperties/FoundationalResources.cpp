@@ -170,9 +170,9 @@ MidiCIChannelList FoundationalResources::parseChannelList(const std::vector<uint
         
         // Parse MIDI mode
         int midi_mode = get_number(ChannelInfoPropertyNames::CLUSTER_MIDI_MODE, 3);
-        bool isOmniOn = ((midi_mode - 1) & 1) != 0;
-        bool isPolyMode = ((midi_mode - 1) & 2) != 0;
-        
+        bool is_omni_on = ((midi_mode - 1) & 1) != 0;
+        bool is_poly_mode = ((midi_mode - 1) & 2) != 0;
+
         MidiCIChannel channel(
             getString(ChannelInfoPropertyNames::TITLE),
             get_number(ChannelInfoPropertyNames::CHANNEL, 1) - 1, // Convert from 1-based to 0-based
@@ -182,8 +182,8 @@ MidiCIChannelList FoundationalResources::parseChannelList(const std::vector<uint
             program,
             get_number(ChannelInfoPropertyNames::CLUSTER_CHANNEL_START, 1) - 1, // Convert from 1-based to 0-based
             get_number(ChannelInfoPropertyNames::CLUSTER_LENGTH, 1),
-            isOmniOn,
-            isPolyMode,
+            is_omni_on,
+            is_poly_mode,
             getString(ChannelInfoPropertyNames::CLUSTER_TYPE)
         );
         
@@ -303,8 +303,8 @@ JsonValue FoundationalResources::channelToJson(const MidiCIChannel& channel) {
     
     // Calculate MIDI mode (default is 3 for poly mode)
     uint8_t midi_mode = 3; // Default poly mode
-    if (!channel.isPolyMode) {
-        midi_mode = channel.isOmniOn ? 1 : 2;
+    if (!channel.is_poly_mode) {
+        midi_mode = channel.is_omni_on ? 1 : 2;
     }
     if (midi_mode != 3) {
         obj[ChannelInfoPropertyNames::CLUSTER_MIDI_MODE] = JsonValue(static_cast<double>(midi_mode));

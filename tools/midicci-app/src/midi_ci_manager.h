@@ -149,7 +149,7 @@ private:
     void clearRequestIdTracking(uint32_t muid, const std::string& request_key);
     
     // Logging helper
-    void log(const std::string& message, bool isOutgoing = false);
+    void log(const std::string& message, bool is_outgoing = false);
     
     // Thread synchronization for cross-thread access
     mutable std::recursive_mutex midi_ci_mutex_;

@@ -18,11 +18,11 @@ class ClientConnection;
 // Log data that can contain either a plain string or a structured MIDI-CI message
 struct LogData {
     std::variant<std::string, std::reference_wrapper<const Message>> data;
-    bool isOutgoing;
-    
-    LogData(const std::string& str, bool outgoing) : data(str), isOutgoing(outgoing) {}
-    LogData(const Message& msg, bool outgoing) : data(std::cref(msg)), isOutgoing(outgoing) {}
-    
+    bool is_outgoing;
+
+    LogData(const std::string& str, bool outgoing) : data(str), is_outgoing(outgoing) {}
+    LogData(const Message& msg, bool outgoing) : data(std::cref(msg)), is_outgoing(outgoing) {}
+
     bool hasMessage() const { return std::holds_alternative<std::reference_wrapper<const Message>>(data); }
     const Message& getMessage() const { return std::get<std::reference_wrapper<const Message>>(data); }
     const std::string& getString() const { return std::get<std::string>(data); }

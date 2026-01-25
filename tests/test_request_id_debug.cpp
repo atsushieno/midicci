@@ -10,8 +10,8 @@ protected:
     std::vector<uint8_t> client_to_server_data;
     std::vector<uint8_t> server_to_client_data;
     
-    void debug_logger(const std::string& message, bool isOutgoing) {
-        std::string direction = isOutgoing ? "OUTGOING" : "INCOMING";
+    void debug_logger(const std::string& message, bool is_outgoing) {
+        std::string direction = is_outgoing ? "OUTGOING" : "INCOMING";
         std::string log_entry = "[" + direction + "] " + message;
         log_messages.push_back(log_entry);
     }
@@ -46,16 +46,16 @@ TEST_F(RequestIdDebugTest, RequestIdCorrelationWithDebugLogging) {
         // Set up debug loggers
         client_device->setLogger([this](const LogData& log_data) {
             if (log_data.hasMessage()) {
-                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.isOutgoing);
+                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.is_outgoing);
             } else {
-                this->debug_logger(log_data.getString(), log_data.isOutgoing);
+                this->debug_logger(log_data.getString(), log_data.is_outgoing);
             }
         });
         server_device->setLogger([this](const LogData& log_data) {
             if (log_data.hasMessage()) {
-                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.isOutgoing);
+                this->debug_logger(log_data.getMessage().getLogMessage(), log_data.is_outgoing);
             } else {
-                this->debug_logger(log_data.getString(), log_data.isOutgoing);
+                this->debug_logger(log_data.getString(), log_data.is_outgoing);
             }
         });
         

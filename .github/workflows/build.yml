@@ -106,12 +106,12 @@ jobs:
       contents: write
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: build-*
           merge-multiple: true
@@ -121,7 +121,7 @@ jobs:
         run: ls -R release-artifacts
 
       - name: create GitHub release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.20.0
         with:
           tag: ${{ github.event.inputs.tag_name }}
           name: ${{ github.event.inputs.release_name || github.event.inputs.tag_name }}

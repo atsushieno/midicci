@@ -25,7 +25,7 @@ int Ump::getSizeInBytes() const {
 }
 
 BinaryChunkStatus Ump::getBinaryChunkStatus() const {
-    uint8_t status = getStatusByte();
+    uint8_t status = getStatusCode();
     if (status == 0x00) return BinaryChunkStatus::COMPLETE_PACKET;
     if (status == 0x10) return BinaryChunkStatus::START;
     if (status == 0x20) return BinaryChunkStatus::CONTINUE;

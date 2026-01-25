@@ -186,12 +186,6 @@ endif()
 # ------------------------------------------------------------------------------
 # Additional dependencies for shared keyboard controller sources
 # ------------------------------------------------------------------------------
-FetchContent_Declare(cmidi2
-    GIT_REPOSITORY https://github.com/atsushieno/cmidi2
-    GIT_TAG 0.9.3
-    EXCLUDE_FROM_ALL
-)
-FetchContent_MakeAvailable(cmidi2)
 
 foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
     target_include_directories(${app_target} PRIVATE
@@ -199,7 +193,7 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
         ${CMAKE_SOURCE_DIR}/tools/tooling/include
         ${CMAKE_SOURCE_DIR}/external/libremidi/include
-        ${cmidi2_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
         ${midicci_SOURCE_DIR}/include
         ${portable-file-dialogs_SOURCE_DIR}
     )
@@ -280,12 +274,13 @@ target_link_libraries(midicci-keyboard-core
     PUBLIC
         libremidi::libremidi
         midicci_static
+        umppi_static
 )
 
 target_include_directories(midicci-keyboard-core
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${cmidi2_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(midicci-app-tests
@@ -300,7 +295,7 @@ target_link_libraries(midicci-app-tests
 target_include_directories(midicci-app-tests
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${cmidi2_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 add_test(NAME MidiCIAppTests COMMAND midicci-app-tests)

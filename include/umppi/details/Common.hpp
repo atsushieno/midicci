@@ -172,6 +172,21 @@ namespace MidiRpn {
     constexpr uint16_t NULL_FUNCTION = 0x7F7F;
 }
 
+namespace UmpStreamStatus {
+    constexpr uint16_t ENDPOINT_DISCOVERY = 0x00;
+    constexpr uint16_t ENDPOINT_INFO = 0x01;
+    constexpr uint16_t DEVICE_IDENTITY = 0x02;
+    constexpr uint16_t ENDPOINT_NAME = 0x03;
+    constexpr uint16_t PRODUCT_INSTANCE_ID = 0x04;
+    constexpr uint16_t STREAM_CONFIG_REQUEST = 0x05;
+    constexpr uint16_t STREAM_CONFIG_NOTIFICATION = 0x06;
+    constexpr uint16_t FUNCTION_BLOCK_DISCOVERY = 0x10;
+    constexpr uint16_t FUNCTION_BLOCK_INFO = 0x11;
+    constexpr uint16_t FUNCTION_BLOCK_NAME = 0x12;
+    constexpr uint16_t START_OF_CLIP = 0x20;
+    constexpr uint16_t END_OF_CLIP = 0x21;
+}
+
 namespace FlexDataStatus {
     constexpr uint8_t TEMPO = 0;
     constexpr uint8_t TIME_SIGNATURE = 1;

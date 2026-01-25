@@ -2,10 +2,14 @@
 #include <iostream>
 #include <algorithm>
 #include <libremidi/ump.hpp>
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#include <cmidi2.h>
-#pragma clang diagnostic pop
+#include <umppi/details/UmpFactory.hpp>
+#include <umppi/details/Common.hpp>
+
+namespace {
+inline uint8_t getByteFromUmp64(uint64_t ump_data, int index) {
+    return static_cast<uint8_t>((ump_data >> ((7 - index) * 8)) & 0xFF);
+}
+}
 
 KeyboardController::KeyboardController(midicci::keyboard::MessageLogger* logger) 
     : logger_(logger) {
@@ -277,10 +281,10 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
             case 0x0: { // Complete SysEx in one packet
                 sysex_buffer_.clear();
 
-                // Extract data bytes using cmidi2 helper functions
+                // Extract data bytes from UMP packet
                 uint64_t ump_data = (static_cast<uint64_t>(packet.data[0]) << 32) | static_cast<uint64_t>(packet.data[1]);
                 for (int i = 0; i < number_of_bytes && i < 6; i++) {
-                    uint8_t data_byte = cmidi2_ump_get_byte_from_uint64(ump_data, 2 + i);
+                    uint8_t data_byte = getByteFromUmp64(ump_data, 2 + i);
                     sysex_buffer_.push_back(data_byte);
                 }
 
@@ -320,11 +324,11 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
             case 0x1: { // SysEx start
                 sysex_buffer_.clear();
                 sysex_in_progress_ = true;
-                
+
                 // Extract data bytes
                 uint64_t ump_data = (static_cast<uint64_t>(packet.data[0]) << 32) | static_cast<uint64_t>(packet.data[1]);
                 for (int i = 0; i < number_of_bytes && i < 6; i++) {
-                    uint8_t data_byte = cmidi2_ump_get_byte_from_uint64(ump_data, 2 + i);
+                    uint8_t data_byte = getByteFromUmp64(ump_data, 2 + i);
                     sysex_buffer_.push_back(data_byte);
                 }
                 break;
@@ -334,11 +338,11 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     std::cerr << "[SYSEX ERROR] Continue packet without start" << std::endl;
                     break;
                 }
-                
+
                 // Extract data bytes
                 uint64_t ump_data = (static_cast<uint64_t>(packet.data[0]) << 32) | static_cast<uint64_t>(packet.data[1]);
                 for (int i = 0; i < number_of_bytes && i < 6; i++) {
-                    uint8_t data_byte = cmidi2_ump_get_byte_from_uint64(ump_data, 2 + i);
+                    uint8_t data_byte = getByteFromUmp64(ump_data, 2 + i);
                     sysex_buffer_.push_back(data_byte);
                 }
                 break;
@@ -348,11 +352,11 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
                     std::cerr << "[SYSEX ERROR] End packet without start" << std::endl;
                     break;
                 }
-                
+
                 // Extract final data bytes
                 uint64_t ump_data = (static_cast<uint64_t>(packet.data[0]) << 32) | static_cast<uint64_t>(packet.data[1]);
                 for (int i = 0; i < number_of_bytes && i < 6; i++) {
-                    uint8_t data_byte = cmidi2_ump_get_byte_from_uint64(ump_data, 2 + i);
+                    uint8_t data_byte = getByteFromUmp64(ump_data, 2 + i);
                     sysex_buffer_.push_back(data_byte);
                 }
 
@@ -673,39 +677,17 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
             recentOutgoingSysEx.erase(it);
         }
 
-        // Use cmidi2 to convert SysEx to UMP SYSEX7 packets
-        void* result = cmidi2_ump_sysex7_process_n(
-            group,
-            const_cast<void*>(static_cast<const void*>(data.data())),
-            data.size(),
-            [](uint64_t umpData, void* context) -> void* {
-                auto* controller = static_cast<KeyboardController*>(context);
-                
-                // Extract the two 32-bit words from the 64-bit UMP data
-                uint32_t word0 = static_cast<uint32_t>(umpData >> 32);
-                uint32_t word1 = static_cast<uint32_t>(umpData & 0xFFFFFFFF);
-                
-                // Create UMP packet and send it
-                libremidi::ump packet(word0, word1, 0, 0);
-
-                try {
-                    controller->midiOut->send_ump(packet);
-                } catch (const std::exception& e) {
-                    std::cerr << "Failed to send UMP SYSEX7 packet: " << e.what() << std::endl;
-                    return const_cast<void*>(static_cast<const void*>(&e)); // Return error
-                }
-                
-                return nullptr; // Success
-            },
-            this
-        );
-        
-        if (result != nullptr) {
-            std::cerr << "[SYSEX SEND] cmidi2_ump_sysex7_process_n failed" << std::endl;
+        // Convert SysEx to UMP SYSEX7 packets and send
+        try {
+            umppi::UmpFactory::sysex7Process(group, data, [this](const umppi::Ump& ump) {
+                libremidi::ump packet(ump.int1, ump.int2, 0, 0);
+                midiOut->send_ump(packet);
+            });
+            std::cout << "[SYSEX SEND] UMP SYSEX7 packets sent successfully" << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "[SYSEX SEND] Failed to process SysEx: " << e.what() << std::endl;
             return false;
         }
-        
-        std::cout << "[SYSEX SEND] UMP SYSEX7 packets sent successfully using cmidi2" << std::endl;
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error sending SysEx via UMP: " << e.what() << std::endl;
@@ -721,12 +703,12 @@ int clamp_group(int group) {
 
 void KeyboardController::sendControlChange(int channel, int controller, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto cc = cmidi2_ump_midi2_cc(clamp_group(group), channel, controller, value);
+        auto cc = umppi::UmpFactory::midi2CC(clamp_group(group), channel, controller, value);
         libremidi::ump packet(cc >> 32, cc & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
-        
+
         std::cout << "[MIDI OUT] CC Ch:" << channel << " CC:" << controller << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error sending control change: " << e.what() << std::endl;
@@ -735,9 +717,9 @@ void KeyboardController::sendControlChange(int channel, int controller, uint32_t
 
 void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto rpn = cmidi2_ump_midi2_rpn(clamp_group(group), channel, msb, lsb, value);
+        auto rpn = umppi::UmpFactory::midi2RPN(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(rpn >> 32, rpn & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
 
@@ -749,12 +731,12 @@ void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value, 
 
 void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto nrpn = cmidi2_ump_midi2_nrpn(clamp_group(group), channel, msb, lsb, value);
+        auto nrpn = umppi::UmpFactory::midi2NRPN(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(nrpn >> 32, nrpn & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
-        
+
         std::cout << "[MIDI OUT] NRPN Ch:" << channel << " MSB:" << msb << " LSB:" << lsb << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error sending NRPN: " << e.what() << std::endl;
@@ -763,12 +745,12 @@ void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value,
 
 void KeyboardController::sendPerNoteControlChange(int channel, int note, int controller, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto pnac = cmidi2_ump_midi2_per_note_acc(clamp_group(group), channel, note, controller, value);
+        auto pnac = umppi::UmpFactory::midi2PerNoteACC(clamp_group(group), channel, note, controller, value);
         libremidi::ump packet(pnac >> 32, pnac & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
-        
+
         std::cout << "[MIDI OUT] Per-Note CC Ch:" << channel << " Note:" << note << " CC:" << controller << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error sending per-note control change: " << e.what() << std::endl;
@@ -777,12 +759,12 @@ void KeyboardController::sendPerNoteControlChange(int channel, int note, int con
 
 void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t value, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto paf = cmidi2_ump_midi2_paf(clamp_group(group), channel, note, value);
+        auto paf = umppi::UmpFactory::midi2PAf(clamp_group(group), channel, note, value);
         libremidi::ump packet(paf >> 32, paf & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
-        
+
         std::cout << "[MIDI OUT] Per-Note AC Ch:" << channel << " Note:" << note << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error sending per-note aftertouch: " << e.what() << std::endl;
@@ -791,13 +773,13 @@ void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t v
 
 void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB, int group) {
     if (!midiOut || !initialized) return;
-    
+
     try {
-        auto pc = cmidi2_ump_midi2_program(clamp_group(group), channel, CMIDI2_PROGRAM_CHANGE_OPTION_BANK_VALID, program, bankMSB, bankLSB);
+        auto pc = umppi::UmpFactory::midi2Program(clamp_group(group), channel, umppi::MidiProgramChangeOptions::BANK_VALID, program, bankMSB, bankLSB);
         libremidi::ump packet(pc >> 32, pc & 0xFFFFFFFF, 0, 0);
         midiOut->send_ump(packet);
-        
-        std::cout << "[MIDI OUT] Program Change Ch:" << channel << " Program:" << (int)program 
+
+        std::cout << "[MIDI OUT] Program Change Ch:" << channel << " Program:" << (int)program
                   << " Bank MSB:" << (int)bankMSB << " Bank LSB:" << (int)bankLSB << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error sending program change: " << e.what() << std::endl;

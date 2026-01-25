@@ -1,10 +1,16 @@
-## midicci: MIDI-CI tools and library in C++
+## midicci: MIDI-CI tools and libraries in C++, and a fully featured software MIDI 2.0 keyboard
 
 ![midicci-app v0.1.3 sshot](docs/images/midicci-app-v0.1.3-sshot.png)
 
-It is an agentic coding experiment to port [ktmidi-ci](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci) and [ktmidi-ci-tool](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci-tool) to C++ so that I can build a **fully featured** MICI-CI library based on the existing implementation **under a liberal license**.
+**midicci** is a MIDI-CI tools and libraries in C++. It comes with a fully featured MIDI 2.0 keyboar application that supports various standard MIDI-CI properties.
 
-So far it is fairly successful. It is mostly working, sometimes ahead of ktmidi-ci It is the MIDI-CI integration engine in my [uapmd](https://github.com/atsushieno/uapmd) project, and the GUI application (based on ImGui) can communicate with ktmidi-ci-tool or [MIDI2.0Workbench](https://github.com/midi2-dev/MIDI2.0Workbench) to some extent.
+@atsushieno does not know any other MIDI-CI product that actually achieves the MIDI 2.0 functionality at this level, as either software or hardware. (KORG MIDI 2.0 products can interact with each other in their non-standard parameter list dialect.)
+
+## The Origin
+
+It started as an agentic coding experiment to port [ktmidi-ci](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci) and [ktmidi-ci-tool](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci-tool) to C++ so that I (@atsushieno) can build a **fully featured** MICI-CI library based on the existing implementation **under a liberal license**.
+
+It was fairly successful. It is mostly working fine, sometimes ahead of ktmidi-ci. It is the MIDI-CI integration engine in my [uapmd](https://github.com/atsushieno/uapmd) project, and the GUI application (based on ImGui) can communicate with ktmidi-ci-tool or [MIDI2.0Workbench](https://github.com/midi2-dev/MIDI2.0Workbench) at a fairly good level.
 
 ## Build, Install, and Use midicci
 
@@ -40,18 +46,23 @@ Windows builds support the [Windows MIDI Services](https://github.com/microsoft/
 
 ### Using midicci
 
-midicci comes with a MIDI 2.0 keyboard and MIDI-CI diagnostic utility `midicci-app`.
+midicci comes with `midicci-app`, a MIDI 2.0 keyboard and MIDI-CI diagnostic tool (unified).
+
+If you launch `midicci-app`, the first thing you should do is to select the MIDI In port and the MIDI Out port to use (unlike MIDI 1.0 software keyboard, MIDI 2.0 is interactive and you have to choose both in and out).
+
+`midicci-app` checks if the in and out port namess share the same name except for `In` and `Out` suffix, and if they match, then it automatically starts MIDI-CI connection process from Discovery to individual MIDI-CI property retrieval (`AllCtrlList`, `ProgramList`, and subsequent `CtrlMapList` properties). If the names do not match, you'll have to manually "Send Discovery" to do get it really functional.
+
+If your device does not support MIDI-CI, it still works just as a UMP keyboard, but that's not very exciting (@atsushieno does not know any other MIDI 2.0 UMP keyboard app either, but even an AI coding agent can hack one in a few interactions if you use libremidi or alike).
 
 ## License and dependencies
 
 midicci is released under the MIT license.
 
-We use [libremidi](https://github.com/celtera/libremidi) for MIDI device access, which is released under the BSD license (its dependencies are under the MIT license and the BSD license).
+We use [celtera/libremidi](https://github.com/celtera/libremidi) for MIDI device access, which is released under the BSD license (its dependencies are under the MIT license and the BSD license).
 
-We use ImGui for the GUI, after various attempts to let Devin and Claude Code to write React+Electron code as well as Flutter code. Devin generated platform channels while it should be dart FFI. Claude did not make such a mistake, but could not handle complicated interop scenarios especially beyond isolates. I didn't feel I should try similar for React with its threading model. But you should take these with 
-a grain of salt because the situation around agentic coding is a moving target.
+We use [ocornut/imgui](https://github.com/ocornut/imgui) for the GUI.
 
-We use [zlib-ng](https://github.com/zlib-ng/zlib-ng) for Mcoded7 compression (also fits nicely in Windows build), which is released under the Zlib license.
+We use [zlib-ng/zlib-ng](https://github.com/zlib-ng/zlib-ng) for Mcoded7 compression (also fits nicely in Windows build), which is released under the Zlib license.
 
 We use [Roboto font](https://fonts.google.com/specimen/Roboto) which is released under the SIL Open Font License v1.1. (we bundle `Roboto-SemiBold.ttf`)
 

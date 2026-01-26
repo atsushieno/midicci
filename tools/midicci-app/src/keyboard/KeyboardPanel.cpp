@@ -134,7 +134,8 @@ void KeyboardPanel::render() {
 
     render_transport_section();
     ImGui::Spacing();
-    render_ci_section();
+    if (ImGui::CollapsingHeader("Device Information"))
+        render_ci_section();
     ImGui::Spacing();
     render_keyboard_section();
     ImGui::Spacing();
@@ -357,17 +358,9 @@ void KeyboardPanel::render_transport_section() {
         select_output_device(index);
     });
     ImGui::SameLine();
-    ImGui::Spacing();
-    if (ImGui::Button("Send Discovery")) {
-        controller_->sendMidiCIDiscovery();
-    }
-    ImGui::SameLine();
     if (ImGui::Button("Refresh Devices")) {
         devices_dirty_.store(true, std::memory_order_relaxed);
     }
-    ImGui::SameLine();
-    bool midi_ready = controller_->hasValidMidiPair();
-    ImGui::Text("Active connection: %s", midi_ready ? "Yes" : "No");
 }
 
 void KeyboardPanel::render_keyboard_section() {
@@ -375,17 +368,12 @@ void KeyboardPanel::render_keyboard_section() {
 }
 
 void KeyboardPanel::render_ci_section() {
-    bool initialized = controller_->isMidiCIInitialized();
-    ImGui::Columns(2, nullptr, false);
-    ImGui::Text("Local MUID: 0x%08X", controller_->getMidiCIMuid());
-    ImGui::Text("Local Device: %s", controller_->getMidiCIDeviceName().c_str());
-    ImGui::Text("Initialized: %s", initialized ? "Yes" : "No");
-    ImGui::NextColumn();
-    render_selected_ci_device();
-    ImGui::Columns(1);
+    ImGui::Spacing();
+    if (ImGui::Button("Send Discovery")) {
+        controller_->sendMidiCIDiscovery();
+    }
 
-    ImGui::TextUnformatted("MIDI-CI Devices");
-
+    ImGui::SameLine();
     std::vector<MidiCIDeviceInfo> devices_copy;
     int selected_index = -1;
     {
@@ -420,7 +408,20 @@ void KeyboardPanel::render_ci_section() {
         }
         ImGui::EndCombo();
     }
+
     ImGui::Spacing();
+    bool midi_ready = controller_->hasValidMidiPair();
+    ImGui::Text("Active connection: %s", midi_ready ? "Yes" : "No");
+
+    ImGui::Spacing();
+    bool initialized = controller_->isMidiCIInitialized();
+    ImGui::Columns(2, nullptr, false);
+    ImGui::Text("Local MUID: 0x%08X", controller_->getMidiCIMuid());
+    ImGui::Text("Local Device: %s", controller_->getMidiCIDeviceName().c_str());
+    ImGui::Text("Initialized: %s", initialized ? "Yes" : "No");
+    ImGui::NextColumn();
+    render_selected_ci_device();
+    ImGui::Columns(1);
 }
 
 void KeyboardPanel::render_selected_ci_device() {

@@ -1,5 +1,6 @@
-#include "TestCITransport.hpp"
+#include <algorithm>
 #include <thread>
+#include "TestCITransport.hpp"
 
 namespace midicci::test {
 

@@ -792,6 +792,12 @@ void KeyboardController::updateUIConnectionState() {
     if (currentConnectionState != previousConnectionState) {
         previousConnectionState = currentConnectionState;
 
+        if (!currentConnectionState && midiCIManager) {
+            std::cout << "[MIDI-CI] Shutting down MIDI-CI manager due to invalid MIDI pair" << std::endl;
+            midiCIManager->shutdown();
+            midiCIManager.reset();
+        }
+
         if (midiConnectionChangedCallback) {
             midiConnectionChangedCallback(currentConnectionState);
         }

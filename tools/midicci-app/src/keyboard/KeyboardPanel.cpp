@@ -276,6 +276,14 @@ void KeyboardPanel::refresh_ci_devices() {
 
     ci_devices_ = std::move(devices);
 
+    if (suppress_ci_auto_select_) {
+        suppress_ci_auto_select_ = false;
+        if (selected_ci_index_ >= static_cast<int>(ci_devices_.size())) {
+            selected_ci_index_ = -1;
+        }
+        return;
+    }
+
     if (previously_selected_muid != 0) {
         auto preserved = std::find_if(ci_devices_.begin(), ci_devices_.end(),
                                       [previously_selected_muid](const MidiCIDeviceInfo& info) {
@@ -359,7 +367,28 @@ void KeyboardPanel::render_transport_section() {
     });
     ImGui::SameLine();
     if (ImGui::Button("Refresh Devices")) {
+        controller_->selectInputDevice("");
+        controller_->selectOutputDevice("");
+
+        if (repository_) {
+            if (auto midi_manager = repository_->get_midi_device_manager()) {
+                midi_manager->set_input_device("");
+                midi_manager->set_output_device("");
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(state_mutex_);
+            selected_input_index_ = -1;
+            selected_output_index_ = -1;
+            current_input_id_.clear();
+            current_output_id_.clear();
+            selected_ci_index_ = -1;
+            suppress_ci_auto_select_ = true;
+        }
+
         devices_dirty_.store(true, std::memory_order_relaxed);
+        ci_dirty_.store(true, std::memory_order_relaxed);
     }
 }
 

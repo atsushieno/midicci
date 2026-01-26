@@ -69,6 +69,7 @@ private:
     int velocity_value_ = 100;
     std::atomic<bool> devices_dirty_{true};
     std::atomic<bool> ci_dirty_{true};
+    bool suppress_ci_auto_select_ = false;
     std::mutex state_mutex_;
 
     tooling::CIToolRepository* repository_ = nullptr;

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <gtest/gtest.h>
 #include "TestCITransport.hpp"
 #include <midicci/midicci.hpp>

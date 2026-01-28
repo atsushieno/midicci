@@ -1,6 +1,6 @@
 ## midicci: MIDI-CI tools and libraries in C++, and a fully featured software MIDI 2.0 keyboard
 
-![midicci-app v0.1.3 sshot](docs/images/midicci-app-v0.1.3-sshot.png)
+![midicci-app v0.1.4 sshot](docs/images/midicci-app-v0.1.4-sshot.png)
 
 **midicci** is a MIDI-CI tools and libraries in C++. It comes with a fully featured MIDI 2.0 keyboar application that supports various standard MIDI-CI properties.
 

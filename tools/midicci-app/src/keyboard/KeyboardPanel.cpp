@@ -501,8 +501,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         ImGui::TextUnformatted("Select a MIDI-CI device to view Control and Program lists.");
         return;
     }
+    const ImFont* font = ImGui::GetFont();
+    const float ui_scale = font ? std::max(font->Scale, 0.1f) : 1.0f;
 
-    ImGui::BeginChild("control-column", ImVec2(0, 320.0f), true);
+    ImGui::BeginChild("state-program-column", ImVec2(0, 100.0f * ui_scale), true);
 
     if (ImGui::Button("Save State")) {
         if (controller_) {
@@ -514,7 +516,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         on_load_state(muid);
     }
 
-    ImGui::TextUnformatted("Program List [BankMSB:BankLSB:Program]");
     const auto program_it = program_list_cache_.find(muid);
     const auto* programs = (program_it != program_list_cache_.end()) ? &program_it->second : nullptr;
     bool has_programs = programs && !programs->empty();
@@ -534,7 +535,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     if (!has_programs) {
         ImGui::BeginDisabled();
     }
-    std::string preview_label = "Select program";
+    std::string preview_label = "[BankMSB:BankLSB:Program] Select program";
     int current_program_index = -1;
     if (has_programs) {
         auto sel_it = selected_program_index_.find(muid);
@@ -575,7 +576,11 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     if (!has_programs) {
         ImGui::EndDisabled();
     }
+    ImGui::EndChild();
+
     ImGui::Spacing();
+    ImGui::BeginChild("control-column", ImVec2(0, 320.0f * ui_scale), true);
+
     ImGui::TextUnformatted("Control List");
     ImGui::SameLine();
     if (ImGui::Button("Request##ctrl-list")) {

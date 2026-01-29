@@ -119,7 +119,7 @@ bool MidiDeviceManager::set_input_device(const std::string& device_id) {
                     };
                     config.ignore_sysex = false;
                     
-                    midi_input_ = std::make_unique<libremidi::midi_in>(config);
+                    midi_input_ = std::make_unique<libremidi::midi_in>(config, libremidi::midi2::in_default_configuration());
                     
                     if (auto err = midi_input_->open_port(port); err != stdx::error{}) {
                         auto msg = err.message();
@@ -163,7 +163,7 @@ bool MidiDeviceManager::set_output_device(const std::string& device_id) {
             
             for (const auto& port : output_ports) {
                 if (port.port_name == device_id) {
-                    midi_output_ = std::make_unique<libremidi::midi_out>();
+                    midi_output_ = std::make_unique<libremidi::midi_out>(libremidi::output_configuration{}, libremidi::midi2::out_default_configuration());
                     
                     if (auto err = midi_output_->open_port(port); err != stdx::error{}) {
                         auto msg = err.message();

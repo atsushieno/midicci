@@ -6,11 +6,13 @@
 
 @atsushieno does not know any other MIDI-CI product that actually achieves the MIDI 2.0 functionality at this level, as either software or hardware. (KORG MIDI 2.0 products can interact with each other in their non-standard parameter list dialect.)
 
-## The Origin
+### Supported MIDI 2.0 Features
 
-It started as an agentic coding experiment to port [ktmidi-ci](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci) and [ktmidi-ci-tool](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci-tool) to C++ so that I (@atsushieno) can build a **fully featured** MICI-CI library based on the existing implementation **under a liberal license**.
+`(lib)midicci` and `midicci-app` support the following features:
 
-It was fairly successful. It is mostly working fine, sometimes ahead of ktmidi-ci. It is the MIDI-CI integration engine in my [uapmd](https://github.com/atsushieno/uapmd) project, and the GUI application (based on ImGui) can communicate with ktmidi-ci-tool or [MIDI2.0Workbench](https://github.com/midi2-dev/MIDI2.0Workbench) at a fairly good level.
+- UMP outputs
+- MIDI-CI standard properties: `AllCtrlList`, `ProgramList`, `State` (with `fullState` resId)
+- and any foundational technology behind those (such as basic MIDI-CI messaging)
 
 ## Build, Install, and Use midicci
 
@@ -40,8 +42,6 @@ To create distribution packages locally:
 cmake --build build --target package
 ```
 
-#### Windows MIDI Services Support
-
 Windows builds support the [Windows MIDI Services](https://github.com/microsoft/MIDI) backend through libremidi. The required NuGet package (`Microsoft.Windows.Devices.Midi2.1.0.14-rc.1.209.nupkg`) is included in the `external/` directory. Windows MIDI Services integration is enabled by default on Windows (controlled by `MIDICCI_ENABLE_WINMIDI` option).
 
 ### Using midicci
@@ -53,6 +53,24 @@ If you launch `midicci-app`, the first thing you should do is to select the MIDI
 `midicci-app` checks if the in and out port namess share the same name except for `In` and `Out` suffix, and if they match, then it automatically starts MIDI-CI connection process from Discovery to individual MIDI-CI property retrieval (`AllCtrlList`, `ProgramList`, and subsequent `CtrlMapList` properties). If the names do not match, you'll have to manually "Send Discovery" to do get it really functional.
 
 If your device does not support MIDI-CI, it still works just as a UMP keyboard, but that's not very exciting (@atsushieno does not know any other MIDI 2.0 UMP keyboard app either, but even an AI coding agent can hack one in a few interactions if you use libremidi or alike).
+
+## Technical Notes
+
+### Almost no dependency
+
+`midicci-app` is just a MIDI 2.0 keyboard. While I (@atsushieno) demonstrate a lot with [uapmd](https://github.com/atsushieno/uapmd) which is basically an audio plugin host that exposes those plugin instances as virtual MIDI 2.0 devices, `midicci-app` itself is NOT an audio plugin client.
+
+It does not depend on any premise UAPMD presumes either. No matter how UAPMD maps plugin parameters to MIDI controllers (CC, Registered Controllers aka RPNs, Assignable Controllers aka NRPNs, per-note controllers), they will be shown on the parameter list as long as they are included in `AllCtrlList` property.
+
+This client app demonstrates how MIDI 2.0 is capable of various features that traditionally only audio plugins, where no "Standard" exists, have achieved.
+
+while `midicci-app` makes full use of platform UMP (MIDI 2.0) device access API using [celtera/libremidi](https://github.com/celtera/libremidi), `(lib)midicci` as a library does not depend on any platform MIDI access. The message interactions are designed to be transport agnostic. Any bidirectional messaging system (they can be even pair of function lambdas), `(lib)midicci` just works.
+
+### The Origin
+
+It started as an agentic coding experiment to port [ktmidi-ci](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci) and [ktmidi-ci-tool](https://github.com/atsushieno/ktmidi/tree/main/ktmidi-ci-tool) to C++ so that I (@atsushieno) can build a **fully featured** MICI-CI library based on the existing implementation **under a liberal license**.
+
+It was fairly successful. It is mostly working fine, sometimes ahead of ktmidi-ci. It is the MIDI-CI integration engine in my [uapmd](https://github.com/atsushieno/uapmd) project, and the GUI application (based on ImGui) can communicate with ktmidi-ci-tool or [MIDI2.0Workbench](https://github.com/midi2-dev/MIDI2.0Workbench) at a fairly good level.
 
 ## License and dependencies
 
@@ -68,6 +86,6 @@ We use [Roboto font](https://fonts.google.com/specimen/Roboto) which is released
 
 ## Development
 
-It is not much more than an agentic coding experiment. Code quality is as low as generated. But also I make changes by myself too to avoid silly requests to them.
+It started as an agentic coding experiment, although we have been making changes a lot of later on. Code quality is as low as generated. While we welcome contributions, please do not expect any "contributable" state there.
 
 Initially I used Devin to instruct it to generate code, but now I switched to Claude Code and Codex to fix a lot of mistakes by Devin and each other, and I fix various issues by myself.

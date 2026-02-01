@@ -100,10 +100,19 @@ void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<
 }
 
 std::vector<std::string> MidiDeviceManager::get_available_input_devices() const {
+    std::string ignored_virtual_name;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        ignored_virtual_name = virtual_input_name_;
+    }
+
     std::vector<std::string> devices;
     try {
         libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
         for(const libremidi::input_port& port : obs.get_input_ports()) {
+            if (!ignored_virtual_name.empty() && port.port_name == ignored_virtual_name) {
+                continue;
+            }
             devices.push_back(port.port_name);
         }
     } catch (const std::exception& e) {
@@ -113,10 +122,19 @@ std::vector<std::string> MidiDeviceManager::get_available_input_devices() const 
 }
 
 std::vector<std::string> MidiDeviceManager::get_available_output_devices() const {
+    std::string ignored_virtual_name;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        ignored_virtual_name = virtual_output_name_;
+    }
+
     std::vector<std::string> devices;
     try {
         libremidi::observer obs({ .track_hardware = true, .track_virtual = true}, libremidi::midi2::observer_default_configuration());
         for(const libremidi::output_port& port : obs.get_output_ports()) {
+            if (!ignored_virtual_name.empty() && port.port_name == ignored_virtual_name) {
+                continue;
+            }
             devices.push_back(port.port_name);
         }
     } catch (const std::exception& e) {

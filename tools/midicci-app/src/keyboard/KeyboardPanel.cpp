@@ -388,14 +388,29 @@ void KeyboardPanel::refresh_devices() {
     auto inputs = controller_->getInputDevices();
     auto outputs = controller_->getOutputDevices();
 
+    std::string ignored_input_name;
+    std::string ignored_output_name;
+    if (repository_) {
+        if (auto midi_manager = repository_->get_midi_device_manager()) {
+            ignored_input_name = midi_manager->get_virtual_input_name();
+            ignored_output_name = midi_manager->get_virtual_output_name();
+        }
+    }
+
     std::lock_guard<std::mutex> lock(state_mutex_);
     input_devices_.clear();
     output_devices_.clear();
 
     for (const auto& device : inputs) {
+        if (!ignored_output_name.empty() && device.second == ignored_output_name) {
+            continue;
+        }
         input_devices_.push_back(DeviceEntry{device.first, device.second});
     }
     for (const auto& device : outputs) {
+        if (!ignored_input_name.empty() && device.second == ignored_input_name) {
+            continue;
+        }
         output_devices_.push_back(DeviceEntry{device.first, device.second});
     }
 

@@ -98,7 +98,6 @@ private:
     static std::string format_ump_packet(const libremidi::ump& packet);
     void log_virtual_event(const std::string& message, VirtualPortDirection direction);
     bool extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const;
-    void notify_note_event(int note, int velocity, bool is_pressed);
 };
 
 } // namespace ci_tool

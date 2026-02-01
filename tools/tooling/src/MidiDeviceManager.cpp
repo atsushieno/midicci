@@ -309,27 +309,41 @@ void MidiDeviceManager::send_to_virtual_output(const libremidi::ump& packet) {
 }
 
 void MidiDeviceManager::handle_input_message(libremidi::ump&& packet, bool from_virtual) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    std::vector<uint32_t> data{
-        packet.data[0],
-        packet.data[1],
-        packet.data[2],
-        packet.data[3]
-    };
-    if (from_virtual) {
-        log_virtual_event("[virtual in] " + format_ump_packet(packet), VirtualPortDirection::In);
-    }
-    process_incoming_sysex(0, data);
+    std::vector<std::function<void(int, int, bool)>> callbacks;
     int note = 0;
     int velocity = 0;
     bool is_pressed = false;
-    if (extract_note_event(packet, note, velocity, is_pressed)) {
-        notify_note_event(note, velocity, is_pressed);
+    bool has_note_event = false;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        std::vector<uint32_t> data{
+            packet.data[0],
+            packet.data[1],
+            packet.data[2],
+            packet.data[3]
+        };
+        if (from_virtual) {
+            log_virtual_event("[virtual in] " + format_ump_packet(packet), VirtualPortDirection::In);
+        }
+        process_incoming_sysex(0, data);
+
+        if (extract_note_event(packet, note, velocity, is_pressed)) {
+            callbacks = note_event_callbacks_;
+            has_note_event = true;
+        }
+
+        if (from_virtual) {
+            forward_to_physical_output(packet);
+        } else {
+            forward_to_virtual_output(packet);
+        }
     }
-    if (from_virtual) {
-        forward_to_physical_output(packet);
-    } else {
-        forward_to_virtual_output(packet);
+
+    if (has_note_event) {
+        for (const auto& cb : callbacks) {
+            cb(note, velocity, is_pressed);
+        }
     }
 }
 
@@ -467,12 +481,6 @@ bool MidiDeviceManager::extract_note_event(const libremidi::ump& packet, int& no
         break;
     }
     return false;
-}
-
-void MidiDeviceManager::notify_note_event(int note, int velocity, bool is_pressed) {
-    for (const auto& cb : note_event_callbacks_) {
-        cb(note, velocity, is_pressed);
-    }
 }
 
 } // namespace ci_tool

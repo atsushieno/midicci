@@ -60,7 +60,6 @@ void MidiDeviceManager::set_ci_output_sender(CIOutputSender sender) {
 }
 
 bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& data) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
     bool sent = false;
     if (ci_output_sender_) {
         sent = ci_output_sender_(group, data);
@@ -95,7 +94,6 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& d
 }
 
 void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<uint32_t>& data) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (sysex_callback_) {
         sysex_callback_(group, data);
     }
@@ -129,7 +127,7 @@ std::vector<std::string> MidiDeviceManager::get_available_output_devices() const
 
 bool MidiDeviceManager::set_input_device(const std::string& device_id) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
+
     if (midi_input_) {
         midi_input_->close_port();
         midi_input_.reset();
@@ -304,7 +302,6 @@ bool MidiDeviceManager::virtual_ports_enabled() const noexcept {
 }
 
 void MidiDeviceManager::send_to_virtual_output(const libremidi::ump& packet) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
     forward_to_virtual_output(packet);
 }
 
@@ -316,7 +313,6 @@ void MidiDeviceManager::handle_input_message(libremidi::ump&& packet, bool from_
     bool has_note_event = false;
 
     {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
         std::vector<uint32_t> data{
             packet.data[0],
             packet.data[1],

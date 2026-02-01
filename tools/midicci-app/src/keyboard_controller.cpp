@@ -232,31 +232,31 @@ void KeyboardController::refreshDevices() {
 }
 
 void KeyboardController::noteOn(int note, int velocity) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
     
     try {
         // Send MIDI 2.0 UMP note on message
         libremidi::ump noteOnPacket = createUmpNoteOn(0, note, velocity);
-        midiOut->send_ump(noteOnPacket);
+        dispatch_outgoing_packet(noteOnPacket);
     } catch (const std::exception& e) {
         std::cerr << "Error sending note on: " << e.what() << std::endl;
     }
 }
 
 void KeyboardController::noteOff(int note) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
     
     try {
         // Send MIDI 2.0 UMP note off message
         libremidi::ump noteOffPacket = createUmpNoteOff(0, note);
-        midiOut->send_ump(noteOffPacket);
+        dispatch_outgoing_packet(noteOffPacket);
     } catch (const std::exception& e) {
         std::cerr << "Error sending note off: " << e.what() << std::endl;
     }
 }
 
 void KeyboardController::allNotesOff() {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
     
     try {
         // Send all notes off message
@@ -269,9 +269,8 @@ void KeyboardController::allNotesOff() {
 }
 
 void KeyboardController::onMidiInput(libremidi::ump&& packet) {
-    // Check if this is a System Exclusive message (UMP Type 3 - SysEx7)
     uint8_t message_type = (packet.data[0] >> 28) & 0xF;
-    if (message_type == 0x3) { // SysEx7 UMP
+    if (message_type == 0x3) {
         uint8_t group = (packet.data[0] >> 24) & 0xF;
         uint8_t status = (packet.data[0] >> 20) & 0xF;
         uint8_t number_of_bytes = (packet.data[0] >> 16) & 0xF;
@@ -396,6 +395,16 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
             default:
                 std::cerr << "[SYSEX ERROR] Unknown SysEx7 status: " << (int)status << std::endl;
                 break;
+        }
+        return;
+    }
+
+    int note = 0;
+    int velocity = 0;
+    bool is_pressed = false;
+    if (extract_note_event(packet, note, velocity, is_pressed)) {
+        if (incoming_note_callback_) {
+            incoming_note_callback_(note, velocity, is_pressed);
         }
     }
 }
@@ -544,6 +553,14 @@ void KeyboardController::setMidiConnectionChangedCallback(std::function<void(boo
     midiConnectionChangedCallback = callback;
 }
 
+void KeyboardController::setExternalOutputCallback(std::function<void(const libremidi::ump&)> callback) {
+    external_output_callback_ = std::move(callback);
+}
+
+void KeyboardController::setIncomingNoteCallback(std::function<void(int, int, bool)> callback) {
+    incoming_note_callback_ = std::move(callback);
+}
+
 void KeyboardController::initializeMidiCI() {
     try {
         // Ensure any existing manager is properly shut down first
@@ -655,7 +672,7 @@ void KeyboardController::processSysExForMidiCI(uint8_t group, const std::vector<
 }
 
 bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8_t>& data) {
-    if (!midiOut || !initialized) {
+    if (!initialized) {
         return false;
     }
     
@@ -681,7 +698,7 @@ bool KeyboardController::sendSysExViaMidi(uint8_t group, const std::vector<uint8
         try {
             umppi::UmpFactory::sysex7Process(group, data, [this](const umppi::Ump& ump) {
                 libremidi::ump packet(ump.int1, ump.int2, 0, 0);
-                midiOut->send_ump(packet);
+                dispatch_outgoing_packet(packet);
             });
             std::cout << "[SYSEX SEND] UMP SYSEX7 packets sent successfully" << std::endl;
         } catch (const std::exception& e) {
@@ -702,12 +719,12 @@ int clamp_group(int group) {
 } // namespace
 
 void KeyboardController::sendControlChange(int channel, int controller, uint32_t value, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto cc = umppi::UmpFactory::midi2CC(clamp_group(group), channel, controller, value);
         libremidi::ump packet(cc >> 32, cc & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] CC Ch:" << channel << " CC:" << controller << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
@@ -716,12 +733,12 @@ void KeyboardController::sendControlChange(int channel, int controller, uint32_t
 }
 
 void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto rpn = umppi::UmpFactory::midi2RPN(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(rpn >> 32, rpn & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] RPN Ch:" << channel << " MSB:" << msb << " LSB:" << lsb << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
@@ -730,12 +747,12 @@ void KeyboardController::sendRPN(int channel, int msb, int lsb, uint32_t value, 
 }
 
 void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto nrpn = umppi::UmpFactory::midi2NRPN(clamp_group(group), channel, msb, lsb, value);
         libremidi::ump packet(nrpn >> 32, nrpn & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] NRPN Ch:" << channel << " MSB:" << msb << " LSB:" << lsb << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
@@ -744,12 +761,12 @@ void KeyboardController::sendNRPN(int channel, int msb, int lsb, uint32_t value,
 }
 
 void KeyboardController::sendPerNoteControlChange(int channel, int note, int controller, uint32_t value, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto pnac = umppi::UmpFactory::midi2PerNoteACC(clamp_group(group), channel, note, controller, value);
         libremidi::ump packet(pnac >> 32, pnac & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] Per-Note CC Ch:" << channel << " Note:" << note << " CC:" << controller << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
@@ -758,12 +775,12 @@ void KeyboardController::sendPerNoteControlChange(int channel, int note, int con
 }
 
 void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t value, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto paf = umppi::UmpFactory::midi2PAf(clamp_group(group), channel, note, value);
         libremidi::ump packet(paf >> 32, paf & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] Per-Note AC Ch:" << channel << " Note:" << note << " Val:" << value << std::endl;
     } catch (const std::exception& e) {
@@ -772,12 +789,12 @@ void KeyboardController::sendPerNoteAftertouch(int channel, int note, uint32_t v
 }
 
 void KeyboardController::sendProgramChange(int channel, uint8_t program, uint8_t bankMSB, uint8_t bankLSB, int group) {
-    if (!midiOut || !initialized) return;
+    if (!initialized) return;
 
     try {
         auto pc = umppi::UmpFactory::midi2Program(clamp_group(group), channel, umppi::MidiProgramChangeOptions::BANK_VALID, program, bankMSB, bankLSB);
         libremidi::ump packet(pc >> 32, pc & 0xFFFFFFFF, 0, 0);
-        midiOut->send_ump(packet);
+        dispatch_outgoing_packet(packet);
 
         std::cout << "[MIDI OUT] Program Change Ch:" << channel << " Program:" << (int)program
                   << " Bank MSB:" << (int)bankMSB << " Bank LSB:" << (int)bankLSB << std::endl;
@@ -860,4 +877,59 @@ void KeyboardController::checkAndAutoConnect() {
     } catch (const std::exception& e) {
         std::cerr << "Error in auto-connect check: " << e.what() << std::endl;
     }
+}
+
+void KeyboardController::dispatch_outgoing_packet(const libremidi::ump& packet) {
+    try {
+        if (midiOut) {
+            midiOut->send_ump(packet);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending packet to MIDI out: " << e.what() << std::endl;
+    }
+    if (external_output_callback_) {
+        external_output_callback_(packet);
+    }
+}
+
+bool KeyboardController::extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const {
+    const uint32_t word0 = packet.data[0];
+    const uint32_t word1 = packet.data[1];
+    const uint8_t message_type = (word0 >> 28) & 0xF;
+    const uint8_t status = (word0 >> 16) & 0xFF;
+
+    switch (message_type) {
+    case 0x4: { // MIDI 2.0 channel voice
+        if ((status & 0xF0) == 0x90 || (status & 0xF0) == 0x80) {
+            note = (word0 >> 8) & 0x7F;
+            uint16_t velocity16 = static_cast<uint16_t>((word1 >> 16) & 0xFFFF);
+            velocity = static_cast<int>(velocity16 >> 9);
+            if ((status & 0xF0) == 0x90 && velocity > 0) {
+                is_pressed = true;
+            } else {
+                is_pressed = false;
+            }
+            return true;
+        }
+        break;
+    }
+    case 0x2: { // MIDI 1.0 channel voice
+        if ((status & 0xF0) == 0x90 || (status & 0xF0) == 0x80) {
+            note = (word0 >> 8) & 0x7F;
+            uint8_t vel7 = static_cast<uint8_t>(word0 & 0xFF);
+            if ((status & 0xF0) == 0x90 && vel7 > 0) {
+                is_pressed = true;
+                velocity = vel7;
+            } else {
+                is_pressed = false;
+                velocity = vel7;
+            }
+            return true;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return false;
 }

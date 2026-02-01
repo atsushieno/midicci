@@ -28,6 +28,7 @@ public:
     void release_key(int note);
     void release_all_keys();
     void set_highlighted_key(int note);
+    void set_external_key_state(int note, bool is_pressed);
 
 private:
     struct KeyInfo {
@@ -44,6 +45,7 @@ private:
     float black_key_height_ = 60.0f;
 
     std::vector<bool> pressed_keys_;
+    std::vector<bool> external_pressed_keys_;
     std::vector<KeyInfo> keys_;
     int mouse_down_key_ = -1;
     int highlighted_key_ = -1;

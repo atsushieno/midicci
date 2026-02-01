@@ -28,6 +28,12 @@ private:
         std::string name;
     };
 
+    struct PendingNoteEvent {
+        int note;
+        int velocity;
+        bool is_pressed;
+    };
+
     enum class ParameterContext {
         Global = 0,
         Group,
@@ -50,6 +56,8 @@ private:
     static std::string normalize_device_name(const std::string& device_name);
     void on_save_state(uint32_t muid, const std::vector<uint8_t>& stateData);
     void on_load_state(uint32_t muid);
+    void enqueue_incoming_note_event(int note, int velocity, bool is_pressed);
+    void process_incoming_note_events();
 
     midicci::keyboard::MessageLogger message_logger_;
     std::unique_ptr<KeyboardController> controller_;
@@ -71,6 +79,9 @@ private:
     std::atomic<bool> ci_dirty_{true};
     bool suppress_ci_auto_select_ = false;
     std::mutex state_mutex_;
+    std::mutex incoming_note_mutex_;
+    std::vector<PendingNoteEvent> pending_incoming_notes_;
+    std::shared_ptr<std::atomic_bool> note_callback_active_;
 
     tooling::CIToolRepository* repository_ = nullptr;
     midicci::keyboard::MessageLogger::LogCallback log_bridge_;

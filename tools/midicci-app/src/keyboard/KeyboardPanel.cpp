@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <portable-file-dialogs.h>
+#include <memory>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
 
 namespace midicci::app {
@@ -73,6 +74,8 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
         message_logger_.add_log_callback(log_bridge_);
     }
 
+    note_callback_active_ = std::make_shared<std::atomic_bool>(true);
+
     midi_keyboard_.set_octave_range(2, 4);
     controller_ = std::make_unique<KeyboardController>(&message_logger_);
     midi_keyboard_.set_key_event_callback([this](int note, int /*velocity*/, bool is_pressed) {
@@ -94,6 +97,29 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
         }
     });
     set_parameter_key_value(parameter_key_value_);
+
+    controller_->setIncomingNoteCallback([this](int note, int velocity, bool is_pressed) {
+        enqueue_incoming_note_event(note, velocity, is_pressed);
+    });
+
+    if (repository_) {
+        if (auto midi_manager = repository_->get_midi_device_manager()) {
+            std::weak_ptr<std::atomic_bool> weak_flag = note_callback_active_;
+            midi_manager->add_note_event_callback([this, weak_flag](int note, int velocity, bool is_pressed) {
+                auto flag = weak_flag.lock();
+                if (!flag || !flag->load()) {
+                    return;
+                }
+                enqueue_incoming_note_event(note, velocity, is_pressed);
+            });
+            std::weak_ptr<tooling::MidiDeviceManager> weak_manager = midi_manager;
+            controller_->setExternalOutputCallback([weak_manager](const libremidi::ump& packet) {
+                if (auto manager = weak_manager.lock()) {
+                    manager->send_to_virtual_output(packet);
+                }
+            });
+        }
+    }
 
     controller_->setMidiCIDevicesChangedCallback([this]() {
         ci_dirty_.store(true, std::memory_order_relaxed);
@@ -124,7 +150,12 @@ KeyboardPanel::~KeyboardPanel() {
     if (repository_ && log_bridge_) {
         message_logger_.remove_log_callback(log_bridge_);
     }
+    if (note_callback_active_) {
+        note_callback_active_->store(false);
+    }
     if (controller_) {
+        controller_->setIncomingNoteCallback(nullptr);
+        controller_->setExternalOutputCallback(nullptr);
         controller_->allNotesOff();
     }
 }
@@ -154,6 +185,7 @@ void KeyboardPanel::apply_pending_updates() {
         refresh_ci_devices();
     }
     process_property_updates();
+    process_incoming_note_events();
 }
 
 void KeyboardPanel::process_property_updates() {
@@ -206,6 +238,28 @@ void KeyboardPanel::process_property_updates() {
                 cache.loaded = false;
             }
         }
+    }
+}
+
+void KeyboardPanel::enqueue_incoming_note_event(int note, int velocity, bool is_pressed) {
+    if (note < 0 || note > 127) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(incoming_note_mutex_);
+    pending_incoming_notes_.push_back({note, velocity, is_pressed});
+}
+
+void KeyboardPanel::process_incoming_note_events() {
+    std::vector<PendingNoteEvent> events;
+    {
+        std::lock_guard<std::mutex> lock(incoming_note_mutex_);
+        if (pending_incoming_notes_.empty()) {
+            return;
+        }
+        events.swap(pending_incoming_notes_);
+    }
+    for (const auto& evt : events) {
+        midi_keyboard_.set_external_key_state(evt.note, evt.is_pressed);
     }
 }
 

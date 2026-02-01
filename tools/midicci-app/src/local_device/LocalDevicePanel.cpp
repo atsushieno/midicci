@@ -79,11 +79,63 @@ std::string property_label(const midicci::commonproperties::PropertyMetadata* me
 LocalDevicePanel::LocalDevicePanel(tooling::CIToolRepository* repository)
     : repository_(repository) {}
 
+void LocalDevicePanel::render_virtual_device_configuration() {
+    ImGui::TextUnformatted("Virtual MIDI Device Configuration");
+    auto midi_manager = repository_ ? repository_->get_midi_device_manager() : nullptr;
+    if (!midi_manager) {
+        ImGui::TextUnformatted("MIDI device manager unavailable.");
+        return;
+    }
+
+    if (!virtual_config_loaded_) {
+        virtual_input_name_ = midi_manager->get_virtual_input_name();
+        virtual_output_name_ = midi_manager->get_virtual_output_name();
+        virtual_ports_enabled_ = midi_manager->virtual_ports_enabled();
+        virtual_config_loaded_ = true;
+    } else {
+        virtual_ports_enabled_ = midi_manager->virtual_ports_enabled();
+    }
+
+    ImGui::Spacing();
+    float button_width = 110.0f;
+    float spacing = ImGui::GetStyle().ItemSpacing.x;
+    float avail_width = ImGui::GetContentRegionAvail().x;
+    float field_width = (avail_width - button_width - spacing * 2.0f) * 0.5f;
+    field_width = std::max(140.0f, field_width);
+
+    ImGui::BeginDisabled(virtual_ports_enabled_);
+    ImGui::SetNextItemWidth(field_width);
+    ImGui::InputTextWithHint("##virtual-in-port", "In Port Name", &virtual_input_name_);
+    if (!virtual_ports_enabled_ && ImGui::IsItemDeactivatedAfterEdit()) {
+        midi_manager->set_virtual_input_name(virtual_input_name_);
+    }
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(field_width);
+    ImGui::InputTextWithHint("##virtual-out-port", "Out Port Name", &virtual_output_name_);
+    if (!virtual_ports_enabled_ && ImGui::IsItemDeactivatedAfterEdit()) {
+        midi_manager->set_virtual_output_name(virtual_output_name_);
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    const char* toggle_label = virtual_ports_enabled_ ? "Disable" : "Enable";
+    if (ImGui::Button(toggle_label, ImVec2(button_width, 0.0f))) {
+        virtual_ports_enabled_ = !virtual_ports_enabled_;
+        midi_manager->enable_virtual_ports(virtual_ports_enabled_);
+    }
+}
+
 void LocalDevicePanel::render() {
     if (!repository_) {
         ImGui::TextUnformatted("CIToolRepository unavailable.");
         return;
     }
+
+    render_virtual_device_configuration();
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
 
     auto ci_manager = repository_->get_ci_device_manager();
     auto device_model = ci_manager ? ci_manager->get_device_model() : nullptr;

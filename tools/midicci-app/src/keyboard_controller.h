@@ -66,6 +66,8 @@ public:
     // MIDI connection state
     bool hasValidMidiPair() const;
     void setMidiConnectionChangedCallback(std::function<void(bool)> callback);
+    void setExternalOutputCallback(std::function<void(const libremidi::ump&)> callback);
+    void setIncomingNoteCallback(std::function<void(int note, int velocity, bool is_pressed)> callback);
     
 private:
     std::unique_ptr<libremidi::midi_in> midiIn;
@@ -87,6 +89,8 @@ private:
     std::set<std::vector<uint8_t>> recentOutgoingSysEx;
     
     void onMidiInput(libremidi::ump&& packet);
+    void dispatch_outgoing_packet(const libremidi::ump& packet);
+    bool extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const;
     
     // Helper functions for creating UMP packets
     libremidi::ump createUmpNoteOn(int channel, int note, int velocity);
@@ -108,4 +112,6 @@ private:
     bool sysex_in_progress_ = false;
     
     midicci::keyboard::MessageLogger* logger_;
+    std::function<void(const libremidi::ump&)> external_output_callback_;
+    std::function<void(int, int, bool)> incoming_note_callback_;
 };

@@ -25,6 +25,7 @@ private:
 
     tooling::CIToolRepository* repository_;
     bool device_config_loaded_ = false;
+    bool virtual_config_loaded_ = false;
 
     // Device configuration fields
     std::string manufacturer_id_hex_;
@@ -61,7 +62,13 @@ private:
     std::string property_can_set_ = "full";
     bool property_edit_mode_ = false;
 
+    // Virtual device configuration
+    std::string virtual_input_name_;
+    std::string virtual_output_name_;
+    bool virtual_ports_enabled_ = true;
+
     void ensure_device_config_loaded(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
+    void render_virtual_device_configuration();
     void render_device_configuration(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
     void render_profiles_section(const std::shared_ptr<tooling::CIDeviceModel>& device_model);
     void render_properties_section(const std::shared_ptr<tooling::CIDeviceModel>& device_model);

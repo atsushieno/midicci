@@ -7,6 +7,7 @@ namespace midicci::app {
 
 MidiKeyboard::MidiKeyboard() {
     pressed_keys_.resize(128, false);
+    external_pressed_keys_.resize(128, false);
     setup_keys();
 }
 
@@ -91,7 +92,6 @@ void MidiKeyboard::render() {
     float relative_y = mouse_pos.y - canvas_pos.y;
     float keyboard_start_x = canvas_pos.x + side_button_width;
     float relative_x = mouse_pos.x - keyboard_start_x;
-    float keyboard_end_x = keyboard_start_x + keyboard_width;
 
     bool in_left_button = relative_x_full >= 0.0f && relative_x_full < side_button_width &&
                           relative_y >= 0.0f && relative_y < white_key_height_;
@@ -151,7 +151,7 @@ void MidiKeyboard::render() {
         ImVec2 key_pos = ImVec2(keyboard_start_x + key.x, canvas_pos.y);
         ImVec2 key_size = ImVec2(key.width, key.is_black ? black_key_height_ : white_key_height_);
 
-        bool is_pressed = pressed_keys_[key.note];
+        bool is_pressed = pressed_keys_[key.note] || external_pressed_keys_[key.note];
         bool is_highlighted = (highlighted_key_ == key.note);
         ImU32 key_color;
         ImU32 border_color = IM_COL32(100, 100, 100, 255);
@@ -225,6 +225,13 @@ void MidiKeyboard::release_all_keys() {
 
 void MidiKeyboard::set_highlighted_key(int note) {
     highlighted_key_ = note;
+}
+
+void MidiKeyboard::set_external_key_state(int note, bool is_pressed) {
+    if (note < 0 || note >= static_cast<int>(external_pressed_keys_.size())) {
+        return;
+    }
+    external_pressed_keys_[note] = is_pressed;
 }
 
 int MidiKeyboard::get_note_from_position(float x, float y) {

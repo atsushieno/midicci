@@ -12,6 +12,7 @@
 #include <vector>
 #include <unordered_map>
 #include <chrono>
+#include <array>
 
 namespace midicci::app {
 
@@ -118,6 +119,7 @@ private:
     int parameter_group_value_ = 0;
     int parameter_channel_value_ = 0;
     int parameter_key_value_ = 60;
+    std::array<char, 256> parameter_filter_{}; // parameter name/path filter buffer
 
     void render_parameter_context_controls();
     int current_group_value() const;

@@ -10,6 +10,7 @@
 #include <portable-file-dialogs.h>
 #include <memory>
 #include <midicci/details/commonproperties/StandardProperties.hpp>
+#include <cctype>
 
 namespace midicci::app {
 
@@ -653,18 +654,69 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     ImGui::Spacing();
     render_parameter_context_controls();
     ImGui::Spacing();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Filter Controls:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::InputText("##control-filter", parameter_filter_.data(), parameter_filter_.size());
+    ImGui::Spacing();
 
     const auto ctrl_list_it = ctrl_list_cache_.find(muid);
     const std::vector<midicci::commonproperties::MidiCIControl>* controls = (ctrl_list_it != ctrl_list_cache_.end())
         ? &ctrl_list_it->second
         : nullptr;
-    auto has_visible_controls = [this](const std::vector<midicci::commonproperties::MidiCIControl>& list) {
-        return std::any_of(list.begin(), list.end(), [this](const auto& ctrl) {
-            return control_matches_context(ctrl);
-        });
+    std::string filter_value(parameter_filter_.data());
+    std::string filter_lower = filter_value;
+    std::transform(filter_lower.begin(), filter_lower.end(), filter_lower.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    const bool filter_active = !filter_lower.empty();
+    auto matches_filter = [&](const midicci::commonproperties::MidiCIControl& ctrl) {
+        if (!filter_active) {
+            return true;
+        }
+        auto contains_filter = [&](const std::string& value) {
+            if (value.empty()) {
+                return false;
+            }
+            std::string lowered = value;
+            std::transform(lowered.begin(),
+                           lowered.end(),
+                           lowered.begin(),
+                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+            return lowered.find(filter_lower) != std::string::npos;
+        };
+        if (contains_filter(ctrl.title)) {
+            return true;
+        }
+        if (contains_filter(ctrl.description)) {
+            return true;
+        }
+        if (contains_filter(format_parameter_id(ctrl))) {
+            return true;
+        }
+        auto path = format_parameter_path(ctrl);
+        if (path != "-" && contains_filter(path)) {
+            return true;
+        }
+        if (!ctrl.ctrlType.empty() && contains_filter(ctrl.ctrlType)) {
+            return true;
+        }
+        if (ctrl.ctrlMapId && contains_filter(*ctrl.ctrlMapId)) {
+            return true;
+        }
+        return false;
     };
+    auto is_visible_control = [&](const midicci::commonproperties::MidiCIControl& ctrl) {
+        return control_matches_context(ctrl) && matches_filter(ctrl);
+    };
+    auto has_visible_controls = [&](const std::vector<midicci::commonproperties::MidiCIControl>& list) {
+        return std::any_of(list.begin(), list.end(), is_visible_control);
+    };
+    bool controls_available = controls && !controls->empty();
+    bool any_visible_controls = controls_available && has_visible_controls(*controls);
 
-    if (controls && !controls->empty() && has_visible_controls(*controls)) {
+    if (any_visible_controls) {
         const ImGuiTableFlags control_table_flags = ImGuiTableFlags_RowBg |
                                                    ImGuiTableFlags_Borders |
                                                    ImGuiTableFlags_Resizable |
@@ -684,7 +736,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             ImGui::TableHeadersRow();
             int row = 0;
             for (const auto& ctrl : *controls) {
-                if (!control_matches_context(ctrl)) {
+                if (!is_visible_control(ctrl)) {
                     continue;
                 }
                 ImGui::TableNextRow();
@@ -824,8 +876,10 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
         }
     } else {
         invalidate_invisible_ctrl_map_entries(muid, -1);
-        if (!controls || controls->empty()) {
+        if (!controls_available) {
             ImGui::TextUnformatted("Control data not received yet.");
+        } else if (filter_active) {
+            ImGui::TextUnformatted("No controls match filter.");
         } else {
             ImGui::TextUnformatted("No controls for this context.");
         }

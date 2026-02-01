@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <array>
+#include <optional>
 
 namespace midicci::app {
 
@@ -33,6 +34,13 @@ private:
         int note;
         int velocity;
         bool is_pressed;
+    };
+
+    struct PendingControlValue {
+        std::string ctrlType;
+        std::vector<uint8_t> ctrlIndex;
+        uint32_t value = 0;
+        std::optional<uint8_t> note;
     };
 
     enum class ParameterContext {
@@ -59,6 +67,11 @@ private:
     void on_load_state(uint32_t muid);
     void enqueue_incoming_note_event(int note, int velocity, bool is_pressed);
     void process_incoming_note_events();
+    void enqueue_incoming_control_event(const KeyboardController::IncomingControlValue& value);
+    void process_incoming_control_events();
+    std::string build_control_identity(const std::string& ctrl_type, const std::vector<uint8_t>& index) const;
+    std::string build_control_key(uint32_t muid, const midicci::commonproperties::MidiCIControl& ctrl) const;
+    void rebuild_control_lookup(uint32_t muid, const std::vector<midicci::commonproperties::MidiCIControl>& controls);
 
     midicci::keyboard::MessageLogger message_logger_;
     std::unique_ptr<KeyboardController> controller_;
@@ -81,7 +94,9 @@ private:
     bool suppress_ci_auto_select_ = false;
     std::mutex state_mutex_;
     std::mutex incoming_note_mutex_;
+    std::mutex incoming_control_mutex_;
     std::vector<PendingNoteEvent> pending_incoming_notes_;
+    std::vector<PendingControlValue> pending_control_updates_;
     std::shared_ptr<std::atomic_bool> note_callback_active_;
 
     tooling::CIToolRepository* repository_ = nullptr;
@@ -113,7 +128,11 @@ private:
     std::mutex property_update_mutex_;
     std::vector<PendingPropertyUpdate> pending_property_updates_;
 
-    std::unordered_map<std::string, int> control_values_;
+    std::unordered_map<std::string, uint32_t> control_values_;
+    std::unordered_map<std::string, uint32_t> identity_values_;
+    std::unordered_map<uint32_t, std::vector<std::string>> control_keys_by_device_;
+    std::unordered_map<std::string, std::vector<std::string>> identity_to_control_keys_;
+    std::unordered_map<std::string, std::string> control_key_to_identity_;
 
     ParameterContext parameter_context_ = ParameterContext::Global;
     int parameter_group_value_ = 0;

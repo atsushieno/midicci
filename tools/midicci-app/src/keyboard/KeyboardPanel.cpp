@@ -103,6 +103,10 @@ KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
         enqueue_incoming_note_event(note, velocity, is_pressed);
     });
 
+    controller_->setIncomingControlValueCallback([this](const KeyboardController::IncomingControlValue& value) {
+        enqueue_incoming_control_event(value);
+    });
+
     if (repository_) {
         if (auto midi_manager = repository_->get_midi_device_manager()) {
             std::weak_ptr<std::atomic_bool> weak_flag = note_callback_active_;
@@ -156,6 +160,7 @@ KeyboardPanel::~KeyboardPanel() {
     }
     if (controller_) {
         controller_->setIncomingNoteCallback(nullptr);
+        controller_->setIncomingControlValueCallback(nullptr);
         controller_->setExternalOutputCallback(nullptr);
         controller_->allNotesOff();
     }
@@ -183,10 +188,16 @@ void KeyboardPanel::apply_pending_updates() {
         ctrl_map_cache_.clear();
         ctrl_list_cache_.clear();
         program_list_cache_.clear();
+        control_values_.clear();
+        identity_values_.clear();
+        control_keys_by_device_.clear();
+        identity_to_control_keys_.clear();
+        control_key_to_identity_.clear();
         refresh_ci_devices();
     }
     process_property_updates();
     process_incoming_note_events();
+    process_incoming_control_events();
 }
 
 void KeyboardPanel::process_property_updates() {
@@ -208,6 +219,7 @@ void KeyboardPanel::process_property_updates() {
             auto controls = controller_->getAllCtrlList(update.muid);
             if (controls) {
                 ctrl_list_cache_[update.muid] = *controls;
+                rebuild_control_lookup(update.muid, *controls);
             }
         } else if (update.property_id == midicci::commonproperties::StandardPropertyNames::PROGRAM_LIST) {
             auto programs = controller_->getProgramList(update.muid);
@@ -261,6 +273,99 @@ void KeyboardPanel::process_incoming_note_events() {
     }
     for (const auto& evt : events) {
         midi_keyboard_.set_external_key_state(evt.note, evt.is_pressed);
+    }
+}
+
+void KeyboardPanel::enqueue_incoming_control_event(const KeyboardController::IncomingControlValue& value) {
+    PendingControlValue pending;
+    pending.ctrlType = value.ctrlType;
+    pending.ctrlIndex = value.ctrlIndex;
+    pending.value = value.value;
+    pending.note = value.note;
+    std::lock_guard<std::mutex> lock(incoming_control_mutex_);
+    pending_control_updates_.push_back(std::move(pending));
+}
+
+void KeyboardPanel::process_incoming_control_events() {
+    std::vector<PendingControlValue> events;
+    {
+        std::lock_guard<std::mutex> lock(incoming_control_mutex_);
+        if (pending_control_updates_.empty()) {
+            return;
+        }
+        events.swap(pending_control_updates_);
+    }
+
+    for (const auto& evt : events) {
+        std::string identity = build_control_identity(evt.ctrlType, evt.ctrlIndex);
+        uint32_t stored_value = evt.value;
+        identity_values_[identity] = stored_value;
+
+        auto map_it = identity_to_control_keys_.find(identity);
+        if (map_it == identity_to_control_keys_.end()) {
+            continue;
+        }
+        for (const auto& control_key : map_it->second) {
+            control_values_[control_key] = stored_value;
+        }
+    }
+}
+
+std::string KeyboardPanel::build_control_identity(const std::string& ctrl_type,
+                                                  const std::vector<uint8_t>& index) const {
+    std::ostringstream oss;
+    oss << ctrl_type << ':';
+    oss << std::uppercase << std::hex << std::setfill('0');
+    for (uint8_t byte : index) {
+        oss << std::setw(2) << static_cast<int>(byte);
+    }
+    return oss.str();
+}
+
+std::string KeyboardPanel::build_control_key(uint32_t muid,
+                                             const midicci::commonproperties::MidiCIControl& ctrl) const {
+    std::ostringstream oss;
+    oss << std::uppercase << std::hex << std::setw(8) << std::setfill('0') << muid << ':';
+    oss << build_control_identity(ctrl.ctrlType, ctrl.ctrlIndex);
+    return oss.str();
+}
+
+void KeyboardPanel::rebuild_control_lookup(
+    uint32_t muid,
+    const std::vector<midicci::commonproperties::MidiCIControl>& controls) {
+    auto existing = control_keys_by_device_.find(muid);
+    if (existing != control_keys_by_device_.end()) {
+        for (const auto& key : existing->second) {
+            auto identity_it = control_key_to_identity_.find(key);
+            if (identity_it != control_key_to_identity_.end()) {
+                auto targets_it = identity_to_control_keys_.find(identity_it->second);
+                if (targets_it != identity_to_control_keys_.end()) {
+                    auto& entries = targets_it->second;
+                    entries.erase(std::remove(entries.begin(), entries.end(), key), entries.end());
+                    if (entries.empty()) {
+                        identity_to_control_keys_.erase(targets_it);
+                    }
+                }
+                control_key_to_identity_.erase(identity_it);
+            }
+        }
+        existing->second.clear();
+    }
+
+    auto& device_keys = control_keys_by_device_[muid];
+    device_keys.clear();
+    device_keys.reserve(controls.size());
+    for (const auto& ctrl : controls) {
+        std::string identity = build_control_identity(ctrl.ctrlType, ctrl.ctrlIndex);
+        std::string control_key = build_control_key(muid, ctrl);
+        device_keys.push_back(control_key);
+        control_key_to_identity_[control_key] = identity;
+        identity_to_control_keys_[identity].push_back(control_key);
+
+        auto identity_value = identity_values_.find(identity);
+        if (identity_value != identity_values_.end()) {
+            control_values_[control_key] = identity_value->second;
+        }
     }
 }
 
@@ -752,7 +857,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 ImGui::TableSetColumnIndex(2);
                 ImGui::TextUnformatted(ctrl.title.c_str());
                 ImGui::TableSetColumnIndex(3);
-                std::string key = ctrl.title + std::to_string(row);
+                std::string key = build_control_key(muid, ctrl);
                 uint32_t min_raw = ctrl.minMax.size() > 0 ? ctrl.minMax[0] : 0u;
                 uint32_t max_raw = ctrl.minMax.size() > 1 ? ctrl.minMax[1] : std::numeric_limits<uint32_t>::max();
                 if (max_raw < min_raw) std::swap(max_raw, min_raw);
@@ -768,9 +873,9 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 auto found = control_values_.find(key);
                 if (found == control_values_.end()) {
                     uint32_t def = static_cast<uint32_t>(std::clamp<uint64_t>(ctrl.defaultValue, min_raw, max_raw));
-                    found = control_values_.emplace(key, static_cast<int>(def)).first;
+                    found = control_values_.emplace(key, def).first;
                 }
-                int& value = found->second;
+                uint32_t& value = found->second;
                 float width = ImGui::GetContentRegionAvail().x;
                 ImGui::PushID(row);
                 const bool has_combo = ctrl.ctrlMapId.has_value();
@@ -789,7 +894,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 ImGui::SetNextItemWidth(width);
                 float slider_ratio = 0.0f;
                 if (span > 0) {
-                    slider_ratio = static_cast<float>((static_cast<int64_t>(value) - static_cast<int64_t>(min_raw)) / static_cast<double>(span));
+                    slider_ratio = static_cast<float>((static_cast<double>(value) - static_cast<double>(min_raw)) / static_cast<double>(span));
                 }
                 bool value_changed = ImGui::SliderFloat("##ctrl", &slider_ratio, 0.0f, 1.0f, "%.3f");
                 ImVec2 slider_min = ImGui::GetItemRectMin();
@@ -797,7 +902,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                 if (value_changed) {
                     uint64_t raw = static_cast<uint64_t>(min_raw) + static_cast<uint64_t>(slider_ratio * static_cast<float>(span));
                     raw = std::min<uint64_t>(raw, max_raw);
-                    value = static_cast<int>(raw);
+                    value = static_cast<uint32_t>(raw);
                     send_control_value(ctrl, static_cast<uint32_t>(raw));
                 }
                 if (has_combo) {
@@ -847,11 +952,11 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
                             map_loading = cache.pending && !cache.loaded;
                         }
                         if (map_values && !map_values->empty()) {
-                            uint32_t current_value = static_cast<uint32_t>(value);
+                            uint32_t current_value = value;
                             for (const auto& mapEntry : *map_values) {
                                 bool selected = current_value == mapEntry.value;
                                 if (ImGui::Selectable(mapEntry.title.c_str(), selected)) {
-                                    value = static_cast<int>(mapEntry.value);
+                                    value = mapEntry.value;
                                     send_control_value(ctrl, mapEntry.value);
                                     ImGui::CloseCurrentPopup();
                                 }

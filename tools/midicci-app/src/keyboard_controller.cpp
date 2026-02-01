@@ -4,6 +4,7 @@
 #include <libremidi/ump.hpp>
 #include <umppi/details/UmpFactory.hpp>
 #include <umppi/details/Common.hpp>
+#include <midicci/details/commonproperties/StandardProperties.hpp>
 
 namespace {
 inline uint8_t getByteFromUmp64(uint64_t ump_data, int index) {
@@ -399,6 +400,13 @@ void KeyboardController::onMidiInput(libremidi::ump&& packet) {
         return;
     }
 
+    if (incoming_control_callback_) {
+        IncomingControlValue control_value;
+        if (extract_control_value(packet, control_value)) {
+            incoming_control_callback_(control_value);
+        }
+    }
+
     int note = 0;
     int velocity = 0;
     bool is_pressed = false;
@@ -559,6 +567,10 @@ void KeyboardController::setExternalOutputCallback(std::function<void(const libr
 
 void KeyboardController::setIncomingNoteCallback(std::function<void(int, int, bool)> callback) {
     incoming_note_callback_ = std::move(callback);
+}
+
+void KeyboardController::setIncomingControlValueCallback(std::function<void(const IncomingControlValue&)> callback) {
+    incoming_control_callback_ = std::move(callback);
 }
 
 void KeyboardController::initializeMidiCI() {
@@ -890,6 +902,57 @@ void KeyboardController::dispatch_outgoing_packet(const libremidi::ump& packet) 
     if (external_output_callback_) {
         external_output_callback_(packet);
     }
+}
+
+bool KeyboardController::extract_control_value(const libremidi::ump& packet, IncomingControlValue& value) const {
+    const uint32_t word0 = packet.data[0];
+    const uint8_t message_type = (word0 >> 28) & 0xF;
+    if (message_type != 0x4) {
+        return false;
+    }
+
+    const uint8_t status = (word0 >> 16) & 0xFF;
+    const uint8_t status_prefix = status & 0xF0;
+    const uint8_t channel = status & 0x0F;
+    const uint8_t byte3 = (word0 >> 8) & 0xFF;
+    const uint8_t byte4 = word0 & 0xFF;
+
+    value.ctrlIndex.clear();
+    value.note.reset();
+    value.group = (word0 >> 24) & 0xF;
+    value.channel = channel;
+    value.value = packet.data[1];
+
+    switch (status_prefix) {
+    case umppi::MidiChannelStatus::CC:
+        value.ctrlType = midicci::commonproperties::MidiCIControlType::CC;
+        value.ctrlIndex.push_back(byte3);
+        return true;
+    case umppi::MidiChannelStatus::RPN:
+        value.ctrlType = midicci::commonproperties::MidiCIControlType::RPN;
+        value.ctrlIndex.push_back(byte3);
+        value.ctrlIndex.push_back(byte4);
+        return true;
+    case umppi::MidiChannelStatus::NRPN:
+        value.ctrlType = midicci::commonproperties::MidiCIControlType::NRPN;
+        value.ctrlIndex.push_back(byte3);
+        value.ctrlIndex.push_back(byte4);
+        return true;
+    case umppi::MidiChannelStatus::PER_NOTE_RCC:
+        value.ctrlType = midicci::commonproperties::MidiCIControlType::PNRC;
+        value.note = byte3;
+        value.ctrlIndex.push_back(byte4);
+        return true;
+    case umppi::MidiChannelStatus::PER_NOTE_ACC:
+        value.ctrlType = midicci::commonproperties::MidiCIControlType::PNAC;
+        value.note = byte3;
+        value.ctrlIndex.push_back(byte4);
+        return true;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 bool KeyboardController::extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const {

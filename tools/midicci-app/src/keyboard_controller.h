@@ -6,11 +6,21 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <optional>
 #include "midi_ci_manager.h"
 #include "message_logger.h"
 
 class KeyboardController {
 public:
+    struct IncomingControlValue {
+        std::string ctrlType;
+        std::vector<uint8_t> ctrlIndex;
+        uint32_t value = 0;
+        uint8_t group = 0;
+        uint8_t channel = 0;
+        std::optional<uint8_t> note;
+    };
+
     KeyboardController(midicci::keyboard::MessageLogger* logger = nullptr);
     ~KeyboardController();
     
@@ -68,6 +78,7 @@ public:
     void setMidiConnectionChangedCallback(std::function<void(bool)> callback);
     void setExternalOutputCallback(std::function<void(const libremidi::ump&)> callback);
     void setIncomingNoteCallback(std::function<void(int note, int velocity, bool is_pressed)> callback);
+    void setIncomingControlValueCallback(std::function<void(const IncomingControlValue&)> callback);
     
 private:
     std::unique_ptr<libremidi::midi_in> midiIn;
@@ -91,6 +102,7 @@ private:
     void onMidiInput(libremidi::ump&& packet);
     void dispatch_outgoing_packet(const libremidi::ump& packet);
     bool extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const;
+    bool extract_control_value(const libremidi::ump& packet, IncomingControlValue& value) const;
     
     // Helper functions for creating UMP packets
     libremidi::ump createUmpNoteOn(int channel, int note, int velocity);
@@ -114,4 +126,5 @@ private:
     midicci::keyboard::MessageLogger* logger_;
     std::function<void(const libremidi::ump&)> external_output_callback_;
     std::function<void(int, int, bool)> incoming_note_callback_;
+    std::function<void(const IncomingControlValue&)> incoming_control_callback_;
 };

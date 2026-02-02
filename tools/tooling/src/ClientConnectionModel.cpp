@@ -181,6 +181,25 @@ void ClientConnectionModel::request_midi_message_report(uint8_t address, uint32_
                                                        uint8_t channel_controller_messages,
                                                        uint8_t note_data_messages) {
     std::lock_guard<std::mutex> lock(pimpl_->mutex_);
+
+    if (!pimpl_->parent_ || !pimpl_->connection_) {
+        std::cout << "Cannot request MIDI message report: parent or connection unavailable" << std::endl;
+        return;
+    }
+
+    auto device = pimpl_->parent_->getDevice();
+    if (!device) {
+        std::cout << "Cannot request MIDI message report: device unavailable" << std::endl;
+        return;
+    }
+
+    auto group = 0;
+    device->getMessenger().sendMidiMessageReportInquiry(
+        group, address, target_muid,
+        message_data_control, system_messages,
+        channel_controller_messages, note_data_messages
+    );
+
     std::cout << "Requesting MIDI message report from MUID: 0x" << std::hex << target_muid << std::dec << std::endl;
 }
 

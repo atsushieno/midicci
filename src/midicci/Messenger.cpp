@@ -820,6 +820,18 @@ void Messenger::processPropertyNotify(const SubscribeProperty& msg) {
 
 void Messenger::processProcessInquiryReply(const ProcessInquiryCapabilitiesReply& msg) {
     pimpl_->notify_callbacks(msg);
+
+    if (msg.getSupportedFeatures() & static_cast<uint8_t>(MidiCIProcessInquiryFeatures::MIDI_MESSAGE_REPORT)) {
+        sendMidiMessageReportInquiry(
+            msg.getCommon().group,
+            msg.getCommon().address,
+            msg.getSourceMuid(),
+            static_cast<uint8_t>(MidiMessageReportDataControl::Full),
+            static_cast<uint8_t>(MidiMessageReportChannelControllerFlags::All),
+            static_cast<uint8_t>(MidiMessageReportChannelControllerFlags::All),
+            0
+        );
+    }
 }
 
 void Messenger::processDiscovery(const DiscoveryInquiry& msg) {

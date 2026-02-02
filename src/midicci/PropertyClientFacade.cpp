@@ -1,4 +1,5 @@
 #include "midicci/midicci.hpp"
+#include "midicci/details/commonproperties/StandardProperties.hpp"
 #include <mutex>
 #include <map>
 #include <unordered_map>
@@ -241,6 +242,23 @@ void PropertyClientFacade::processGetDataReply(const GetPropertyDataReply& msg) 
 
                         pimpl_->property_rules_->propertyValueUpdated(property_id, msg.getBody());
                         pimpl_->cached_properties_[property_id] = msg.getBody();
+
+                        if (property_id == commonproperties::StandardPropertyNames::ALL_CTRL_LIST) {
+                            pimpl_->conn_.setAllCtrlListReceived(true);
+
+                            auto features = pimpl_->conn_.getProcessInquirySupportedFeatures();
+                            if (features & static_cast<uint8_t>(MidiCIProcessInquiryFeatures::MIDI_MESSAGE_REPORT)) {
+                                pimpl_->device_.getMessenger().sendMidiMessageReportInquiry(
+                                    msg.getCommon().group,
+                                    msg.getCommon().address,
+                                    msg.getSourceMuid(),
+                                    static_cast<uint8_t>(MidiMessageReportDataControl::Full),
+                                    static_cast<uint8_t>(MidiMessageReportChannelControllerFlags::All),
+                                    static_cast<uint8_t>(MidiMessageReportChannelControllerFlags::All),
+                                    0
+                                );
+                            }
+                        }
                     }
                 }
 

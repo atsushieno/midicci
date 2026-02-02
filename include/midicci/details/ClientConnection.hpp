@@ -61,7 +61,12 @@ public:
     JsonValue jsonSchema() const;
 
     uint32_t getRemoteMaxSysexSize() const;
-    
+
+    void setProcessInquirySupportedFeatures(uint8_t features);
+    uint8_t getProcessInquirySupportedFeatures() const;
+    void setAllCtrlListReceived(bool received);
+    bool hasAllCtrlListReceived() const;
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

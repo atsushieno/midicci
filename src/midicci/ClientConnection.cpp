@@ -30,6 +30,8 @@ public:
     std::unique_ptr<JsonValue> json_schema_;
     mutable std::recursive_mutex mutex_;
     uint32_t remote_max_sysex_size_;
+    uint8_t process_inquiry_supported_features_ = 0;
+    bool allctrllist_received_ = false;
 };
 
 ClientConnection::ClientConnection(MidiCIDevice& device, uint32_t target_muid, DeviceDetails device_details, uint32_t remote_max_sysex)
@@ -174,6 +176,26 @@ JsonValue ClientConnection::jsonSchema() const {
 uint32_t ClientConnection::getRemoteMaxSysexSize() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     return pimpl_->remote_max_sysex_size_;
+}
+
+void ClientConnection::setProcessInquirySupportedFeatures(uint8_t features) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->process_inquiry_supported_features_ = features;
+}
+
+uint8_t ClientConnection::getProcessInquirySupportedFeatures() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->process_inquiry_supported_features_;
+}
+
+void ClientConnection::setAllCtrlListReceived(bool received) {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    pimpl_->allctrllist_received_ = received;
+}
+
+bool ClientConnection::hasAllCtrlListReceived() const {
+    std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
+    return pimpl_->allctrllist_received_;
 }
 
 } // namespace

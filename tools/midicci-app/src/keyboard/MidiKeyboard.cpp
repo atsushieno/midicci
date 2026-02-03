@@ -75,12 +75,19 @@ void MidiKeyboard::setup_keys() {
 }
 
 void MidiKeyboard::render() {
+    const ImFont* font = ImGui::GetFont();
+    const float ui_scale = font ? std::max(font->Scale, 0.1f) : 1.0f;
+
+    const float scaled_key_width = key_width_ * ui_scale;
+    const float scaled_white_height = white_key_height_ * ui_scale;
+    const float scaled_black_height = black_key_height_ * ui_scale;
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 canvas_pos = ImGui::GetCursorScreenPos();
-    float keyboard_width = (num_octaves_ * 7) * key_width_;
-    float side_button_width = key_width_;
+    float keyboard_width = (num_octaves_ * 7) * scaled_key_width;
+    float side_button_width = scaled_key_width;
     float total_width = keyboard_width + (side_button_width * 2.0f);
-    ImVec2 canvas_size = ImVec2(total_width, white_key_height_);
+    ImVec2 canvas_size = ImVec2(total_width, scaled_white_height);
 
     ImGui::InvisibleButton("##keyboard", canvas_size);
 
@@ -94,10 +101,10 @@ void MidiKeyboard::render() {
     float relative_x = mouse_pos.x - keyboard_start_x;
 
     bool in_left_button = relative_x_full >= 0.0f && relative_x_full < side_button_width &&
-                          relative_y >= 0.0f && relative_y < white_key_height_;
+                          relative_y >= 0.0f && relative_y < scaled_white_height;
     bool in_right_button = relative_x_full >= (side_button_width + keyboard_width) &&
                            relative_x_full < total_width &&
-                           relative_y >= 0.0f && relative_y < white_key_height_;
+                           relative_y >= 0.0f && relative_y < scaled_white_height;
     bool left_hovered = is_hovered && in_left_button;
     bool right_hovered = is_hovered && in_right_button;
 
@@ -110,8 +117,8 @@ void MidiKeyboard::render() {
     }
 
     if (is_hovered && relative_x >= 0.0f && relative_x < keyboard_width &&
-        relative_y >= 0.0f && relative_y < white_key_height_) {
-        int hovered_note = get_note_from_position(relative_x, relative_y);
+        relative_y >= 0.0f && relative_y < scaled_white_height) {
+        int hovered_note = get_note_from_position(relative_x / ui_scale, relative_y / ui_scale);
 
         if (mouse_down && hovered_note != -1) {
             if (mouse_down_key_ != hovered_note) {
@@ -131,7 +138,7 @@ void MidiKeyboard::render() {
     }
 
     auto draw_shift_button = [&](ImVec2 pos, const char* glyph, bool hovered) {
-        ImVec2 size(side_button_width, white_key_height_);
+        ImVec2 size(side_button_width, scaled_white_height);
         ImU32 key_color = hovered ? IM_COL32(210, 210, 230, 255) : IM_COL32(235, 235, 235, 255);
         ImU32 border_color = IM_COL32(100, 100, 100, 255);
         draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), key_color);
@@ -148,8 +155,8 @@ void MidiKeyboard::render() {
                       right_hovered);
 
     for (const auto& key : keys_) {
-        ImVec2 key_pos = ImVec2(keyboard_start_x + key.x, canvas_pos.y);
-        ImVec2 key_size = ImVec2(key.width, key.is_black ? black_key_height_ : white_key_height_);
+        ImVec2 key_pos = ImVec2(keyboard_start_x + key.x * ui_scale, canvas_pos.y);
+        ImVec2 key_size = ImVec2(key.width * ui_scale, key.is_black ? scaled_black_height : scaled_white_height);
 
         bool is_pressed = pressed_keys_[key.note] || external_pressed_keys_[key.note];
         bool is_highlighted = (highlighted_key_ == key.note);
@@ -188,7 +195,7 @@ void MidiKeyboard::render() {
             ImVec2 text_size = ImGui::CalcTextSize(note_name);
             ImVec2 text_pos = ImVec2(
                 key_pos.x + (key_size.x - text_size.x) * 0.5f,
-                key_pos.y + key_size.y - text_size.y - 5.0f
+                key_pos.y + key_size.y - text_size.y - 5.0f * ui_scale
             );
             draw_list->AddText(text_pos, IM_COL32(0, 0, 0, 255), note_name);
         }

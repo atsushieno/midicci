@@ -769,7 +769,6 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             selected_program_index_.erase(last_selected_muid_);
         }
         last_selected_muid_ = muid;
-        // Do not auto-fetch control/program lists; leave them empty until the user requests data.
     }
     ImGui::Spacing();
     render_parameter_context_controls();
@@ -836,6 +835,8 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     bool controls_available = controls && !controls->empty();
     bool any_visible_controls = controls_available && has_visible_controls(*controls);
 
+    ImGui::BeginChild("control-table-scroll", ImVec2(0, 0), false);
+
     if (any_visible_controls) {
         const ImGuiTableFlags control_table_flags = ImGuiTableFlags_RowBg |
                                                    ImGuiTableFlags_Borders |
@@ -851,7 +852,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             ImGui::TableSetupColumn("Param ID",
                                     ImGuiTableColumnFlags_WidthFixed,
                                     ID_COLUMN_WIDTH);
-            ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch, 4.0f);
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 4.0f);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 3.0f);
             ImGui::TableHeadersRow();
             int row = 0;
@@ -1004,6 +1005,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
             ImGui::TextUnformatted("No controls for this context.");
         }
     }
+    ImGui::EndChild();
     ImGui::EndChild();
 }
 

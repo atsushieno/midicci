@@ -38,7 +38,7 @@ private:
         float width;
     };
 
-    int octave_start_ = 4;
+    int octave_start_ = 5;
     int num_octaves_ = 2;
     float key_width_ = 24.0f;
     float white_key_height_ = 100.0f;

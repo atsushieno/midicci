@@ -754,7 +754,7 @@ void KeyboardPanel::render_ci_property_tools(uint32_t muid) {
     ImGui::EndChild();
 
     ImGui::Spacing();
-    ImGui::BeginChild("control-column", ImVec2(0, 320.0f * ui_scale), true);
+    ImGui::BeginChild("control-column", ImVec2(0, 0), true);
 
     ImGui::TextUnformatted("Control List");
     ImGui::SameLine();

@@ -92,6 +92,10 @@ midicci_fetchcontent_makeavailable_static(zlib-ng)
 add_subdirectory(src/umppi)
 add_subdirectory(src/midicci)
 
+if(NOT MIDICCI_SKIP_TOOLS)
+    add_subdirectory(tools)
+endif()
+
 if(BUILD_TESTS)
     enable_testing()
     # Fetch googletest only for tests, and prevent it from installing
@@ -105,11 +109,9 @@ if(BUILD_TESTS)
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     set(INSTALL_GMOCK OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
-    add_subdirectory(tests)
-endif()
-
-if(NOT MIDICCI_SKIP_TOOLS)
-    add_subdirectory(tools)
+    if(NOT MIDICCI_SKIP_TOOLS)
+        add_subdirectory(tests)
+    endif()
 endif()
 
 # Install public headers only from our tree

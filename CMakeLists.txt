@@ -24,6 +24,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
+option(MIDICCI_SKIP_TOOLS "Build only midicci libraries" OFF)
 option(MIDICCI_ENABLE_WINMIDI "Enable Windows MIDI Services backend integration (Windows only)" ${WIN32})
 set(MIDICCI_WINMIDI_HEADERS_ARCHIVE "${CMAKE_CURRENT_LIST_DIR}/external/Microsoft.Windows.Devices.Midi2.1.0.14-rc.1.209.nupkg"
         CACHE FILEPATH "Path to the Windows MIDI Services header package used by libremidi")
@@ -107,7 +108,9 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(tools)
+if(NOT MIDICCI_SKIP_TOOLS)
+    add_subdirectory(tools)
+endif()
 
 # Install public headers only from our tree
 install(

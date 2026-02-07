@@ -137,6 +137,21 @@ TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpNoteOn) {
     EXPECT_EQ(0xF0000000U, context.output[0].int2);
 }
 
+TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpWithSmfDeltaTime) {
+    std::vector<uint8_t> bytes = {0x02, 0x91, 0x40, 0x78};
+    Midi1ToUmpTranslatorContext context(bytes, 7, false,
+                                        static_cast<int>(MidiTransportProtocol::UMP),
+                                        false, true);
+
+    EXPECT_EQ(UmpTranslationResult::OK, UmpTranslator::translateMidi1BytesToUmp(context));
+    EXPECT_EQ(4, context.midi1Pos);
+    ASSERT_EQ(2, context.output.size());
+    EXPECT_TRUE(context.output[0].isDeltaClockstamp());
+    EXPECT_EQ(UmpFactory::deltaClockstamp(2), context.output[0].int1);
+    EXPECT_EQ(0x47914000, context.output[1].int1);
+    EXPECT_EQ(0xF0000000U, context.output[1].int2);
+}
+
 TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpPAf) {
     std::vector<uint8_t> bytes = {0xA1, 0x40, 0x60};
     Midi1ToUmpTranslatorContext context(bytes, 7);

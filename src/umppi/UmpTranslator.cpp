@@ -280,6 +280,34 @@ int UmpTranslator::getMidi1MessageSize(uint8_t statusByte) {
 
 int UmpTranslator::translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context) {
     while (context.midi1Pos < context.midi1.size()) {
+        if (context.isMidi1Smf) {
+            uint32_t deltaTime = 0;
+            int deltaBytesConsumed = 0;
+            bool continueDecoding = true;
+            while (continueDecoding) {
+                if (context.midi1Pos >= context.midi1.size()) {
+                    return UmpTranslationResult::INVALID_STATUS;
+                }
+                uint8_t byte = context.midi1[context.midi1Pos++];
+                deltaTime = (deltaTime << 7) | static_cast<uint32_t>(byte & 0x7F);
+                ++deltaBytesConsumed;
+                continueDecoding = (byte & 0x80) != 0;
+                if (continueDecoding && deltaBytesConsumed == 4) {
+                    return UmpTranslationResult::INVALID_STATUS;
+                }
+            }
+            if (deltaTime > 0) {
+                while (deltaTime > 0xFFFFF) {
+                    context.output.emplace_back(UmpFactory::deltaClockstamp(0xFFFFF));
+                    deltaTime -= 0xFFFFF;
+                }
+                context.output.emplace_back(UmpFactory::deltaClockstamp(deltaTime));
+            }
+            if (context.midi1Pos >= context.midi1.size()) {
+                return UmpTranslationResult::INVALID_STATUS;
+            }
+        }
+        
         if (context.midi1[context.midi1Pos] == 0xF0) {
             // SysEx handling
             size_t f7Pos = context.midi1Pos + 1;

@@ -195,6 +195,52 @@ namespace FlexDataStatus {
     constexpr uint8_t CHORD_NAME = 6;
 }
 
+namespace FlexDataAddress {
+    constexpr uint8_t CHANNEL_FIELD = 0;
+    constexpr uint8_t GROUP = 1;
+}
+
+namespace FlexDataStatusBank {
+    constexpr uint8_t SETUP_AND_PERFORMANCE = 0;
+    constexpr uint8_t METADATA_TEXT = 1;
+    constexpr uint8_t PERFORMANCE_TEXT = 2;
+}
+
+namespace MetadataTextStatus {
+    constexpr uint8_t UNKNOWN = 0;
+    constexpr uint8_t PROJECT_NAME = 1;
+    constexpr uint8_t COMPOSITION_NAME = 2;
+    constexpr uint8_t MIDI_CLIP_NAME = 3;
+    constexpr uint8_t COPYRIGHT = 4;
+    constexpr uint8_t AUTHOR = 5;
+    constexpr uint8_t LYRICIST = 6;
+    constexpr uint8_t ARRANGER = 7;
+    constexpr uint8_t PUBLISHER = 8;
+    constexpr uint8_t PRIMARY_PERFORMER = 9;
+    constexpr uint8_t ACCOMPANYING_PERFORMER = 10;
+    constexpr uint8_t RECORDING_CONCERT_DATE = 11;
+    constexpr uint8_t RECORDING_CONCERT_LOCATION = 12;
+}
+
+namespace PerformanceTextStatus {
+    constexpr uint8_t UNKNOWN = 0;
+    constexpr uint8_t LYRICS = 1;
+    constexpr uint8_t LYRICS_LANGUAGE = 2;
+    constexpr uint8_t RUBY = 3;
+    constexpr uint8_t RUBY_LANGUAGE = 4;
+}
+
+namespace TonicNoteField {
+    constexpr uint8_t UNKNOWN = 0;
+    constexpr uint8_t A = 1;
+    constexpr uint8_t B = 2;
+    constexpr uint8_t C = 3;
+    constexpr uint8_t D = 4;
+    constexpr uint8_t E = 5;
+    constexpr uint8_t F = 6;
+    constexpr uint8_t G = 7;
+}
+
 namespace MidiProgramChangeOptions {
     constexpr uint8_t NONE = 0;
     constexpr uint8_t BANK_VALID = 1;

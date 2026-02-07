@@ -2,6 +2,186 @@
 #include <umppi/details/UmpFactory.hpp>
 #include <algorithm>
 
+namespace {
+
+enum class SmfMetaProcessResult {
+    HANDLED,
+    SKIPPED,
+    INVALID
+};
+
+bool readVariableLengthQuantity(const std::vector<uint8_t>& data, size_t& pos, uint32_t& value) {
+    value = 0;
+    int bytesConsumed = 0;
+    while (true) {
+        if (pos >= data.size() || bytesConsumed == 4) {
+            return false;
+        }
+        uint8_t byte = data[pos++];
+        value = (value << 7) | static_cast<uint32_t>(byte & 0x7F);
+        ++bytesConsumed;
+        if ((byte & 0x80) == 0) {
+            break;
+        }
+    }
+    return true;
+}
+
+uint8_t mapMajorKeyTonic(int sharpsOrFlats) {
+    static constexpr uint8_t tonics[15] = {
+        umppi::TonicNoteField::C, // -7
+        umppi::TonicNoteField::G, // -6
+        umppi::TonicNoteField::D, // -5
+        umppi::TonicNoteField::A, // -4
+        umppi::TonicNoteField::E, // -3
+        umppi::TonicNoteField::B, // -2
+        umppi::TonicNoteField::F, // -1
+        umppi::TonicNoteField::C, // 0
+        umppi::TonicNoteField::G, // 1
+        umppi::TonicNoteField::D, // 2
+        umppi::TonicNoteField::A, // 3
+        umppi::TonicNoteField::E, // 4
+        umppi::TonicNoteField::B, // 5
+        umppi::TonicNoteField::F, // 6 (F#)
+        umppi::TonicNoteField::C  // 7 (C#)
+    };
+    int index = sharpsOrFlats + 7;
+    constexpr int tonicsCount = static_cast<int>(sizeof(tonics) / sizeof(tonics[0]));
+    if (index < 0 || index >= tonicsCount) {
+        return umppi::TonicNoteField::UNKNOWN;
+    }
+    return tonics[index];
+}
+
+uint8_t mapMinorKeyTonic(int sharpsOrFlats) {
+    static constexpr uint8_t tonics[15] = {
+        umppi::TonicNoteField::A, // -7 (Ab minor)
+        umppi::TonicNoteField::E, // -6
+        umppi::TonicNoteField::B, // -5
+        umppi::TonicNoteField::F, // -4
+        umppi::TonicNoteField::C, // -3
+        umppi::TonicNoteField::G, // -2
+        umppi::TonicNoteField::D, // -1
+        umppi::TonicNoteField::A, // 0
+        umppi::TonicNoteField::E, // 1
+        umppi::TonicNoteField::B, // 2
+        umppi::TonicNoteField::F, // 3 (F# minor)
+        umppi::TonicNoteField::C, // 4 (C# minor)
+        umppi::TonicNoteField::G, // 5 (G# minor)
+        umppi::TonicNoteField::D, // 6 (D# minor)
+        umppi::TonicNoteField::A  // 7 (A# minor)
+    };
+    int index = sharpsOrFlats + 7;
+    constexpr int tonicsCount = static_cast<int>(sizeof(tonics) / sizeof(tonics[0]));
+    if (index < 0 || index >= tonicsCount) {
+        return umppi::TonicNoteField::UNKNOWN;
+    }
+    return tonics[index];
+}
+
+uint8_t resolveKeySignatureTonic(int sharpsOrFlats, bool isMinor) {
+    return isMinor ? mapMinorKeyTonic(sharpsOrFlats) : mapMajorKeyTonic(sharpsOrFlats);
+}
+
+SmfMetaProcessResult translateMetaToFlexData(umppi::Midi1ToUmpTranslatorContext& context,
+                                             uint8_t metaType,
+                                             const std::vector<uint8_t>& data) {
+    using namespace umppi;
+    switch (metaType) {
+        case MidiMetaType::TEMPO:
+            if (data.size() != 3) {
+                return SmfMetaProcessResult::INVALID;
+            }
+            {
+                uint32_t tempoMicroseconds = (static_cast<uint32_t>(data[0]) << 16) |
+                                             (static_cast<uint32_t>(data[1]) << 8) |
+                                             data[2];
+                context.tempo = static_cast<int>(tempoMicroseconds);
+                uint32_t tempo10Nanoseconds = tempoMicroseconds * 100;
+                context.output.emplace_back(UmpFactory::tempo(context.group, 0, tempo10Nanoseconds));
+            }
+            return SmfMetaProcessResult::HANDLED;
+
+        case MidiMetaType::TIME_SIGNATURE:
+            if (data.size() < 4) {
+                return SmfMetaProcessResult::INVALID;
+            }
+            {
+                uint8_t numerator = data[0];
+                uint8_t denominatorShift = data[1];
+                uint32_t denominatorValue = (denominatorShift < 8) ? (1u << denominatorShift) : 0;
+                uint8_t numberOf32Notes = data[3];
+                context.output.emplace_back(UmpFactory::timeSignatureDirect(
+                    context.group, 0, numerator, static_cast<uint8_t>(denominatorValue), numberOf32Notes));
+            }
+            return SmfMetaProcessResult::HANDLED;
+
+        case MidiMetaType::KEY_SIGNATURE:
+            if (data.size() < 2) {
+                return SmfMetaProcessResult::INVALID;
+            }
+            {
+                int8_t sharpsOrFlats = static_cast<int8_t>(data[0]);
+                bool isMinor = data[1] != 0;
+                uint8_t tonic = resolveKeySignatureTonic(sharpsOrFlats, isMinor);
+                context.output.emplace_back(
+                    UmpFactory::keySignature(context.group, FlexDataAddress::GROUP, 0, sharpsOrFlats, tonic));
+            }
+            return SmfMetaProcessResult::HANDLED;
+
+        case MidiMetaType::TEXT: {
+            auto umps = UmpFactory::metadataText(context.group, FlexDataAddress::GROUP, 0,
+                                                 MetadataTextStatus::UNKNOWN, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::COPYRIGHT: {
+            auto umps = UmpFactory::metadataText(context.group, FlexDataAddress::GROUP, 0,
+                                                 MetadataTextStatus::COPYRIGHT, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::TRACK_NAME: {
+            auto umps = UmpFactory::metadataText(context.group, FlexDataAddress::GROUP, 0,
+                                                 MetadataTextStatus::MIDI_CLIP_NAME, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::INSTRUMENT_NAME: {
+            auto umps = UmpFactory::metadataText(context.group, FlexDataAddress::GROUP, 0,
+                                                 MetadataTextStatus::PRIMARY_PERFORMER, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::LYRIC: {
+            auto umps = UmpFactory::performanceText(context.group, FlexDataAddress::GROUP, 0,
+                                                    PerformanceTextStatus::LYRICS, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::MARKER:
+        case MidiMetaType::CUE_POINT: {
+            auto umps = UmpFactory::metadataText(context.group, FlexDataAddress::GROUP, 0,
+                                                 MetadataTextStatus::UNKNOWN, data);
+            context.output.insert(context.output.end(), umps.begin(), umps.end());
+            return SmfMetaProcessResult::HANDLED;
+        }
+
+        case MidiMetaType::END_OF_TRACK:
+            return SmfMetaProcessResult::SKIPPED;
+
+        default:
+            return SmfMetaProcessResult::SKIPPED;
+    }
+}
+
+} // namespace
+
 namespace umppi {
 
 
@@ -306,6 +486,29 @@ int UmpTranslator::translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context
             if (context.midi1Pos >= context.midi1.size()) {
                 return UmpTranslationResult::INVALID_STATUS;
             }
+        }
+
+        if (context.isMidi1Smf && context.midi1[context.midi1Pos] == Midi1Status::META) {
+            if (context.midi1Pos + 2 >= context.midi1.size()) {
+                return UmpTranslationResult::INVALID_STATUS;
+            }
+            uint8_t metaType = context.midi1[context.midi1Pos + 1];
+            size_t metaPos = context.midi1Pos + 2;
+            uint32_t metaLength = 0;
+            if (!readVariableLengthQuantity(context.midi1, metaPos, metaLength)) {
+                return UmpTranslationResult::INVALID_STATUS;
+            }
+            if (metaPos + metaLength > context.midi1.size()) {
+                return UmpTranslationResult::INVALID_STATUS;
+            }
+            std::vector<uint8_t> metaData(context.midi1.begin() + metaPos,
+                                          context.midi1.begin() + metaPos + metaLength);
+            SmfMetaProcessResult metaResult = translateMetaToFlexData(context, metaType, metaData);
+            if (metaResult == SmfMetaProcessResult::INVALID) {
+                return UmpTranslationResult::INVALID_STATUS;
+            }
+            context.midi1Pos = metaPos + metaLength;
+            continue;
         }
         
         if (context.midi1[context.midi1Pos] == 0xF0) {

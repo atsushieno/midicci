@@ -152,6 +152,48 @@ TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpWithSmfDeltaTime) {
     EXPECT_EQ(0xF0000000U, context.output[1].int2);
 }
 
+TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpSmfTempoMeta) {
+    std::vector<uint8_t> bytes = {0x00, 0xFF, MidiMetaType::TEMPO, 0x03, 0x07, 0xA1, 0x20,
+                                  0x00, 0x91, 0x40, 0x60};
+    Midi1ToUmpTranslatorContext context(bytes, 0, false,
+                                        static_cast<int>(MidiTransportProtocol::UMP),
+                                        false, true);
+
+    EXPECT_EQ(UmpTranslationResult::OK, UmpTranslator::translateMidi1BytesToUmp(context));
+    ASSERT_EQ(2, context.output.size());
+    EXPECT_EQ(umppi::MessageType::FLEX_DATA, context.output[0].getMessageType());
+    EXPECT_EQ(0xD0100000U, context.output[0].int1);
+    EXPECT_EQ(0x02FAF080U, context.output[0].int2);
+    EXPECT_EQ(umppi::MessageType::MIDI2, context.output[1].getMessageType());
+}
+
+TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpSmfTimeSignatureMeta) {
+    std::vector<uint8_t> bytes = {0x00, 0xFF, MidiMetaType::TIME_SIGNATURE, 0x04, 0x03, 0x02, 0x18, 0x08,
+                                  0x00, 0x91, 0x40, 0x60};
+    Midi1ToUmpTranslatorContext context(bytes, 0, false,
+                                        static_cast<int>(MidiTransportProtocol::UMP),
+                                        false, true);
+
+    EXPECT_EQ(UmpTranslationResult::OK, UmpTranslator::translateMidi1BytesToUmp(context));
+    ASSERT_EQ(2, context.output.size());
+    EXPECT_EQ(umppi::MessageType::FLEX_DATA, context.output[0].getMessageType());
+    EXPECT_EQ(0xD0100001U, context.output[0].int1);
+    EXPECT_EQ(0x03040800U, context.output[0].int2);
+}
+
+TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpSmfLyricMeta) {
+    std::vector<uint8_t> bytes = {0x00, 0xFF, MidiMetaType::LYRIC, 0x02, 'H', 'i',
+                                  0x00, 0x91, 0x40, 0x60};
+    Midi1ToUmpTranslatorContext context(bytes, 0, false,
+                                        static_cast<int>(MidiTransportProtocol::UMP),
+                                        false, true);
+
+    EXPECT_EQ(UmpTranslationResult::OK, UmpTranslator::translateMidi1BytesToUmp(context));
+    ASSERT_EQ(2, context.output.size());
+    EXPECT_EQ(0xD0100201U, context.output[0].int1);
+    EXPECT_EQ(0x48690000U, context.output[0].int2);
+}
+
 TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpPAf) {
     std::vector<uint8_t> bytes = {0xA1, 0x40, 0x60};
     Midi1ToUmpTranslatorContext context(bytes, 7);

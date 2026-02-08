@@ -215,7 +215,7 @@ int Midi1Writer::defaultMetaEventWriter(bool onlyCountLength, const Midi1Event& 
     }
 
     size_t written = 0;
-    while (written < totalLength) {
+    do {
         if (written > 0) {
             stream.push_back(0);
         }
@@ -231,7 +231,7 @@ int Midi1Writer::defaultMetaEventWriter(bool onlyCountLength, const Midi1Event& 
                          extraData.begin() + offset + written + size);
         }
         written += size;
-    }
+    } while (written < totalLength);
 
     return 0;
 }

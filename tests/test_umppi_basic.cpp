@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <umppi/umppi.hpp>
+#include <sstream>
 
 using namespace umppi;
 
@@ -114,4 +115,117 @@ TEST(UmppiBasicTest, UmpFromBytes) {
 
     EXPECT_EQ(umps.size(), 1);
     EXPECT_EQ(umps[0].int1, 0x20906040);
+}
+
+TEST(UmppiBasicTest, WriteMetaTextWithEndOfTrack) {
+    Midi1Music music;
+    music.deltaTimeSpec = 0x30;
+
+    Midi1Track track;
+    std::vector<uint8_t> textData = {0x41, 0x41, 0x41, 0x41};
+    track.events.push_back(Midi1Event{
+        0,
+        std::make_shared<Midi1CompoundMessage>(0xFF, 3, 0, textData)
+    });
+    track.events.push_back(Midi1Event{
+        0,
+        std::make_shared<Midi1CompoundMessage>(0xFF, MidiMetaType::END_OF_TRACK, 0, std::vector<uint8_t>())
+    });
+
+    music.addTrack(std::move(track));
+
+    std::stringstream ss;
+    Midi1Writer writer(ss);
+    writer.write(music);
+
+    std::vector<uint8_t> expected = {
+        'M', 'T', 'h', 'd', 0, 0, 0, 6, 0, 1, 0, 1, 0, 0x30,
+        'M', 'T', 'r', 'k', 0, 0, 0, 0x0C,
+        0, 0xFF, 3, 4, 0x41, 0x41, 0x41, 0x41,
+        0, 0xFF, 0x2F, 0
+    };
+
+    std::string result = ss.str();
+    std::vector<uint8_t> actual(result.begin(), result.end());
+
+    EXPECT_EQ(actual, expected);
+}
+
+TEST(UmppiBasicTest, Midi1MusicMergeTracks) {
+    Midi1Music music;
+    music.format = 1;
+    music.deltaTimeSpec = 480;
+
+    Midi1Track track1;
+    track1.events.push_back(Midi1Event{
+        0,
+        std::make_shared<Midi1SimpleMessage>(MidiChannelStatus::NOTE_ON, 60, 100)
+    });
+    track1.events.push_back(Midi1Event{
+        480,
+        std::make_shared<Midi1SimpleMessage>(MidiChannelStatus::NOTE_OFF, 60, 0)
+    });
+
+    Midi1Track track2;
+    track2.events.push_back(Midi1Event{
+        240,
+        std::make_shared<Midi1SimpleMessage>(MidiChannelStatus::NOTE_ON, 64, 100)
+    });
+    track2.events.push_back(Midi1Event{
+        240,
+        std::make_shared<Midi1SimpleMessage>(MidiChannelStatus::NOTE_OFF, 64, 0)
+    });
+
+    music.addTrack(std::move(track1));
+    music.addTrack(std::move(track2));
+
+    auto merged = music.mergeTracks();
+
+    EXPECT_EQ(merged.format, 0);
+    EXPECT_EQ(merged.tracks.size(), 1);
+    EXPECT_EQ(merged.deltaTimeSpec, 480);
+    EXPECT_EQ(merged.tracks[0].events.size(), 4);
+
+    EXPECT_EQ(merged.tracks[0].events[0].deltaTime, 0);
+    EXPECT_EQ(merged.tracks[0].events[1].deltaTime, 240);
+    EXPECT_EQ(merged.tracks[0].events[2].deltaTime, 240);
+    EXPECT_EQ(merged.tracks[0].events[3].deltaTime, 0);
+}
+
+TEST(UmppiBasicTest, Midi2MusicMergeTracks) {
+    Midi2Music music;
+    music.deltaTimeSpec = 480;
+
+    Midi2Track track1;
+    track1.messages.push_back(Ump(UmpFactory::deltaClockstamp(0)));
+    track1.messages.push_back(Ump(uint32_t(0x40906040), uint32_t(0x80000000)));
+    track1.messages.push_back(Ump(UmpFactory::deltaClockstamp(480)));
+    track1.messages.push_back(Ump(uint32_t(0x40806040), uint32_t(0)));
+
+    Midi2Track track2;
+    track2.messages.push_back(Ump(UmpFactory::deltaClockstamp(240)));
+    track2.messages.push_back(Ump(uint32_t(0x40906440), uint32_t(0x80000000)));
+    track2.messages.push_back(Ump(UmpFactory::deltaClockstamp(240)));
+    track2.messages.push_back(Ump(uint32_t(0x40806440), uint32_t(0)));
+
+    music.addTrack(std::move(track1));
+    music.addTrack(std::move(track2));
+
+    auto merged = music.mergeTracks();
+
+    EXPECT_EQ(merged.tracks.size(), 1);
+    EXPECT_EQ(merged.deltaTimeSpec, 480);
+
+    int deltaCount = 0;
+    int noteCount = 0;
+    for (const auto& msg : merged.tracks[0].messages) {
+        if (msg.isDeltaClockstamp()) {
+            deltaCount++;
+        } else if (msg.getMessageType() == MessageType::MIDI2) {
+            noteCount++;
+        }
+    }
+
+    EXPECT_EQ(deltaCount, 2);
+    EXPECT_EQ(noteCount, 4);
 }

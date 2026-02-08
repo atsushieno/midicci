@@ -103,4 +103,61 @@ int Midi1Music::getPlayTimeMillisecondsAtTick(
     return calc.getPlayTimeMillisecondsAtTick(messages, ticks, deltaTimeSpec);
 }
 
+Midi1Music Midi1Music::mergeTracks() const {
+    std::vector<Midi1Event> l;
+
+    for (const auto& track : tracks) {
+        int delta = 0;
+        for (const auto& mev : track.events) {
+            delta += mev.deltaTime;
+            l.emplace_back(delta, mev.message);
+        }
+    }
+
+    if (l.empty()) {
+        Midi1Music ret;
+        ret.deltaTimeSpec = deltaTimeSpec;
+        ret.format = 0;
+        ret.addTrack(Midi1Track());
+        return ret;
+    }
+
+    std::vector<size_t> indexList;
+    int prev = -1;
+    for (size_t i = 0; i < l.size(); i++) {
+        if (l[i].deltaTime != prev) {
+            indexList.push_back(i);
+            prev = l[i].deltaTime;
+        }
+    }
+
+    std::sort(indexList.begin(), indexList.end(),
+              [&l](size_t a, size_t b) { return l[a].deltaTime < l[b].deltaTime; });
+
+    std::vector<Midi1Event> l2;
+    for (size_t i = 0; i < indexList.size(); i++) {
+        size_t idx = indexList[i];
+        prev = l[idx].deltaTime;
+        while (idx < l.size() && l[idx].deltaTime == prev) {
+            l2.push_back(l[idx]);
+            idx++;
+        }
+    }
+    l = std::move(l2);
+
+    int waitToNext = l[0].deltaTime;
+    for (size_t i = 0; i < l.size() - 1; i++) {
+        int tmp = l[i + 1].deltaTime - l[i].deltaTime;
+        l[i] = Midi1Event(waitToNext, l[i].message);
+        waitToNext = tmp;
+    }
+    l[l.size() - 1] = Midi1Event(waitToNext, l[l.size() - 1].message);
+
+    Midi1Music music;
+    music.deltaTimeSpec = deltaTimeSpec;
+    music.format = 0;
+    music.tracks.push_back(Midi1Track(std::move(l)));
+    return music;
+}
+
 } // namespace umppi

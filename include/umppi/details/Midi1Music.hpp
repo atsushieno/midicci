@@ -47,6 +47,8 @@ public:
         int ticks,
         int deltaTimeSpec);
 
+    Midi1Music mergeTracks() const;
+
 private:
     class SmfDeltaTimeComputer : public DeltaTimeComputer<Midi1Event> {
     public:

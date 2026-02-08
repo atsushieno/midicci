@@ -1,5 +1,7 @@
 #include <umppi/details/Midi2Music.hpp>
 #include <umppi/details/Common.hpp>
+#include <umppi/details/UmpFactory.hpp>
+#include <stdexcept>
 
 namespace umppi {
 
@@ -103,6 +105,82 @@ int Midi2Music::getPlayTimeMillisecondsAtTick(
 {
     UmpDeltaTimeComputer calc;
     return calc.getPlayTimeMillisecondsAtTick(messages, ticks, deltaTimeSpec);
+}
+
+Midi2Music Midi2Music::mergeTracks() const {
+    std::vector<std::pair<int, Ump>> l;
+
+    bool jrTimestampShowedUp = false;
+
+    for (const auto& track : tracks) {
+        int absTime = 0;
+        for (const auto& mev : track.messages) {
+            if (mev.isDeltaClockstamp()) {
+                if (jrTimestampShowedUp) {
+                    throw std::runtime_error("The source contains both JR Timestamp and Delta Clockstamp, which is not supported.");
+                }
+                absTime += mev.getDeltaClockstamp();
+            } else if (mev.isJRTimestamp()) {
+                absTime += mev.getJRTimestamp();
+                jrTimestampShowedUp = true;
+            } else {
+                l.emplace_back(absTime, mev);
+            }
+        }
+    }
+
+    if (l.empty()) {
+        Midi2Music ret;
+        ret.addTrack(Midi2Track());
+        return ret;
+    }
+
+    std::vector<size_t> indexList;
+    int prev = -1;
+    for (size_t i = 0; i < l.size(); i++) {
+        if (l[i].first != prev) {
+            indexList.push_back(i);
+            prev = l[i].first;
+        }
+    }
+
+    std::sort(indexList.begin(), indexList.end(),
+              [&l](size_t a, size_t b) { return l[a].first < l[b].first; });
+
+    std::vector<std::pair<int, Ump>> l2;
+    for (size_t i = 0; i < indexList.size(); i++) {
+        size_t idx = indexList[i];
+        int absTime = l[idx].first;
+        while (idx < l.size() && l[idx].first == absTime) {
+            l2.push_back(l[idx]);
+            idx++;
+        }
+    }
+    l = std::move(l2);
+
+    std::vector<Ump> l3;
+    for (size_t i = 0; i < l.size(); i++) {
+        if (i + 1 < l.size()) {
+            int delta = l[i + 1].first - l[i].first;
+            if (delta > 0) {
+                if (jrTimestampShowedUp) {
+                    auto timestamps = UmpFactory::jrTimestamps(static_cast<uint64_t>(delta));
+                    for (auto ts : timestamps) {
+                        l3.emplace_back(ts);
+                    }
+                } else {
+                    l3.emplace_back(UmpFactory::deltaClockstamp(delta));
+                }
+            }
+        }
+        l3.push_back(l[i].second);
+    }
+
+    Midi2Music m;
+    m.deltaTimeSpec = deltaTimeSpec;
+    m.tracks.push_back(Midi2Track());
+    m.tracks[0].messages = std::move(l3);
+    return m;
 }
 
 }

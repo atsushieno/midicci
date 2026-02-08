@@ -43,6 +43,8 @@ public:
         int ticks,
         int deltaTimeSpec);
 
+    Midi2Music mergeTracks() const;
+
 private:
     class UmpDeltaTimeComputer : public DeltaTimeComputer<Ump> {
     public:

@@ -32,7 +32,7 @@ macro(midicci_prepare_vcpkg_sdl3)
         set(_midicci_vcpkg_root "$ENV{VCPKG_ROOT}")
     else()
         set(_midicci_vcpkg_default_url
-            "https://github.com/microsoft/vcpkg/archive/refs/tags/2024.05.24.tar.gz")
+            "https://github.com/microsoft/vcpkg/archive/refs/tags/2026.01.16.zip")
         if(NOT DEFINED MIDICCI_VCPKG_URL OR MIDICCI_VCPKG_URL STREQUAL "")
             set(MIDICCI_VCPKG_URL "${_midicci_vcpkg_default_url}")
         endif()

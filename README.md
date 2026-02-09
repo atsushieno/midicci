@@ -44,6 +44,8 @@ cmake --build build --target package
 
 Windows builds support the [Windows MIDI Services](https://github.com/microsoft/MIDI) backend through libremidi. The required NuGet package (`Microsoft.Windows.Devices.Midi2.1.0.14-rc.1.209.nupkg`) is included in the `external/` directory. Windows MIDI Services integration is enabled by default on Windows (controlled by `MIDICCI_ENABLE_WINMIDI` option).
 
+For Windows GUI builds we try to use SDL3 via a prebuilt package. During configuration CMake downloads vcpkg (or reuses an existing `VCPKG_ROOT`), installs the `sdl3` package for the active triplet, and exposes it through `find_package(SDL3)`. If SDL3 cannot be prepared automatically the build falls back to SDL2 or GLFW as before. You can override the download behavior with `MIDICCI_VCPKG_URL`, `MIDICCI_VCPKG_URL_HASH`, or `MIDICCI_VCPKG_TRIPLET` when pointing to a different mirror or architecture.
+
 ### Using midicci
 
 midicci comes with `midicci-app`, a MIDI 2.0 keyboard and MIDI-CI diagnostic tool (unified).

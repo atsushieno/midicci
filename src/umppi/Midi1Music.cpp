@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <umppi/details/Midi1Music.hpp>
 
 namespace umppi {

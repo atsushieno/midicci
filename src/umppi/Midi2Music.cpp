@@ -1,7 +1,8 @@
+#include <algorithm>
+#include <stdexcept>
 #include <umppi/details/Midi2Music.hpp>
 #include <umppi/details/Common.hpp>
 #include <umppi/details/UmpFactory.hpp>
-#include <stdexcept>
 
 namespace umppi {
 

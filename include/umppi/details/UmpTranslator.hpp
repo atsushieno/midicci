@@ -73,6 +73,10 @@ public:
 
     static int translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context);
 
+    static void translateMidi1UmpToMidi2Ump(std::vector<Ump>& dst, const std::vector<Ump>& src);
+
+    static void translateMidi2UmpToMidi1Ump(std::vector<Ump>& dst, const std::vector<Ump>& src);
+
 private:
     static uint64_t convertMidi1DteToUmp(Midi1ToUmpTranslatorContext& context, int channel);
     static int getMidi1MessageSize(uint8_t statusByte);

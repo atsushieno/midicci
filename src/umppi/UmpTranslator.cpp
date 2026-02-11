@@ -665,5 +665,184 @@ int UmpTranslator::translateMidi1BytesToUmp(Midi1ToUmpTranslatorContext& context
     return UmpTranslationResult::OK;
 }
 
+void UmpTranslator::translateMidi1UmpToMidi2Ump(std::vector<Ump>& dst, const std::vector<Ump>& src) {
+    dst.clear();
+    dst.reserve(src.size());
+
+    for (const auto& ump : src) {
+        if (ump.getMessageType() != MessageType::MIDI1) {
+            dst.push_back(ump);
+            continue;
+        }
+
+        uint8_t statusCode = ump.getStatusCode();
+        uint8_t group = ump.getGroup();
+        uint8_t channel = ump.getChannelInGroup();
+
+        const uint8_t NO_ATTRIBUTE_TYPE = 0;
+        const uint16_t NO_ATTRIBUTE_DATA = 0;
+
+        switch (statusCode) {
+            case MidiChannelStatus::NOTE_OFF: {
+                uint8_t note = ump.getMidi1Msb();
+                uint16_t velocity = static_cast<uint16_t>(ump.getMidi1Lsb()) << 9;
+                dst.emplace_back(UmpFactory::midi2NoteOff(group, channel, note, NO_ATTRIBUTE_TYPE,
+                                                          velocity, NO_ATTRIBUTE_DATA));
+                break;
+            }
+
+            case MidiChannelStatus::NOTE_ON: {
+                uint8_t note = ump.getMidi1Msb();
+                uint16_t velocity = static_cast<uint16_t>(ump.getMidi1Lsb()) << 9;
+                dst.emplace_back(UmpFactory::midi2NoteOn(group, channel, note, NO_ATTRIBUTE_TYPE,
+                                                         velocity, NO_ATTRIBUTE_DATA));
+                break;
+            }
+
+            case MidiChannelStatus::PAF: {
+                uint8_t note = ump.getMidi1Msb();
+                uint32_t data = static_cast<uint32_t>(ump.getMidi1Lsb()) << 25;
+                dst.emplace_back(UmpFactory::midi2PAf(group, channel, note, data));
+                break;
+            }
+
+            case MidiChannelStatus::CC: {
+                uint8_t index = ump.getMidi1Msb();
+                uint32_t data = static_cast<uint32_t>(ump.getMidi1Lsb()) << 25;
+                dst.emplace_back(UmpFactory::midi2CC(group, channel, index, data));
+                break;
+            }
+
+            case MidiChannelStatus::PROGRAM: {
+                uint8_t program = ump.getMidi1Msb();
+                dst.emplace_back(UmpFactory::midi2Program(group, channel,
+                                                          MidiProgramChangeOptions::NONE,
+                                                          program, 0, 0));
+                break;
+            }
+
+            case MidiChannelStatus::CAF: {
+                uint32_t data = static_cast<uint32_t>(ump.getMidi1Msb()) << 25;
+                dst.emplace_back(UmpFactory::midi2CAf(group, channel, data));
+                break;
+            }
+
+            case MidiChannelStatus::PITCH_BEND: {
+                uint8_t lsb = ump.getMidi1Msb();
+                uint8_t msb = ump.getMidi1Lsb();
+                uint32_t data = static_cast<uint32_t>((msb << 7) | lsb) << 18;
+                dst.emplace_back(UmpFactory::midi2PitchBendDirect(group, channel, data));
+                break;
+            }
+
+            default:
+                dst.push_back(ump);
+                break;
+        }
+    }
+}
+
+void UmpTranslator::translateMidi2UmpToMidi1Ump(std::vector<Ump>& dst, const std::vector<Ump>& src) {
+    dst.clear();
+    dst.reserve(src.size());
+
+    for (const auto& ump : src) {
+        if (ump.getMessageType() != MessageType::MIDI2) {
+            dst.push_back(ump);
+            continue;
+        }
+
+        uint8_t statusCode = ump.getStatusCode();
+        uint8_t group = ump.getGroup();
+        uint8_t channel = ump.getChannelInGroup();
+
+        switch (statusCode) {
+            case MidiChannelStatus::NOTE_OFF: {
+                uint8_t note = ump.getMidi2Note();
+                uint8_t velocity = static_cast<uint8_t>(ump.getMidi2Velocity16() / 0x200);
+                dst.emplace_back(UmpFactory::midi1NoteOff(group, channel, note, velocity));
+                break;
+            }
+
+            case MidiChannelStatus::NOTE_ON: {
+                uint8_t note = ump.getMidi2Note();
+                uint8_t velocity = static_cast<uint8_t>(ump.getMidi2Velocity16() / 0x200);
+                dst.emplace_back(UmpFactory::midi1NoteOn(group, channel, note, velocity));
+                break;
+            }
+
+            case MidiChannelStatus::PAF: {
+                uint8_t note = ump.getMidi2Note();
+                uint8_t data = static_cast<uint8_t>(ump.getMidi2PafData() / 0x2000000U);
+                dst.emplace_back(UmpFactory::midi1PAf(group, channel, note, data));
+                break;
+            }
+
+            case MidiChannelStatus::CC: {
+                uint8_t index = ump.getMidi2CcIndex();
+                uint8_t data = static_cast<uint8_t>(ump.getMidi2CcData() / 0x2000000U);
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, index, data));
+                break;
+            }
+
+            case MidiChannelStatus::PROGRAM: {
+                uint8_t program = ump.getMidi2ProgramProgram();
+                if (ump.getMidi2ProgramOptions() & MidiProgramChangeOptions::BANK_VALID) {
+                    dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::BANK_SELECT,
+                                                         ump.getMidi2ProgramBankMsb()));
+                    dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::BANK_SELECT_LSB,
+                                                         ump.getMidi2ProgramBankLsb()));
+                }
+                dst.emplace_back(UmpFactory::midi1Program(group, channel, program));
+                break;
+            }
+
+            case MidiChannelStatus::CAF: {
+                uint8_t data = static_cast<uint8_t>(ump.getMidi2CafData() / 0x2000000U);
+                dst.emplace_back(UmpFactory::midi1CAf(group, channel, data));
+                break;
+            }
+
+            case MidiChannelStatus::PITCH_BEND: {
+                uint32_t pitchBend14 = ump.getMidi2PitchBendData() / 0x40000U;
+                dst.emplace_back(UmpFactory::midi1PitchBendDirect(group, channel,
+                                                                  static_cast<uint16_t>(pitchBend14)));
+                break;
+            }
+
+            case MidiChannelStatus::RPN: {
+                uint8_t msb = ump.getMidi2RpnMsb();
+                uint8_t lsb = ump.getMidi2RpnLsb();
+                uint32_t data = ump.getMidi2RpnData();
+                uint8_t dteMsb = static_cast<uint8_t>((data >> 25) & 0x7F);
+                uint8_t dteLsb = static_cast<uint8_t>((data >> 18) & 0x7F);
+
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::RPN_MSB, msb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::RPN_LSB, lsb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::DTE_MSB, dteMsb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::DTE_LSB, dteLsb));
+                break;
+            }
+
+            case MidiChannelStatus::NRPN: {
+                uint8_t msb = ump.getMidi2NrpnMsb();
+                uint8_t lsb = ump.getMidi2NrpnLsb();
+                uint32_t data = ump.getMidi2NrpnData();
+                uint8_t dteMsb = static_cast<uint8_t>((data >> 25) & 0x7F);
+                uint8_t dteLsb = static_cast<uint8_t>((data >> 18) & 0x7F);
+
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::NRPN_MSB, msb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::NRPN_LSB, lsb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::DTE_MSB, dteMsb));
+                dst.emplace_back(UmpFactory::midi1CC(group, channel, MidiCC::DTE_LSB, dteLsb));
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+}
+
 
 } // namespace midicci

@@ -361,3 +361,159 @@ TEST_F(UmpTranslatorTest, testConvertMidi1ToUmpPitchBend) {
     EXPECT_EQ(0x47E10000, context.output[0].int1);
     EXPECT_EQ(0x60800000U, context.output[0].int2); // Note that source MIDI1 pitch bend is in little endian.
 }
+
+TEST_F(UmpTranslatorTest, testRoundtripNoteMessages) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1NoteOn(0, 5, 60, 100)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1NoteOff(0, 5, 60, 64)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(2, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[1].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(2, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+    EXPECT_EQ(midi1Umps[1].int1, roundtripMidi1Umps[1].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripPAfMessage) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1PAf(0, 3, 60, 75)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(1, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(1, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripCCMessage) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1CC(0, 2, 7, 100)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1CC(0, 2, 10, 64)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(2, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[1].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(2, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+    EXPECT_EQ(midi1Umps[1].int1, roundtripMidi1Umps[1].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripProgramChangeMessage) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1Program(0, 4, 42)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(1, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(1, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripCAfMessage) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1CAf(0, 6, 80)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(1, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(1, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripPitchBendMessage) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1PitchBendDirect(0, 7, 0x2040)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(1, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[0].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(1, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripMixedMessages) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::midi1NoteOn(0, 1, 60, 100)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1CC(0, 1, 7, 127)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1PitchBendDirect(0, 1, 0x2000)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1NoteOff(0, 1, 60, 64)));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(4, midi2Umps.size());
+    for (const auto& ump : midi2Umps) {
+        EXPECT_EQ(umppi::MessageType::MIDI2, ump.getMessageType());
+    }
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(4, roundtripMidi1Umps.size());
+
+    for (size_t i = 0; i < midi1Umps.size(); ++i) {
+        EXPECT_EQ(midi1Umps[i].int1, roundtripMidi1Umps[i].int1)
+            << "Mismatch at message index " << i;
+    }
+}
+
+TEST_F(UmpTranslatorTest, testRoundtripPreservesNonMidi1Messages) {
+    std::vector<Ump> midi1Umps;
+    std::vector<Ump> midi2Umps;
+    std::vector<Ump> roundtripMidi1Umps;
+
+    midi1Umps.push_back(Ump(UmpFactory::deltaClockstamp(100)));
+    midi1Umps.push_back(Ump(UmpFactory::midi1NoteOn(0, 1, 60, 100)));
+    midi1Umps.push_back(Ump(UmpFactory::noop()));
+
+    UmpTranslator::translateMidi1UmpToMidi2Ump(midi2Umps, midi1Umps);
+    ASSERT_EQ(3, midi2Umps.size());
+    EXPECT_EQ(umppi::MessageType::UTILITY, midi2Umps[0].getMessageType());
+    EXPECT_EQ(umppi::MessageType::MIDI2, midi2Umps[1].getMessageType());
+    EXPECT_EQ(umppi::MessageType::UTILITY, midi2Umps[2].getMessageType());
+
+    UmpTranslator::translateMidi2UmpToMidi1Ump(roundtripMidi1Umps, midi2Umps);
+    ASSERT_EQ(3, roundtripMidi1Umps.size());
+
+    EXPECT_EQ(midi1Umps[0].int1, roundtripMidi1Umps[0].int1);
+    EXPECT_EQ(umppi::MessageType::MIDI1, roundtripMidi1Umps[1].getMessageType());
+    EXPECT_EQ(midi1Umps[2].int1, roundtripMidi1Umps[2].int1);
+}

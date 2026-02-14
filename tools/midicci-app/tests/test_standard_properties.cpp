@@ -34,8 +34,8 @@ TEST_F(StandardPropertiesTest, TestGetAllCtrlList) {
     // Select devices if available
     if (!inputDevices.empty() && !outputDevices.empty()) {
         std::cout << "[TEST] Selecting devices for MIDI-CI communication" << std::endl;
-        EXPECT_TRUE(controller->selectInputDevice(inputDevices[0].first));
-        EXPECT_TRUE(controller->selectOutputDevice(outputDevices[0].first));
+        EXPECT_TRUE(controller->selectInputDevice(inputDevices[0].id));
+        EXPECT_TRUE(controller->selectOutputDevice(outputDevices[0].id));
         
         // Send MIDI-CI discovery to establish connections
         std::cout << "[TEST] Sending MIDI-CI discovery..." << std::endl;

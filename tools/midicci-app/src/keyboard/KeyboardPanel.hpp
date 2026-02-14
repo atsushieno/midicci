@@ -28,6 +28,7 @@ private:
     struct DeviceEntry {
         std::string id;
         std::string name;
+        std::string display;
     };
 
     struct PendingNoteEvent {

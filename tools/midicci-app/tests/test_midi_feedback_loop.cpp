@@ -34,13 +34,13 @@ TEST_F(MIDIFeedbackLoopTest, TestGUIDeviceSelection) {
     
     // If we have devices available, select first input and output
     if (!inputDevices.empty()) {
-        std::cout << "[TEST] Selecting first input device: " << inputDevices[0].second << std::endl;
-        EXPECT_TRUE(controller->selectInputDevice(inputDevices[0].first));
+        std::cout << "[TEST] Selecting first input device: " << inputDevices[0].display_name << std::endl;
+        EXPECT_TRUE(controller->selectInputDevice(inputDevices[0].id));
     }
     
     if (!outputDevices.empty()) {
-        std::cout << "[TEST] Selecting first output device: " << outputDevices[0].second << std::endl;
-        EXPECT_TRUE(controller->selectOutputDevice(outputDevices[0].first));
+        std::cout << "[TEST] Selecting first output device: " << outputDevices[0].display_name << std::endl;
+        EXPECT_TRUE(controller->selectOutputDevice(outputDevices[0].id));
     }
     
     // Wait a moment to observe any immediate feedback loops
@@ -82,8 +82,8 @@ TEST_F(MIDIFeedbackLoopTest, TestNoteOperations) {
     auto outputDevices = controller->getOutputDevices();
     
     if (!inputDevices.empty() && !outputDevices.empty()) {
-        controller->selectInputDevice(inputDevices[0].first);
-        controller->selectOutputDevice(outputDevices[0].first);
+        controller->selectInputDevice(inputDevices[0].id);
+        controller->selectOutputDevice(outputDevices[0].id);
         
         std::cout << "[TEST] Testing note operations..." << std::endl;
         

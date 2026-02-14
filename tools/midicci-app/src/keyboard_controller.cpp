@@ -1,6 +1,9 @@
 #include "keyboard_controller.h"
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <unordered_map>
 #include <libremidi/ump.hpp>
 #include <umppi/details/UmpFactory.hpp>
 #include <umppi/details/Common.hpp>
@@ -9,6 +12,90 @@
 namespace {
 inline uint8_t getByteFromUmp64(uint64_t ump_data, int index) {
     return static_cast<uint8_t>((ump_data >> ((7 - index) * 8)) & 0xFF);
+}
+
+template <typename Port>
+std::string base_port_label(const Port& port) {
+    if (!port.display_name.empty()) {
+        return port.display_name;
+    }
+    if (!port.port_name.empty()) {
+        return port.port_name;
+    }
+    if (!port.device_name.empty()) {
+        return port.device_name;
+    }
+    return "Port " + std::to_string(static_cast<unsigned long long>(port.port));
+}
+
+void append_detail_if_present(std::ostringstream& oss, bool& started, const std::string& value) {
+    if (value.empty()) {
+        return;
+    }
+    if (!started) {
+        oss << " (";
+        started = true;
+    } else {
+        oss << " / ";
+    }
+    oss << value;
+}
+
+template <typename Ports>
+std::vector<std::string> build_disambiguated_labels(const Ports& ports) {
+    std::vector<std::string> base_labels;
+    base_labels.reserve(ports.size());
+    std::unordered_map<std::string, size_t> counts;
+    for (const auto& port : ports) {
+        auto base = base_port_label(port);
+        counts[base]++;
+        base_labels.push_back(std::move(base));
+    }
+
+    std::unordered_map<std::string, size_t> occurrences;
+    std::vector<std::string> labels;
+    labels.reserve(ports.size());
+
+    for (size_t i = 0; i < ports.size(); ++i) {
+        const auto& port = ports[i];
+        const auto& base = base_labels[i];
+        if (counts[base] == 1) {
+            labels.push_back(base);
+            continue;
+        }
+
+        std::ostringstream label_stream;
+        label_stream << base;
+
+        bool has_details = false;
+        append_detail_if_present(label_stream, has_details,
+                                 (port.device_name != base) ? port.device_name : std::string{});
+        if (port.product != port.device_name) {
+            append_detail_if_present(label_stream, has_details, port.product);
+        }
+        if (port.manufacturer != port.product && port.manufacturer != port.device_name) {
+            append_detail_if_present(label_stream, has_details, port.manufacturer);
+        }
+        if (!port.serial.empty()) {
+            append_detail_if_present(label_stream, has_details, std::string("SN ") + port.serial);
+        }
+        if (!has_details) {
+            std::ostringstream id_stream;
+            id_stream << "ID 0x" << std::uppercase << std::hex
+                      << static_cast<unsigned long long>(port.port);
+            append_detail_if_present(label_stream, has_details, id_stream.str());
+        }
+        if (has_details) {
+            label_stream << ')';
+        }
+
+        auto occurrence = occurrences[base]++;
+        label_stream << " #" << (occurrence + 1);
+
+        labels.push_back(label_stream.str());
+    }
+
+    return labels;
 }
 }
 
@@ -94,8 +181,8 @@ bool KeyboardController::resetMidiConnections() {
     }
 }
 
-std::vector<std::pair<std::string, std::string>> KeyboardController::getInputDevices() {
-    std::vector<std::pair<std::string, std::string>> devices;
+std::vector<KeyboardController::DeviceInfo> KeyboardController::getInputDevices() {
+    std::vector<DeviceInfo> devices;
     
     try {
         if (!observer) {
@@ -104,16 +191,23 @@ std::vector<std::pair<std::string, std::string>> KeyboardController::getInputDev
         }
         
         auto ports = observer->get_input_ports();
+        auto labels = build_disambiguated_labels(ports);
         for (size_t i = 0; i < ports.size(); i++) {
-            std::string id = std::to_string(i);
-            std::string name = ports[i].port_name;
-            // Device now supports UMP/MIDI 2.0 by default with the UMP backend
-            devices.emplace_back(id, name);
+            DeviceInfo info{
+                .id = std::to_string(i),
+                .port_name = ports[i].port_name,
+                .display_name = labels[i]
+            };
+            devices.push_back(std::move(info));
         }
         
         std::cout << "Found " << devices.size() << " input devices" << std::endl;
         for (const auto& device : devices) {
-            std::cout << "  ID: " << device.first << " - " << device.second << std::endl;
+            std::cout << "  ID: " << device.id << " - " << device.display_name;
+            if (device.display_name != device.port_name && !device.port_name.empty()) {
+                std::cout << " (port: " << device.port_name << ')';
+            }
+            std::cout << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error getting input devices: " << e.what() << std::endl;
@@ -122,8 +216,8 @@ std::vector<std::pair<std::string, std::string>> KeyboardController::getInputDev
     return devices;
 }
 
-std::vector<std::pair<std::string, std::string>> KeyboardController::getOutputDevices() {
-    std::vector<std::pair<std::string, std::string>> devices;
+std::vector<KeyboardController::DeviceInfo> KeyboardController::getOutputDevices() {
+    std::vector<DeviceInfo> devices;
     
     try {
         if (!observer) {
@@ -132,16 +226,23 @@ std::vector<std::pair<std::string, std::string>> KeyboardController::getOutputDe
         }
         
         auto ports = observer->get_output_ports();
+        auto labels = build_disambiguated_labels(ports);
         for (size_t i = 0; i < ports.size(); i++) {
-            std::string id = std::to_string(i);
-            std::string name = ports[i].port_name;
-            // Device now supports UMP/MIDI 2.0 by default with the UMP backend
-            devices.emplace_back(id, name);
+            DeviceInfo info{
+                .id = std::to_string(i),
+                .port_name = ports[i].port_name,
+                .display_name = labels[i]
+            };
+            devices.push_back(std::move(info));
         }
         
         std::cout << "Found " << devices.size() << " output devices" << std::endl;
         for (const auto& device : devices) {
-            std::cout << "  ID: " << device.first << " - " << device.second << std::endl;
+            std::cout << "  ID: " << device.id << " - " << device.display_name;
+            if (device.display_name != device.port_name && !device.port_name.empty()) {
+                std::cout << " (port: " << device.port_name << ')';
+            }
+            std::cout << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error getting output devices: " << e.what() << std::endl;

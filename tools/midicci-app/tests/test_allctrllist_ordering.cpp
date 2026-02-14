@@ -50,20 +50,20 @@ protected:
         
         std::cout << "[TEST] Found " << inputDevices.size() << " input devices:" << std::endl;
         for (const auto& device : inputDevices) {
-            std::cout << "[TEST]   Input: " << device.second << " (" << device.first << ")" << std::endl;
+            std::cout << "[TEST]   Input: " << device.display_name << " (" << device.id << ")" << std::endl;
         }
         
         std::cout << "[TEST] Found " << outputDevices.size() << " output devices:" << std::endl;
         for (const auto& device : outputDevices) {
-            std::cout << "[TEST]   Output: " << device.second << " (" << device.first << ")" << std::endl;
+            std::cout << "[TEST]   Output: " << device.display_name << " (" << device.id << ")" << std::endl;
         }
         
         // Find devices with identical names (indicating they're the same physical device)
         for (const auto& input : inputDevices) {
             for (const auto& output : outputDevices) {
-                if (input.second == output.second) {
-                    pairs.emplace_back(input.first, output.first);
-                    std::cout << "[TEST] Found matching pair: " << input.second << std::endl;
+                if (input.port_name == output.port_name) {
+                    pairs.emplace_back(input.id, output.id);
+                    std::cout << "[TEST] Found matching pair: " << input.display_name << std::endl;
                 }
             }
         }

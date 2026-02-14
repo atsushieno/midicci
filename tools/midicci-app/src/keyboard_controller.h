@@ -21,6 +21,12 @@ public:
         std::optional<uint8_t> note;
     };
 
+    struct DeviceInfo {
+        std::string id;
+        std::string port_name;
+        std::string display_name;
+    };
+
     KeyboardController(midicci::keyboard::MessageLogger* logger = nullptr);
     ~KeyboardController();
     
@@ -30,8 +36,8 @@ public:
     void allNotesOff();
     
     // Device enumeration
-    std::vector<std::pair<std::string, std::string>> getInputDevices();
-    std::vector<std::pair<std::string, std::string>> getOutputDevices();
+    std::vector<DeviceInfo> getInputDevices();
+    std::vector<DeviceInfo> getOutputDevices();
     
     // Device selection
     bool selectInputDevice(const std::string& deviceId);

@@ -402,16 +402,16 @@ void KeyboardPanel::refresh_devices() {
     output_devices_.clear();
 
     for (const auto& device : inputs) {
-        if (!ignored_output_name.empty() && device.second == ignored_output_name) {
+        if (!ignored_output_name.empty() && device.port_name == ignored_output_name) {
             continue;
         }
-        input_devices_.push_back(DeviceEntry{device.first, device.second});
+        input_devices_.push_back(DeviceEntry{device.id, device.port_name, device.display_name});
     }
     for (const auto& device : outputs) {
-        if (!ignored_input_name.empty() && device.second == ignored_input_name) {
+        if (!ignored_input_name.empty() && device.port_name == ignored_input_name) {
             continue;
         }
-        output_devices_.push_back(DeviceEntry{device.first, device.second});
+        output_devices_.push_back(DeviceEntry{device.id, device.port_name, device.display_name});
     }
 
     selected_input_index_ = -1;
@@ -503,7 +503,7 @@ void KeyboardPanel::render_transport_section() {
     auto combo = [&](const char* label, int selected_index, const std::vector<DeviceEntry>& entries,
                      auto&& selection_callback) {
         std::string current_label = selected_index >= 0 && selected_index < static_cast<int>(entries.size())
-                                        ? entries[selected_index].name
+                                        ? entries[selected_index].display
                                         : "Virtual (default)";
         if (ImGui::BeginCombo(label, current_label.c_str())) {
             bool virtual_selected = (selected_index < 0);
@@ -516,7 +516,7 @@ void KeyboardPanel::render_transport_section() {
 
             for (size_t i = 0; i < entries.size(); ++i) {
                 bool is_selected = static_cast<int>(i) == selected_index;
-                if (ImGui::Selectable(entries[i].name.c_str(), is_selected)) {
+                if (ImGui::Selectable(entries[i].display.c_str(), is_selected)) {
                     selection_callback(static_cast<int>(i));
                 }
                 if (is_selected) {

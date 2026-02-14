@@ -38,8 +38,8 @@ protected:
         
         for (const auto& input : inputDevices) {
             for (const auto& output : outputDevices) {
-                if (input.second == output.second) {
-                    pairs.emplace_back(input.first, output.first);
+                if (input.port_name == output.port_name) {
+                    pairs.emplace_back(input.id, output.id);
                 }
             }
         }

@@ -1,7 +1,6 @@
 #include "App.hpp"
 
 #include "EmbeddedFont.hpp"
-#include "imgui/SharedTheme.hpp"
 #include <midicci/tooling/CIDeviceManager.hpp>
 #include <midicci/tooling/MidiDeviceManager.hpp>
 #include <algorithm>
@@ -149,10 +148,8 @@ bool MidicciApplication::initialize() {
     io.IniFilename = nullptr; // disable ImGui's built-in ini persistence
     ImGui::LoadIniSettingsFromMemory("", 0);
 
-    SetupImGuiStyle();
     ensure_application_font();
-    base_style_ = ImGui::GetStyle();
-    apply_ui_scale(ui_scale_);
+    apply_theme(theme_mode_);
     ui_scale_dirty_ = false;
 
     repository_ = std::make_unique<tooling::CIToolRepository>();
@@ -225,6 +222,9 @@ void MidicciApplication::render_window() {
                              ImGuiWindowFlags_NoSavedSettings |
                              ImGuiWindowFlags_NoBringToFrontOnFocus |
                              ImGuiWindowFlags_NoBackground;
+    if (theme_mode_ == ThemeMode::Light) {
+        flags &= ~ImGuiWindowFlags_NoBackground;
+    }
 
     if (ImGui::Begin("midicci-app-root", nullptr, flags)) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.0f * ui_scale_, 16.0f * ui_scale_));
@@ -299,6 +299,11 @@ void MidicciApplication::render_scale_toolbar() {
     if (selectedIndex != currentIndex) {
         apply_ui_scale(kScaleOptions[selectedIndex]);
         request_window_resize();
+    }
+    ImGui::SameLine();
+    const char* themeLabel = (theme_mode_ == ThemeMode::Dark) ? "> Light" : "> Dark";
+    if (ImGui::Button(themeLabel)) {
+        toggle_theme();
     }
     ImGui::EndGroup();
     ImGui::Spacing();
@@ -512,6 +517,18 @@ void MidicciApplication::update_window_size_tracking() {
     }
 
     last_window_size_ = displaySize;
+}
+
+void MidicciApplication::toggle_theme() {
+    const ThemeMode nextMode = (theme_mode_ == ThemeMode::Dark) ? ThemeMode::Light : ThemeMode::Dark;
+    apply_theme(nextMode);
+}
+
+void MidicciApplication::apply_theme(ThemeMode mode) {
+    theme_mode_ = mode;
+    SetupImGuiStyle(mode);
+    base_style_ = ImGui::GetStyle();
+    apply_ui_scale(ui_scale_);
 }
 
 } // namespace midicci::app

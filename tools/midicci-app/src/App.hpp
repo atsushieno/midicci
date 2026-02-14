@@ -4,6 +4,7 @@
 #include "keyboard/KeyboardPanel.hpp"
 #include "inspector/InspectorPanel.hpp"
 #include "local_device/LocalDevicePanel.hpp"
+#include "imgui/SharedTheme.hpp"
 #include <midicci/tooling/CIToolRepository.hpp>
 #include <imgui.h>
 #include <deque>
@@ -51,6 +52,8 @@ private:
     void apply_font_scaling();
     void request_window_resize();
     void update_window_size_tracking();
+    void toggle_theme();
+    void apply_theme(ThemeMode mode);
 
     std::unique_ptr<tooling::CIToolRepository> repository_;
     std::function<void(const tooling::LogEntry&)> log_callback_;
@@ -72,6 +75,7 @@ private:
     bool font_scales_captured_ = false;
     float ui_scale_ = 1.0f;
     bool ui_scale_dirty_ = false;
+    ThemeMode theme_mode_ = ThemeMode::Dark;
     ImVec2 base_window_size_ = ImVec2(720.0f, 720.0f);
     ImVec2 last_window_size_ = ImVec2(0.0f, 0.0f);
     bool window_size_request_pending_ = false;

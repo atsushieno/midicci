@@ -14,7 +14,7 @@ int main() {
     MidicciApplication app;
 
     ImGuiAppConfig config;
-    config.windowTitle = "MIDICCI App";
+    config.windowTitle = "MIDICCI: Virtual MIDI 2.0 Keyboard";
     config.windowWidth = 750;
     config.windowHeight = 750;
     config.clearColor = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);

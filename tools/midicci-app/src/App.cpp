@@ -364,9 +364,9 @@ void MidicciApplication::render_logs_tab() {
             continue;
         }
 
-        ImVec4 color = entry.direction == tooling::MessageDirection::In
+    ImVec4 color = entry.direction == tooling::MessageDirection::In
                            ? ImVec4(0.4f, 0.75f, 1.0f, 1.0f)
-                           : ImVec4(0.6f, 1.0f, 0.6f, 1.0f);
+                           : ImVec4(0.35f, 0.55f, 0.35f, 1.0f);
 
         std::string timestamp = format_timestamp(entry.timestamp);
         ImGui::PushStyleColor(ImGuiCol_Text, color);

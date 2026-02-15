@@ -10,6 +10,7 @@ namespace midicci {
 
 struct MidiCIDeviceConfiguration;
 
+#undef PropertyNotify // Windows WTF
 enum class MessageType : uint8_t {
     DiscoveryInquiry = 0x70,
     DiscoveryReply = 0x71,

@@ -241,6 +241,7 @@ enum class MidiCIProcessInquiryFeatures : uint8_t {
 };
 
 // MIDI Message Report Data Control
+#undef None // X11 WTF
 enum class MidiMessageReportDataControl : uint8_t {
     None = 0,
     OnlyNonDefaults = 1,

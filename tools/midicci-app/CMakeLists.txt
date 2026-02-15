@@ -169,7 +169,7 @@ target_compile_features(midicci-imgui-support PUBLIC cxx_std_20)
 # ------------------------------------------------------------------------------
 # midicci-app executable
 # ------------------------------------------------------------------------------
-add_executable(midicci-app
+set(MIDICCI_APP_SOURCE_FILES
     src/main.cpp
     src/App.cpp
     src/keyboard/KeyboardPanel.cpp
@@ -180,20 +180,17 @@ add_executable(midicci-app
     src/midi_ci_manager.cpp
     src/message_logger.cpp
 )
+
+# Add Windows icon resource
+if(WIN32)
+    list(APPEND MIDICCI_APP_SOURCE_FILES ${CMAKE_SOURCE_DIR}/resources/midicci.rc)
+endif()
+
+add_executable(midicci-app ${MIDICCI_APP_SOURCE_FILES})
 set(MIDICCI_APP_TARGETS midicci-app)
 
 if(APPLE)
-    add_executable(midicci-app-bundle MACOSX_BUNDLE
-        src/main.cpp
-        src/App.cpp
-        src/keyboard/KeyboardPanel.cpp
-        src/keyboard/MidiKeyboard.cpp
-        src/inspector/InspectorPanel.cpp
-        src/local_device/LocalDevicePanel.cpp
-        src/keyboard_controller.cpp
-        src/midi_ci_manager.cpp
-        src/message_logger.cpp
-    )
+    add_executable(midicci-app-bundle MACOSX_BUNDLE ${MIDICCI_APP_SOURCE_FILES})
     list(APPEND MIDICCI_APP_TARGETS midicci-app-bundle)
 endif()
 
@@ -248,6 +245,7 @@ if(APPLE)
     set_target_properties(midicci-app-bundle PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${MIDICCI_APP_INFO_PLIST}
         OUTPUT_NAME "midicci-app"
+        RESOURCE "${CMAKE_SOURCE_DIR}/resources/midicci.icns"
     )
 endif()
 

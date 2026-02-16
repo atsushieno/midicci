@@ -10,7 +10,7 @@ public:
         profile_host_facade_(std::make_unique<ProfileHostFacade>(device)),
         logger_(create_nop_logger()),
         messenger_(device) {
-        property_host_facade_ = std::make_unique<PropertyHostFacade>(device, config);
+        property_host_facade_ = std::make_unique<PropertyHostFacade>(device, config_);
     }
 
     static LoggerFunction create_nop_logger() {

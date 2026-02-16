@@ -41,18 +41,18 @@ CommonRulesPropertyService::CommonRulesPropertyService(MidiCIDevice& device)
 void CommonRulesPropertyService::setPropertyValue(const std::string& property_id, const std::string& res_id,
                                                     const std::vector<uint8_t>& data, const std::string& media_type) {
     auto& values = device_.getConfig().property_values;
+    bool found = false;
 
-    // Find the property value, but don't use iterator after potential vector modification
-    // to avoid iterator invalidation in MSVC debug mode
-    auto it = std::find_if(values.begin(), values.end(),
-        [&property_id, &res_id](const PropertyValue& pv) {
-            return pv.id == property_id && pv.resId == res_id;
-        });
-
-    bool found = (it != values.end());
-
-    // Invalidate iterator before any operations that might trigger callbacks
-    it = values.end();
+    // Find the property value in a separate scope to ensure iterator is destroyed
+    // before any operations that might modify the vector (to avoid MSVC iterator debugging issues)
+    {
+        auto it = std::find_if(values.begin(), values.end(),
+            [&property_id, &res_id](const PropertyValue& pv) {
+                return pv.id == property_id && pv.resId == res_id;
+            });
+        found = (it != values.end());
+        // Iterator 'it' is destroyed here when leaving scope
+    }
 
     if (found) {
         // Find again and update (safe even if vector was modified)

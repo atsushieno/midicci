@@ -160,22 +160,23 @@ void PropertyHostFacade::setPropertyValue(const std::string& property_id, const 
     // Following Kotlin implementation exactly: properties.values.first { it.id == propertyId && (resId == null || it.resId == resId) }.body = data
     auto& property_values = pimpl_->properties_->getMutableValues();
     std::string media_type = CommonRulesKnownMimeTypes::APPLICATION_JSON;
+    bool found = false;
 
-    // Find the property value, but extract data immediately to avoid iterator invalidation
-    // when callbacks or service calls trigger re-entrant modifications to property_values
-    auto it = std::find_if(property_values.begin(), property_values.end(),
-        [&property_id, &res_id](const PropertyValue& pv) {
-            return pv.id == property_id && pv.resId == res_id;
-        });
+    // Find the property value in a separate scope to ensure iterator is destroyed
+    // before any operations that might modify the vector (to avoid MSVC iterator debugging issues)
+    {
+        auto it = std::find_if(property_values.begin(), property_values.end(),
+            [&property_id, &res_id](const PropertyValue& pv) {
+                return pv.id == property_id && pv.resId == res_id;
+            });
 
-    bool found = (it != property_values.end());
-    if (it != property_values.end()) {
-        // Extract media type before any operations that might invalidate the iterator
-        media_type = it->mediaType;
+        found = (it != property_values.end());
+        if (found) {
+            // Extract media type before iterator goes out of scope
+            media_type = it->mediaType;
+        }
+        // Iterator 'it' is destroyed here when leaving scope
     }
-
-    // Now safe to release the iterator - don't use it beyond this point
-    it = property_values.end();
 
     if (found) {
         // Find again and update (safe even if vector was modified between checks)

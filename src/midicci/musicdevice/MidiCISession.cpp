@@ -28,8 +28,14 @@ std::unique_ptr<MidiCISession> createMidiCiSession(
             // Convert SysEx data to UMP SysEx7 packets
             auto ump_packets = umppi::UmpFactory::sysex7(group, data);
 
+            // Since we have to pass UMP in bytes, take only significant bytes.
+            std::vector<uint8_t> bytes{};
+            bytes.reserve(ump_packets.size() * sizeof(umppi::Ump));
+            for (auto& u : ump_packets)
+                u.toBytes(bytes, bytes.size());
+
             // Send all UMP packets in a single call
-            source.output_sender((uint8_t*) ump_packets.data(), 0, ump_packets.size() * sizeof(umppi::Ump), 0);
+            source.output_sender(bytes.data(), 0, bytes.size(), 0);
         } else {
             // MIDI 1.0: add SysEx start byte
             std::vector<uint8_t> midi1_data;

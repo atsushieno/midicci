@@ -22,4 +22,3 @@
 #include <umppi/details/Midi1Machine.hpp>
 
 #include <umppi/details/Midi2Track.hpp>
-#include <umppi/details/Midi2Music.hpp>

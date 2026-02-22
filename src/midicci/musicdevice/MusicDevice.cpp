@@ -10,9 +10,9 @@ CallbackMusicDeviceInputReceiver::CallbackMusicDeviceInputReceiver(MidiInputList
     : listener_adder_(listener_adder)
 {
     // Set up the main input listener that distributes to all registered receivers
-    listener_adder_([this](const uint8_t* data, size_t start, size_t length, uint64_t timestamp) {
+    listener_adder_([this](umppi::UmpWordSpan words, uint64_t timestamp) {
         for (auto& receiver : input_receivers_) {
-            receiver(data, start, length, timestamp);
+            receiver(words, timestamp);
         }
     });
 }
@@ -30,13 +30,13 @@ void CallbackMusicDeviceInputReceiver::removeInputReceiver(InputCallback callbac
 
 // CallbackMusicDeviceOutputSender implementation
 CallbackMusicDeviceOutputSender::CallbackMusicDeviceOutputSender(
-    std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender)
+    std::function<void(umppi::UmpWordSpan, uint64_t)> output_sender)
     : output_sender_(output_sender)
 {
 }
 
-void CallbackMusicDeviceOutputSender::send(const uint8_t* bytes, size_t offset, size_t length, uint64_t timestamp_ns) {
-    output_sender_(bytes, offset, length, timestamp_ns);
+void CallbackMusicDeviceOutputSender::send(umppi::UmpWordSpan words, uint64_t timestamp_ns) {
+    output_sender_(words, timestamp_ns);
 }
 
 // MusicDeviceConnector implementation
@@ -94,8 +94,8 @@ std::unique_ptr<MusicDevice> MusicDeviceConnector::connect(std::chrono::millisec
     }
 }
 
-void MusicDeviceConnector::send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns) {
-    sender_->send(data, offset, length, timestamp_ns);
+void MusicDeviceConnector::send(umppi::UmpWordSpan data, uint64_t timestamp_ns) {
+    sender_->send(data, timestamp_ns);
 }
 
 void MusicDeviceConnector::setEndpointSelector(EndpointSelector selector) {
@@ -135,8 +135,8 @@ std::optional<DeviceInfo> MusicDevice::getDeviceInfo() const {
     return std::nullopt;
 }
 
-void MusicDevice::send(const uint8_t* data, size_t offset, size_t length, uint64_t timestamp_ns) {
-    sender_->send(data, offset, length, timestamp_ns);
+void MusicDevice::send(umppi::UmpWordSpan data, uint64_t timestamp_ns) {
+    sender_->send(data, timestamp_ns);
 }
 
 void MusicDevice::setPropertyBinaryGetter(PropertyBinaryGetter getter) {

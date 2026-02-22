@@ -15,7 +15,6 @@ set(UMPPI_SOURCES
     UmpRetriever.cpp
     UmpTranslator.cpp
     Midi2Track.cpp
-    Midi2Music.cpp
 )
 
 add_library(umppi SHARED ${UMPPI_SOURCES})

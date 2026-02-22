@@ -4,8 +4,11 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <span>
 
 namespace umppi {
+
+using UmpWordSpan = std::span<const uint32_t>;
 
 enum class MessageType : uint8_t {
     UTILITY = 0,
@@ -106,10 +109,16 @@ public:
     std::vector<uint8_t> toBytes() const;
     std::vector<uint8_t> toPlatformBytes() const { return toBytes(); }
     std::array<uint32_t, 4> toInts() const { return {int1, int2, int3, int4}; }
+    void toWords(std::vector<uint32_t>& words, size_t offset = 0) const;
+    std::vector<uint32_t> toWords() const;
 
     static std::vector<Ump> fromBytes(const uint8_t* bytes, size_t count);
     static std::vector<Ump> fromBytes(const std::vector<uint8_t>& bytes) {
         return fromBytes(bytes.data(), bytes.size());
+    }
+    static std::vector<Ump> fromWords(const uint32_t* words, size_t count);
+    static std::vector<Ump> fromWords(UmpWordSpan words) {
+        return fromWords(words.data(), words.size());
     }
 
     std::string toString() const;
@@ -127,5 +136,7 @@ inline int umpSizeInInts(uint8_t messageType) {
 }
 
 std::vector<Ump> parseUmpsFromBytes(const uint8_t* data, size_t start, size_t length);
+std::vector<Ump> parseUmpsFromWords(const uint32_t* words, size_t count);
+std::vector<Ump> parseUmpsFromWords(UmpWordSpan words);
 
 }

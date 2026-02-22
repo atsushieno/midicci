@@ -116,6 +116,28 @@ std::vector<uint8_t> Ump::toBytes() const {
     return bytes;
 }
 
+void Ump::toWords(std::vector<uint32_t>& words, size_t offset) const {
+    int size = getSizeInInts();
+    if (words.size() < offset + static_cast<size_t>(size)) {
+        words.resize(offset + static_cast<size_t>(size));
+    }
+
+    words[offset] = int1;
+    if (size >= 2) {
+        words[offset + 1] = int2;
+    }
+    if (size == 4) {
+        words[offset + 2] = int3;
+        words[offset + 3] = int4;
+    }
+}
+
+std::vector<uint32_t> Ump::toWords() const {
+    std::vector<uint32_t> words;
+    toWords(words, 0);
+    return words;
+}
+
 std::vector<Ump> Ump::fromBytes(const uint8_t* bytes, size_t count) {
     std::vector<Ump> result;
     size_t offset = 0;
@@ -154,6 +176,37 @@ std::vector<Ump> Ump::fromBytes(const uint8_t* bytes, size_t count) {
     return result;
 }
 
+std::vector<Ump> Ump::fromWords(const uint32_t* words, size_t count) {
+    std::vector<Ump> result;
+    size_t offset = 0;
+
+    while (offset < count) {
+        uint32_t i1 = words[offset];
+        uint8_t messageType = static_cast<uint8_t>((i1 >> 28) & 0xF);
+        int sizeInInts = umpSizeInInts(messageType);
+
+        if (offset + static_cast<size_t>(sizeInInts) > count) {
+            break;
+        }
+
+        if (sizeInInts == 1) {
+            result.emplace_back(i1);
+        } else if (sizeInInts == 2) {
+            uint32_t i2 = words[offset + 1];
+            result.emplace_back(i1, i2);
+        } else if (sizeInInts == 4) {
+            uint32_t i2 = words[offset + 1];
+            uint32_t i3 = words[offset + 2];
+            uint32_t i4 = words[offset + 3];
+            result.emplace_back(i1, i2, i3, i4);
+        }
+
+        offset += static_cast<size_t>(sizeInInts);
+    }
+
+    return result;
+}
+
 std::string Ump::toString() const {
     std::ostringstream oss;
     int size = getSizeInInts();
@@ -181,41 +234,24 @@ static uint32_t getIntFromBytes_(const uint8_t* bytes, size_t offset, size_t max
 }
 
 std::vector<Ump> parseUmpsFromBytes(const uint8_t* data, size_t start, size_t length) {
-    std::vector<Ump> result;
+    std::vector<uint32_t> words;
     size_t offset = start;
     const size_t end = start + length;
 
-    while (offset < end && (offset - start + 3) < length) {
-        uint32_t int1 = getIntFromBytes_(data, offset, start + length);
-        MessageType msg_type = static_cast<MessageType>((int1 >> 28) & 0xF);
-
-        size_t ump_size;
-        switch (msg_type) {
-            case MessageType::SYSEX8_MDS:
-            case MessageType::FLEX_DATA:
-            case MessageType::UMP_STREAM:
-                ump_size = 16;
-                break;
-            case MessageType::SYSEX7:
-            case MessageType::MIDI2:
-                ump_size = 8;
-                break;
-            default:
-                ump_size = 4;
-                break;
-        }
-
-        if (offset + ump_size > end) break;
-
-        uint32_t int2 = (ump_size > 4) ? getIntFromBytes_(data, offset + 4, start + length) : 0;
-        uint32_t int3 = (ump_size > 8) ? getIntFromBytes_(data, offset + 8, start + length) : 0;
-        uint32_t int4 = (ump_size > 12) ? getIntFromBytes_(data, offset + 12, start + length) : 0;
-
-        result.emplace_back(int1, int2, int3, int4);
-        offset += ump_size;
+    while (offset + 3 < end) {
+        words.push_back(getIntFromBytes_(data, offset, end));
+        offset += 4;
     }
 
-    return result;
+    return parseUmpsFromWords(words.data(), words.size());
+}
+
+std::vector<Ump> parseUmpsFromWords(const uint32_t* words, size_t count) {
+    return Ump::fromWords(words, count);
+}
+
+std::vector<Ump> parseUmpsFromWords(UmpWordSpan words) {
+    return parseUmpsFromWords(words.data(), words.size());
 }
 
 }

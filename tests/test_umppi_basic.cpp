@@ -70,18 +70,6 @@ TEST(UmppiBasicTest, Midi2Track) {
     EXPECT_EQ(track.messages.size(), 2);
 }
 
-TEST(UmppiBasicTest, Midi2Music) {
-    Midi2Music music;
-    music.deltaTimeSpec = 480;
-
-    Midi2Track track;
-    track.messages.push_back(Ump(uint32_t(0x00100000)));
-
-    music.addTrack(std::move(track));
-
-    EXPECT_TRUE(music.isSingleTrack());
-    EXPECT_EQ(music.tracks.size(), 1);
-}
 
 TEST(UmppiBasicTest, Midi1MachineStateTracking) {
     Midi1Machine machine;
@@ -190,42 +178,4 @@ TEST(UmppiBasicTest, Midi1MusicMergeTracks) {
     EXPECT_EQ(merged.tracks[0].events[1].deltaTime, 240);
     EXPECT_EQ(merged.tracks[0].events[2].deltaTime, 240);
     EXPECT_EQ(merged.tracks[0].events[3].deltaTime, 0);
-}
-
-TEST(UmppiBasicTest, Midi2MusicMergeTracks) {
-    Midi2Music music;
-    music.deltaTimeSpec = 480;
-
-    Midi2Track track1;
-    track1.messages.push_back(Ump(UmpFactory::deltaClockstamp(0)));
-    track1.messages.push_back(Ump(uint32_t(0x40906040), uint32_t(0x80000000)));
-    track1.messages.push_back(Ump(UmpFactory::deltaClockstamp(480)));
-    track1.messages.push_back(Ump(uint32_t(0x40806040), uint32_t(0)));
-
-    Midi2Track track2;
-    track2.messages.push_back(Ump(UmpFactory::deltaClockstamp(240)));
-    track2.messages.push_back(Ump(uint32_t(0x40906440), uint32_t(0x80000000)));
-    track2.messages.push_back(Ump(UmpFactory::deltaClockstamp(240)));
-    track2.messages.push_back(Ump(uint32_t(0x40806440), uint32_t(0)));
-
-    music.addTrack(std::move(track1));
-    music.addTrack(std::move(track2));
-
-    auto merged = music.mergeTracks();
-
-    EXPECT_EQ(merged.tracks.size(), 1);
-    EXPECT_EQ(merged.deltaTimeSpec, 480);
-
-    int deltaCount = 0;
-    int noteCount = 0;
-    for (const auto& msg : merged.tracks[0].messages) {
-        if (msg.isDeltaClockstamp()) {
-            deltaCount++;
-        } else if (msg.getMessageType() == MessageType::MIDI2) {
-            noteCount++;
-        }
-    }
-
-    EXPECT_EQ(deltaCount, 2);
-    EXPECT_EQ(noteCount, 4);
 }

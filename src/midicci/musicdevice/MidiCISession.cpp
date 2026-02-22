@@ -24,37 +24,26 @@ std::unique_ptr<MidiCISession> createMidiCiSession(
     
     // Set up MIDI-CI output sender
     device->setSysexSender([source](uint8_t group, const std::vector<uint8_t>& data) -> bool {
-        if (source.transport_protocol == MidiTransportProtocol::UMP) {
-            // Convert SysEx data to UMP SysEx7 packets
-            auto ump_packets = umppi::UmpFactory::sysex7(group, data);
+        auto ump_packets = umppi::UmpFactory::sysex7(group, data);
 
-            // Since we have to pass UMP in bytes, take only significant bytes.
-            std::vector<uint8_t> bytes{};
-            bytes.reserve(ump_packets.size() * sizeof(umppi::Ump));
-            for (auto& u : ump_packets)
-                u.toBytes(bytes, bytes.size());
-
-            // Send all UMP packets in a single call
-            source.output_sender(bytes.data(), 0, bytes.size(), 0);
-        } else {
-            // MIDI 1.0: add SysEx start byte
-            std::vector<uint8_t> midi1_data;
-            midi1_data.push_back(0xF0);
-            midi1_data.insert(midi1_data.end(), data.begin(), data.end());
-            source.output_sender(midi1_data.data(), 0, midi1_data.size(), 0);
+        std::vector<uint32_t> words;
+        words.reserve(ump_packets.size() * 4);
+        for (const auto& u : ump_packets) {
+            size_t base = words.size();
+            u.toWords(words, base);
         }
+
+        source.output_sender(umppi::UmpWordSpan{words.data(), words.size()}, 0);
         return true;
     });
     
     return std::make_unique<MidiCISession>(
-        source.transport_protocol,
         source.input_listener_adder,
         std::move(device)
     );
 }
 
 MidiCISession::MidiCISession(
-    MidiTransportProtocol input_protocol,
     MidiInputListenerAdder input_listener_adder,
     std::unique_ptr<MidiCIDevice> device
 ) : device_(std::move(device)),
@@ -62,12 +51,8 @@ MidiCISession::MidiCISession(
     last_chunked_message_channel_(0xFF)  // Invalid channel initially
 {
     // Set up MIDI input processing
-    input_listener_adder([this, input_protocol](const uint8_t* data, size_t start, size_t length, uint64_t timestamp) {
-        if (input_protocol == MidiTransportProtocol::UMP) {
-            processUmpInput(data, start, length);
-        } else {
-            processMidi1Input(data, start, length);
-        }
+    input_listener_adder([this](umppi::UmpWordSpan words, uint64_t /*timestamp*/) {
+        processUmpInput(words);
     });
     
     // TODO: Set up message received handlers and MIDI message reporter
@@ -103,48 +88,9 @@ void MidiCISession::logMidiMessageReportChunk(const std::vector<uint8_t>& data) 
     }
 }
 
-void MidiCISession::processMidi1Input(const uint8_t* data, size_t start, size_t length) {
-    if (length <= 3) return;
-    
-    // Check for MIDI-CI SysEx message
-    if (data[start] == 0xF0 &&
-        data[start + 1] == UNIVERSAL_SYSEX &&
-        data[start + 3] == SYSEX_SUB_ID_MIDI_CI) {
-        
-        // Extract CI message (skip F0, include content, skip F7)
-        std::vector<uint8_t> ci_data(data + start + 1, data + start + length - 1);
-        processCiMessage(0, ci_data);  // Group is always 0 for MIDI 1.0
-    } else {
-        // May be part of MIDI Message Report
-        if (receiving_midi_message_reports_) {
-            uint8_t channel = data[start] & 0x0F;
-            if (channel != last_chunked_message_channel_) {
-                if (!chunked_messages_.empty()) {
-                    logMidiMessageReportChunk(chunked_messages_);
-                }
-                chunked_messages_.clear();
-                last_chunked_message_channel_ = channel;
-            }
-            chunked_messages_.insert(chunked_messages_.end(), 
-                                   data + start, data + start + length);
-        } else {
-            // Log unexpected MIDI message
-            auto logger = device_->getLogger();
-            if (logger) {
-                std::stringstream ss;
-                ss << "[received MIDI1] ";
-                for (size_t i = start; i < start + length; ++i) {
-                    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
-                }
-                logger(LogData(ss.str(), true));
-            }
-        }
-    }
-}
-
-void MidiCISession::processUmpInput(const uint8_t* data, size_t start, size_t length) {
-    // Parse UMP messages from bytes
-    auto umps = umppi::parseUmpsFromBytes(data, start, length);
+void MidiCISession::processUmpInput(umppi::UmpWordSpan words) {
+    auto umps = umppi::parseUmpsFromWords(words);
+    bool loggedUnexpected = false;
     
     for (const auto& ump : umps) {
         auto msg_type = ump.getMessageType();
@@ -212,22 +158,19 @@ void MidiCISession::processUmpInput(const uint8_t* data, size_t start, size_t le
                 last_chunked_message_channel_ = channel;
             }
             
-            // TODO: Convert UMP to platform bytes when method is available
-            // For now, add raw UMP data
-            size_t ump_size = ump.getSizeInBytes();
-            const uint8_t* ump_bytes = reinterpret_cast<const uint8_t*>(&ump);
-            chunked_messages_.insert(chunked_messages_.end(), ump_bytes, ump_bytes + ump_size);
-        } else {
-            // Log unexpected UMP message
+            auto bytes = ump.toBytes();
+            chunked_messages_.insert(chunked_messages_.end(), bytes.begin(), bytes.end());
+        } else if (!loggedUnexpected) {
             auto logger = device_->getLogger();
             if (logger) {
                 std::stringstream ss;
                 ss << "[received UMP] ";
-                for (size_t i = start; i < start + length; ++i) {
-                    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
+                for (size_t i = 0; i < words.size(); ++i) {
+                    ss << std::hex << std::setw(8) << std::setfill('0') << words[i] << " ";
                 }
                 logger(LogData(ss.str(), true));
             }
+            loggedUnexpected = true;
         }
     }
 }

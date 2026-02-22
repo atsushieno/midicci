@@ -4,32 +4,26 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <umppi/details/Ump.hpp>
 #include "midicci/midicci.hpp"
 
 namespace midicci::musicdevice {
 
-enum class MidiTransportProtocol : uint8_t {
-    Midi1 = 1,
-    UMP = 2
-};
-
-// Callback for receiving MIDI input: (data, start, length, timestamp_ns)
-using MidiInputCallback = std::function<void(const uint8_t*, size_t, size_t, uint64_t)>;
+// Callback for receiving MIDI input: (UMP words, timestamp_ns)
+using MidiInputCallback = std::function<void(umppi::UmpWordSpan, uint64_t)>;
 
 // Callback for adding a MIDI input listener
 using MidiInputListenerAdder = std::function<void(MidiInputCallback)>;
 
 // Data class representing a MIDI I/O pair for creating a session
 struct MidiCISessionSource {
-    MidiTransportProtocol transport_protocol;
     MidiInputListenerAdder input_listener_adder;
-    std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output_sender;
+    std::function<void(umppi::UmpWordSpan, uint64_t)> output_sender;
     
     MidiCISessionSource(
-        MidiTransportProtocol protocol,
         MidiInputListenerAdder input_adder,
-        std::function<void(const uint8_t*, size_t, size_t, uint64_t)> output
-    ) : transport_protocol(protocol), input_listener_adder(input_adder), output_sender(output) {}
+        std::function<void(umppi::UmpWordSpan, uint64_t)> output
+    ) : input_listener_adder(input_adder), output_sender(output) {}
 };
 
 // Factory function to create a MidiCISession from a source
@@ -43,7 +37,6 @@ std::unique_ptr<class MidiCISession> createMidiCiSession(
 class MidiCISession {
 public:
     MidiCISession(
-        MidiTransportProtocol input_protocol,
         MidiInputListenerAdder input_listener_adder,
         std::unique_ptr<MidiCIDevice> device
     );
@@ -61,8 +54,7 @@ public:
 private:
     void processCiMessage(uint8_t group, const std::vector<uint8_t>& data);
     void logMidiMessageReportChunk(const std::vector<uint8_t>& data);
-    void processMidi1Input(const uint8_t* data, size_t start, size_t length);
-    void processUmpInput(const uint8_t* data, size_t start, size_t length);
+    void processUmpInput(umppi::UmpWordSpan words);
     
     std::unique_ptr<MidiCIDevice> device_;
     bool receiving_midi_message_reports_;

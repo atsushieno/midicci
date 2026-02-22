@@ -54,18 +54,41 @@ void MidiDeviceManager::set_sysex_callback(SysExCallback callback) {
     sysex_callback_ = std::move(callback);
 }
 
-void MidiDeviceManager::set_ci_output_sender(CIOutputSender sender) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    ci_output_sender_ = std::move(sender);
+bool MidiDeviceManager::send_sysex(uint8_t group, umppi::UmpWordSpan words) {
+    (void)group;
+    if (words.empty()) {
+        return false;
+    }
+    send_ump(words, 0);
+    return true;
 }
 
-bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& data) {
+void MidiDeviceManager::process_incoming_sysex(uint8_t group, umppi::UmpWordSpan words) {
+    if (sysex_callback_) {
+        sysex_callback_(group, words);
+    }
+}
+
+void MidiDeviceManager::add_ump_listener(UmpListener listener) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    ump_listeners_.push_back(std::move(listener));
+}
+
+void MidiDeviceManager::clear_ump_listeners() {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    ump_listeners_.clear();
+}
+
+void MidiDeviceManager::send_ump(umppi::UmpWordSpan words, uint64_t timestamp_ns) {
+    if (words.empty()) {
+        return;
+    }
+
     bool sent = false;
-    if (ci_output_sender_) {
-        sent = ci_output_sender_(group, data);
-    } else if (midi_output_) {
+
+    if (midi_output_) {
         try {
-            midi_output_->send_ump(data.data(), data.size());
+            midi_output_->send_ump(words.data(), words.size());
             sent = true;
         } catch (const std::exception& e) {
             std::cerr << "Error sending UMP message: " << e.what() << std::endl;
@@ -74,12 +97,12 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& d
 
     if (virtual_ports_enabled_ && virtual_midi_output_) {
         try {
-            virtual_midi_output_->send_ump(data.data(), data.size());
+            virtual_midi_output_->send_ump(words.data(), words.size());
             std::ostringstream oss;
             oss << std::uppercase << std::hex << std::setfill('0');
-            for (size_t i = 0; i < data.size(); ++i) {
-                oss << "0x" << std::setw(8) << data[i];
-                if (i + 1 < data.size()) {
+            for (size_t i = 0; i < words.size(); ++i) {
+                oss << "0x" << std::setw(8) << words[i];
+                if (i + 1 < words.size()) {
                     oss << ' ';
                 }
             }
@@ -90,12 +113,8 @@ bool MidiDeviceManager::send_sysex(uint8_t group, const std::vector<uint32_t>& d
         }
     }
 
-    return sent;
-}
-
-void MidiDeviceManager::process_incoming_sysex(uint8_t group, const std::vector<uint32_t>& data) {
-    if (sysex_callback_) {
-        sysex_callback_(group, data);
+    if (!sent) {
+        std::cerr << "Unable to send UMP message (timestamp=" << timestamp_ns << ")" << std::endl;
     }
 }
 
@@ -331,16 +350,22 @@ void MidiDeviceManager::handle_input_message(libremidi::ump&& packet, bool from_
     bool has_note_event = false;
 
     {
-        std::vector<uint32_t> data{
-            packet.data[0],
-            packet.data[1],
-            packet.data[2],
-            packet.data[3]
-        };
+        size_t word_count = packet.size();
+        if (word_count == 0) {
+            word_count = 1;
+        }
+        std::vector<uint32_t> data(word_count);
+        for (size_t i = 0; i < word_count; ++i) {
+            data[i] = packet.data[i];
+        }
+
+        umppi::UmpWordSpan span{data.data(), data.size()};
+        uint8_t group = static_cast<uint8_t>((data[0] >> 24) & 0xF);
         if (from_virtual) {
             log_virtual_event("[virtual in] " + format_ump_packet(packet), VirtualPortDirection::In);
         }
-        process_incoming_sysex(0, data);
+        notify_ump_listeners(span, 0);
+        process_incoming_sysex(group, span);
 
         if (extract_note_event(packet, note, velocity, is_pressed)) {
             callbacks = note_event_callbacks_;
@@ -431,6 +456,24 @@ void MidiDeviceManager::reopen_virtual_ports_locked() {
     }
     close_virtual_ports_locked();
     open_virtual_ports_locked();
+}
+
+void MidiDeviceManager::notify_ump_listeners(umppi::UmpWordSpan words, uint64_t timestamp_ns) {
+    std::vector<UmpListener> listeners;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        listeners = ump_listeners_;
+    }
+
+    if (listeners.empty()) {
+        return;
+    }
+
+    for (const auto& listener : listeners) {
+        if (listener) {
+            listener(words, timestamp_ns);
+        }
+    }
 }
 
 std::string MidiDeviceManager::format_ump_packet(const libremidi::ump& packet) {

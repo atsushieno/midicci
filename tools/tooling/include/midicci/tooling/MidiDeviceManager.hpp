@@ -6,6 +6,7 @@
 #include <string>
 #include <cstdint>
 #include <mutex>
+#include <umppi/details/Ump.hpp>
 
 namespace libremidi {
 class midi_in;
@@ -22,8 +23,8 @@ enum class VirtualPortDirection {
 
 class MidiDeviceManager {
 public:
-    using SysExCallback = std::function<void(uint8_t group, const std::vector<uint32_t>& data)>;
-    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint32_t>& data)>;
+    using SysExCallback = std::function<void(uint8_t group, umppi::UmpWordSpan words)>;
+    using UmpListener = std::function<void(umppi::UmpWordSpan, uint64_t)>;
     
     MidiDeviceManager();
     ~MidiDeviceManager();
@@ -35,11 +36,12 @@ public:
     void shutdown();
     
     void set_sysex_callback(SysExCallback callback);
-    void set_ci_output_sender(CIOutputSender sender);
+    bool send_sysex(uint8_t group, umppi::UmpWordSpan words);
+    void send_ump(umppi::UmpWordSpan words, uint64_t timestamp_ns);
     
-    bool send_sysex(uint8_t group, const std::vector<uint32_t>& data);
-    
-    void process_incoming_sysex(uint8_t group, const std::vector<uint32_t>& data);
+    void process_incoming_sysex(uint8_t group, umppi::UmpWordSpan words);
+    void add_ump_listener(UmpListener listener);
+    void clear_ump_listeners();
     
     std::vector<std::string> get_available_input_devices() const;
     std::vector<std::string> get_available_output_devices() const;
@@ -69,7 +71,7 @@ public:
 private:
     bool initialized_;
     SysExCallback sysex_callback_;
-    CIOutputSender ci_output_sender_;
+    std::vector<UmpListener> ump_listeners_;
     std::string current_input_device_;
     std::string current_output_device_;
     
@@ -95,6 +97,7 @@ private:
     void open_virtual_ports_locked();
     void close_virtual_ports_locked();
     void reopen_virtual_ports_locked();
+    void notify_ump_listeners(umppi::UmpWordSpan words, uint64_t timestamp_ns);
     static std::string format_ump_packet(const libremidi::ump& packet);
     void log_virtual_event(const std::string& message, VirtualPortDirection direction);
     bool extract_note_event(const libremidi::ump& packet, int& note, int& velocity, bool& is_pressed) const;

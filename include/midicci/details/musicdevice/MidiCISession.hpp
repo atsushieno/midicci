@@ -29,8 +29,8 @@ struct MidiCISessionSource {
 // Factory function to create a MidiCISession from a source
 std::unique_ptr<class MidiCISession> createMidiCiSession(
     const MidiCISessionSource& source,
-    uint32_t muid = 0,  // Will be randomly generated if 0
-    MidiCIDeviceConfiguration config = MidiCIDeviceConfiguration{},
+    uint32_t muid,
+    MidiCIDeviceConfiguration& config,
     MidiCIDevice::LoggerFunction logger = {}
 );
 

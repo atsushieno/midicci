@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <mutex>
 #include <midicci/midicci.hpp>
+#include <midicci/details/musicdevice/MidiCISession.hpp>
 
 namespace midicci {
 class MidiCIDevice;
@@ -34,23 +35,19 @@ public:
     
     std::shared_ptr<CIDeviceModel> get_device_model() const;
     
-    void processMidi1Input(const std::vector<uint8_t>& data, size_t start, size_t length);
-    void processUmpInput(const std::vector<uint8_t>& data, size_t start, size_t length);
-    void process_single_ump_packet(const umppi::Ump& ump);
-    
-    void setup_input_event_listener();
-    
-    void logMidiMessageReportChunk(const std::vector<uint8_t>& data);
-    
 private:
     CIToolRepository& repository_;
     MidiCIDeviceConfiguration& config_;
     std::shared_ptr<MidiDeviceManager> midi_device_manager_;
     std::shared_ptr<CIDeviceModel> device_model_;
+    std::shared_ptr<midicci::musicdevice::MidiCISession> ci_session_;
     mutable std::recursive_mutex mutex_;
-    
     std::vector<uint8_t> buffered_sysex7_;
     std::vector<uint8_t> buffered_sysex8_;
+    
+    void process_single_ump_packet(const umppi::Ump& ump);
+    void setup_input_event_listener();
+    void logMidiMessageReportChunk(const std::vector<uint8_t>& data);
 };
 
 } // namespace ci_tool

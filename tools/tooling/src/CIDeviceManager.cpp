@@ -5,6 +5,7 @@
 #include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>
+#include <format>
 #include "MidiDeviceManager.hpp"
 
 namespace midicci::tooling {
@@ -19,58 +20,6 @@ CIDeviceManager::~CIDeviceManager() = default;
 void CIDeviceManager::initialize() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     
-    auto ci_output_sender = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
-        // Convert uint8_t SysEx data to UMP format
-        std::vector<uint8_t> sysex_data;
-        sysex_data.push_back(0xF0);
-        sysex_data.insert(sysex_data.end(), data.begin(), data.end());
-        sysex_data.push_back(0xF7);
-        
-        // Convert to UMP SysEx7 format (skip F0 and F7)
-        std::vector<uint8_t> sysex_payload(sysex_data.begin() + 1, sysex_data.end() - 1);
-        auto umps = umppi::UmpFactory::sysex7(group, sysex_payload);
-        std::vector<uint32_t> ump_data;
-        for (const auto& ump : umps) {
-            ump_data.push_back(ump.int1);
-            ump_data.push_back(ump.int2);
-            ump_data.push_back(ump.int3);
-            ump_data.push_back(ump.int4);
-        }
-        
-        std::string hex_str;
-        for (uint8_t byte : data) {
-            char hex[4];
-            snprintf(hex, sizeof(hex), "%02X ", byte);
-            hex_str += hex;
-        }
-        repository_.log("[sent CI SysEx (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
-        
-        return midi_device_manager_->send_sysex(group, ump_data);
-    };
-    
-    auto midi_message_report_sender = [this](uint8_t group, const std::vector<uint8_t>& data) -> bool {
-        // Convert uint8_t data to UMP format
-        std::vector<uint8_t> data_vector(data.begin(), data.end());
-        auto umps = umppi::UmpFactory::sysex7(group, data_vector);
-        std::vector<uint32_t> ump_data;
-        for (const auto& ump : umps) {
-            ump_data.push_back(ump.int1);
-            ump_data.push_back(ump.int2);
-            ump_data.push_back(ump.int3);
-            ump_data.push_back(ump.int4);
-        }
-        
-        std::string hex_str;
-        for (uint8_t byte : data) {
-            char hex[4];
-            snprintf(hex, sizeof(hex), "%02X ", byte);
-            hex_str += hex;
-        }
-        repository_.log("[sent MIDI Message Report (grp:" + std::to_string(group) + ")] " + hex_str, MessageDirection::Out);
-        
-        return midi_device_manager_->send_sysex(group, ump_data);
-    };
-    
     auto logger_wrapper = [this](const LogData& log_data) {
         MessageDirection direction = log_data.is_outgoing ? MessageDirection::Out : MessageDirection::In;
         if (log_data.hasMessage()) {
@@ -83,18 +32,37 @@ void CIDeviceManager::initialize() {
             repository_.log(log_data.getString(), direction);
         }
     };
-    
+
+    musicdevice::MidiCISessionSource source{
+        [this](midicci::musicdevice::MidiInputCallback callback) {
+            midi_device_manager_->add_ump_listener(std::move(callback));
+        },
+        [this](umppi::UmpWordSpan words, uint64_t timestamp_ns) {
+            midi_device_manager_->send_ump(words, timestamp_ns);
+        }
+    };
+
+    auto session = musicdevice::createMidiCiSession(
+        source,
+        repository_.getMuid(),
+        config_,
+        logger_wrapper);
+
+    ci_session_ = std::shared_ptr<musicdevice::MidiCISession>(std::move(session));
+
     device_model_ = std::make_shared<CIDeviceModel>(
-        *this, config_, repository_.getMuid(),
-        ci_output_sender, midi_message_report_sender, logger_wrapper);
+        *this,
+        config_,
+        repository_.getMuid(),
+        ci_session_,
+        logger_wrapper);
     
     device_model_->initialize();
     
     midi_device_manager_->set_sysex_callback(
-        [this](uint8_t group, const std::vector<uint32_t>& ump_data) {
-            // Process UMP packets directly (4 words = 1 UMP packet)
-            for (size_t i = 0; i + 3 < ump_data.size(); i += 4) {
-                umppi::Ump ump(ump_data[i], ump_data[i+1], ump_data[i+2], ump_data[i+3]);
+        [this](uint8_t /*group*/, umppi::UmpWordSpan words) {
+            auto umps = umppi::parseUmpsFromWords(words);
+            for (const auto& ump : umps) {
                 process_single_ump_packet(ump);
             }
         });
@@ -118,47 +86,6 @@ void CIDeviceManager::shutdown() {
 std::shared_ptr<CIDeviceModel> CIDeviceManager::get_device_model() const {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     return device_model_;
-}
-
-void CIDeviceManager::processMidi1Input(const std::vector<uint8_t>& data, size_t start, size_t length) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    std::string hex_str;
-    for (size_t i = start; i < start + length && i < data.size(); ++i) {
-        char hex[4];
-        snprintf(hex, sizeof(hex), "%02X ", data[i]);
-        hex_str += hex;
-    }
-    repository_.log("[received MIDI1] " + hex_str, MessageDirection::In);
-    
-    if (data.size() > start + 3 &&
-        data[start] == 0xF0 &&
-        data[start + 1] == 0x7E &&
-        data[start + 3] == 0x0D) {
-        
-        size_t end_pos = start;
-        for (size_t i = start; i < start + length && i < data.size(); ++i) {
-            if (data[i] == 0xF7) {
-                end_pos = i;
-                break;
-            }
-        }
-        
-        if (end_pos > start) {
-            std::vector<uint8_t> ci_data(data.begin() + start + 1, data.begin() + end_pos);
-            std::string ci_hex_str;
-            for (uint8_t byte : ci_data) {
-                char hex[4];
-                snprintf(hex, sizeof(hex), "%02X ", byte);
-                ci_hex_str += hex;
-            }
-            repository_.log("[received CI SysEx] " + ci_hex_str, MessageDirection::In);
-            
-            if (device_model_) {
-                device_model_->processCiMessage(0, ci_data);
-            }
-        }
-    }
 }
 
 void CIDeviceManager::process_single_ump_packet(const umppi::Ump& ump) {
@@ -249,89 +176,6 @@ void CIDeviceManager::process_single_ump_packet(const umppi::Ump& ump) {
             // Log other message types but don't process them as CI messages
             repository_.log("[received UMP message type: " + std::to_string(static_cast<int>(ump.getMessageType())) + "]", MessageDirection::In);
             break;
-    }
-}
-
-void CIDeviceManager::processUmpInput(const std::vector<uint8_t>& data, size_t start, size_t length) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    
-    // avoid logging every UMP byte dump; detailed logs handled per-message
-    
-    auto umps = umppi::parseUmpsFromBytes(data.data(), start, length);
-    
-    for (const auto& ump : umps) {
-        switch (ump.getMessageType()) {
-            case umppi::MessageType::SYSEX7: {
-                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
-                    buffered_sysex7_.clear();
-                }
-                
-                std::vector<umppi::Ump> single_ump = {ump};
-                auto sysex_data = umppi::UmpRetriever::getSysex7Data(single_ump);
-                buffered_sysex7_.insert(buffered_sysex7_.end(), 
-                                               sysex_data.begin(), sysex_data.end());
-                
-                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
-                    ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
-                    
-                    if (buffered_sysex7_.size() > 2 &&
-                        buffered_sysex7_[0] == 0x7E &&
-                        buffered_sysex7_[2] == 0x0D) {
-                        
-                        std::string sysex7_hex;
-                        for (uint8_t byte : buffered_sysex7_) {
-                            char hex[4];
-                            snprintf(hex, sizeof(hex), "%02X ", byte);
-                            sysex7_hex += hex;
-                        }
-                        repository_.log("[received CI SysEx7] " + sysex7_hex, MessageDirection::In);
-                        
-                        if (device_model_) {
-                            device_model_->processCiMessage(ump.getGroup(), buffered_sysex7_);
-                        }
-                        buffered_sysex7_.clear();
-                    }
-                }
-                break;
-            }
-            
-            case umppi::MessageType::SYSEX8_MDS: {
-                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::START)) {
-                    buffered_sysex8_.clear();
-                }
-                
-                std::vector<umppi::Ump> single_ump = {ump};
-                auto sysex_data = umppi::UmpRetriever::getSysex8Data(single_ump);
-                buffered_sysex8_.insert(buffered_sysex8_.end(), 
-                                               sysex_data.begin(), sysex_data.end());
-                
-                if (ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::END) ||
-                    ump.getStatusCode() == static_cast<uint8_t>(umppi::BinaryChunkStatus::COMPLETE_PACKET)) {
-                    
-                    if (buffered_sysex8_.size() > 2 &&
-                        buffered_sysex8_[0] == 0x7E &&
-                        buffered_sysex8_[2] == 0x0D) {
-                        
-                        std::string sysex8_hex;
-                        for (uint8_t byte : buffered_sysex8_) {
-                            char hex[4];
-                            snprintf(hex, sizeof(hex), "%02X ", byte);
-                            sysex8_hex += hex;
-                        }
-                        repository_.log("[received CI SysEx8] " + sysex8_hex, MessageDirection::In);
-                        
-                        if (device_model_) {
-                            device_model_->processCiMessage(ump.getGroup(), buffered_sysex8_);
-                        }
-                        buffered_sysex8_.clear();
-                    }
-                }
-                break;
-            }
-            
-            default:
-                break;
-        }
     }
 }
 

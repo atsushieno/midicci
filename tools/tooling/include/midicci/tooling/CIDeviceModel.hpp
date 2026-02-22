@@ -8,24 +8,21 @@
 #include "MidiCIProfileState.hpp"
 #include "ClientConnectionModel.hpp"
 #include "MutableState.hpp"
+#include <midicci/details/musicdevice/MidiCISession.hpp>
 
 namespace midicci::tooling {
 
 class CIDeviceManager;
 
 class CIDeviceModel : public std::enable_shared_from_this<CIDeviceModel> {
-    
 public:
-    using CIOutputSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
-    using MidiMessageReportSender = std::function<bool(uint8_t group, const std::vector<uint8_t>& data)>;
-    
     using ConnectionsChangedCallback = std::function<void()>;
     using ProfilesUpdatedCallback = std::function<void()>;
     using PropertiesUpdatedCallback = std::function<void()>;
     
     explicit CIDeviceModel(CIDeviceManager& parent, MidiCIDeviceConfiguration& config,
-                           uint32_t muid, CIOutputSender ci_output_sender,
-                           MidiMessageReportSender midi_message_report_sender,
+                           uint32_t muid,
+                           std::shared_ptr<midicci::musicdevice::MidiCISession> session,
                            MidiCIDevice::LoggerFunction logger = {});
     ~CIDeviceModel();
     

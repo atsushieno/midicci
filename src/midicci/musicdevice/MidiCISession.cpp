@@ -10,7 +10,7 @@ namespace midicci::musicdevice {
 std::unique_ptr<MidiCISession> createMidiCiSession(
     const MidiCISessionSource& source,
     uint32_t muid,
-    MidiCIDeviceConfiguration config,
+    MidiCIDeviceConfiguration& config,
     MidiCIDevice::LoggerFunction logger
 ) {
     if (muid == 0) {

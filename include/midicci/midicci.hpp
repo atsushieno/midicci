@@ -56,7 +56,6 @@
 #include <midicci/details/musicdevice/MidiCISession.hpp>
 #include <midicci/details/musicdevice/MidiMachineMessageReporter.hpp>
 #include <midicci/details/musicdevice/MusicDevice.hpp>
-#include <midicci/details/musicdevice/TransportAdapters.hpp>
 
 // UMP (Universal MIDI Packet) - provided by umppi module
 #include <umppi/details/Ump.hpp>

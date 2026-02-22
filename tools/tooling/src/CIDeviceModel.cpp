@@ -10,22 +10,25 @@ namespace midicci::tooling {
 
 class CIDeviceModel::Impl {
 public:
-    explicit Impl(CIDeviceManager& parent, MidiCIDeviceConfiguration& config, uint32_t muid,
-                  CIOutputSender ci_sender, MidiMessageReportSender mmr_sender,
+    explicit Impl(CIDeviceManager& parent,
+                  MidiCIDeviceConfiguration& config,
+                  uint32_t muid,
+                  std::shared_ptr<midicci::musicdevice::MidiCISession> session,
                   MidiCIDevice::LoggerFunction logger)
-        : parent_(parent), config_(config), muid_(muid),
-          ci_output_sender_(ci_sender), midi_message_report_sender_(mmr_sender),
-          logger_(logger),
-          receiving_midi_message_reports_(false), last_chunked_message_channel_(0) {}
+        : parent_(parent),
+          config_(config),
+          muid_(muid),
+          session_(std::move(session)),
+          receiving_midi_message_reports_(false),
+          last_chunked_message_channel_(0) {
+        (void)logger;
+    }
     
     CIDeviceManager& parent_;
     MidiCIDeviceConfiguration& config_;
     uint32_t muid_;
-    CIOutputSender ci_output_sender_;
-    MidiMessageReportSender midi_message_report_sender_;
-    MidiCIDevice::LoggerFunction logger_;
-    
-    std::shared_ptr<MidiCIDevice> device_;
+    std::shared_ptr<midicci::musicdevice::MidiCISession> session_;
+    std::shared_ptr<MidiCIDevice> device_holder_;
     MutableStateList<std::shared_ptr<ClientConnectionModel>> connections_;
     MutableStateList<std::shared_ptr<MidiCIProfileState>> local_profile_states_;
     
@@ -41,10 +44,10 @@ public:
 };
 
 CIDeviceModel::CIDeviceModel(CIDeviceManager& parent, MidiCIDeviceConfiguration& config,
-                             uint32_t muid, CIOutputSender ci_output_sender,
-                             MidiMessageReportSender midi_message_report_sender,
+                             uint32_t muid,
+                             std::shared_ptr<midicci::musicdevice::MidiCISession> session,
                              MidiCIDevice::LoggerFunction logger)
-    : pimpl_(std::make_unique<Impl>(parent, config, muid, ci_output_sender, midi_message_report_sender, logger)) {
+    : pimpl_(std::make_unique<Impl>(parent, config, muid, std::move(session), logger)) {
     receiving_midi_message_reports = pimpl_->receiving_midi_message_reports_;
     last_chunked_message_channel = pimpl_->last_chunked_message_channel_;
     chunked_messages = pimpl_->chunked_messages_;
@@ -55,8 +58,11 @@ CIDeviceModel::~CIDeviceModel() = default;
 void CIDeviceModel::initialize() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    pimpl_->device_ = std::make_shared<MidiCIDevice>(pimpl_->muid_, pimpl_->config_, pimpl_->logger_);
-    pimpl_->device_->setSysexSender(pimpl_->ci_output_sender_);
+    if (pimpl_->session_) {
+        pimpl_->device_holder_ = std::shared_ptr<MidiCIDevice>(
+            pimpl_->session_,
+            &pimpl_->session_->getDevice());
+    }
 
     setup_event_listeners();
 
@@ -65,9 +71,7 @@ void CIDeviceModel::initialize() {
 
 void CIDeviceModel::shutdown() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->device_) {
-        pimpl_->device_.reset();
-    }
+    pimpl_->device_holder_.reset();
     pimpl_->connections_.clear();
     pimpl_->local_profile_states_.clear();
     std::cout << "CIDeviceModel shutdown" << std::endl;
@@ -75,13 +79,13 @@ void CIDeviceModel::shutdown() {
 
 std::shared_ptr<MidiCIDevice> CIDeviceModel::getDevice() const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    return pimpl_->device_;
+    return pimpl_->device_holder_;
 }
 
 void CIDeviceModel::processCiMessage(uint8_t group, const std::vector<uint8_t>& data) {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->device_) {
-        pimpl_->device_->processInput(group, data);
+    if (pimpl_->device_holder_) {
+        pimpl_->device_holder_->processInput(group, data);
     }
 }
 
@@ -95,8 +99,8 @@ MutableStateList<std::shared_ptr<MidiCIProfileState>>& CIDeviceModel::get_local_
 
 void CIDeviceModel::send_discovery() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (pimpl_->device_) {
-        pimpl_->device_->sendDiscovery();
+    if (pimpl_->device_holder_) {
+        pimpl_->device_holder_->sendDiscovery();
         std::cout << "Sending discovery inquiry..." << std::endl;
     }
 }
@@ -130,8 +134,8 @@ void CIDeviceModel::remove_local_property(const std::string& property_id) {
     std::cout << "Removed local property: " << property_id << std::endl;
     
     // Actually remove from the PropertyHostFacade using new API
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->getPropertyHostFacade();
+    if (pimpl_->device_holder_) {
+        auto& property_facade = pimpl_->device_holder_->getPropertyHostFacade();
         property_facade.removeProperty(property_id);
     }
 
@@ -146,8 +150,8 @@ void CIDeviceModel::update_property_value(const std::string& property_id, const 
     std::cout << "Updated property: " << property_id << " (resource: " << res_id << ")" << std::endl;
     
     // Actually update the PropertyHostFacade using new API
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->getPropertyHostFacade();
+    if (pimpl_->device_holder_) {
+        auto& property_facade = pimpl_->device_holder_->getPropertyHostFacade();
         property_facade.setPropertyValue(property_id, res_id, data, false); // false = not partial
     }
     
@@ -162,8 +166,8 @@ void CIDeviceModel::updatePropertyMetadata(const std::string& property_id, const
     std::cout << "Updated property metadata: " << property_id << std::endl;
     
     // Actually update the PropertyHostFacade using new API
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->getPropertyHostFacade();
+    if (pimpl_->device_holder_) {
+        auto& property_facade = pimpl_->device_holder_->getPropertyHostFacade();
         property_facade.updatePropertyMetadata(property_id, metadata);
     }
     
@@ -175,8 +179,8 @@ void CIDeviceModel::updatePropertyMetadata(const std::string& property_id, const
 const midicci::commonproperties::PropertyMetadata* CIDeviceModel::get_local_property_metadata(const std::string& property_id) const {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
     
-    if (pimpl_->device_) {
-        auto& property_facade = pimpl_->device_->getPropertyHostFacade();
+    if (pimpl_->device_holder_) {
+        auto& property_facade = pimpl_->device_holder_->getPropertyHostFacade();
         return property_facade.getPropertyMetadata(property_id);
     }
     
@@ -184,13 +188,13 @@ const midicci::commonproperties::PropertyMetadata* CIDeviceModel::get_local_prop
 }
 
 void CIDeviceModel::setup_event_listeners() {
-    if (!pimpl_->device_) return;
+    if (!pimpl_->device_holder_) return;
     
-    pimpl_->device_->setConnectionsChangedCallback([this]() {
+    pimpl_->device_holder_->setConnectionsChangedCallback([this]() {
         on_connections_changed();
     });
     
-    auto& profile_facade = pimpl_->device_->getProfileHostFacade();
+    auto& profile_facade = pimpl_->device_holder_->getProfileHostFacade();
     auto& observable_profiles = profile_facade.getProfiles();
     
     observable_profiles.addProfilesChangedCallback([this](auto change, const auto& profile) {
@@ -247,7 +251,7 @@ void CIDeviceModel::setup_event_listeners() {
     });
     
     // Set up property host facade subscription change callback
-    auto& property_facade = pimpl_->device_->getPropertyHostFacade();
+    auto& property_facade = pimpl_->device_holder_->getPropertyHostFacade();
     property_facade.setSubscriptionChangedCallback([this](const std::string& property_id) {
         std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
         
@@ -260,9 +264,9 @@ void CIDeviceModel::setup_event_listeners() {
 
 void CIDeviceModel::on_connections_changed() {
     std::lock_guard<std::recursive_mutex> lock(pimpl_->mutex_);
-    if (!pimpl_->device_) return;
+    if (!pimpl_->device_holder_) return;
     
-    const auto& device_connections = pimpl_->device_->getConnections();
+    const auto& device_connections = pimpl_->device_holder_->getConnections();
     
     std::vector<uint32_t> current_muids;
     for (const auto& [muid, conn] : device_connections) {
@@ -279,7 +283,7 @@ void CIDeviceModel::on_connections_changed() {
     
     for (uint32_t muid : current_muids) {
         if (std::find(existing_muids.begin(), existing_muids.end(), muid) == existing_muids.end()) {
-            auto device_conn = pimpl_->device_->getConnection(muid);
+            auto device_conn = pimpl_->device_holder_->getConnection(muid);
             if (device_conn) {
                 auto conn_model = std::make_shared<ClientConnectionModel>(shared_from_this(), device_conn);
                 

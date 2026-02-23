@@ -843,7 +843,8 @@ ProcessInquiryCapabilitiesReply::ProcessInquiryCapabilitiesReply(const Common& c
     : SinglePacketMessage(MessageType::ProcessInquiryCapabilitiesReply, common), supported_features_(supported_features) {}
 
 std::vector<uint8_t> ProcessInquiryCapabilitiesReply::serialize(const MidiCIDeviceConfiguration& config) const {
-    return {supported_features_};
+    std::vector<uint8_t> dst(14);
+    return CIFactory::midiCIProcessInquiryCapabilitiesReply(dst, common_.address, common_.source_muid, supported_features_);
 }
 
 std::string ProcessInquiryCapabilitiesReply::getLabel() const {

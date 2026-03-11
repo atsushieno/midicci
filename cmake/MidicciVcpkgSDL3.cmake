@@ -2,16 +2,18 @@ include_guard(GLOBAL)
 
 include(FetchContent)
 
-macro(midicci_prepare_vcpkg_sdl3)
+function(midicci_prepare_vcpkg_sdl3)
     if(NOT WIN32)
         return()
     endif()
 
-    if(TARGET SDL3::SDL3 OR TARGET SDL3::SDL3-static)
+    if(TARGET SDL3::SDL3 OR TARGET SDL3::SDL3-static OR TARGET SDL3::SDL3-shared)
+        message(STATUS "midicci: SDL3 target already defined, skipping vcpkg setup")
         return()
     endif()
 
     if(DEFINED SDL3_DIR AND EXISTS "${SDL3_DIR}/SDL3Config.cmake")
+        message(STATUS "midicci: SDL3_DIR already set to '${SDL3_DIR}', skipping vcpkg setup")
         return()
     endif()
 
@@ -26,10 +28,13 @@ macro(midicci_prepare_vcpkg_sdl3)
     endif()
     set(MIDICCI_VCPKG_TRIPLET "${MIDICCI_VCPKG_TRIPLET}"
         CACHE STRING "vcpkg triplet used when fetching SDL3 automatically" FORCE)
+    message(STATUS "midicci: SDL3 vcpkg triplet: ${MIDICCI_VCPKG_TRIPLET}")
 
     set(_midicci_vcpkg_root "")
-    if(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}/vcpkg.exe")
+    set(_midicci_vcpkg_exe_name "vcpkg.exe")
+    if(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}/${_midicci_vcpkg_exe_name}")
         set(_midicci_vcpkg_root "$ENV{VCPKG_ROOT}")
+        message(STATUS "midicci: Using existing vcpkg at '$ENV{VCPKG_ROOT}'")
     else()
         set(_midicci_vcpkg_default_url
             "https://github.com/microsoft/vcpkg/archive/refs/tags/2026.01.16.zip")
@@ -38,6 +43,7 @@ macro(midicci_prepare_vcpkg_sdl3)
         endif()
         set(MIDICCI_VCPKG_URL "${MIDICCI_VCPKG_URL}"
             CACHE STRING "URL used to download vcpkg for SDL3 on Windows" FORCE)
+        message(STATUS "midicci: Downloading vcpkg from: ${MIDICCI_VCPKG_URL}")
         if(NOT DEFINED MIDICCI_VCPKG_URL_HASH)
             set(MIDICCI_VCPKG_URL_HASH "")
         endif()
@@ -68,7 +74,7 @@ macro(midicci_prepare_vcpkg_sdl3)
     set(MIDICCI_VCPKG_ROOT "${_midicci_vcpkg_root}" CACHE PATH
         "Path to the vcpkg tree used to supply SDL3" FORCE)
 
-    set(_midicci_vcpkg_exe "${_midicci_vcpkg_root}/vcpkg.exe")
+    set(_midicci_vcpkg_exe "${_midicci_vcpkg_root}/${_midicci_vcpkg_exe_name}")
     set(_midicci_vcpkg_bootstrap "${_midicci_vcpkg_root}/bootstrap-vcpkg.bat")
 
     if(NOT EXISTS "${_midicci_vcpkg_exe}")
@@ -104,6 +110,7 @@ macro(midicci_prepare_vcpkg_sdl3)
                 "midicci-app: failed to install SDL3 via vcpkg (${_midicci_vcpkg_install_result}), falling back to other backends")
             return()
         endif()
+        message(STATUS "midicci: SDL3 installed via vcpkg into '${_midicci_vcpkg_triplet_dir}'")
     endif()
 
     if(NOT EXISTS "${_midicci_vcpkg_sdl3_config}")
@@ -112,6 +119,8 @@ macro(midicci_prepare_vcpkg_sdl3)
     endif()
 
     list(APPEND CMAKE_PREFIX_PATH "${_midicci_vcpkg_triplet_dir}")
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}" PARENT_SCOPE)
     set(SDL3_DIR "${_midicci_vcpkg_triplet_dir}/share/SDL3"
         CACHE PATH "SDL3 config directory supplied by vcpkg" FORCE)
-endmacro()
+    message(STATUS "midicci: SDL3_DIR set to '${_midicci_vcpkg_triplet_dir}/share/SDL3'")
+endfunction()

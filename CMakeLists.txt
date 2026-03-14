@@ -72,7 +72,7 @@ endif()
 FetchContent_Declare(
     libremidi
     GIT_REPOSITORY https://github.com/celtera/libremidi.git
-    GIT_TAG v5.4.1
+    GIT_TAG feature/winmidi_virtual
     EXCLUDE_FROM_ALL
 )
 midicci_fetchcontent_makeavailable_static(libremidi)

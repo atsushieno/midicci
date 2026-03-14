@@ -28,6 +28,15 @@ std::string base_port_label(const Port& port) {
     return "Port " + std::to_string(static_cast<unsigned long long>(port.port));
 }
 
+template <typename Port>
+std::string stable_port_id(const Port& port) {
+    std::ostringstream id;
+    id << port.port_name << '#'
+       << std::uppercase << std::hex
+       << static_cast<unsigned long long>(port.port);
+    return id.str();
+}
+
 void append_detail_if_present(std::ostringstream& oss, bool& started, const std::string& value) {
     if (value.empty()) {
         return;
@@ -194,7 +203,7 @@ std::vector<KeyboardController::DeviceInfo> KeyboardController::getInputDevices(
         auto labels = build_disambiguated_labels(ports);
         for (size_t i = 0; i < ports.size(); i++) {
             DeviceInfo info{
-                .id = std::to_string(i),
+                .id = stable_port_id(ports[i]),
                 .port_name = ports[i].port_name,
                 .display_name = labels[i]
             };
@@ -229,7 +238,7 @@ std::vector<KeyboardController::DeviceInfo> KeyboardController::getOutputDevices
         auto labels = build_disambiguated_labels(ports);
         for (size_t i = 0; i < ports.size(); i++) {
             DeviceInfo info{
-                .id = std::to_string(i),
+                .id = stable_port_id(ports[i]),
                 .port_name = ports[i].port_name,
                 .display_name = labels[i]
             };
@@ -265,10 +274,12 @@ bool KeyboardController::selectInputDevice(const std::string& deviceId) {
         }
 
         auto ports = observer->get_input_ports();
-        size_t portIndex = std::stoul(deviceId);
+        auto selected = std::find_if(ports.begin(), ports.end(), [&deviceId](const auto& port) {
+            return stable_port_id(port) == deviceId;
+        });
 
-        if (portIndex < ports.size()) {
-            midiIn->open_port(ports[portIndex]);
+        if (selected != ports.end()) {
+            midiIn->open_port(*selected);
             currentInputDeviceId = deviceId;
 
             // Reinitialize MIDI-CI when we have a valid MIDI pair
@@ -302,10 +313,12 @@ bool KeyboardController::selectOutputDevice(const std::string& deviceId) {
         }
 
         auto ports = observer->get_output_ports();
-        size_t portIndex = std::stoul(deviceId);
+        auto selected = std::find_if(ports.begin(), ports.end(), [&deviceId](const auto& port) {
+            return stable_port_id(port) == deviceId;
+        });
 
-        if (portIndex < ports.size()) {
-            midiOut->open_port(ports[portIndex]);
+        if (selected != ports.end()) {
+            midiOut->open_port(*selected);
             currentOutputDeviceId = deviceId;
             updateUIConnectionState();
 
@@ -960,15 +973,22 @@ void KeyboardController::checkAndAutoConnect() {
         auto inputPorts = observer->get_input_ports();
         auto outputPorts = observer->get_output_ports();
 
-        size_t inputIndex = currentInputDeviceId.empty() ? SIZE_MAX : std::stoul(currentInputDeviceId);
-        size_t outputIndex = currentOutputDeviceId.empty() ? SIZE_MAX : std::stoul(currentOutputDeviceId);
-
-        if (inputIndex < inputPorts.size()) {
-            inputDeviceName = inputPorts[inputIndex].port_name;
+        if (!currentInputDeviceId.empty()) {
+            auto inputIt = std::find_if(inputPorts.begin(), inputPorts.end(), [this](const auto& port) {
+                return stable_port_id(port) == currentInputDeviceId;
+            });
+            if (inputIt != inputPorts.end()) {
+                inputDeviceName = inputIt->port_name;
+            }
         }
 
-        if (outputIndex < outputPorts.size()) {
-            outputDeviceName = outputPorts[outputIndex].port_name;
+        if (!currentOutputDeviceId.empty()) {
+            auto outputIt = std::find_if(outputPorts.begin(), outputPorts.end(), [this](const auto& port) {
+                return stable_port_id(port) == currentOutputDeviceId;
+            });
+            if (outputIt != outputPorts.end()) {
+                outputDeviceName = outputIt->port_name;
+            }
         }
 
         if (inputDeviceName.empty() || outputDeviceName.empty()) {

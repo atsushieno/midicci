@@ -14,12 +14,12 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(MSVC)
-    # Do not override MSVC defaults; keep proper CodeView debug info settings.
-    add_compile_options($<$<CONFIG:Debug>:/Od> $<$<CONFIG:Release>:/O2>)
-else()
-    add_compile_options($<$<CONFIG:Debug>:-g -O0 -Wall -Wextra -Wpedantic> $<$<CONFIG:Release>:-O3 -DNDEBUG>)
-endif()
+if (WIN32) #MSVC
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall")
+else ()
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
+endif ()
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_TESTS "Build tests" ON)

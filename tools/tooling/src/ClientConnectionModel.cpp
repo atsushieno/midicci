@@ -1,5 +1,5 @@
-#include "ClientConnectionModel.hpp"
-#include "CIDeviceModel.hpp"
+#include "midicci/tooling/ClientConnectionModel.hpp"
+#include "midicci/tooling/CIDeviceModel.hpp"
 #include <midicci/midicci.hpp>
 #include <mutex>
 #include <iostream>

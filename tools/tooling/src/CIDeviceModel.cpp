@@ -1,6 +1,6 @@
-#include "CIDeviceModel.hpp"
-#include "CIDeviceManager.hpp"
 #include <midicci/midicci.hpp>
+#include "midicci/tooling/CIDeviceModel.hpp"
+#include "midicci/tooling/CIDeviceManager.hpp"
 #include <mutex>
 #include <iostream>
 #include <random>

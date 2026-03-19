@@ -1,6 +1,6 @@
-#include "CIToolRepository.hpp"
-#include "MidiDeviceManager.hpp"
-#include "CIDeviceManager.hpp"
+#include "midicci/tooling/CIToolRepository.hpp"
+#include "midicci/tooling/MidiDeviceManager.hpp"
+#include "midicci/tooling/CIDeviceManager.hpp"
 #include <midicci/midicci.hpp>
 #include <random>
 #include <fstream>

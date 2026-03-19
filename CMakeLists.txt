@@ -76,6 +76,10 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
 )
 midicci_fetchcontent_makeavailable_static(libremidi)
+if(TARGET libremidi)
+    # Ensure libremidi always builds against std::variant to avoid ABI mismatches when Boost headers are available only for our targets.
+    target_compile_definitions(libremidi PUBLIC LIBREMIDI_NO_BOOST_VARIANT2)
+endif()
 
 FetchContent_Declare(
     zlib-ng

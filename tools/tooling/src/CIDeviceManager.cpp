@@ -6,7 +6,6 @@
 #include <mutex>
 #include <iostream>
 #include <format>
-#include "MidiDeviceManager.hpp"
 
 namespace midicci::tooling {
 

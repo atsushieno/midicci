@@ -39,8 +39,6 @@ add_executable(midicci-gtest ${GTEST_SOURCES})
 
 target_link_libraries(midicci-gtest
     PRIVATE
-        midicci_static
-        umppi_static
         midicci-tooling
         libremidi::libremidi
         gtest_main

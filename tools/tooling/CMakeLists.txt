@@ -10,12 +10,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/midicci/tooling
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-)
-
 set(MIDICCI_TOOLING_SOURCES
     src/CIDeviceManager.cpp
     src/MidiDeviceManager.cpp
@@ -27,6 +21,13 @@ set(MIDICCI_TOOLING_SOURCES
 
 
 add_library(midicci-tooling STATIC ${MIDICCI_TOOLING_SOURCES})
+target_include_directories(midicci-tooling
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${libremidi_SOURCE_DIR}/include
+)
+
 target_link_libraries(midicci-tooling
     PRIVATE
         midicci_static

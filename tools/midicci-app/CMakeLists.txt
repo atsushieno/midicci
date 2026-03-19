@@ -203,10 +203,10 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
         ${CMAKE_SOURCE_DIR}/tools/tooling/include
-        ${CMAKE_SOURCE_DIR}/external/libremidi/include
         ${CMAKE_SOURCE_DIR}/include
         ${midicci_SOURCE_DIR}/include
         ${portable-file-dialogs_SOURCE_DIR}
+        ${libremidi_SOURCE_DIR}/include
     )
 
     target_link_libraries(${app_target} PRIVATE

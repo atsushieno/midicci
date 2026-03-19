@@ -78,7 +78,12 @@ FetchContent_Declare(
 midicci_fetchcontent_makeavailable_static(libremidi)
 if(TARGET libremidi)
     # Ensure libremidi always builds against std::variant to avoid ABI mismatches when Boost headers are available only for our targets.
-    target_compile_definitions(libremidi PUBLIC LIBREMIDI_NO_BOOST_VARIANT2)
+    get_target_property(_libremidi_type libremidi TYPE)
+    if(_libremidi_type STREQUAL "INTERFACE_LIBRARY")
+        target_compile_definitions(libremidi INTERFACE LIBREMIDI_NO_BOOST_VARIANT2)
+    else()
+        target_compile_definitions(libremidi PUBLIC LIBREMIDI_NO_BOOST_VARIANT2)
+    endif()
 endif()
 
 FetchContent_Declare(

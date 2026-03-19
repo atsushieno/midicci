@@ -20,7 +20,7 @@ NEVER EVER MAKE CHANGES TO ktmidi. YOU MUST TREAT IT AS A READ-ONLY SOURCE.
 - gh run download ...
 - cmake --build cmake-build-debug
 
-When you run `cmake`, you must not use any other build directory than `cmake-build-debug` .
+When you run `cmake`, you must not use any other build directory than `cmake-build-debug` . Namely, you are strictly prohibited to run `cmake` with `-B` option without explicit approval.
 
 You must not perform CMake builds using `make` or `ninja`. Always use `cmake` instead.
 

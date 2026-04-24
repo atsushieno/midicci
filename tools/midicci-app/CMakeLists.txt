@@ -212,7 +212,7 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
     target_link_libraries(${app_target} PRIVATE
         midicci-imgui-support
         midicci-tooling
-        midicci_static
+        midicci_internal
         libremidi::libremidi
         zlib-ng
         ${BACKEND_LIBRARIES}
@@ -285,8 +285,8 @@ add_library(midicci-keyboard-core STATIC
 target_link_libraries(midicci-keyboard-core
     PUBLIC
         libremidi::libremidi
-        midicci_static
-        umppi_static
+        midicci_internal
+        umppi_internal
 )
 
 target_include_directories(midicci-keyboard-core
@@ -301,7 +301,7 @@ target_link_libraries(midicci-app-tests
     gtest_main
     gtest
     libremidi::libremidi
-    midicci_static
+    midicci_internal
 )
 
 target_include_directories(midicci-app-tests

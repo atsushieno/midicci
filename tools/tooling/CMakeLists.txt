@@ -30,7 +30,7 @@ target_include_directories(midicci-tooling
 
 target_link_libraries(midicci-tooling
     PRIVATE
-        midicci_static
+        midicci_internal
         libremidi::libremidi
 )
 

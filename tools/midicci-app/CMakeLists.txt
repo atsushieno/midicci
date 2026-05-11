@@ -124,7 +124,10 @@ if(NOT TARGET imgui)
     )
     target_link_libraries(imgui PUBLIC ${BACKEND_LIBRARIES})
 
-    if(APPLE)
+    if(ANDROID)
+        target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3)
+        target_link_libraries(imgui PUBLIC GLESv3 EGL)
+    elseif(APPLE)
         target_link_libraries(imgui PUBLIC "-framework OpenGL")
     elseif(UNIX)
         find_package(OpenGL REQUIRED)
@@ -167,10 +170,9 @@ target_link_libraries(midicci-imgui-support PUBLIC
 target_compile_features(midicci-imgui-support PUBLIC cxx_std_20)
 
 # ------------------------------------------------------------------------------
-# midicci-app executable
+# midicci-app executable / library
 # ------------------------------------------------------------------------------
-set(MIDICCI_APP_SOURCE_FILES
-    src/main.cpp
+set(MIDICCI_APP_COMMON_SOURCE_FILES
     src/App.cpp
     src/keyboard/KeyboardPanel.cpp
     src/keyboard/MidiKeyboard.cpp
@@ -181,17 +183,27 @@ set(MIDICCI_APP_SOURCE_FILES
     src/message_logger.cpp
 )
 
-# Add Windows icon resource
+set(MIDICCI_APP_SOURCE_FILES
+    src/main.cpp
+    ${MIDICCI_APP_COMMON_SOURCE_FILES}
+)
+
 if(WIN32)
     list(APPEND MIDICCI_APP_SOURCE_FILES ${CMAKE_SOURCE_DIR}/resources/midicci.rc)
 endif()
 
-add_executable(midicci-app ${MIDICCI_APP_SOURCE_FILES})
-set(MIDICCI_APP_TARGETS midicci-app)
+if(ANDROID)
+    add_library(midicci-app SHARED ${MIDICCI_APP_COMMON_SOURCE_FILES})
+    add_library(main SHARED android_main.cpp)
+    set(MIDICCI_APP_TARGETS midicci-app)
+else()
+    add_executable(midicci-app ${MIDICCI_APP_SOURCE_FILES})
+    set(MIDICCI_APP_TARGETS midicci-app)
 
-if(APPLE)
-    add_executable(midicci-app-bundle MACOSX_BUNDLE ${MIDICCI_APP_SOURCE_FILES})
-    list(APPEND MIDICCI_APP_TARGETS midicci-app-bundle)
+    if(APPLE)
+        add_executable(midicci-app-bundle MACOSX_BUNDLE ${MIDICCI_APP_SOURCE_FILES})
+        list(APPEND MIDICCI_APP_TARGETS midicci-app-bundle)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
@@ -219,7 +231,25 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
     )
 endforeach()
 
-if(APPLE)
+if(ANDROID)
+    target_compile_definitions(midicci-app PRIVATE
+        IMGUI_IMPL_OPENGL_ES3
+        __ANDROID__=1
+    )
+    target_link_libraries(midicci-app PUBLIC android log SDL3::SDL3)
+    target_include_directories(main PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/keyboard
+        ${CMAKE_SOURCE_DIR}/tools/tooling/include
+        ${CMAKE_SOURCE_DIR}/include
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+        ${libremidi_SOURCE_DIR}/include
+        ${portable-file-dialogs_SOURCE_DIR}
+    )
+    target_compile_definitions(main PRIVATE __ANDROID__=1)
+    target_link_libraries(main PRIVATE midicci-app midicci-imgui-support GLESv3 EGL)
+elseif(APPLE)
     foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
         target_link_libraries(${app_target} PRIVATE
             "-framework Cocoa"
@@ -227,7 +257,7 @@ if(APPLE)
             "-framework CoreVideo"
         )
     endforeach()
-elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+elseif(UNIX AND NOT EMSCRIPTEN)
     find_package(X11 REQUIRED)
     target_link_libraries(midicci-app PRIVATE X11::X11)
 endif()
@@ -249,69 +279,72 @@ if(APPLE)
     )
 endif()
 
-install(TARGETS midicci-app
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+if(NOT ANDROID)
+    install(TARGETS midicci-app
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 
-# Install bundle on macOS to separate component
-if(APPLE AND TARGET midicci-app-bundle)
-    install(TARGETS midicci-app-bundle
-        BUNDLE DESTINATION .
-        COMPONENT midicci_app)
+    if(APPLE AND TARGET midicci-app-bundle)
+        install(TARGETS midicci-app-bundle
+            BUNDLE DESTINATION .
+            COMPONENT midicci_app)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
 # Tests
 # ------------------------------------------------------------------------------
-enable_testing()
+if(NOT ANDROID)
+    enable_testing()
 
-add_executable(midicci-app-tests
-    tests/test_midi_feedback_loop.cpp
-    tests/test_standard_properties.cpp
-    tests/test_properties_parsing.cpp
-    tests/test_end_to_end_properties.cpp
-    tests/test_allctrllist_ordering.cpp
-    tests/test_blank_titles_issue.cpp
-    tests/test_allctrllist_timing.cpp
-    tests/test_ordering_bug_analysis.cpp
-)
+    add_executable(midicci-app-tests
+        tests/test_midi_feedback_loop.cpp
+        tests/test_standard_properties.cpp
+        tests/test_properties_parsing.cpp
+        tests/test_end_to_end_properties.cpp
+        tests/test_allctrllist_ordering.cpp
+        tests/test_blank_titles_issue.cpp
+        tests/test_allctrllist_timing.cpp
+        tests/test_ordering_bug_analysis.cpp
+    )
 
-add_library(midicci-keyboard-core STATIC
-    src/keyboard_controller.cpp
-    src/midi_ci_manager.cpp
-    src/message_logger.cpp
-)
+    add_library(midicci-keyboard-core STATIC
+        src/keyboard_controller.cpp
+        src/midi_ci_manager.cpp
+        src/message_logger.cpp
+    )
 
-target_link_libraries(midicci-keyboard-core
-    PUBLIC
+    target_link_libraries(midicci-keyboard-core
+        PUBLIC
+            libremidi::libremidi
+            midicci_internal
+            umppi_internal
+    )
+
+    target_include_directories(midicci-keyboard-core
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/include
+    )
+
+    target_link_libraries(midicci-app-tests
+        PRIVATE
+        midicci-keyboard-core
+        gtest_main
+        gtest
         libremidi::libremidi
         midicci_internal
-        umppi_internal
-)
+    )
 
-target_include_directories(midicci-keyboard-core
-    PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/include
-)
+    target_include_directories(midicci-app-tests
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/include
+    )
 
-target_link_libraries(midicci-app-tests
-    PRIVATE
-    midicci-keyboard-core
-    gtest_main
-    gtest
-    libremidi::libremidi
-    midicci_internal
-)
+    add_test(NAME MidiCIAppTests COMMAND midicci-app-tests)
 
-target_include_directories(midicci-app-tests
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-add_test(NAME MidiCIAppTests COMMAND midicci-app-tests)
-
-set_tests_properties(MidiCIAppTests PROPERTIES
-    TIMEOUT 60
-)
+    set_tests_properties(MidiCIAppTests PROPERTIES
+        TIMEOUT 60
+    )
+endif()

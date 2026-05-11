@@ -6,7 +6,9 @@
 #include <functional>
 #include <memory>
 
-#if defined(__APPLE__)
+#if defined(__ANDROID__)
+#include <GLES3/gl3.h>
+#elif defined(__APPLE__)
 #include <OpenGL/gl3.h>
 #elif defined(_WIN32)
 #include <GL/gl.h>
@@ -30,7 +32,7 @@
 #endif
 #endif
 
-#if defined(__linux__) || defined(_WIN32)
+#if defined(__linux__) || defined(_WIN32) || defined(__ANDROID__)
 #define MIDICCI_SKIP_GL_FRAMEBUFFER_BIND 1
 #endif
 
@@ -162,8 +164,10 @@ private:
 #endif
 #endif
 #ifdef GL_BACK
+#if !defined(MIDICCI_SKIP_GL_FRAMEBUFFER_BIND)
         glDrawBuffer(GL_BACK);
         glReadBuffer(GL_BACK);
+#endif
 #endif
     }
 

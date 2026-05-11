@@ -39,11 +39,17 @@ public:
             std::cerr << "SDL3 Error: " << SDL_GetError() << std::endl;
             return false;
         }
+#ifdef __ANDROID__
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #ifdef __APPLE__
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+#endif
 #endif
         return true;
     }
@@ -430,7 +436,11 @@ public:
 class OpenGL3Renderer : public ImGuiRenderer {
 public:
     bool initialize(WindowHandle*) override {
+#ifdef __ANDROID__
+        return ImGui_ImplOpenGL3_Init("#version 300 es");
+#else
         return ImGui_ImplOpenGL3_Init("#version 150");
+#endif
     }
 
     void newFrame() override {

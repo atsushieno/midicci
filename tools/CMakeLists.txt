@@ -1,4 +1,6 @@
 
+include(${CMAKE_SOURCE_DIR}/cmake/CPM.cmake)
+
 # Fetch libremidi for tools / tests, but do not install it
 if(WIN32 AND MIDICCI_ENABLE_WINMIDI)
     if(NOT LIBREMIDI_WINMIDI_HEADERS_ZIP)
@@ -18,13 +20,27 @@ if(WIN32 AND MIDICCI_ENABLE_WINMIDI)
     endif()
 endif()
 
-FetchContent_Declare(
-        libremidi
-        GIT_REPOSITORY https://github.com/celtera/libremidi.git
-        GIT_TAG 7d65b18
-        EXCLUDE_FROM_ALL
+if(ANDROID)
+    set(LIBREMIDI_NO_JACK ON CACHE BOOL "" FORCE)
+    set(LIBREMIDI_NO_KEYBOARD ON CACHE BOOL "" FORCE)
+    set(LIBREMIDI_NO_PIPEWIRE ON CACHE BOOL "" FORCE)
+    set(LIBREMIDI_NO_NETWORK ON CACHE BOOL "" FORCE)
+endif()
+
+set(_libremidi_cpm_args
+    NAME libremidi
+    GIT_REPOSITORY https://github.com/celtera/libremidi.git
+    GIT_TAG 7d65b18
+    EXCLUDE_FROM_ALL YES
+    OPTIONS "BUILD_SHARED_LIBS OFF" "CMAKE_SKIP_INSTALL_RULES ON"
 )
-midicci_fetchcontent_makeavailable_static(libremidi)
+if(ANDROID)
+    list(APPEND _libremidi_cpm_args
+        PATCHES "${CMAKE_CURRENT_LIST_DIR}/../external/libremidi-android-ump.patch"
+    )
+endif()
+
+CPMAddPackage(${_libremidi_cpm_args})
 
 if(TARGET libremidi)
     # Ensure libremidi always builds against std::variant to avoid ABI mismatches when Boost headers are available only for our targets.

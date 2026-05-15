@@ -414,6 +414,10 @@ void MidiDeviceManager::open_virtual_ports_locked() {
         return;
     }
 
+#if defined(__ANDROID__)
+    // Android MIDI backends do not support virtual ports
+    return;
+#else
     if (!virtual_midi_input_) {
         libremidi::ump_input_configuration config{
             .on_message = [this](libremidi::ump&& packet) {
@@ -437,6 +441,7 @@ void MidiDeviceManager::open_virtual_ports_locked() {
             virtual_midi_output_.reset();
         }
     }
+#endif
 }
 
 void MidiDeviceManager::close_virtual_ports_locked() {

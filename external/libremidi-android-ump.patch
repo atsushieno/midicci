@@ -1,0 +1,865 @@
+diff --git a/cmake/libremidi.android.cmake b/cmake/libremidi.android.cmake
+index 70b36c4..2666e72 100644
+--- a/cmake/libremidi.android.cmake
++++ b/cmake/libremidi.android.cmake
+@@ -12,6 +12,16 @@ if(ANDROID AND NOT LIBREMIDI_NO_ANDROID)
+     target_sources(libremidi ${_public}
+       "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/libremidi/backends/android/helpers.cpp>"
+     )
++
++    # MIDI 2.0 (UMP) support requires API 33+ for MidiDeviceInfo.getDefaultProtocol()
++    if(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 33)
++      message(STATUS "libremidi: Enabling Android MIDI 2.0 (UMP) support (API ${ANDROID_NATIVE_API_LEVEL})")
++      message(STATUS "       !!! Remember to include MidiDeviceCallbackUmp.java in your Android app")
++      target_compile_definitions(libremidi ${_public} LIBREMIDI_ANDROID_UMP=1)
++      target_sources(libremidi ${_public}
++        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/libremidi/backends/android_ump/helpers.cpp>"
++      )
++    endif()
+   else()
+     message(FATAL_ERROR "libremidi: Android AMidi API requires API level 31+ (current: ${ANDROID_NATIVE_API_LEVEL})")
+   endif()
+diff --git a/examples/android/app/src/main/java/dev/celtera/libremidi/MidiDeviceCallbackUmp.java b/examples/android/app/src/main/java/dev/celtera/libremidi/MidiDeviceCallbackUmp.java
+new file mode 100644
+index 0000000..76818f8
+--- /dev/null
++++ b/examples/android/app/src/main/java/dev/celtera/libremidi/MidiDeviceCallbackUmp.java
+@@ -0,0 +1,30 @@
++package dev.celtera.libremidi;
++
++import android.media.midi.MidiDevice;
++import android.media.midi.MidiManager;
++import android.util.Log;
++
++public class MidiDeviceCallbackUmp implements MidiManager.OnDeviceOpenedListener {
++    private static final String TAG = "libremidi";
++    private long nativePtr;
++    private boolean isOutput;
++
++    public MidiDeviceCallbackUmp(long ptr, boolean output) {
++        nativePtr = ptr;
++        isOutput = output;
++    }
++
++    @Override
++    public void onDeviceOpened(MidiDevice device) {
++        if (device == null) {
++            Log.e(TAG, "Failed to open MIDI 2.0 device");
++            return;
++        }
++
++        Log.i(TAG, "MIDI 2.0 device opened successfully");
++        onDeviceOpened(device, nativePtr, isOutput);
++    }
++
++    // Native method declaration
++    private native void onDeviceOpened(MidiDevice device, long targetPtr, boolean isOutput);
++}
+diff --git a/include/libremidi/api-c.h b/include/libremidi/api-c.h
+index f0d7eb0..c7d602f 100644
+--- a/include/libremidi/api-c.h
++++ b/include/libremidi/api-c.h
+@@ -38,6 +38,7 @@ enum libremidi_api
+   JACK_UMP,              /*!< MIDI2 over JACK, type "32 bit raw UMP". Requires PipeWire v1.4+. */
+   PIPEWIRE_UMP,          /*!< MIDI2 over PipeWire. Requires v1.4+. */
+   RAW_IO_UMP,            /*!< User-provided raw UMP I/O (serial, SPI, USB, etc.) */
++  ANDROID_AMIDI_UMP,     /*!< Android AMidi API for MIDI 2.0. Requires API level 33+ */
+ 
+   DUMMY = 0xFFFF /*!< A compilable but non-functional API. */
+ };
+diff --git a/include/libremidi/api.hpp b/include/libremidi/api.hpp
+index 2a957fc..e2409a6 100644
+--- a/include/libremidi/api.hpp
++++ b/include/libremidi/api.hpp
+@@ -85,6 +85,8 @@ inline constexpr libremidi::API default_api() noexcept
+   return API::ALSA_SEQ_UMP;
+ #elif defined(__emscripten__)
+   return API::DUMMY;
++#elif defined(LIBREMIDI_ANDROID_UMP)
++  return API::ANDROID_AMIDI_UMP;
+ #else
+   return API::DUMMY;
+ #endif
+diff --git a/include/libremidi/backends.hpp b/include/libremidi/backends.hpp
+index 911cf75..64fa019 100644
+--- a/include/libremidi/backends.hpp
++++ b/include/libremidi/backends.hpp
+@@ -84,6 +84,10 @@
+   #include <libremidi/backends/android/android.hpp>
+ #endif
+ 
++#if defined(LIBREMIDI_ANDROID_UMP)
++  #include <libremidi/backends/android_ump.hpp>
++#endif
++
+ NAMESPACE_LIBREMIDI
+ {
+ // The order here will control the order of the API search in
+@@ -196,6 +200,10 @@ LIBREMIDI_STATIC constexpr auto available_backends = make_tl(
+ #if defined(LIBREMIDI_PIPEWIRE_UMP)
+     ,
+     pipewire_ump::backend{}
++#endif
++#if defined(LIBREMIDI_ANDROID_UMP)
++    ,
++    android_ump::backend{}
+ #endif
+     ,
+     rawio_ump::backend{},
+diff --git a/include/libremidi/backends/android_ump.hpp b/include/libremidi/backends/android_ump.hpp
+new file mode 100644
+index 0000000..9feb83c
+--- /dev/null
++++ b/include/libremidi/backends/android_ump.hpp
+@@ -0,0 +1,35 @@
++#pragma once
++#include <libremidi/backends/android_ump/midi_in.hpp>
++#include <libremidi/backends/android_ump/midi_out.hpp>
++#include <libremidi/backends/android_ump/observer.hpp>
++
++#include <string_view>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++struct backend
++{
++  using midi_in = android_ump::midi_in;
++  using midi_out = android_ump::midi_out;
++  using midi_observer = android_ump::observer;
++  using midi_in_configuration = android_ump::input_configuration;
++  using midi_out_configuration = android_ump::output_configuration;
++  using midi_observer_configuration = android_ump::observer_configuration;
++
++  static const constexpr auto API = libremidi::API::ANDROID_AMIDI_UMP;
++  static const constexpr std::string_view name = "android_ump";
++  static const constexpr std::string_view display_name = "Android MIDI 2.0 API";
++
++  static bool available() noexcept
++  {
++#if defined(LIBREMIDI_ANDROID_UMP)
++    return true;
++#else
++    return false;
++#endif
++  }
++};
++}
++}
+diff --git a/include/libremidi/backends/android_ump/config.hpp b/include/libremidi/backends/android_ump/config.hpp
+new file mode 100644
+index 0000000..7773ab1
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/config.hpp
+@@ -0,0 +1,23 @@
++#pragma once
++#include <libremidi/config.hpp>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++struct input_configuration
++{
++  std::string_view client_name = "libremidi client";
++};
++
++struct output_configuration
++{
++  std::string_view client_name = "libremidi client";
++};
++
++struct observer_configuration
++{
++  std::string_view client_name = "libremidi client";
++};
++}
++}
+diff --git a/include/libremidi/backends/android_ump/helpers.cpp b/include/libremidi/backends/android_ump/helpers.cpp
+new file mode 100644
+index 0000000..42cbc06
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/helpers.cpp
+@@ -0,0 +1,188 @@
++#include <libremidi/backends/android_ump/helpers.hpp>
++#include <libremidi/backends/android_ump/midi_in.hpp>
++#include <libremidi/backends/android_ump/midi_out.hpp>
++
++NAMESPACE_LIBREMIDI::android_ump
++{
++
++void context::refresh_midi_devices(JNIEnv* env, jobject ctx, bool is_output)
++{
++  cleanup_devices(env);
++
++  auto midi_service = get_midi_manager(env, ctx);
++  if (!midi_service)
++    return;
++
++  auto midi_mgr_class = env->FindClass("android/media/midi/MidiManager");
++  auto get_devices_method = env->GetMethodID(
++      midi_mgr_class, "getDevicesForTransport", "(I)Ljava/util/Set;");
++  auto device_collection
++      = env->CallObjectMethod(midi_service, get_devices_method, TRANSPORT_UMP);
++
++  if (!device_collection)
++  {
++    env->DeleteLocalRef(midi_service);
++    return;
++  }
++
++  auto collection_class = env->FindClass("java/util/Set");
++  auto to_array_method
++      = env->GetMethodID(collection_class, "toArray", "()[Ljava/lang/Object;");
++  auto device_array = (jobjectArray)env->CallObjectMethod(device_collection, to_array_method);
++
++  auto device_info_class = env->FindClass("android/media/midi/MidiDeviceInfo");
++  auto get_input_count = env->GetMethodID(device_info_class, "getInputPortCount", "()I");
++  auto get_output_count = env->GetMethodID(device_info_class, "getOutputPortCount", "()I");
++
++  jsize count = env->GetArrayLength(device_array);
++  for (jsize i = 0; i < count; ++i)
++  {
++    auto device_info = env->GetObjectArrayElement(device_array, i);
++    int port_count = is_output ? env->CallIntMethod(device_info, get_input_count)
++                               : env->CallIntMethod(device_info, get_output_count);
++
++    if (port_count > 0)
++    {
++      midi_devices.push_back(env->NewGlobalRef(device_info));
++    }
++    env->DeleteLocalRef(device_info);
++  }
++
++  env->DeleteLocalRef(device_array);
++  env->DeleteLocalRef(device_collection);
++  env->DeleteLocalRef(midi_service);
++}
++
++std::string context::port_name(JNIEnv* env, unsigned int port_number)
++{
++  if (port_number >= midi_devices.size())
++  {
++    LOGE("Invalid port number");
++    return "";
++  }
++
++  auto device_info_class = env->FindClass("android/media/midi/MidiDeviceInfo");
++  auto get_props_method
++      = env->GetMethodID(device_info_class, "getProperties", "()Landroid/os/Bundle;");
++  auto bundle = env->CallObjectMethod(midi_devices[port_number], get_props_method);
++
++  auto bundle_class = env->FindClass("android/os/Bundle");
++  auto get_string_method
++      = env->GetMethodID(bundle_class, "getString", "(Ljava/lang/String;)Ljava/lang/String;");
++  auto key = env->NewStringUTF("name");
++  auto name_str = (jstring)env->CallObjectMethod(bundle, get_string_method, key);
++
++  std::string result;
++  if (name_str)
++  {
++    const char* name_chars = env->GetStringUTFChars(name_str, nullptr);
++    result = name_chars;
++    env->ReleaseStringUTFChars(name_str, name_chars);
++    env->DeleteLocalRef(name_str);
++  }
++
++  env->DeleteLocalRef(key);
++  env->DeleteLocalRef(bundle);
++
++  return result;
++}
++
++void context::cleanup_devices(JNIEnv* env)
++{
++  for (jobject device : midi_devices)
++  {
++    env->DeleteGlobalRef(device);
++  }
++  midi_devices.clear();
++}
++
++void context::open_device(jobject device_info, void* target, bool is_output)
++{
++  auto env = get_thread_env();
++  if (!env)
++    return;
++
++  auto ctx = get_context(env);
++  if (!ctx)
++    return;
++
++  auto midi_mgr = get_midi_manager(env, ctx);
++  if (!midi_mgr)
++    return;
++
++  auto looper_class = env->FindClass("android/os/Looper");
++  auto get_my_looper_method
++      = env->GetStaticMethodID(looper_class, "myLooper", "()Landroid/os/Looper;");
++  auto my_looper = env->CallStaticObjectMethod(looper_class, get_my_looper_method);
++
++  jobject handler = nullptr;
++  if (!my_looper)
++  {
++    LOGI("Not on a Looper thread, using main looper");
++    auto get_main_looper_method
++        = env->GetStaticMethodID(looper_class, "getMainLooper", "()Landroid/os/Looper;");
++    auto main_looper = env->CallStaticObjectMethod(looper_class, get_main_looper_method);
++
++    auto handler_class = env->FindClass("android/os/Handler");
++    auto handler_ctor = env->GetMethodID(handler_class, "<init>", "(Landroid/os/Looper;)V");
++    handler = env->NewObject(handler_class, handler_ctor, main_looper);
++
++    env->DeleteLocalRef(main_looper);
++  }
++
++  auto callback_class = env->FindClass("dev/celtera/libremidi/MidiDeviceCallbackUmp");
++  if (!callback_class)
++  {
++    LOGE("MidiDeviceCallbackUmp class not found - ensure the Java class is loaded");
++    if (handler)
++      env->DeleteLocalRef(handler);
++    return;
++  }
++
++  auto callback_ctor = env->GetMethodID(callback_class, "<init>", "(JZ)V");
++  auto callback
++      = env->NewObject(callback_class, callback_ctor, (jlong)target, (jboolean)is_output);
++
++  auto midi_mgr_class = env->FindClass("android/media/midi/MidiManager");
++  auto open_device_method = env->GetMethodID(
++      midi_mgr_class, "openDevice",
++      "(Landroid/media/midi/MidiDeviceInfo;Landroid/media/midi/"
++      "MidiManager$OnDeviceOpenedListener;Landroid/os/Handler;)V");
++
++  env->CallVoidMethod(midi_mgr, open_device_method, device_info, callback, handler);
++
++  env->DeleteLocalRef(callback);
++  if (handler)
++    env->DeleteLocalRef(handler);
++}
++
++extern "C" JNIEXPORT void JNICALL
++Java_dev_celtera_libremidi_MidiDeviceCallbackUmp_onDeviceOpened(
++    JNIEnv* env, jobject /*thiz*/, jobject midi_device, jlong target_ptr, jboolean is_output)
++{
++  if (!midi_device || target_ptr == 0)
++  {
++    LOGE("Invalid device or target pointer in UMP callback");
++    return;
++  }
++
++  AMidiDevice* amidi_device = nullptr;
++  AMidiDevice_fromJava(env, midi_device, &amidi_device);
++
++  if (!amidi_device)
++  {
++    LOGE("Failed to convert Java MIDI device to AMidiDevice (UMP)");
++    return;
++  }
++
++  if (is_output)
++  {
++    midi_out::open_callback(reinterpret_cast<midi_out*>(target_ptr), amidi_device);
++  }
++  else
++  {
++    midi_in::open_callback(reinterpret_cast<midi_in*>(target_ptr), amidi_device);
++  }
++}
++
++}
+diff --git a/include/libremidi/backends/android_ump/helpers.hpp b/include/libremidi/backends/android_ump/helpers.hpp
+new file mode 100644
+index 0000000..33b5938
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/helpers.hpp
+@@ -0,0 +1,33 @@
++#pragma once
++#include <libremidi/backends/android/helpers.hpp>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++// TRANSPORT_UNIVERSAL_MIDI_PACKETS = 2 (requires API 33+)
++static constexpr jint TRANSPORT_UMP = 2;
++
++struct context
++{
++  static inline std::string client_name;
++  static inline std::vector<jobject> midi_devices;
++
++  static JNIEnv* get_thread_env() { return android::context::get_thread_env(); }
++  static jobject get_context(JNIEnv* env) { return android::context::get_context(env); }
++  static jobject get_midi_manager(JNIEnv* env, jobject ctx)
++  {
++    return android::context::get_midi_manager(env, ctx);
++  }
++
++  static void refresh_midi_devices(JNIEnv* env, jobject ctx, bool is_output);
++  static void open_device(jobject device_info, void* target, bool is_output);
++  static std::string port_name(JNIEnv* env, unsigned int port_number);
++  static void cleanup_devices(JNIEnv* env);
++};
++
++extern "C" JNIEXPORT void JNICALL
++Java_dev_celtera_libremidi_MidiDeviceCallbackUmp_onDeviceOpened(
++    JNIEnv* env, jobject /*thiz*/, jobject midi_device, jlong target_ptr, jboolean is_output);
++}
++}
+diff --git a/include/libremidi/backends/android_ump/midi_in.hpp b/include/libremidi/backends/android_ump/midi_in.hpp
+new file mode 100644
+index 0000000..50b0ade
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/midi_in.hpp
+@@ -0,0 +1,171 @@
++#pragma once
++#include <libremidi/backends/android_ump/config.hpp>
++#include <libremidi/backends/android_ump/helpers.hpp>
++#include <libremidi/detail/midi_in.hpp>
++#include <libremidi/detail/midi_stream_decoder.hpp>
++
++#include <atomic>
++#include <chrono>
++#include <thread>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++class midi_in
++    : public midi2::in_api
++    , public error_handler
++{
++public:
++  struct
++      : libremidi::ump_input_configuration
++      , android_ump::input_configuration
++  {
++  } configuration;
++
++  explicit midi_in(
++      libremidi::ump_input_configuration&& conf, android_ump::input_configuration aconf)
++      : configuration{std::move(conf), std::move(aconf)}
++  {
++    if (!context::client_name.empty()
++        && context::client_name != configuration.client_name)
++    {
++      libremidi_handle_error(
++          this->configuration, "Android backend only supports one client name per process");
++      return;
++    }
++    context::client_name = std::string(configuration.client_name);
++    client_open_ = stdx::error{};
++  }
++
++  ~midi_in() override { close_port(); }
++
++  libremidi::API get_current_api() const noexcept override
++  {
++    return libremidi::API::ANDROID_AMIDI_UMP;
++  }
++
++  stdx::error open_port(const input_port& port, std::string_view /*name*/) override
++  {
++    if (is_port_open())
++    {
++      libremidi_handle_error(configuration, "midi_in::open_port: a port is already open");
++      return std::errc{};
++    }
++
++    const unsigned int port_number = port.port;
++    auto env = context::get_thread_env();
++    if (!env)
++    {
++      libremidi_handle_error(configuration, "midi_in::open_port: failed to get JNI environment");
++      return std::errc{};
++    }
++
++    auto ctx = context::get_context(env);
++    if (!ctx)
++    {
++      libremidi_handle_error(configuration, "midi_in::open_port: failed to get Android context");
++      return std::errc{};
++    }
++
++    context::refresh_midi_devices(env, ctx, false);
++
++    if (port_number >= context::midi_devices.size())
++    {
++      libremidi_handle_error(configuration, "midi_in::open_port: invalid port number");
++      return std::errc{};
++    }
++
++    port_open = true;
++    running = true;
++    context::open_device(context::midi_devices[port_number], this, false);
++    return stdx::error{};
++  }
++
++  stdx::error close_port() override
++  {
++    if (!is_port_open())
++      return std::errc{};
++
++    running = false;
++
++    if (poll_thread.joinable())
++      poll_thread.join();
++
++    if (midi_output_port)
++    {
++      AMidiOutputPort_close(midi_output_port);
++      midi_output_port = nullptr;
++    }
++
++    if (receive_device)
++    {
++      AMidiDevice_release(receive_device);
++      receive_device = nullptr;
++    }
++
++    port_open = false;
++    return stdx::error{};
++  }
++
++  bool is_port_open() const noexcept { return port_open; }
++
++  timestamp absolute_timestamp() const noexcept override { return system_ns(); }
++
++  static void open_callback(midi_in* self, AMidiDevice* device)
++  {
++    self->receive_device = device;
++    AMidiOutputPort_open(device, 0, &self->midi_output_port);
++    self->poll_thread = std::thread(&midi_in::poll_midi, self);
++  }
++
++private:
++  void poll_midi()
++  {
++    static constexpr timestamp_backend_info timestamp_info{
++        .has_absolute_timestamps = false,
++        .absolute_is_monotonic = false,
++        .has_samples = false,
++    };
++
++    // UMP packets arrive as raw bytes, always a multiple of 4 bytes.
++    static constexpr size_t buffer_words = 256;
++    uint32_t buffer[buffer_words];
++    int32_t op_code;
++    int64_t timestamp;
++    size_t num_bytes;
++
++    while (running)
++    {
++      std::this_thread::sleep_for(std::chrono::milliseconds(1));
++
++      ssize_t num_messages = AMidiOutputPort_receive(
++          midi_output_port, &op_code, reinterpret_cast<uint8_t*>(buffer),
++          buffer_words * sizeof(uint32_t), &num_bytes, &timestamp);
++
++      if (num_messages < 0)
++      {
++        LOGE("Error receiving UMP data: %d", (int)num_messages);
++        continue;
++      }
++
++      if (num_messages > 0 && num_bytes > 0 && (num_bytes % sizeof(uint32_t)) == 0)
++      {
++        const size_t num_words = num_bytes / sizeof(uint32_t);
++        const auto to_ns = [=] { return timestamp; };
++        m_processing.on_bytes(
++            {buffer, buffer + num_words},
++            m_processing.timestamp<timestamp_info>(to_ns, timestamp));
++      }
++    }
++  }
++
++  AMidiDevice* receive_device{};
++  AMidiOutputPort* midi_output_port{};
++  std::thread poll_thread;
++  std::atomic<bool> port_open{false};
++  std::atomic<bool> running{false};
++  midi2::input_state_machine m_processing{this->configuration};
++};
++}
++}
+diff --git a/include/libremidi/backends/android_ump/midi_out.hpp b/include/libremidi/backends/android_ump/midi_out.hpp
+new file mode 100644
+index 0000000..c4cf439
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/midi_out.hpp
+@@ -0,0 +1,133 @@
++#pragma once
++#include <libremidi/backends/android_ump/config.hpp>
++#include <libremidi/backends/android_ump/helpers.hpp>
++#include <libremidi/detail/midi_out.hpp>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++class midi_out final
++    : public midi2::out_api
++    , public error_handler
++{
++public:
++  struct
++      : libremidi::output_configuration
++      , android_ump::output_configuration
++  {
++  } configuration;
++
++  explicit midi_out(
++      libremidi::output_configuration&& conf, android_ump::output_configuration aconf)
++      : configuration{std::move(conf), std::move(aconf)}
++  {
++    if (!context::client_name.empty()
++        && context::client_name != configuration.client_name)
++    {
++      libremidi_handle_error(
++          this->configuration, "Android backend only supports one client name per process");
++      return;
++    }
++    context::client_name = std::string(configuration.client_name);
++    client_open_ = stdx::error{};
++  }
++
++  ~midi_out() override { close_port(); }
++
++  libremidi::API get_current_api() const noexcept override
++  {
++    return libremidi::API::ANDROID_AMIDI_UMP;
++  }
++
++  stdx::error open_port(const output_port& port, std::string_view /*name*/) override
++  {
++    if (is_port_open())
++    {
++      libremidi_handle_error(configuration, "midi_out::open_port: a port is already open");
++      return std::errc{};
++    }
++
++    const unsigned int port_number = port.port;
++    auto env = context::get_thread_env();
++    if (!env)
++    {
++      libremidi_handle_error(configuration, "midi_out::open_port: failed to get JNI environment");
++      return std::errc{};
++    }
++
++    auto ctx = context::get_context(env);
++    if (!ctx)
++    {
++      libremidi_handle_error(configuration, "midi_out::open_port: failed to get Android context");
++      return std::errc{};
++    }
++
++    context::refresh_midi_devices(env, ctx, true);
++
++    if (port_number >= context::midi_devices.size())
++    {
++      libremidi_handle_error(configuration, "midi_out::open_port: invalid port number");
++      return std::errc{};
++    }
++
++    port_open = true;
++    context::open_device(context::midi_devices[port_number], this, true);
++    return stdx::error{};
++  }
++
++  stdx::error close_port() override
++  {
++    if (!is_port_open())
++      return std::errc{};
++
++    if (midi_input_port)
++    {
++      AMidiInputPort_close(midi_input_port);
++      midi_input_port = nullptr;
++    }
++
++    if (send_device)
++    {
++      AMidiDevice_release(send_device);
++      send_device = nullptr;
++    }
++
++    port_open = false;
++    return stdx::error{};
++  }
++
++  bool is_port_open() const noexcept { return port_open; }
++
++  stdx::error send_ump(const uint32_t* ump_stream, std::size_t count) override
++  {
++    if (!is_port_open() || !midi_input_port)
++    {
++      libremidi_handle_error(configuration, "midi_out::send_ump: port is not open");
++      return std::errc{};
++    }
++
++    ssize_t result = AMidiInputPort_send(
++        midi_input_port, reinterpret_cast<const uint8_t*>(ump_stream),
++        count * sizeof(uint32_t));
++    if (result < 0)
++    {
++      libremidi_handle_error(configuration, "midi_out::send_ump: failed to send UMP data");
++      return std::errc{};
++    }
++    return stdx::error{};
++  }
++
++  static void open_callback(midi_out* self, AMidiDevice* device)
++  {
++    self->send_device = device;
++    AMidiInputPort_open(device, 0, &self->midi_input_port);
++  }
++
++private:
++  AMidiDevice* send_device{};
++  AMidiInputPort* midi_input_port{};
++  bool port_open{false};
++};
++}
++}
+diff --git a/include/libremidi/backends/android_ump/observer.hpp b/include/libremidi/backends/android_ump/observer.hpp
+new file mode 100644
+index 0000000..11827b8
+--- /dev/null
++++ b/include/libremidi/backends/android_ump/observer.hpp
+@@ -0,0 +1,92 @@
++#pragma once
++#include <libremidi/backends/android_ump/config.hpp>
++#include <libremidi/backends/android_ump/helpers.hpp>
++#include <libremidi/detail/observer.hpp>
++
++NAMESPACE_LIBREMIDI
++{
++namespace android_ump
++{
++class observer final
++    : public libremidi::observer_api
++    , public error_handler
++{
++public:
++  explicit observer(
++      libremidi::observer_configuration&& conf, android_ump::observer_configuration aconf)
++      : configuration{std::move(conf)}
++  {
++    if (!context::client_name.empty() && context::client_name != aconf.client_name)
++    {
++      LOGW("Android backend only supports one client name per process");
++    }
++    context::client_name = std::string(aconf.client_name);
++  }
++
++  ~observer()
++  {
++    auto env = context::get_thread_env();
++    if (env)
++      context::cleanup_devices(env);
++  }
++
++  libremidi::API get_current_api() const noexcept override
++  {
++    return libremidi::API::ANDROID_AMIDI_UMP;
++  }
++
++  std::vector<libremidi::input_port> get_input_ports() const noexcept override
++  {
++    auto env = context::get_thread_env();
++    if (!env)
++      return {};
++
++    auto ctx = context::get_context(env);
++    if (!ctx)
++      return {};
++
++    context::refresh_midi_devices(env, ctx, false);
++
++    std::vector<libremidi::input_port> ports;
++    for (size_t i = 0; i < context::midi_devices.size(); ++i)
++    {
++      libremidi::input_port port;
++      port.api = libremidi::API::ANDROID_AMIDI_UMP;
++      port.port_name = context::port_name(env, i);
++      port.port = i;
++      ports.push_back(std::move(port));
++    }
++
++    return ports;
++  }
++
++  std::vector<libremidi::output_port> get_output_ports() const noexcept override
++  {
++    auto env = context::get_thread_env();
++    if (!env)
++      return {};
++
++    auto ctx = context::get_context(env);
++    if (!ctx)
++      return {};
++
++    context::refresh_midi_devices(env, ctx, true);
++
++    std::vector<libremidi::output_port> ports;
++    for (size_t i = 0; i < context::midi_devices.size(); ++i)
++    {
++      libremidi::output_port port;
++      port.api = libremidi::API::ANDROID_AMIDI_UMP;
++      port.port_name = context::port_name(env, i);
++      port.port = i;
++      ports.push_back(std::move(port));
++    }
++
++    return ports;
++  }
++
++private:
++  libremidi::observer_configuration configuration;
++};
++}
++}
+diff --git a/include/libremidi/configurations.hpp b/include/libremidi/configurations.hpp
+index ec1f1be..9c598a4 100644
+--- a/include/libremidi/configurations.hpp
++++ b/include/libremidi/configurations.hpp
+@@ -6,6 +6,7 @@
+ #include <libremidi/backends/alsa_seq/config.hpp>
+ #include <libremidi/backends/alsa_seq_ump/config.hpp>
+ #include <libremidi/backends/android/config.hpp>
++#include <libremidi/backends/android_ump/config.hpp>
+ #include <libremidi/backends/coremidi/config.hpp>
+ #include <libremidi/backends/coremidi_ump/config.hpp>
+ #include <libremidi/backends/emscripten/config.hpp>
+@@ -42,7 +43,7 @@ using input_api_configuration = libremidi_variant_alias::variant<
+     pipewire_input_configuration, rawio_input_configuration, rawio_ump_input_configuration,
+     winmidi::input_configuration, winmm_input_configuration,
+     winuwp_input_configuration, jack_ump::input_configuration, pipewire_ump::input_configuration,
+-    android::input_configuration, libremidi::API>;
++    android::input_configuration, android_ump::input_configuration, libremidi::API>;
+ 
+ using output_api_configuration = libremidi_variant_alias::variant<
+     unspecified_configuration, dummy_configuration, alsa_raw_output_configuration,
+@@ -54,7 +55,7 @@ using output_api_configuration = libremidi_variant_alias::variant<
+     rawio_output_configuration, rawio_ump_output_configuration,
+     winmidi::output_configuration, winmm_output_configuration, winuwp_output_configuration,
+     jack_ump::output_configuration, pipewire_ump::output_configuration,
+-    android::output_configuration, libremidi::API>;
++    android::output_configuration, android_ump::output_configuration, libremidi::API>;
+ 
+ using observer_api_configuration = libremidi_variant_alias::variant<
+     unspecified_configuration, dummy_configuration, alsa_raw_observer_configuration,
+@@ -67,7 +68,8 @@ using observer_api_configuration = libremidi_variant_alias::variant<
+     rawio_ump_observer_configuration, winmidi::observer_configuration,
+     winmm_observer_configuration,
+     winuwp_observer_configuration, jack_ump::observer_configuration,
+-    pipewire_ump::observer_configuration, android::observer_configuration, libremidi::API>;
++    pipewire_ump::observer_configuration, android::observer_configuration,
++    android_ump::observer_configuration, libremidi::API>;
+ 
+ LIBREMIDI_EXPORT
+ libremidi::API midi_api(const input_api_configuration& conf);

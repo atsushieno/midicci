@@ -178,10 +178,10 @@ index 0000000..7773ab1
 +}
 diff --git a/include/libremidi/backends/android_ump/helpers.cpp b/include/libremidi/backends/android_ump/helpers.cpp
 new file mode 100644
-index 0000000..a6514f8
+index 0000000..bd837cc
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/helpers.cpp
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,221 @@
 +#include <libremidi/backends/android_ump/helpers.hpp>
 +#include <libremidi/backends/android_ump/midi_in.hpp>
 +#include <libremidi/backends/android_ump/midi_out.hpp>
@@ -215,21 +215,80 @@ index 0000000..a6514f8
 +  auto device_array = (jobjectArray)env->CallObjectMethod(device_collection, to_array_method);
 +
 +  auto device_info_class = env->FindClass("android/media/midi/MidiDeviceInfo");
-+  auto get_input_count = env->GetMethodID(device_info_class, "getInputPortCount", "()I");
-+  auto get_output_count = env->GetMethodID(device_info_class, "getOutputPortCount", "()I");
++  auto get_props_method
++      = env->GetMethodID(device_info_class, "getProperties", "()Landroid/os/Bundle;");
++  auto get_ports_method = env->GetMethodID(
++      device_info_class, "getPorts",
++      "()[Landroid/media/midi/MidiDeviceInfo$PortInfo;");
++
++  auto bundle_class = env->FindClass("android/os/Bundle");
++  auto get_string_method
++      = env->GetMethodID(bundle_class, "getString", "(Ljava/lang/String;)Ljava/lang/String;");
++
++  auto port_info_class = env->FindClass("android/media/midi/MidiDeviceInfo$PortInfo");
++  auto get_name_method = env->GetMethodID(port_info_class, "getName", "()Ljava/lang/String;");
++  auto get_type_method = env->GetMethodID(port_info_class, "getType", "()I");
++  auto get_port_number_method = env->GetMethodID(port_info_class, "getPortNumber", "()I");
++
++  // TYPE_INPUT=1 (app sends to device), TYPE_OUTPUT=2 (app receives from device)
++  jint wanted_type = is_output ? 1 : 2;
 +
 +  jsize count = env->GetArrayLength(device_array);
 +  for (jsize i = 0; i < count; ++i)
 +  {
 +    auto device_info = env->GetObjectArrayElement(device_array, i);
-+    int port_count = is_output ? env->CallIntMethod(device_info, get_input_count)
-+                               : env->CallIntMethod(device_info, get_output_count);
 +
-+    for (int p = 0; p < port_count; ++p)
++    // Device name: MidiDeviceInfo.PROPERTY_NAME = "name"
++    auto bundle = env->CallObjectMethod(device_info, get_props_method);
++    auto name_key = env->NewStringUTF("name");
++    auto device_name_jstr = (jstring)env->CallObjectMethod(bundle, get_string_method, name_key);
++    std::string device_name;
++    if (device_name_jstr)
 +    {
-+      midi_devices.push_back(env->NewGlobalRef(device_info));
-+      midi_port_indices.push_back(p);
++      const char* chars = env->GetStringUTFChars(device_name_jstr, nullptr);
++      device_name = chars;
++      env->ReleaseStringUTFChars(device_name_jstr, chars);
++      env->DeleteLocalRef(device_name_jstr);
 +    }
++    env->DeleteLocalRef(name_key);
++    env->DeleteLocalRef(bundle);
++
++    auto ports_array
++        = (jobjectArray)env->CallObjectMethod(device_info, get_ports_method);
++    jsize port_count = env->GetArrayLength(ports_array);
++
++    for (jsize p = 0; p < port_count; ++p)
++    {
++      auto port_info = env->GetObjectArrayElement(ports_array, p);
++      jint port_type = env->CallIntMethod(port_info, get_type_method);
++
++      if (port_type == wanted_type)
++      {
++        jint port_number = env->CallIntMethod(port_info, get_port_number_method);
++        auto port_name_jstr = (jstring)env->CallObjectMethod(port_info, get_name_method);
++
++        std::string port_name;
++        if (port_name_jstr)
++        {
++          const char* chars = env->GetStringUTFChars(port_name_jstr, nullptr);
++          port_name = chars;
++          env->ReleaseStringUTFChars(port_name_jstr, chars);
++          env->DeleteLocalRef(port_name_jstr);
++        }
++
++        // Mirror KtMidi AndroidPortDetails.name: only append port name if it's
++        // not the generic "input"/"output" placeholder.
++        std::string display_name = device_name;
++        if (!port_name.empty() && port_name != "input" && port_name != "output")
++          display_name += ": " + port_name;
++
++        midi_devices.push_back(env->NewGlobalRef(device_info));
++        midi_port_indices.push_back((int)port_number);
++        midi_port_names.push_back(std::move(display_name));
++      }
++      env->DeleteLocalRef(port_info);
++    }
++    env->DeleteLocalRef(ports_array);
 +    env->DeleteLocalRef(device_info);
 +  }
 +
@@ -238,40 +297,14 @@ index 0000000..a6514f8
 +  env->DeleteLocalRef(midi_service);
 +}
 +
-+std::string context::port_name(JNIEnv* env, unsigned int port_number)
++std::string context::port_name(JNIEnv* /*env*/, unsigned int port_number)
 +{
-+  if (port_number >= midi_devices.size())
++  if (port_number >= midi_port_names.size())
 +  {
 +    LOGE("Invalid port number");
 +    return "";
 +  }
-+
-+  auto device_info_class = env->FindClass("android/media/midi/MidiDeviceInfo");
-+  auto get_props_method
-+      = env->GetMethodID(device_info_class, "getProperties", "()Landroid/os/Bundle;");
-+  auto bundle = env->CallObjectMethod(midi_devices[port_number], get_props_method);
-+
-+  auto bundle_class = env->FindClass("android/os/Bundle");
-+  auto get_string_method
-+      = env->GetMethodID(bundle_class, "getString", "(Ljava/lang/String;)Ljava/lang/String;");
-+  auto key = env->NewStringUTF("name");
-+  auto name_str = (jstring)env->CallObjectMethod(bundle, get_string_method, key);
-+
-+  std::string result;
-+  if (name_str)
-+  {
-+    const char* name_chars = env->GetStringUTFChars(name_str, nullptr);
-+    result = name_chars;
-+    if (midi_port_indices[port_number] > 0)
-+      result += " (" + std::to_string(midi_port_indices[port_number]) + ")";
-+    env->ReleaseStringUTFChars(name_str, name_chars);
-+    env->DeleteLocalRef(name_str);
-+  }
-+
-+  env->DeleteLocalRef(key);
-+  env->DeleteLocalRef(bundle);
-+
-+  return result;
++  return midi_port_names[port_number];
 +}
 +
 +void context::cleanup_devices(JNIEnv* env)
@@ -280,6 +313,7 @@ index 0000000..a6514f8
 +    env->DeleteGlobalRef(device);
 +  midi_devices.clear();
 +  midi_port_indices.clear();
++  midi_port_names.clear();
 +}
 +
 +void context::open_device(jobject device_info, void* target, bool is_output)
@@ -371,10 +405,10 @@ index 0000000..a6514f8
 +}
 diff --git a/include/libremidi/backends/android_ump/helpers.hpp b/include/libremidi/backends/android_ump/helpers.hpp
 new file mode 100644
-index 0000000..7b660a6
+index 0000000..0815034
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/helpers.hpp
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +#pragma once
 +#include <libremidi/backends/android/helpers.hpp>
 +
@@ -390,6 +424,7 @@ index 0000000..7b660a6
 +  static inline std::string client_name;
 +  static inline std::vector<jobject> midi_devices;
 +  static inline std::vector<int> midi_port_indices;
++  static inline std::vector<std::string> midi_port_names;
 +
 +  static JNIEnv* get_thread_env() { return android::context::get_thread_env(); }
 +  static jobject get_context(JNIEnv* env) { return android::context::get_context(env); }

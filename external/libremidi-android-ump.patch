@@ -178,10 +178,10 @@ index 0000000..7773ab1
 +}
 diff --git a/include/libremidi/backends/android_ump/helpers.cpp b/include/libremidi/backends/android_ump/helpers.cpp
 new file mode 100644
-index 0000000..42cbc06
+index 0000000..a6514f8
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/helpers.cpp
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,187 @@
 +#include <libremidi/backends/android_ump/helpers.hpp>
 +#include <libremidi/backends/android_ump/midi_in.hpp>
 +#include <libremidi/backends/android_ump/midi_out.hpp>
@@ -209,9 +209,9 @@ index 0000000..42cbc06
 +    return;
 +  }
 +
-+  auto collection_class = env->FindClass("java/util/Set");
++  auto set_class = env->FindClass("java/util/Set");
 +  auto to_array_method
-+      = env->GetMethodID(collection_class, "toArray", "()[Ljava/lang/Object;");
++      = env->GetMethodID(set_class, "toArray", "()[Ljava/lang/Object;");
 +  auto device_array = (jobjectArray)env->CallObjectMethod(device_collection, to_array_method);
 +
 +  auto device_info_class = env->FindClass("android/media/midi/MidiDeviceInfo");
@@ -225,9 +225,10 @@ index 0000000..42cbc06
 +    int port_count = is_output ? env->CallIntMethod(device_info, get_input_count)
 +                               : env->CallIntMethod(device_info, get_output_count);
 +
-+    if (port_count > 0)
++    for (int p = 0; p < port_count; ++p)
 +    {
 +      midi_devices.push_back(env->NewGlobalRef(device_info));
++      midi_port_indices.push_back(p);
 +    }
 +    env->DeleteLocalRef(device_info);
 +  }
@@ -261,6 +262,8 @@ index 0000000..42cbc06
 +  {
 +    const char* name_chars = env->GetStringUTFChars(name_str, nullptr);
 +    result = name_chars;
++    if (midi_port_indices[port_number] > 0)
++      result += " (" + std::to_string(midi_port_indices[port_number]) + ")";
 +    env->ReleaseStringUTFChars(name_str, name_chars);
 +    env->DeleteLocalRef(name_str);
 +  }
@@ -274,10 +277,9 @@ index 0000000..42cbc06
 +void context::cleanup_devices(JNIEnv* env)
 +{
 +  for (jobject device : midi_devices)
-+  {
 +    env->DeleteGlobalRef(device);
-+  }
 +  midi_devices.clear();
++  midi_port_indices.clear();
 +}
 +
 +void context::open_device(jobject device_info, void* target, bool is_output)
@@ -350,32 +352,29 @@ index 0000000..42cbc06
 +    return;
 +  }
 +
-+  AMidiDevice* amidi_device = nullptr;
-+  AMidiDevice_fromJava(env, midi_device, &amidi_device);
-+
-+  if (!amidi_device)
-+  {
-+    LOGE("Failed to convert Java MIDI device to AMidiDevice (UMP)");
-+    return;
-+  }
-+
 +  if (is_output)
-+  {
-+    midi_out::open_callback(reinterpret_cast<midi_out*>(target_ptr), amidi_device);
-+  }
++    midi_out::open_callback(reinterpret_cast<midi_out*>(target_ptr), env, midi_device);
 +  else
-+  {
-+    midi_in::open_callback(reinterpret_cast<midi_in*>(target_ptr), amidi_device);
-+  }
++    midi_in::open_callback(reinterpret_cast<midi_in*>(target_ptr), env, midi_device);
++}
++
++extern "C" JNIEXPORT void JNICALL
++Java_dev_celtera_libremidi_MidiUmpReceiver_onUmpData(
++    JNIEnv* env, jobject /*thiz*/, jlong ptr, jbyteArray msg, jint offset, jint count,
++    jlong timestamp)
++{
++  if (ptr == 0)
++    return;
++  midi_in::on_ump_data(reinterpret_cast<midi_in*>(ptr), env, msg, offset, count, timestamp);
 +}
 +
 +}
 diff --git a/include/libremidi/backends/android_ump/helpers.hpp b/include/libremidi/backends/android_ump/helpers.hpp
 new file mode 100644
-index 0000000..33b5938
+index 0000000..7b660a6
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/helpers.hpp
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,34 @@
 +#pragma once
 +#include <libremidi/backends/android/helpers.hpp>
 +
@@ -390,6 +389,7 @@ index 0000000..33b5938
 +{
 +  static inline std::string client_name;
 +  static inline std::vector<jobject> midi_devices;
++  static inline std::vector<int> midi_port_indices;
 +
 +  static JNIEnv* get_thread_env() { return android::context::get_thread_env(); }
 +  static jobject get_context(JNIEnv* env) { return android::context::get_context(env); }
@@ -411,19 +411,15 @@ index 0000000..33b5938
 +}
 diff --git a/include/libremidi/backends/android_ump/midi_in.hpp b/include/libremidi/backends/android_ump/midi_in.hpp
 new file mode 100644
-index 0000000..50b0ade
+index 0000000..a359c29
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/midi_in.hpp
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,190 @@
 +#pragma once
 +#include <libremidi/backends/android_ump/config.hpp>
 +#include <libremidi/backends/android_ump/helpers.hpp>
 +#include <libremidi/detail/midi_in.hpp>
 +#include <libremidi/detail/midi_stream_decoder.hpp>
-+
-+#include <atomic>
-+#include <chrono>
-+#include <thread>
 +
 +NAMESPACE_LIBREMIDI
 +{
@@ -494,7 +490,7 @@ index 0000000..50b0ade
 +    }
 +
 +    port_open = true;
-+    running = true;
++    amidi_port_index = context::midi_port_indices[port_number];
 +    context::open_device(context::midi_devices[port_number], this, false);
 +    return stdx::error{};
 +  }
@@ -504,24 +500,27 @@ index 0000000..50b0ade
 +    if (!is_port_open())
 +      return std::errc{};
 +
-+    running = false;
-+
-+    if (poll_thread.joinable())
-+      poll_thread.join();
-+
-+    if (midi_output_port)
-+    {
-+      AMidiOutputPort_close(midi_output_port);
-+      midi_output_port = nullptr;
-+    }
-+
-+    if (receive_device)
-+    {
-+      AMidiDevice_release(receive_device);
-+      receive_device = nullptr;
-+    }
-+
 +    port_open = false;
++
++    auto env = context::get_thread_env();
++    if (java_receiver && env)
++    {
++      auto receiver_class = env->GetObjectClass(java_receiver);
++      auto deactivate = env->GetMethodID(receiver_class, "deactivate", "()V");
++      env->CallVoidMethod(java_receiver, deactivate);
++      env->DeleteGlobalRef(java_receiver);
++      java_receiver = nullptr;
++    }
++    if (java_output_port && env)
++    {
++      auto port_class = env->GetObjectClass(java_output_port);
++      auto close_method = env->GetMethodID(port_class, "close", "()V");
++      env->CallVoidMethod(java_output_port, close_method);
++      env->ExceptionClear();
++      env->DeleteGlobalRef(java_output_port);
++      java_output_port = nullptr;
++    }
++
 +    return stdx::error{};
 +  }
 +
@@ -529,69 +528,89 @@ index 0000000..50b0ade
 +
 +  timestamp absolute_timestamp() const noexcept override { return system_ns(); }
 +
-+  static void open_callback(midi_in* self, AMidiDevice* device)
++  static void open_callback(midi_in* self, JNIEnv* env, jobject midi_device)
 +  {
-+    self->receive_device = device;
-+    AMidiOutputPort_open(device, 0, &self->midi_output_port);
-+    self->poll_thread = std::thread(&midi_in::poll_midi, self);
++    if (!self->port_open)
++      return;
++
++    auto device_class = env->GetObjectClass(midi_device);
++    auto open_output_port_method = env->GetMethodID(
++        device_class, "openOutputPort", "(I)Landroid/media/midi/MidiOutputPort;");
++    auto java_port
++        = env->CallObjectMethod(midi_device, open_output_port_method, self->amidi_port_index);
++    if (env->ExceptionCheck())
++      env->ExceptionClear();
++
++    if (!java_port)
++    {
++      LOGE("Failed to open Java MidiOutputPort for UMP input");
++      self->port_open = false;
++      return;
++    }
++
++    auto receiver_class = env->FindClass("dev/celtera/libremidi/MidiUmpReceiver");
++    if (!receiver_class)
++    {
++      LOGE("MidiUmpReceiver class not found");
++      env->DeleteLocalRef(java_port);
++      self->port_open = false;
++      return;
++    }
++    auto receiver_ctor = env->GetMethodID(receiver_class, "<init>", "(J)V");
++    auto receiver = env->NewObject(receiver_class, receiver_ctor, (jlong)self);
++
++    auto output_port_class = env->GetObjectClass(java_port);
++    auto connect_method = env->GetMethodID(
++        output_port_class, "connect", "(Landroid/media/midi/MidiReceiver;)V");
++    env->CallVoidMethod(java_port, connect_method, receiver);
++    if (env->ExceptionCheck())
++      env->ExceptionClear();
++
++    self->java_output_port = env->NewGlobalRef(java_port);
++    self->java_receiver = env->NewGlobalRef(receiver);
++    env->DeleteLocalRef(java_port);
++    env->DeleteLocalRef(receiver);
 +  }
 +
-+private:
-+  void poll_midi()
++  static void on_ump_data(
++      midi_in* self, JNIEnv* env, jbyteArray msg, jint offset, jint count, jlong timestamp)
 +  {
++    if (!self->port_open || count <= 0 || (count % (jint)sizeof(uint32_t)) != 0)
++      return;
++
 +    static constexpr timestamp_backend_info timestamp_info{
-+        .has_absolute_timestamps = false,
-+        .absolute_is_monotonic = false,
++        .has_absolute_timestamps = true,
++        .absolute_is_monotonic = true,
 +        .has_samples = false,
 +    };
 +
-+    // UMP packets arrive as raw bytes, always a multiple of 4 bytes.
-+    static constexpr size_t buffer_words = 256;
-+    uint32_t buffer[buffer_words];
-+    int32_t op_code;
-+    int64_t timestamp;
-+    size_t num_bytes;
++    jbyte* bytes = env->GetByteArrayElements(msg, nullptr);
++    const uint32_t* words = reinterpret_cast<const uint32_t*>(bytes + offset);
++    size_t num_words = (size_t)count / sizeof(uint32_t);
 +
-+    while (running)
-+    {
-+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
++    const auto to_ns = [=] { return (int64_t)timestamp; };
++    self->m_processing.on_bytes(
++        {words, words + num_words},
++        self->m_processing.timestamp<timestamp_info>(to_ns, timestamp));
 +
-+      ssize_t num_messages = AMidiOutputPort_receive(
-+          midi_output_port, &op_code, reinterpret_cast<uint8_t*>(buffer),
-+          buffer_words * sizeof(uint32_t), &num_bytes, &timestamp);
-+
-+      if (num_messages < 0)
-+      {
-+        LOGE("Error receiving UMP data: %d", (int)num_messages);
-+        continue;
-+      }
-+
-+      if (num_messages > 0 && num_bytes > 0 && (num_bytes % sizeof(uint32_t)) == 0)
-+      {
-+        const size_t num_words = num_bytes / sizeof(uint32_t);
-+        const auto to_ns = [=] { return timestamp; };
-+        m_processing.on_bytes(
-+            {buffer, buffer + num_words},
-+            m_processing.timestamp<timestamp_info>(to_ns, timestamp));
-+      }
-+    }
++    env->ReleaseByteArrayElements(msg, bytes, JNI_ABORT);
 +  }
 +
-+  AMidiDevice* receive_device{};
-+  AMidiOutputPort* midi_output_port{};
-+  std::thread poll_thread;
-+  std::atomic<bool> port_open{false};
-+  std::atomic<bool> running{false};
++private:
++  jobject java_output_port{};
++  jobject java_receiver{};
++  bool port_open{false};
++  int amidi_port_index{0};
 +  midi2::input_state_machine m_processing{this->configuration};
 +};
 +}
 +}
 diff --git a/include/libremidi/backends/android_ump/midi_out.hpp b/include/libremidi/backends/android_ump/midi_out.hpp
 new file mode 100644
-index 0000000..c4cf439
+index 0000000..6541c7a
 --- /dev/null
 +++ b/include/libremidi/backends/android_ump/midi_out.hpp
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,160 @@
 +#pragma once
 +#include <libremidi/backends/android_ump/config.hpp>
 +#include <libremidi/backends/android_ump/helpers.hpp>
@@ -666,6 +685,7 @@ index 0000000..c4cf439
 +    }
 +
 +    port_open = true;
++    amidi_port_index = context::midi_port_indices[port_number];
 +    context::open_device(context::midi_devices[port_number], this, true);
 +    return stdx::error{};
 +  }
@@ -675,19 +695,19 @@ index 0000000..c4cf439
 +    if (!is_port_open())
 +      return std::errc{};
 +
-+    if (midi_input_port)
-+    {
-+      AMidiInputPort_close(midi_input_port);
-+      midi_input_port = nullptr;
-+    }
-+
-+    if (send_device)
-+    {
-+      AMidiDevice_release(send_device);
-+      send_device = nullptr;
-+    }
-+
 +    port_open = false;
++
++    auto env = context::get_thread_env();
++    if (java_input_port && env)
++    {
++      auto port_class = env->GetObjectClass(java_input_port);
++      auto close_method = env->GetMethodID(port_class, "close", "()V");
++      env->CallVoidMethod(java_input_port, close_method);
++      env->ExceptionClear();
++      env->DeleteGlobalRef(java_input_port);
++      java_input_port = nullptr;
++    }
++
 +    return stdx::error{};
 +  }
 +
@@ -695,33 +715,59 @@ index 0000000..c4cf439
 +
 +  stdx::error send_ump(const uint32_t* ump_stream, std::size_t count) override
 +  {
-+    if (!is_port_open() || !midi_input_port)
++    if (!is_port_open() || !java_input_port)
 +    {
 +      libremidi_handle_error(configuration, "midi_out::send_ump: port is not open");
 +      return std::errc{};
 +    }
 +
-+    ssize_t result = AMidiInputPort_send(
-+        midi_input_port, reinterpret_cast<const uint8_t*>(ump_stream),
-+        count * sizeof(uint32_t));
-+    if (result < 0)
-+    {
-+      libremidi_handle_error(configuration, "midi_out::send_ump: failed to send UMP data");
++    auto env = context::get_thread_env();
++    if (!env)
 +      return std::errc{};
-+    }
++
++    jint byte_count = (jint)(count * sizeof(uint32_t));
++    auto byte_array = env->NewByteArray(byte_count);
++    env->SetByteArrayRegion(
++        byte_array, 0, byte_count, reinterpret_cast<const jbyte*>(ump_stream));
++
++    auto port_class = env->GetObjectClass(java_input_port);
++    auto send_method = env->GetMethodID(port_class, "send", "([BIIJ)V");
++    env->CallVoidMethod(java_input_port, send_method, byte_array, 0, byte_count, (jlong)0);
++    if (env->ExceptionCheck())
++      env->ExceptionClear();
++
++    env->DeleteLocalRef(byte_array);
 +    return stdx::error{};
 +  }
 +
-+  static void open_callback(midi_out* self, AMidiDevice* device)
++  static void open_callback(midi_out* self, JNIEnv* env, jobject midi_device)
 +  {
-+    self->send_device = device;
-+    AMidiInputPort_open(device, 0, &self->midi_input_port);
++    if (!self->port_open)
++      return;
++
++    auto device_class = env->GetObjectClass(midi_device);
++    auto open_input_port_method = env->GetMethodID(
++        device_class, "openInputPort", "(I)Landroid/media/midi/MidiInputPort;");
++    auto java_port
++        = env->CallObjectMethod(midi_device, open_input_port_method, self->amidi_port_index);
++    if (env->ExceptionCheck())
++      env->ExceptionClear();
++
++    if (!java_port)
++    {
++      LOGE("Failed to open Java MidiInputPort for UMP output");
++      self->port_open = false;
++      return;
++    }
++
++    self->java_input_port = env->NewGlobalRef(java_port);
++    env->DeleteLocalRef(java_port);
 +  }
 +
 +private:
-+  AMidiDevice* send_device{};
-+  AMidiInputPort* midi_input_port{};
++  jobject java_input_port{};
 +  bool port_open{false};
++  int amidi_port_index{0};
 +};
 +}
 +}

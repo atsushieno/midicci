@@ -37,6 +37,56 @@ std::string stable_port_id(const Port& port) {
     return id.str();
 }
 
+std::string extract_port_token(const std::string& stable_id) {
+    auto pos = stable_id.rfind('#');
+    if (pos == std::string::npos || pos + 1 >= stable_id.size()) {
+        return {};
+    }
+    return stable_id.substr(pos + 1);
+}
+
+std::string normalize_pairing_name(std::string device_name) {
+    static constexpr const char* suffixes[] = {
+        " (In)",
+        " (Out)",
+        "_In",
+        "_Out",
+        "-In",
+        "-Out",
+        " In",
+        " Out"
+    };
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const char* suffix : suffixes) {
+            size_t suffix_length = std::char_traits<char>::length(suffix);
+            if (device_name.size() >= suffix_length &&
+                device_name.compare(device_name.size() - suffix_length, suffix_length, suffix) == 0) {
+                device_name.erase(device_name.size() - suffix_length);
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    return device_name;
+}
+
+bool ports_match(const std::string& input_id,
+                 const std::string& input_name,
+                 const std::string& output_id,
+                 const std::string& output_name) {
+    auto input_token = extract_port_token(input_id);
+    auto output_token = extract_port_token(output_id);
+    if (!input_token.empty() && input_token == output_token) {
+        return true;
+    }
+
+    return normalize_pairing_name(input_name) == normalize_pairing_name(output_name);
+}
+
 void append_detail_if_present(std::ostringstream& oss, bool& started, const std::string& value) {
     if (value.empty()) {
         return;
@@ -950,11 +1000,7 @@ void KeyboardController::updateUIConnectionState() {
 }
 
 std::string KeyboardController::normalizeDeviceName(const std::string& deviceName) {
-    if (deviceName.length() >= 3 && deviceName.substr(deviceName.length() - 3) == " In")
-        return deviceName.substr(0, deviceName.length() - 3);
-    if (deviceName.length() >= 4 && deviceName.substr(deviceName.length() - 4) == " Out")
-        return deviceName.substr(0, deviceName.length() - 4);
-    return deviceName;
+    return normalize_pairing_name(deviceName);
 }
 
 void KeyboardController::checkAndAutoConnect() {
@@ -967,6 +1013,8 @@ void KeyboardController::checkAndAutoConnect() {
     }
 
     try {
+        std::string inputDeviceId;
+        std::string outputDeviceId;
         std::string inputDeviceName;
         std::string outputDeviceName;
 
@@ -978,6 +1026,7 @@ void KeyboardController::checkAndAutoConnect() {
                 return stable_port_id(port) == currentInputDeviceId;
             });
             if (inputIt != inputPorts.end()) {
+                inputDeviceId = stable_port_id(*inputIt);
                 inputDeviceName = inputIt->port_name;
             }
         }
@@ -987,6 +1036,7 @@ void KeyboardController::checkAndAutoConnect() {
                 return stable_port_id(port) == currentOutputDeviceId;
             });
             if (outputIt != outputPorts.end()) {
+                outputDeviceId = stable_port_id(*outputIt);
                 outputDeviceName = outputIt->port_name;
             }
         }
@@ -995,10 +1045,7 @@ void KeyboardController::checkAndAutoConnect() {
             return;
         }
 
-        std::string normalizedInput = normalizeDeviceName(inputDeviceName);
-        std::string normalizedOutput = normalizeDeviceName(outputDeviceName);
-
-        if (normalizedInput == normalizedOutput) {
+        if (ports_match(inputDeviceId, inputDeviceName, outputDeviceId, outputDeviceName)) {
             std::cout << "Auto-connecting: matched devices '" << inputDeviceName
                       << "' and '" << outputDeviceName << "'" << std::endl;
 

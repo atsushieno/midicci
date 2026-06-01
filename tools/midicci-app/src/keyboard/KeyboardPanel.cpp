@@ -61,6 +61,56 @@ std::string format_parameter_path(const midicci::commonproperties::MidiCIControl
     }
     return "-";
 }
+
+std::string extract_port_token(const std::string& stable_id) {
+    auto pos = stable_id.rfind('#');
+    if (pos == std::string::npos || pos + 1 >= stable_id.size()) {
+        return {};
+    }
+    return stable_id.substr(pos + 1);
+}
+
+std::string normalize_pairing_name(std::string device_name) {
+    static constexpr const char* suffixes[] = {
+        " (In)",
+        " (Out)",
+        "_In",
+        "_Out",
+        "-In",
+        "-Out",
+        " In",
+        " Out"
+    };
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const char* suffix : suffixes) {
+            size_t suffix_length = std::char_traits<char>::length(suffix);
+            if (device_name.size() >= suffix_length &&
+                device_name.compare(device_name.size() - suffix_length, suffix_length, suffix) == 0) {
+                device_name.erase(device_name.size() - suffix_length);
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    return device_name;
+}
+
+bool ports_match(const std::string& input_id,
+                 const std::string& input_name,
+                 const std::string& output_id,
+                 const std::string& output_name) {
+    auto input_token = extract_port_token(input_id);
+    auto output_token = extract_port_token(output_id);
+    if (!input_token.empty() && input_token == output_token) {
+        return true;
+    }
+
+    return normalize_pairing_name(input_name) == normalize_pairing_name(output_name);
+}
 } // namespace
 
 KeyboardPanel::KeyboardPanel(tooling::CIToolRepository* repository)
@@ -1351,11 +1401,7 @@ void KeyboardPanel::on_load_state(uint32_t muid) {
 }
 
 std::string KeyboardPanel::normalize_device_name(const std::string& device_name) {
-    if (device_name.length() >= 3 && device_name.substr(device_name.length() - 3) == " In")
-        return device_name.substr(0, device_name.length() - 3);
-    if (device_name.length() >= 4 && device_name.substr(device_name.length() - 4) == " Out")
-        return device_name.substr(0, device_name.length() - 4);
-    return device_name;
+    return normalize_pairing_name(device_name);
 }
 
 void KeyboardPanel::check_and_auto_connect() {
@@ -1363,16 +1409,20 @@ void KeyboardPanel::check_and_auto_connect() {
         return;
     }
 
+    std::string input_device_id;
     std::string input_device_name;
+    std::string output_device_id;
     std::string output_device_name;
 
     {
         std::lock_guard<std::mutex> lock(state_mutex_);
         if (selected_input_index_ >= 0 && selected_input_index_ < static_cast<int>(input_devices_.size())) {
+            input_device_id = input_devices_[selected_input_index_].id;
             input_device_name = input_devices_[selected_input_index_].name;
         }
 
         if (selected_output_index_ >= 0 && selected_output_index_ < static_cast<int>(output_devices_.size())) {
+            output_device_id = output_devices_[selected_output_index_].id;
             output_device_name = output_devices_[selected_output_index_].name;
         }
     }
@@ -1381,10 +1431,7 @@ void KeyboardPanel::check_and_auto_connect() {
         return;
     }
 
-    std::string normalized_input = normalize_device_name(input_device_name);
-    std::string normalized_output = normalize_device_name(output_device_name);
-
-    if (normalized_input == normalized_output) {
+    if (ports_match(input_device_id, input_device_name, output_device_id, output_device_name)) {
         if (repository_) {
             repository_->log("Auto-connecting: matched devices '" + input_device_name +
                            "' and '" + output_device_name + "'", tooling::MessageDirection::Out);

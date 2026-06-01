@@ -8,6 +8,53 @@
 #include "keyboard_controller.h"
 #include "midicci/midicci.hpp"
 
+namespace {
+std::string extract_port_token(const std::string& stable_id) {
+    auto pos = stable_id.rfind('#');
+    if (pos == std::string::npos || pos + 1 >= stable_id.size()) {
+        return {};
+    }
+    return stable_id.substr(pos + 1);
+}
+
+std::string normalize_pairing_name(std::string device_name) {
+    static constexpr const char* suffixes[] = {
+        " (In)",
+        " (Out)",
+        "_In",
+        "_Out",
+        "-In",
+        "-Out",
+        " In",
+        " Out"
+    };
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const char* suffix : suffixes) {
+            size_t suffix_length = std::char_traits<char>::length(suffix);
+            if (device_name.size() >= suffix_length &&
+                device_name.compare(device_name.size() - suffix_length, suffix_length, suffix) == 0) {
+                device_name.erase(device_name.size() - suffix_length);
+                changed = true;
+                break;
+            }
+        }
+    }
+    return device_name;
+}
+
+bool ports_match(const KeyboardController::DeviceInfo& input, const KeyboardController::DeviceInfo& output) {
+    auto input_token = extract_port_token(input.id);
+    auto output_token = extract_port_token(output.id);
+    if (!input_token.empty() && input_token == output_token) {
+        return true;
+    }
+    return normalize_pairing_name(input.port_name) == normalize_pairing_name(output.port_name);
+}
+} // namespace
+
 class AllCtrlListOrderingTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -58,10 +105,10 @@ protected:
             std::cout << "[TEST]   Output: " << device.display_name << " (" << device.id << ")" << std::endl;
         }
         
-        // Find devices with identical names (indicating they're the same physical device)
+        // Find devices that represent the same physical or virtual endpoint pair
         for (const auto& input : inputDevices) {
             for (const auto& output : outputDevices) {
-                if (input.port_name == output.port_name) {
+                if (ports_match(input, output)) {
                     pairs.emplace_back(input.id, output.id);
                     std::cout << "[TEST] Found matching pair: " << input.display_name << std::endl;
                 }

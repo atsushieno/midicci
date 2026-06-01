@@ -595,13 +595,6 @@ void KeyboardPanel::render_transport_section() {
         controller_->selectInputDevice("");
         controller_->selectOutputDevice("");
 
-        if (repository_) {
-            if (auto midi_manager = repository_->get_midi_device_manager()) {
-                midi_manager->set_input_device("");
-                midi_manager->set_output_device("");
-            }
-        }
-
         {
             std::lock_guard<std::mutex> lock(state_mutex_);
             selected_input_index_ = -1;
@@ -1261,12 +1254,6 @@ void KeyboardPanel::select_input_device(int index) {
         }
     }
 
-    if (repository_) {
-        if (auto midi_manager = repository_->get_midi_device_manager()) {
-            midi_manager->set_input_device(device_name);
-        }
-    }
-
     check_and_auto_connect();
 }
 
@@ -1290,12 +1277,6 @@ void KeyboardPanel::select_output_device(int index) {
         } else {
             selected_output_index_ = index;
             current_output_id_ = target_id;
-        }
-    }
-
-    if (repository_) {
-        if (auto midi_manager = repository_->get_midi_device_manager()) {
-            midi_manager->set_output_device(device_name);
         }
     }
 

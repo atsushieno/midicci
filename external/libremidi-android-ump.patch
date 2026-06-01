@@ -624,7 +624,7 @@ index 0000000..a359c29
 +    size_t num_words = (size_t)count / sizeof(uint32_t);
 +
 +    const auto to_ns = [=] { return (int64_t)timestamp; };
-+    self->m_processing.on_bytes(
++    self->m_processing.on_bytes_multi(
 +        {words, words + num_words},
 +        self->m_processing.timestamp<timestamp_info>(to_ns, timestamp));
 +

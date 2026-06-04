@@ -30,7 +30,7 @@ endif()
 set(_libremidi_cpm_args
     NAME libremidi
     GIT_REPOSITORY https://github.com/celtera/libremidi.git
-    GIT_TAG 7d65b18
+    GIT_TAG 1c1c7ce
     EXCLUDE_FROM_ALL YES
     OPTIONS "BUILD_SHARED_LIBS OFF" "CMAKE_SKIP_INSTALL_RULES ON"
 )

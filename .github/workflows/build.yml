@@ -70,7 +70,7 @@ jobs:
       - name: setup build on Windows
         if: matrix.os == 'windows-2025-vs2026'
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=OFF -DMIDICCI_ENABLE_WINMIDI=ON
+          cmake -B build -G "Visual Studio 18 2026" -DBUILD_SHARED_LIBS=OFF -DMIDICCI_ENABLE_WINMIDI=ON
       - name: setup build on Darwin
         if: matrix.os == 'macos-15'
         run: |

@@ -1,0 +1,61 @@
+name: build android
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: 'build midicci-app APK'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: cache gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-android-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-android-
+
+      # The native side pulls dependencies during the CMake configure that
+      # gradle runs through externalNativeBuild.
+      - name: cache CPM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/CPM/midicci
+          key: cpm-android-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: cpm-android-${{ runner.os }}-
+
+      - name: build midicci-app
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: midicci-android-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+
+      - name: upload build failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: midicci-android-failure
+          path: |
+            android/app/build/reports
+            android/app/build/outputs
+            android/app/.cxx

@@ -1,8 +1,8 @@
 name: build android
 
+# Opt-in only: the Android native build is slow, so it is not run on every
+# push. Trigger it manually from the Actions tab.
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:

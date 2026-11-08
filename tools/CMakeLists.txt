@@ -1,6 +1,4 @@
 
-include(${CMAKE_SOURCE_DIR}/cmake/CPM.cmake)
-
 # Fetch libremidi for tools / tests, but do not install it
 if(WIN32 AND MIDICCI_ENABLE_WINMIDI)
     if(NOT LIBREMIDI_WINMIDI_HEADERS_ZIP)

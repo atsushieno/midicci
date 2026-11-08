@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
+include(cmake/CPM.cmake)
+
 project(midicci
     VERSION 0.4.0
     DESCRIPTION "Cross-platform MIDI 2.0 MIDI-CI session library"
@@ -55,11 +57,12 @@ function(midicci_fetchcontent_makeavailable_static target_name)
     set(BUILD_SHARED_LIBS ${_midicci_prev_build_shared} CACHE BOOL "" FORCE)
 endfunction()
 
-FetchContent_Declare(
-    zlib-ng
+CPMAddPackage(
+    NAME zlib-ng
     GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
     GIT_TAG 2.3.3
-    EXCLUDE_FROM_ALL
+    OPTIONS "WITH_GTEST=OFF" "-DBUILD_TESTING=OFF"
+    EXCLUDE_FROM_ALL YES
 )
 set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
 set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)

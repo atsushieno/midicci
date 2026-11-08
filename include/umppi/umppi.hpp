@@ -3,22 +3,22 @@
 // umppi - MIDI file I/O and playback library
 // Headers ordered by dependency (least dependent first)
 
-#include <umppi/details/Common.hpp>
-#include <umppi/details/Utility.hpp>
-#include <umppi/details/DeltaTimeComputer.hpp>
-#include <umppi/details/PlayerCommon.hpp>
-#include <umppi/details/MidiPlayerTimer.hpp>
-#include <umppi/details/Ump.hpp>
-#include <umppi/details/UmpFactory.hpp>
-#include <umppi/details/UmpRetriever.hpp>
-#include <umppi/details/UmpTranslator.hpp>
+#include "details/Common.hpp"
+#include "details/Utility.hpp"
+#include "details/DeltaTimeComputer.hpp"
+#include "details/PlayerCommon.hpp"
+#include "details/MidiPlayerTimer.hpp"
+#include "details/Ump.hpp"
+#include "details/UmpFactory.hpp"
+#include "details/UmpRetriever.hpp"
+#include "details/UmpTranslator.hpp"
 
-#include <umppi/details/Midi1Message.hpp>
-#include <umppi/details/Midi1Event.hpp>
-#include <umppi/details/Midi1Track.hpp>
-#include <umppi/details/Midi1Music.hpp>
-#include <umppi/details/Midi1Reader.hpp>
-#include <umppi/details/Midi1Writer.hpp>
-#include <umppi/details/Midi1Machine.hpp>
+#include "details/Midi1Message.hpp"
+#include "details/Midi1Event.hpp"
+#include "details/Midi1Track.hpp"
+#include "details/Midi1Music.hpp"
+#include "details/Midi1Reader.hpp"
+#include "details/Midi1Writer.hpp"
+#include "details/Midi1Machine.hpp"
 
-#include <umppi/details/Midi2Track.hpp>
+#include "details/Midi2Track.hpp"

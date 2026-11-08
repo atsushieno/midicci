@@ -6,59 +6,56 @@
 // Use only this main header for stable API access.
 
 // They are sorted from primitive to complicated
-#include <midicci/details/Json.hpp>
-#include <midicci/details/MidiCIConstants.hpp>
-#include <midicci/details/MidiCIProfile.hpp>
-#include <midicci/details/MidiCIChannelList.hpp>
-#include <midicci/details/CIFactory.hpp>
-#include <midicci/details/CIRetrieval.hpp>
-#include <midicci/details/MidiCIConverter.hpp>
+#include "details/Json.hpp"
+#include "details/MidiCIConstants.hpp"
+#include "details/MidiCIProfile.hpp"
+#include "details/MidiCIChannelList.hpp"
+#include "details/CIFactory.hpp"
+#include "details/CIRetrieval.hpp"
+#include "details/MidiCIConverter.hpp"
 
-#include <midicci/details/Message.hpp>
-#include <midicci/details/Messenger.hpp>
+#include "details/Message.hpp"
+#include "details/Messenger.hpp"
 
-#include <midicci/details/PropertyValue.hpp>
-#include <midicci/details/commonproperties/PropertyMetadata.hpp>
+#include "details/PropertyValue.hpp"
+#include "details/commonproperties/PropertyMetadata.hpp"
 
-#include <midicci/details/ObservableProfileList.hpp>
+#include "details/ObservableProfileList.hpp"
 
-#include <midicci/details/MidiCIDeviceConfiguration.hpp>
+#include "details/MidiCIDeviceConfiguration.hpp"
 
-#include <midicci/details/MidiCIDevice.hpp>
-#include <midicci/details/ClientConnection.hpp>
+#include "details/MidiCIDevice.hpp"
+#include "details/ClientConnection.hpp"
 
-#include <midicci/details/ProfileClientFacade.hpp>
-#include <midicci/details/ProfileHostFacade.hpp>
+#include "details/ProfileClientFacade.hpp"
+#include "details/ProfileHostFacade.hpp"
 
 // Property management
-#include <midicci/details/PropertyChunkManager.hpp>
-#include <midicci/details/PropertyCommonRules.hpp>
-#include <midicci/details/PropertyCommonConverter.hpp>
+#include "details/PropertyChunkManager.hpp"
+#include "details/PropertyCommonRules.hpp"
+#include "details/PropertyCommonConverter.hpp"
 
 // Common profiles
-#include <midicci/details/commonprofiles/ProfileCommonRules.hpp>
+#include "details/commonprofiles/ProfileCommonRules.hpp"
 
 // Common properties
-#include <midicci/details/PropertyClientFacade.hpp>
-#include <midicci/details/commonproperties/CommonRulesPropertyHelper.hpp>
-#include <midicci/details/commonproperties/CommonRulesPropertyClient.hpp>
-#include <midicci/details/commonproperties/CommonRulesPropertyMetadata.hpp>
-#include <midicci/details/commonproperties/MidiCIServicePropertyRules.hpp>
-#include <midicci/details/commonproperties/CommonRulesPropertyService.hpp>
+#include "details/PropertyClientFacade.hpp"
+#include "details/commonproperties/CommonRulesPropertyHelper.hpp"
+#include "details/commonproperties/CommonRulesPropertyClient.hpp"
+#include "details/commonproperties/CommonRulesPropertyMetadata.hpp"
+#include "details/commonproperties/MidiCIServicePropertyRules.hpp"
+#include "details/commonproperties/CommonRulesPropertyService.hpp"
 
-#include <midicci/details/ObservablePropertyList.hpp>
+#include "details/ObservablePropertyList.hpp"
 
-#include <midicci/details/commonproperties/FoundationalResources.hpp>
-#include <midicci/details/commonproperties/StandardProperties.hpp>
-#include <midicci/details/PropertyHostFacade.hpp>
+#include "details/commonproperties/FoundationalResources.hpp"
+#include "details/commonproperties/StandardProperties.hpp"
+#include "details/PropertyHostFacade.hpp"
 
 // Music device
-#include <midicci/details/musicdevice/MidiCISession.hpp>
-#include <midicci/details/musicdevice/MidiMachineMessageReporter.hpp>
-#include <midicci/details/musicdevice/MusicDevice.hpp>
+#include "details/musicdevice/MidiCISession.hpp"
+#include "details/musicdevice/MidiMachineMessageReporter.hpp"
+#include "details/musicdevice/MusicDevice.hpp"
 
 // UMP (Universal MIDI Packet) - provided by umppi module
-#include <umppi/details/Ump.hpp>
-#include <umppi/details/UmpFactory.hpp>
-#include <umppi/details/UmpRetriever.hpp>
-#include <umppi/details/UmpTranslator.hpp>
+#include "../umppi/umppi.hpp"

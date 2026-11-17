@@ -57,17 +57,23 @@ function(midicci_fetchcontent_makeavailable_static target_name)
     set(BUILD_SHARED_LIBS ${_midicci_prev_build_shared} CACHE BOOL "" FORCE)
 endfunction()
 
+set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
+set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Unset BUILD_SHARED_LIBS so zlib-ng's cmake takes the "NOT DEFINED" branch,
+# which builds both zlib-ng (shared) and zlib-ng-static (real static library).
+# When BUILD_SHARED_LIBS is defined, zlib-ng only creates one library and
+# zlib-ng-static becomes a mere ALIAS with no real .lib output.
+unset(BUILD_SHARED_LIBS CACHE)
 CPMAddPackage(
     NAME zlib-ng
     GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
     GIT_TAG 2.3.3
-    OPTIONS "WITH_GTEST=OFF" "-DBUILD_TESTING=OFF"
+    OPTIONS "ZLIB_COMPAT ON" "ZLIB_ENABLE_TESTS OFF" "WITH_GTEST OFF" "BUILD_TESTING OFF"
     EXCLUDE_FROM_ALL YES
 )
-set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
-set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# Prevent zlib-ng from installing, but otherwise respect its defaults
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+# Prevent zlib-ng from installing (no-op for FetchContent since CPM already ran it)
 midicci_fetchcontent_makeavailable_static(zlib-ng)
 
 add_subdirectory(src/umppi)
@@ -84,6 +90,7 @@ if(BUILD_TESTS)
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
       GIT_TAG release-1.12.1
+      UPDATE_DISCONNECTED TRUE
     )
     # Ensure gtest participates in configuration but does not install itself.
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

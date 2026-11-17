@@ -226,7 +226,7 @@ foreach(app_target IN LISTS MIDICCI_APP_TARGETS)
         midicci-tooling
         midicci_internal
         libremidi::libremidi
-        zlib-ng
+        zlib-ng-static
         ${BACKEND_LIBRARIES}
     )
 endforeach()

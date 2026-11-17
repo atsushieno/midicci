@@ -40,7 +40,7 @@ if(MIDICCI_BUILD_SHARED)
             ${CMAKE_CURRENT_SOURCE_DIR}
     )
     target_compile_features(${MODULE_NAME} PUBLIC cxx_std_20)
-    target_link_libraries(${MODULE_NAME} PUBLIC umppi_internal PRIVATE zlib)
+    target_link_libraries(${MODULE_NAME} PUBLIC umppi_internal PRIVATE zlib-ng-static)
     set_target_properties(${MODULE_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -68,7 +68,7 @@ if(MIDICCI_BUILD_STATIC)
             ${CMAKE_CURRENT_SOURCE_DIR}
     )
     target_compile_features(${MODULE_NAME}_static PUBLIC cxx_std_20)
-    target_link_libraries(${MODULE_NAME}_static PUBLIC umppi_internal PRIVATE zlib)
+    target_link_libraries(${MODULE_NAME}_static PUBLIC umppi_internal PRIVATE zlib-ng-static)
     set_target_properties(${MODULE_NAME}_static PROPERTIES
         OUTPUT_NAME ${MODULE_NAME}
         POSITION_INDEPENDENT_CODE ON
